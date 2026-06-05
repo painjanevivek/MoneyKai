@@ -1,16 +1,10 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Keep this file in sync with .gitignore.
 node_modules/
-
-# Expo
 .expo/
 .expo-shared/
 dist/
 web-build/
 expo-env.d.ts
-
-# Native
 .kotlin/
 *.orig.*
 *.jks
@@ -18,37 +12,25 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
-
-# Metro
 .metro-health-check*
-
-# debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 *.log
-
-# macOS
 .DS_Store
 *.pem
-
-# local env files
 .env
 .env.*
 !.env.example
 !.env*.sample
-
-# typescript
 *.tsbuildinfo
-
-# test output
 coverage/
-
-# editors
 .idea/
-
-example
-
-# generated native folders
 /ios
 /android
+
+# Build-irrelevant local assistant/editor metadata
+.claude/
+.codex/
+AGENTS.md
+CLAUDE.md

@@ -1,23 +1,30 @@
 {
   "expo": {
-    "name": "budget-manager",
-    "slug": "budget-manager",
+    "name": "SmartPaisa",
+    "slug": "smartpaisa",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "budgetmanager",
+    "scheme": "smartpaisa",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.smartpaisa.app"
     },
     "android": {
+      "package": "com.smartpaisa.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0D8C4C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "NOTIFICATIONS"
+      ]
     },
     "web": {
       "output": "static",
@@ -25,20 +32,43 @@
     },
     "plugins": [
       "expo-router",
+      "expo-secure-store",
+      "expo-sqlite",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0D8C4C",
           "android": {
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SmartPaisa needs access to photos to upload receipt images."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#0D8C4C"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
     }
   }
 }
