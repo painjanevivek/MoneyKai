@@ -140,7 +140,7 @@ export default function DashboardScreen() {
                   shadowColor: colors.primary,
                 }}
               >
-                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.bold, color: '#FFFFFF' }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.bold, color: colors.textInverse }}>
                   {user?.full_name?.[0]?.toUpperCase() || 'U'}
                 </Text>
               </TouchableOpacity>
@@ -159,7 +159,7 @@ export default function DashboardScreen() {
         <View
           style={{
             paddingHorizontal: Spacing.base,
-            marginBottom: Spacing.base,
+            marginBottom: Spacing.lg,
             flexDirection: isWide ? 'row' : 'column',
             gap: Spacing.base,
           }}
@@ -211,7 +211,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
+        <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.lg }}>
           <TrendLineChart />
         </View>
 

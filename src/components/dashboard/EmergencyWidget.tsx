@@ -21,6 +21,7 @@ export const EmergencyWidget: React.FC<{ onPress?: () => void }> = ({ onPress })
         borderColor: isEmergencyMode ? colors.emergency : colors.border,
         ...Shadows.md,
         shadowColor: isEmergencyMode ? colors.emergency : colors.shadowColor,
+        marginBottom: Spacing.xs,
       }}
     >
       <Text style={{
@@ -42,7 +43,7 @@ export const EmergencyWidget: React.FC<{ onPress?: () => void }> = ({ onPress })
           <Text style={{
             fontSize: Typography.fontSize.xl,
             fontFamily: Typography.fontFamily.bold,
-            color: isEmergencyMode ? '#FFFFFF' : colors.emergency,
+            color: isEmergencyMode ? colors.textInverse : colors.emergency,
           }}>SOS</Text>
         </View>
       </View>
@@ -97,7 +98,7 @@ export const SOSFloatingButton: React.FC<{ onPress: () => void }> = ({ onPress }
       <Text style={{
         fontSize: Typography.fontSize.base,
         fontFamily: Typography.fontFamily.bold,
-        color: '#FFFFFF',
+        color: colors.textInverse,
       }}>SOS</Text>
     </TouchableOpacity>
   );

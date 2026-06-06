@@ -11,13 +11,14 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { getCategoryById, EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatRelativeDate } from '@/utils/dateUtils';
+import { confirmDestructive } from '@/utils/confirmDestructive';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import type { Transaction } from '@/types/transaction';
 
 const FILTER_TABS = ['All', 'Expense', 'Income'] as const;
 
 export default function TransactionsScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const { addTransaction, deleteTransaction, setFilter } = useTransactionStore();
@@ -74,10 +75,11 @@ export default function TransactionsScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert('Delete Transaction', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteTransaction(id) },
-    ]);
+    confirmDestructive({
+      title: 'Delete Transaction',
+      message: 'Remove this transaction from your history? This cannot be undone.',
+      onConfirm: () => deleteTransaction(id),
+    });
   };
 
   const categories = txnType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
@@ -141,13 +143,31 @@ export default function TransactionsScreen() {
       </View>
 
       <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}>
-        <View style={{ flex: 1, backgroundColor: '#FEF0F0', borderRadius: BorderRadius.md, padding: Spacing.md }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.emergency }}>Total Spent</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.emergency }}>{formatCurrency(totalSpent)}</Text>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: isDark ? colors.surface : '#F5F5F5',
+            borderRadius: BorderRadius.md,
+            padding: Spacing.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Total Spent</Text>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>{formatCurrency(totalSpent)}</Text>
         </View>
-        <View style={{ flex: 1, backgroundColor: colors.primaryBg, borderRadius: BorderRadius.md, padding: Spacing.md }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>Total Income</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.primary }}>{formatCurrency(totalIncome)}</Text>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: colors.surface,
+            borderRadius: BorderRadius.md,
+            padding: Spacing.md,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Total Income</Text>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>{formatCurrency(totalIncome)}</Text>
         </View>
       </View>
 
@@ -193,7 +213,7 @@ export default function TransactionsScreen() {
               style={{
                 fontSize: Typography.fontSize.sm,
                 fontFamily: Typography.fontFamily.medium,
-                color: activeTab === tab ? '#FFFFFF' : colors.textSecondary,
+                color: activeTab === tab ? colors.textInverse : colors.textSecondary,
               }}
             >
               {tab}
@@ -226,7 +246,7 @@ export default function TransactionsScreen() {
           shadowColor: colors.primary,
         }}
       >
-        <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
+        <MaterialCommunityIcons name="plus" size={28} color={colors.textInverse} />
       </TouchableOpacity>
 
       <Modal visible={showAddModal} animationType="slide" transparent>

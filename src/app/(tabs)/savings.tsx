@@ -21,7 +21,7 @@ import type { CategoryReduction } from '@/types/budget';
 const TABS = ['Savings Predictor', 'Challenges', 'Emergency'] as const;
 
 export default function SavingsScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const { settings, isEmergencyMode, toggleEmergencyMode } = useBudgetStore();
@@ -148,7 +148,7 @@ export default function SavingsScreen() {
                       paddingVertical: 6,
                       borderRadius: BorderRadius.sm,
                       alignItems: 'center',
-                      backgroundColor: reduction === pct ? colors.primary : colors.surface,
+                      backgroundColor: reduction === pct ? (isDark ? colors.textPrimary : colors.primary) : colors.surface,
                       borderWidth: 1,
                       borderColor: reduction === pct ? colors.primary : colors.border,
                     }}
@@ -157,7 +157,7 @@ export default function SavingsScreen() {
                       style={{
                         fontSize: 11,
                         fontFamily: Typography.fontFamily.medium,
-                        color: reduction === pct ? '#FFFFFF' : colors.textSecondary,
+                        color: reduction === pct ? (isDark ? colors.textInverse : colors.textInverse) : colors.textPrimary,
                       }}
                     >
                       {pct}%
@@ -360,7 +360,7 @@ export default function SavingsScreen() {
               marginBottom: Spacing.md,
             }}
           >
-            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.bold, color: isEmergencyMode ? '#FFF' : colors.emergency }}>SOS</Text>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.bold, color: isEmergencyMode ? colors.textInverse : colors.emergency }}>SOS</Text>
           </TouchableOpacity>
           <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: isEmergencyMode ? colors.emergency : colors.textPrimary }}>
             {isEmergencyMode ? 'Emergency Mode Active' : 'Emergency Mode'}

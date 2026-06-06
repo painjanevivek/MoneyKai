@@ -91,7 +91,7 @@ export default function LoginScreen() {
               ...Shadows.lg,
               shadowColor: colors.primary,
             }}>
-              <MaterialCommunityIcons name="chart-line" size={36} color="#FFFFFF" />
+              <MaterialCommunityIcons name="chart-line" size={36} color={colors.textInverse} />
             </View>
             <Text style={{
               fontSize: Typography.fontSize['3xl'],

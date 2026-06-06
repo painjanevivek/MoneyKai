@@ -22,10 +22,10 @@ const GROUP_TYPE_ICONS: Record<string, string> = {
 };
 
 const GROUP_TYPE_COLORS: Record<string, string> = {
-  flatmates: '#3B82F6',
-  friends: '#8B5CF6',
-  trip: '#F4A261',
-  event: '#EC4899',
+  flatmates: '#111111',
+  friends: '#3A3A3A',
+  trip: '#5A5A5A',
+  event: '#737373',
 };
 
 export default function GroupsScreen() {
@@ -97,7 +97,7 @@ export default function GroupsScreen() {
                   }}
                 >
                   <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.bold, color: '#FFF' }}>{m.user_name?.[0] || '?'}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.bold, color: colors.textInverse }}>{m.user_name?.[0] || '?'}</Text>
                   </View>
                   <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>{m.user_name}</Text>
                   {m.role === 'admin' && <MaterialCommunityIcons name="crown" size={12} color={colors.accent} />}
@@ -227,7 +227,7 @@ export default function GroupsScreen() {
                         width: 28,
                         height: 28,
                         borderRadius: 14,
-                        backgroundColor: [colors.primary, colors.accent, '#8B5CF6', '#3B82F6'][i % 4],
+                        backgroundColor: [colors.primary, colors.primaryLight, colors.accent, colors.textTertiary][i % 4],
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderWidth: 2,
@@ -236,7 +236,7 @@ export default function GroupsScreen() {
                         zIndex: 10 - i,
                       }}
                     >
-                      <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.bold, color: '#FFF' }}>{m.user_name?.[0]}</Text>
+                      <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.bold, color: colors.textInverse }}>{m.user_name?.[0]}</Text>
                     </View>
                   ))}
                 </View>
@@ -263,7 +263,7 @@ export default function GroupsScreen() {
           shadowColor: colors.primary,
         }}
       >
-        <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
+        <MaterialCommunityIcons name="plus" size={28} color={colors.textInverse} />
       </TouchableOpacity>
 
       <Modal visible={showCreateModal} animationType="slide" transparent>

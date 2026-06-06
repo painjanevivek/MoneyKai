@@ -12,7 +12,7 @@ export const QuickNotes: React.FC<{ onViewAll?: () => void; onNewNote?: () => vo
   onViewAll,
   onNewNote,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const recentNotes = useNotesStore((s) => s.getRecentNotes(2));
 
   const handleViewAll = onViewAll ?? (() => router.push('/(tabs)/notes'));
@@ -108,14 +108,15 @@ export const QuickNotes: React.FC<{ onViewAll?: () => void; onNewNote?: () => vo
           borderColor: colors.border,
           borderStyle: 'dashed',
           gap: 6,
+          backgroundColor: isDark ? colors.surface : 'transparent',
         }}
       >
-        <MaterialCommunityIcons name="plus" size={16} color={colors.textSecondary} />
+        <MaterialCommunityIcons name="plus" size={16} color={colors.textPrimary} />
         <Text
           style={{
             fontSize: Typography.fontSize.sm,
             fontFamily: Typography.fontFamily.medium,
-            color: colors.textSecondary,
+            color: colors.textPrimary,
           }}
         >
           New Note

@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 
@@ -9,13 +11,28 @@ export default function PrivacyPolicyScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-          Privacy Policy
-        </Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-          SmartPaisa keeps your financial data private and under your control.
-        </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: Spacing.md,
+          paddingHorizontal: Spacing.base,
+          paddingVertical: Spacing.md,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.borderLight,
+        }}
+      >
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back">
+          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
+            Privacy Policy
+          </Text>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
+            SmartPaisa keeps your financial data private and under your control.
+          </Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 100 }}>
@@ -52,4 +69,3 @@ export default function PrivacyPolicyScreen() {
     </SafeAreaView>
   );
 }
-

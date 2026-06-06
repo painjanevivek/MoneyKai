@@ -60,7 +60,7 @@ class AppErrorBoundary extends React.Component<
             onPress={this.handleRetry}
             style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
           >
-            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>Try Again</Text>
+            <Text style={{ color: colors.textInverse, fontWeight: '600', fontSize: 15 }}>Try Again</Text>
           </TouchableOpacity>
         </View>
       );

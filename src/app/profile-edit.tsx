@@ -91,7 +91,7 @@ export default function ProfileEditScreen() {
               alignItems: 'center', justifyContent: 'center',
               ...Shadows.md, shadowColor: colors.primary,
             }}>
-              <Text style={{ fontSize: 32, fontFamily: Typography.fontFamily.bold, color: '#fff' }}>
+              <Text style={{ fontSize: 32, fontFamily: Typography.fontFamily.bold, color: colors.textInverse }}>
                 {initials}
               </Text>
             </View>

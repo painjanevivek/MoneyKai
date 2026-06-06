@@ -49,12 +49,27 @@ export const NoteModal: React.FC<NoteModalProps> = ({ visible, onClose }) => {
       setTitleError('Title is required');
       return;
     }
+    const checklistItems = noteType === 'checklist'
+      ? content
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((text, index) => ({
+          id: `cl_${Date.now()}_${index}`,
+          text,
+          completed: false,
+        }))
+      : undefined;
+
     addNote(
       {
         title: title.trim(),
-        content: content.trim(),
+        content: noteType === 'checklist'
+          ? checklistItems?.map((item) => item.text).join(', ') ?? ''
+          : content.trim(),
         type: noteType,
         is_pinned: false,
+        checklist_items: checklistItems,
       },
       userId
     );
@@ -127,12 +142,12 @@ export const NoteModal: React.FC<NoteModalProps> = ({ visible, onClose }) => {
                   <MaterialCommunityIcons
                     name={opt.icon as any}
                     size={16}
-                    color={active ? '#fff' : colors.textSecondary}
+                    color={active ? colors.textInverse : colors.textSecondary}
                   />
                   <Text style={{
                     fontSize: Typography.fontSize.sm,
                     fontFamily: Typography.fontFamily.medium,
-                    color: active ? '#fff' : colors.textSecondary,
+                    color: active ? colors.textInverse : colors.textSecondary,
                   }}>
                     {opt.label}
                   </Text>
@@ -218,7 +233,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({ visible, onClose }) => {
                 backgroundColor: colors.primary, alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: '#fff' }}>
+              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
                 Save Note
               </Text>
             </TouchableOpacity>

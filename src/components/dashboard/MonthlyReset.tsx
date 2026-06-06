@@ -8,7 +8,7 @@ import { getNextResetDate, formatDate } from '../../utils/dateUtils';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 
 export const MonthlyReset: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { settings, updateSettings, addAdjustment } = useBudgetStore();
   const nextReset = getNextResetDate(settings.reset_day);
 
@@ -81,23 +81,25 @@ export const MonthlyReset: React.FC = () => {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: colors.primaryBg,
+          backgroundColor: isDark ? colors.surface : colors.primaryBg,
           borderRadius: BorderRadius.sm,
           padding: Spacing.md,
           marginBottom: Spacing.md,
+          borderWidth: 1,
+          borderColor: colors.border,
         }}
       >
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <View
             style={{
-                backgroundColor: colors.primary,
+                backgroundColor: isDark ? colors.textPrimary : colors.primary,
                 paddingHorizontal: 8,
                 paddingVertical: 2,
                 borderRadius: 4,
               }}
             >
-              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: isDark ? colors.textInverse : colors.textInverse }}>
                 Auto Reset {settings.auto_reset ? 'On' : 'Off'}
               </Text>
             </View>
@@ -173,10 +175,10 @@ export const MonthlyReset: React.FC = () => {
                   height: 40,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: adjustType === type ? colors.primary : colors.surface,
+                  backgroundColor: adjustType === type ? (isDark ? colors.textPrimary : colors.primary) : colors.surface,
                 }}
             >
-              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: adjustType === type ? colors.textInverse : colors.textSecondary }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: adjustType === type ? (isDark ? colors.textInverse : colors.textInverse) : colors.textSecondary }}>
                 {type === 'add' ? '+ Add' : '- Sub'}
               </Text>
             </TouchableOpacity>

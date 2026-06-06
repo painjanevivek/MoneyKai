@@ -76,6 +76,12 @@ export default function SettingsScreen() {
   const [savingAllowance, setSavingAllowance] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
 
+  const switchTrack = {
+    false: colors.border,
+    true: colors.primary,
+  } as const;
+  const switchThumb = colors.textInverse;
+
   const allowanceSubtitle = useMemo(
     () => `${currencySymbol} ${settings.monthly_allowance.toLocaleString('en-IN')}`,
     [currencySymbol, settings.monthly_allowance]
@@ -256,7 +262,15 @@ export default function SettingsScreen() {
             iconBg="#F2F2F2"
             title="Auto Reset"
             subtitle={`Resets on day ${settings.reset_day} of each month`}
-            right={<Switch value={settings.auto_reset} onValueChange={(v) => updateSettings({ auto_reset: v })} trackColor={{ true: colors.primary }} />}
+            right={
+              <Switch
+                value={settings.auto_reset}
+                onValueChange={(v) => updateSettings({ auto_reset: v })}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
           />
           <SettingItem
             icon="transfer"
@@ -264,7 +278,15 @@ export default function SettingsScreen() {
             iconBg="#ECECEC"
             title="Carry Forward"
             subtitle="Move unused balance to the next month"
-            right={<Switch value={settings.carry_forward} onValueChange={(v) => updateSettings({ carry_forward: v })} trackColor={{ true: colors.primary }} />}
+            right={
+              <Switch
+                value={settings.carry_forward}
+                onValueChange={(v) => updateSettings({ carry_forward: v })}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
           />
         </Card>
 
@@ -276,7 +298,15 @@ export default function SettingsScreen() {
             iconBg="#EFEFEF"
             title="Dark Mode"
             subtitle={isDark ? 'Currently enabled' : 'Currently disabled'}
-            right={<Switch value={isDark} onValueChange={toggleTheme} trackColor={{ true: colors.primary }} />}
+            right={
+              <Switch
+                value={isDark}
+                onValueChange={toggleTheme}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
           />
           <SettingItem
             icon="currency-inr"
@@ -295,7 +325,15 @@ export default function SettingsScreen() {
             iconBg="#F2F2F2"
             title="Push Notifications"
             subtitle={notificationsEnabled ? 'Enabled' : 'Disabled'}
-            right={<Switch value={notificationsEnabled} onValueChange={handleNotificationsToggle} trackColor={{ true: colors.primary }} />}
+            right={
+              <Switch
+                value={notificationsEnabled}
+                onValueChange={handleNotificationsToggle}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
           />
           <SettingItem
             icon="vibrate"
@@ -303,7 +341,15 @@ export default function SettingsScreen() {
             iconBg="#F2F2F2"
             title="Haptic Feedback"
             subtitle={hapticEnabled ? 'Enabled' : 'Disabled'}
-            right={<Switch value={hapticEnabled} onValueChange={toggleHaptic} trackColor={{ true: colors.primary }} />}
+            right={
+              <Switch
+                value={hapticEnabled}
+                onValueChange={toggleHaptic}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
           />
         </Card>
 

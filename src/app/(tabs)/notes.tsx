@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
@@ -7,11 +7,12 @@ import { useNotesStore } from '@/stores/useNotesStore';
 import { NoteModal } from '@/components/dashboard/NoteModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatRelativeDate } from '@/utils/dateUtils';
+import { confirmDestructive } from '@/utils/confirmDestructive';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import type { Note } from '@/types/note';
 
 export default function NotesScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const notes = useNotesStore((s) => s.notes);
   const { deleteNote, togglePin } = useNotesStore();
   const [showModal, setShowModal] = useState(false);
@@ -23,10 +24,11 @@ export default function NotesScreen() {
   });
 
   const handleDelete = (note: Note) => {
-    Alert.alert('Delete Note', `Delete "${note.title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteNote(note.id) },
-    ]);
+    confirmDestructive({
+      title: 'Delete Note',
+      message: `Delete "${note.title}"? This cannot be undone.`,
+      onConfirm: () => deleteNote(note.id),
+    });
   };
 
   const typeIcon = (type: Note['type']) => {
@@ -52,14 +54,16 @@ export default function NotesScreen() {
             flexDirection: 'row',
             alignItems: 'center',
             gap: 6,
-            backgroundColor: colors.primary,
+            backgroundColor: isDark ? colors.surface : colors.primary,
             paddingHorizontal: Spacing.md,
             paddingVertical: Spacing.sm,
             borderRadius: BorderRadius.md,
+            borderWidth: 1,
+            borderColor: colors.border,
           }}
         >
-          <MaterialCommunityIcons name="plus" size={18} color="#fff" />
-          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: '#fff' }}>New Note</Text>
+          <MaterialCommunityIcons name="plus" size={18} color={isDark ? colors.textPrimary : colors.textInverse} />
+          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: isDark ? colors.textPrimary : colors.textInverse }}>New Note</Text>
         </TouchableOpacity>
       </View>
 
@@ -77,8 +81,8 @@ export default function NotesScreen() {
                 marginBottom: Spacing.md,
                 ...Shadows.sm,
                 shadowColor: colors.shadowColor,
-                borderWidth: note.is_pinned ? 1.5 : 0,
-                borderColor: note.is_pinned ? `${colors.primary}60` : 'transparent',
+                borderWidth: 1,
+                borderColor: note.is_pinned ? colors.textSecondary : colors.borderLight,
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm }}>
@@ -100,7 +104,6 @@ export default function NotesScreen() {
                     <Text style={{ flex: 1, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                       {note.title}
                     </Text>
-                    {note.is_pinned && <MaterialCommunityIcons name="pin" size={14} color={colors.primary} />}
                   </View>
                   {!!note.content && (
                     <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 18 }} numberOfLines={3}>
@@ -133,16 +136,46 @@ export default function NotesScreen() {
                   </Text>
                 </View>
 
-                <View style={{ gap: Spacing.sm }}>
-                  <TouchableOpacity onPress={() => togglePin(note.id)}>
+                <View style={{ gap: Spacing.sm, alignItems: 'center', marginLeft: Spacing.xs }}>
+                  <TouchableOpacity
+                    onPress={() => togglePin(note.id)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={note.is_pinned ? `Unpin ${note.title}` : `Pin ${note.title}`}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
                     <MaterialCommunityIcons
                       name={note.is_pinned ? 'pin' : 'pin-outline'}
                       size={18}
                       color={note.is_pinned ? colors.primary : colors.textTertiary}
                     />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(note)}>
-                    <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.emergency} />
+                  <TouchableOpacity
+                    onPress={() => handleDelete(note)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${note.title}`}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.textPrimary} />
                   </TouchableOpacity>
                 </View>
               </View>
