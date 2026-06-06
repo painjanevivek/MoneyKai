@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Group, GroupExpense } from '../types/group';
 import { recordAppNotification } from '@/services/notificationService';
-import { isSupabaseConfigured } from '@/services/supabase';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 interface GroupState {
   groups: Group[];
@@ -73,8 +73,8 @@ const SAMPLE_EXPENSES: GroupExpense[] = [
 export const useGroupStore = create<GroupState>()(
   persist(
     (set, get) => ({
-      groups: isSupabaseConfigured() ? [] : SAMPLE_GROUPS,
-      expenses: isSupabaseConfigured() ? [] : SAMPLE_EXPENSES,
+      groups: isFirebaseConfigured() ? [] : SAMPLE_GROUPS,
+      expenses: isFirebaseConfigured() ? [] : SAMPLE_EXPENSES,
 
       addGroup: (group) => {
         const newGroup: Group = {
@@ -121,7 +121,7 @@ export const useGroupStore = create<GroupState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (isSupabaseConfigured()) {
+        if (isFirebaseConfigured()) {
           state.groups = state.groups.filter((group) => group.created_by !== 'demo');
           state.expenses = state.expenses.filter((expense) => expense.group_id !== 'grp1' && expense.group_id !== 'grp2');
         }

@@ -5,7 +5,7 @@ import type { Challenge } from '../types/challenge';
 import { MOTIVATIONAL_MESSAGES } from '../types/challenge';
 import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
-import { isSupabaseConfigured } from '@/services/supabase';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 interface ChallengeState {
   challenges: Challenge[];
@@ -53,8 +53,8 @@ export const useChallengeStore = create<ChallengeState>()(
       let lastTxnsForCompleted: Challenge[] = [];
 
       return {
-      challenges: isSupabaseConfigured() ? [] : SAMPLE_CHALLENGES,
-      totalXP: isSupabaseConfigured() ? 0 : 250,
+      challenges: isFirebaseConfigured() ? [] : SAMPLE_CHALLENGES,
+      totalXP: isFirebaseConfigured() ? 0 : 250,
 
         getActiveChallenges: () => {
           const challenges = get().challenges;
@@ -133,7 +133,7 @@ export const useChallengeStore = create<ChallengeState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (isSupabaseConfigured()) {
+        if (isFirebaseConfigured()) {
           state.challenges = state.challenges.filter((challenge) => challenge.user_id !== 'demo');
           state.totalXP = state.challenges.reduce((sum, challenge) => sum + challenge.xp_earned, 0);
         }

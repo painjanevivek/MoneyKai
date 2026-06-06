@@ -3,10 +3,11 @@
 This file tracks the remaining setup and verification work after the cleanup pass.
 
 ## Phase 1: Critical Setup
-- [ ] Configure `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `.env`.
-- [ ] Apply `supabase/migrations/001_initial_schema.sql` and `supabase/migrations/002_user_backups.sql` in Supabase.
-- [ ] Verify Google OAuth settings in Supabase so the browser-based sign-in redirect matches the app scheme.
-- [ ] Run the app once with a real Supabase project and confirm auth hydration, sign out, and profile edits work end to end.
+- [ ] Configure the `EXPO_PUBLIC_FIREBASE_*` keys in `.env`.
+- [ ] Enable Email/Password auth in Firebase Authentication.
+- [ ] Enable Google auth in Firebase if browser-based Google sign-in should be available.
+- [ ] Create a Firestore database and verify backup/restore works end to end.
+- [ ] Run the app once with a real Firebase project and confirm auth hydration, sign out, profile edits, and backups work end to end.
 
 ## Phase 2: Data Verification
 - [ ] Back up a real signed-in account and restore it on another device or a fresh app install.

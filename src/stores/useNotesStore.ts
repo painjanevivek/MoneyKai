@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Note, ChecklistItem } from '../types/note';
 import { recordAppNotification } from '@/services/notificationService';
-import { isSupabaseConfigured } from '@/services/supabase';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 interface NotesState {
   notes: Note[];
@@ -165,7 +165,7 @@ export const useNotesStore = create<NotesState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (isSupabaseConfigured()) {
+        if (isFirebaseConfigured()) {
           state.notes = state.notes.filter((note) => note.user_id !== 'demo');
           return;
         }

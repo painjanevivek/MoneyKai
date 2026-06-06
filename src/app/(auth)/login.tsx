@@ -228,7 +228,7 @@ export default function LoginScreen() {
                 fontFamily: Typography.fontFamily.regular,
                 color: colors.primary,
                 lineHeight: 16,
-              }}>Connect Supabase to enable production authentication.</Text>
+              }}>Connect Firebase to enable production authentication.</Text>
             </View>
           </View>
 

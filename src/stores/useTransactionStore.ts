@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Transaction, TransactionFilter, CategoryTotal } from '../types/transaction';
 import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
-import { isSupabaseConfigured } from '@/services/supabase';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 // â”€â”€â”€ Sample Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const today = new Date().toISOString().split('T')[0];
@@ -245,7 +245,7 @@ export const useTransactionStore = create<TransactionState>()(
       onRehydrateStorage: () => (state) => {
         // Inject sample data only if this is the very first launch.
         if (!state) return;
-        if (isSupabaseConfigured()) {
+        if (isFirebaseConfigured()) {
           state.transactions = state.transactions.filter((transaction) => transaction.user_id !== 'demo');
           return;
         }

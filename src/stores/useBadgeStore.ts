@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Badge } from '../types/badge';
 import { BADGE_DEFINITIONS } from '../constants/badges';
-import { isSupabaseConfigured } from '@/services/supabase';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 interface BadgeState {
   badges: Badge[];
@@ -32,7 +32,7 @@ const createInitialBadges = (userId: string): Badge[] => {
 export const useBadgeStore = create<BadgeState>()(
   persist(
     (set, get) => ({
-      badges: isSupabaseConfigured() ? [] : createInitialBadges('demo'),
+      badges: isFirebaseConfigured() ? [] : createInitialBadges('demo'),
       recentUnlock: null,
 
       initializeBadges: (userId) => {
@@ -65,7 +65,7 @@ export const useBadgeStore = create<BadgeState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (isSupabaseConfigured()) {
+        if (isFirebaseConfigured()) {
           state.badges = state.badges.filter((badge) => badge.user_id !== 'demo');
         }
       },

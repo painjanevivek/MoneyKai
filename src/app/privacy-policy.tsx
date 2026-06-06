@@ -41,7 +41,7 @@ export default function PrivacyPolicyScreen() {
             Data we store
           </Text>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            Your profile, transactions, notes, groups, challenges, badges, budget settings, and notification preferences may be stored locally on your device and, when you choose to back up, in your connected Supabase project.
+            Your profile, transactions, notes, groups, challenges, badges, budget settings, and notification preferences may be stored locally on your device and, when you choose to back up, in your connected Firebase project.
           </Text>
 
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
@@ -55,7 +55,7 @@ export default function PrivacyPolicyScreen() {
             Sharing
           </Text>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            We do not sell your data. Backup data stays in your own Supabase project and is only accessible to your authenticated account.
+            We do not sell your data. Backup data stays in your own Firebase project and is only accessible to your authenticated account.
           </Text>
 
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>

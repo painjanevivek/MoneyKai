@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
-import { isSupabaseConfigured } from '@/services/supabase';
+import { isFirebaseConfigured } from '@/services/firebase';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
 
@@ -435,7 +435,7 @@ export default function SettingsScreen() {
       <ModalSheet
         visible={showBackupSheet}
         title="Backup & Restore"
-        subtitle={isSupabaseConfigured() ? 'Create a cloud backup or restore the latest snapshot.' : 'Supabase is required for cloud backup.'}
+        subtitle={isFirebaseConfigured() ? 'Create a cloud backup or restore the latest snapshot.' : 'Firebase is required for cloud backup.'}
         onClose={() => setShowBackupSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
@@ -443,20 +443,20 @@ export default function SettingsScreen() {
               title="Back Up Now"
               onPress={handleCloudBackup}
               loading={backupBusy}
-              disabled={!isSupabaseConfigured()}
+              disabled={!isFirebaseConfigured()}
             />
             <Button
               title="Restore Latest Backup"
               onPress={handleCloudRestore}
               variant="outline"
               loading={backupBusy}
-              disabled={!isSupabaseConfigured()}
+              disabled={!isFirebaseConfigured()}
             />
           </View>
         }
       >
         <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-          Cloud backups store your current transactions, notes, groups, challenges, badges, budget, and settings in Supabase so you can restore them on another device.
+          Cloud backups store your current transactions, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device.
         </Text>
       </ModalSheet>
     </SafeAreaView>

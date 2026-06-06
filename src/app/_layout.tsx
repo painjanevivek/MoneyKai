@@ -8,7 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors } from '@/constants/theme';
-import { isSupabaseConfigured } from '@/services/supabase';
+import { isFirebaseConfigured } from '@/services/firebase';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
 
 // Suppress known web warnings from react-native-gifted-charts passing RN props to DOM elements
@@ -85,9 +85,9 @@ export default function RootLayout() {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
 
-      if (__DEV__ && !isSupabaseConfigured()) {
+      if (__DEV__ && !isFirebaseConfigured()) {
         console.warn(
-          '[MoneyKai] Supabase is not configured. Configure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable cloud auth.'
+          '[MoneyKai] Firebase is not configured. Configure the EXPO_PUBLIC_FIREBASE_* keys to enable cloud auth and backup.'
         );
       }
 

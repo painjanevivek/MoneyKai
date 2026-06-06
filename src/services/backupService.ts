@@ -1,4 +1,12 @@
-import { isSupabaseConfigured, supabase } from './supabase';
+import {
+  addDoc,
+  collection,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -15,6 +23,7 @@ import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { ThemeMode } from '@/constants/theme';
+import { firebaseDb, isFirebaseConfigured } from './firebase';
 
 interface BackupAppSettings {
   theme: ThemeMode;
@@ -111,18 +120,17 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
 };
 
 export const saveCloudBackup = async () => {
-  if (!isSupabaseConfigured()) {
-    throw new Error('Configure Supabase to enable cloud backup.');
+  if (!isFirebaseConfigured()) {
+    throw new Error('Configure Firebase to enable cloud backup.');
   }
 
   const snapshot = buildBackupSnapshot();
-  const { error } = await supabase.from('user_backups').insert({
-    user_id: snapshot.profile.id,
+  await addDoc(collection(firebaseDb, 'users', snapshot.profile.id, 'backups'), {
     backup_name: `Backup ${new Date().toLocaleString()}`,
     snapshot,
+    createdAt: serverTimestamp(),
+    createdAtMs: Date.now(),
   });
-
-  if (error) throw new Error(error.message);
 
   await recordAppNotification({
     title: 'Backup saved',
@@ -136,24 +144,24 @@ export const saveCloudBackup = async () => {
 
 export const getLatestCloudBackup = async () => {
   const user = normalizeUser();
-  if (!isSupabaseConfigured()) {
-    throw new Error('Configure Supabase to restore cloud backups.');
+  if (!isFirebaseConfigured()) {
+    throw new Error('Configure Firebase to restore cloud backups.');
   }
 
-  const { data, error } = await supabase
-    .from('user_backups')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const snapshotQuery = query(
+    collection(firebaseDb, 'users', user.id, 'backups'),
+    orderBy('createdAtMs', 'desc'),
+    limit(1)
+  );
 
-  if (error) throw new Error(error.message);
-  if (!data?.snapshot) {
+  const results = await getDocs(snapshotQuery);
+  const latestBackup = results.docs[0]?.data();
+
+  if (!latestBackup?.snapshot) {
     throw new Error('No cloud backup exists yet.');
   }
 
-  return data.snapshot as MoneyKaiBackupSnapshot;
+  return latestBackup.snapshot as MoneyKaiBackupSnapshot;
 };
 
 export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {

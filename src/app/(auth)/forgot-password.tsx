@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { firebaseAuth, isFirebaseConfigured } from '@/services/firebase';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
@@ -21,20 +22,17 @@ export default function ForgotPasswordScreen() {
       return;
     }
 
-    if (!isSupabaseConfigured()) {
+    if (!isFirebaseConfigured()) {
       Alert.alert(
         'Demo Mode',
-        'Password reset emails require Supabase to be configured.\n\nFill in EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env file.'
+        'Password reset emails require Firebase to be configured.\n\nFill in the EXPO_PUBLIC_FIREBASE_* values in your .env file.'
       );
       return;
     }
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'moneykai://reset-password',
-      });
-      if (error) throw new Error(error.message);
+      await sendPasswordResetEmail(firebaseAuth, email);
       setSent(true);
     } catch (err) {
       Alert.alert(

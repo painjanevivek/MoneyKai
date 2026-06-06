@@ -2,12 +2,12 @@
 
 > **"Spend Smart. Save More."**
 
-AI-powered finance management app for students, bachelors, and people living away from home. Built with React Native + Expo SDK 56 and Supabase.
+AI-powered finance management app for students, bachelors, and people living away from home. Built with React Native + Expo SDK 56 and Firebase.
 
 ![MoneyKai](https://img.shields.io/badge/MoneyKai-v1.0.0-0D8C4C?style=for-the-badge)
 ![Expo SDK](https://img.shields.io/badge/Expo-SDK%2056-000020?style=for-the-badge)
 ![React Native](https://img.shields.io/badge/React%20Native-0.85-61DAFB?style=for-the-badge)
-![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge)
+![Firebase](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-FFCA28?style=for-the-badge)
 
 ---
 
@@ -41,7 +41,7 @@ AI-powered finance management app for students, bachelors, and people living awa
 | **Framework** | React Native + Expo SDK 56 |
 | **Routing** | Expo Router (file-based) |
 | **State** | Zustand + AsyncStorage persistence |
-| **Backend** | Supabase (Auth, PostgreSQL, Storage) |
+| **Backend** | Firebase (Auth, Firestore) |
 | **Charts** | react-native-gifted-charts |
 | **Animations** | react-native-reanimated |
 | **Typography** | Poppins (Google Fonts) |
@@ -74,13 +74,11 @@ MoneyKai/
 â”‚   â”‚   â”œâ”€â”€ charts/             # Chart components
 â”‚   â”‚   â””â”€â”€ dashboard/          # Dashboard widgets
 â”‚   â”œâ”€â”€ stores/                 # Zustand state management
-â”‚   â”œâ”€â”€ services/               # Supabase client
+â”‚   â”œâ”€â”€ services/               # Firebase and app services
 â”‚   â”œâ”€â”€ utils/                  # Business logic engines
 â”‚   â”œâ”€â”€ hooks/                  # Custom React hooks
 â”‚   â”œâ”€â”€ constants/              # Theme, categories, badges
 â”‚   â””â”€â”€ types/                  # TypeScript interfaces
-â”œâ”€â”€ supabase/
-â”‚   â””â”€â”€ migrations/             # SQL database schema
 â”œâ”€â”€ assets/                     # Images, fonts
 â”œâ”€â”€ app.json                    # Expo config
 â”œâ”€â”€ eas.json                    # EAS Build profiles
@@ -112,21 +110,25 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` with your Supabase credentials:
+Edit `.env` with your Firebase credentials:
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+EXPO_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+EXPO_PUBLIC_FIREBASE_APP_ID=your-firebase-app-id
 ```
 
-> **Note:** The app works in **demo mode** without Supabase credentials â€” all data is stored locally with sample data preloaded.
+> **Note:** The app works in **demo mode** without Firebase credentials and keeps sample data locally until cloud features are configured.
 
-### 3. Setup Supabase (Optional)
+### 3. Setup Firebase (Optional)
 
-1. Create a [Supabase project](https://supabase.com)
-2. Go to SQL Editor â†’ paste contents of `supabase/migrations/001_initial_schema.sql`
-3. Run the migration
-4. Copy your project URL and anon key to `.env`
-5. Enable Google OAuth in Authentication â†’ Providers
+1. Create a [Firebase project](https://console.firebase.google.com)
+2. Add a web app inside the project settings
+3. Copy the Firebase config values into `.env`
+4. Enable Email/Password in Authentication â†’ Sign-in method
+5. Enable Google in Authentication if you want web Google sign-in
 
 ### 4. Run the App
 
@@ -198,7 +200,7 @@ eas submit -p android --profile production
 
 ## ðŸ—„ Database Schema
 
-The app uses Supabase (PostgreSQL) with Row Level Security:
+The app uses Firebase Auth for identity and Firestore for optional cloud backup:
 
 - **profiles** â€” User profiles with budget settings
 - **transactions** â€” Income/expense records
@@ -209,7 +211,7 @@ The app uses Supabase (PostgreSQL) with Row Level Security:
 - **badges** â€” Achievement system
 - **notes** â€” Digital ledger entries
 
-See `supabase/migrations/001_initial_schema.sql` for the complete schema.
+Backups are stored per-user inside a Firestore subcollection so they can be restored on another device after sign-in.
 
 ---
 

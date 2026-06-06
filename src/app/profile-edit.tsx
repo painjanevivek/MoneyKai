@@ -13,9 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { updateProfile as updateFirebaseProfile } from 'firebase/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { supabase, isSupabaseConfigured } from '@/services/supabase';
+import { firebaseAuth, isFirebaseConfigured } from '@/services/firebase';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
@@ -26,7 +27,7 @@ export default function ProfileEditScreen() {
   const { user, updateProfile } = useAuthStore();
 
   const [fullName, setFullName] = useState(user?.full_name ?? '');
-  const [email] = useState(user?.email ?? ''); // email is read-only (managed by Supabase auth)
+  const [email] = useState(user?.email ?? '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? '');
   const [errors, setErrors] = useState<{ fullName?: string }>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -83,18 +84,13 @@ export default function ProfileEditScreen() {
 
     setIsSaving(true);
     try {
-      // Update Supabase user metadata when configured.
-      if (isSupabaseConfigured()) {
-        const { error } = await supabase.auth.updateUser({
-          data: {
-            full_name: fullName.trim(),
-            avatar_url: avatarUrl || null,
-          },
+      if (isFirebaseConfigured() && firebaseAuth.currentUser) {
+        await updateFirebaseProfile(firebaseAuth.currentUser, {
+          displayName: fullName.trim(),
+          photoURL: avatarUrl || null,
         });
-        if (error) throw new Error(error.message);
       }
 
-      // Always update local store.
       updateProfile({ full_name: fullName.trim(), avatar_url: avatarUrl || undefined });
       Alert.alert('Saved', 'Your profile has been updated.', [
         { text: 'OK', onPress: () => router.back() },
@@ -225,7 +221,7 @@ export default function ProfileEditScreen() {
               editable={false}
             />
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, marginTop: -Spacing.md, marginBottom: Spacing.lg }}>
-              Email address cannot be changed here. Contact support if needed.
+              Email address is managed by your account provider and cannot be changed here.
             </Text>
 
             {/* Auth provider badge */}

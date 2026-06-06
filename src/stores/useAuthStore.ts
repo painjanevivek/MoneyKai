@@ -1,11 +1,18 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
-import { supabase, isSupabaseConfigured } from '../services/supabase';
+import { Platform } from 'react-native';
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  updateProfile as updateFirebaseProfile,
+} from 'firebase/auth';
+import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   full_name: string;
@@ -18,8 +25,6 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isOnboarded: boolean;
-
-  // Actions
   setUser: (user: User | null) => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
@@ -28,13 +33,26 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   setOnboarded: (onboarded: boolean) => void;
   updateProfile: (updates: Partial<User>) => void;
-  /** Called on app start to hydrate session from Supabase (or AsyncStorage). */
   hydrateSession: () => Promise<void>;
 }
 
+const toAppUser = (user: import('firebase/auth').User): User => {
+  const providerId = user.providerData.find((provider) => provider.providerId === 'google.com')
+    ? 'google'
+    : 'email';
+
+  return {
+    id: user.uid,
+    email: user.email ?? '',
+    full_name: user.displayName ?? user.email ?? 'User',
+    avatar_url: user.photoURL ?? undefined,
+    auth_provider: providerId,
+  };
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
@@ -43,25 +61,13 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user, isAuthenticated: !!user }),
 
       hydrateSession: async () => {
-        if (!isSupabaseConfigured()) return;
-        const { data } = await supabase.auth.getSession();
-        const session = data?.session;
-        if (session?.user) {
-          set({
-            user: {
-              id: session.user.id,
-              email: session.user.email ?? '',
-              full_name:
-                (session.user.user_metadata?.full_name as string | undefined) ??
-                session.user.email ??
-                '',
-              avatar_url: session.user.user_metadata?.avatar_url as
-                | string
-                | undefined,
-              auth_provider: (session.user.app_metadata?.provider as 'email' | 'google' | undefined) ?? 'email',
-            },
-            isAuthenticated: true,
-          });
+        if (!isFirebaseConfigured()) {
+          return;
+        }
+
+        const sessionUser = await waitForAuthState();
+        if (sessionUser) {
+          set({ user: toAppUser(sessionUser), isAuthenticated: true });
         } else {
           set({ user: null, isAuthenticated: false });
         }
@@ -70,8 +76,7 @@ export const useAuthStore = create<AuthState>()(
       signIn: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          if (!isSupabaseConfigured()) {
-            // â”€â”€ Demo mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          if (!isFirebaseConfigured()) {
             await new Promise((resolve) => setTimeout(resolve, 600));
             set({
               user: {
@@ -86,25 +91,9 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (error) throw new Error(error.message);
-
-          const sbUser = data.user;
+          const credentials = await signInWithEmailAndPassword(firebaseAuth, email, password);
           set({
-            user: {
-              id: sbUser.id,
-              email: sbUser.email ?? email,
-              full_name:
-                (sbUser.user_metadata?.full_name as string | undefined) ??
-                email,
-              avatar_url: sbUser.user_metadata?.avatar_url as
-                | string
-                | undefined,
-              auth_provider: 'email',
-            },
+            user: toAppUser(credentials.user),
             isAuthenticated: true,
             isLoading: false,
           });
@@ -117,8 +106,7 @@ export const useAuthStore = create<AuthState>()(
       signUp: async (email: string, password: string, fullName: string) => {
         set({ isLoading: true });
         try {
-          if (!isSupabaseConfigured()) {
-            // â”€â”€ Demo mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          if (!isFirebaseConfigured()) {
             await new Promise((resolve) => setTimeout(resolve, 800));
             set({
               user: {
@@ -134,31 +122,15 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { full_name: fullName } },
+          const credentials = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+          await updateFirebaseProfile(credentials.user, {
+            displayName: fullName.trim(),
           });
-          if (error) throw new Error(error.message);
-
-          const sbUser = data.user;
-          const session = data.session;
-          if (!sbUser) {
-            set({ isLoading: false });
-            throw new Error('Could not create your account.');
-          }
-
-          if (!session) {
-            set({ isLoading: false });
-            throw new Error('Please check your email to confirm your account before signing in.');
-          }
 
           set({
             user: {
-              id: sbUser.id,
-              email: sbUser.email ?? email,
-              full_name: fullName,
-              auth_provider: 'email',
+              ...toAppUser(credentials.user),
+              full_name: fullName.trim(),
             },
             isAuthenticated: true,
             isLoading: false,
@@ -173,11 +145,7 @@ export const useAuthStore = create<AuthState>()(
       signInWithGoogle: async () => {
         set({ isLoading: true });
         try {
-          if (!isSupabaseConfigured()) {
-            // â”€â”€ Demo mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            // In production wire @react-native-google-signin/google-signin here,
-            // obtain the idToken, then call:
-            //   supabase.auth.signInWithIdToken({ provider: 'google', token: idToken })
+          if (!isFirebaseConfigured()) {
             await new Promise((resolve) => setTimeout(resolve, 800));
             set({
               user: {
@@ -192,82 +160,51 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          const redirectTo = Linking.createURL('auth/callback');
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo,
-              skipBrowserRedirect: true,
-            },
-          });
-          if (error) throw new Error(error.message);
-          if (!data?.url) throw new Error('Could not start Google sign-in.');
-
-          const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-          if (result.type !== 'success' || !result.url) {
-            throw new Error('Google sign-in was cancelled.');
+          if (Platform.OS !== 'web') {
+            throw new Error('Google sign-in is only enabled on web right now. Use email login on mobile until native Google auth is configured.');
           }
 
-          const url = new URL(result.url);
-          const code = url.searchParams.get('code');
-          if (!code) {
-            throw new Error('Google sign-in did not return an authorization code.');
-          }
-
-          const exchange = await supabase.auth.exchangeCodeForSession(code);
-          if (exchange.error) throw new Error(exchange.error.message);
-
-          const sbUser = exchange.data.user;
-          if (!sbUser) throw new Error('Google sign-in did not return a user session.');
+          const provider = new GoogleAuthProvider();
+          const credentials = await signInWithPopup(firebaseAuth, provider);
 
           set({
-            user: {
-              id: sbUser.id,
-              email: sbUser.email ?? 'google-user@example.com',
-              full_name:
-                (sbUser.user_metadata?.full_name as string | undefined) ??
-                sbUser.email ??
-                'Google User',
-              avatar_url: sbUser.user_metadata?.avatar_url as string | undefined,
-              auth_provider: 'google',
-            },
+            user: toAppUser(credentials.user),
             isAuthenticated: true,
             isLoading: false,
           });
         } catch (err) {
           set({ isLoading: false });
-          throw err instanceof Error ? err : new Error('Google Sign-In failed');
+          throw err instanceof Error ? err : new Error('Google sign-in failed');
         }
       },
 
       signOut: async () => {
-        // Clear the local session immediately so navigation can happen without waiting
-        // on network cleanup or store resets.
         set({ user: null, isAuthenticated: false, isLoading: false });
 
         const cleanup = async () => {
-        if (isSupabaseConfigured()) {
-          await supabase.auth.signOut().catch(() => {
-            // Ignore network errors during sign-out; local state is cleared regardless.
-          });
-        }
-        // Clear demo seed data from both stores so it doesn't bleed into the next session.
-        const { useTransactionStore } = await import('./useTransactionStore');
-        const { useNotesStore } = await import('./useNotesStore');
-        const { useGroupStore } = await import('./useGroupStore');
-        const { useChallengeStore } = await import('./useChallengeStore');
-        const { useBadgeStore } = await import('./useBadgeStore');
-        const { useNotificationStore } = await import('./useNotificationStore');
-        useTransactionStore.getState().clearSeedData();
-        useNotesStore.getState().clearSeedData();
-        useGroupStore.setState({ groups: [], expenses: [] });
-        useChallengeStore.setState({ challenges: [], totalXP: 0 });
-        useBadgeStore.setState({ badges: [], recentUnlock: null });
-        useNotificationStore.getState().clearNotifications();
+          if (isFirebaseConfigured()) {
+            await firebaseSignOut(firebaseAuth).catch(() => {
+              // Local sign-out already happened; ignore network cleanup failures.
+            });
+          }
+
+          const { useTransactionStore } = await import('./useTransactionStore');
+          const { useNotesStore } = await import('./useNotesStore');
+          const { useGroupStore } = await import('./useGroupStore');
+          const { useChallengeStore } = await import('./useChallengeStore');
+          const { useBadgeStore } = await import('./useBadgeStore');
+          const { useNotificationStore } = await import('./useNotificationStore');
+
+          useTransactionStore.getState().clearSeedData();
+          useNotesStore.getState().clearSeedData();
+          useGroupStore.setState({ groups: [], expenses: [] });
+          useChallengeStore.setState({ challenges: [], totalXP: 0 });
+          useBadgeStore.setState({ badges: [], recentUnlock: null });
+          useNotificationStore.getState().clearNotifications();
         };
 
         void cleanup().catch(() => {
-          // Best-effort cleanup only; the user has already been signed out locally.
+          // Best effort cleanup only.
         });
       },
 
@@ -290,4 +227,3 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
-
