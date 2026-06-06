@@ -4,11 +4,11 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useNotificationStore, type NotificationType } from '@/stores/useNotificationStore';
 
 const ICON_STYLES: Record<NotificationType, { icon: string; iconColor: string; iconBg: string }> = {
-  budget: { icon: 'wallet-outline', iconColor: '#0D8C4C', iconBg: '#E8F5EE' },
-  transaction: { icon: 'cash-plus', iconColor: '#3B82F6', iconBg: '#EBF4FF' },
-  challenge: { icon: 'trophy-outline', iconColor: '#8B5CF6', iconBg: '#F3EFFE' },
-  backup: { icon: 'cloud-check-outline', iconColor: '#14B8A6', iconBg: '#E8FAF6' },
-  system: { icon: 'bell-outline', iconColor: '#6B7280', iconBg: '#F3F4F6' },
+  budget: { icon: 'wallet-outline', iconColor: '#111111', iconBg: '#F4F4F4' },
+  transaction: { icon: 'cash-plus', iconColor: '#2B2B2B', iconBg: '#F2F2F2' },
+  challenge: { icon: 'trophy-outline', iconColor: '#444444', iconBg: '#ECECEC' },
+  backup: { icon: 'cloud-check-outline', iconColor: '#5A5A5A', iconBg: '#E8E8E8' },
+  system: { icon: 'bell-outline', iconColor: '#6B7280', iconBg: '#F3F3F3' },
 };
 
 let listenersInstalled = false;
@@ -28,7 +28,7 @@ export const initializeNotificationChannel = async () => {
     name: 'SmartPaisa Alerts',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 200, 100, 200],
-    lightColor: '#0D8C4C',
+    lightColor: '#111111',
   });
 };
 

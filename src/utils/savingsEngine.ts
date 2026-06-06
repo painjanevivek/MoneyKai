@@ -96,11 +96,11 @@ export const calculateBudgetHealth = (
   const ratio = actualSpendRate / Math.max(expectedSpendRate, 0.01);
   const score = Math.max(0, Math.min(100, Math.round((1 - (ratio - 0.5)) * 100)));
 
-  if (score >= 80) return { score, label: 'Excellent', color: '#22C55E', message: "Outstanding! You're well under budget." };
-  if (score >= 60) return { score, label: 'Good', color: '#0D8C4C', message: "You're doing great! Keep tracking to improve savings." };
-  if (score >= 40) return { score, label: 'Fair', color: '#F59E0B', message: 'Watch your spending. Consider reducing non-essentials.' };
-  if (score >= 20) return { score, label: 'Poor', color: '#F4A261', message: 'Spending is high. Emergency mode recommended.' };
-  return { score, label: 'Critical', color: '#FF5A5A', message: 'Budget exceeded! Activate Emergency Mode immediately.' };
+  if (score >= 80) return { score, label: 'Excellent', color: '#111111', message: "Outstanding! You're well under budget." };
+  if (score >= 60) return { score, label: 'Good', color: '#2B2B2B', message: "You're doing great! Keep tracking to improve savings." };
+  if (score >= 40) return { score, label: 'Fair', color: '#5A5A5A', message: 'Watch your spending. Consider reducing non-essentials.' };
+  if (score >= 20) return { score, label: 'Poor', color: '#8A8A8A', message: 'Spending is high. Emergency mode recommended.' };
+  return { score, label: 'Critical', color: '#111111', message: 'Budget exceeded! Activate Emergency Mode immediately.' };
 };
 
 /**

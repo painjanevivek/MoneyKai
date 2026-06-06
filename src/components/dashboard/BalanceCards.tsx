@@ -39,7 +39,7 @@ const StatCard: React.FC<StatCardProps> = ({ icon, iconBg, label, value, subtitl
         justifyContent: 'center',
         marginBottom: Spacing.sm,
       }}>
-        <MaterialCommunityIcons name={icon as any} size={18} color={iconBg === '#E8F5EE' ? '#0D8C4C' : '#3B82F6'} />
+        <MaterialCommunityIcons name={icon as any} size={18} color={colors.primary} />
       </View>
       <Text style={{
         fontSize: Typography.fontSize.xs,
@@ -81,14 +81,14 @@ export const BalanceCards: React.FC = () => {
       <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm }}>
         <StatCard
           icon="wallet-outline"
-          iconBg="#E8F5EE"
+          iconBg={colors.primaryBg}
           label="Monthly Allowance"
           value={formatCurrency(allowance)}
           subtitle={`Resets in ${daysLeft} days`}
         />
         <StatCard
           icon="arrow-up-circle-outline"
-          iconBg="#FEF3E2"
+          iconBg={colors.borderLight}
           label="Total Spent"
           value={formatCurrency(totalSpent)}
           subtitle={`${spentPercent}% of allowance`}
@@ -98,7 +98,7 @@ export const BalanceCards: React.FC = () => {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
         <StatCard
           icon="cash-multiple"
-          iconBg="#EBF4FF"
+          iconBg={colors.primaryBg}
           label="Amount Left"
           value={formatCurrency(Math.max(0, remaining))}
           subtitle={`${remainingPercent}% of allowance`}
@@ -106,13 +106,13 @@ export const BalanceCards: React.FC = () => {
         />
         <StatCard
           icon="chart-timeline-variant"
-          iconBg="#F3EFFE"
+          iconBg={colors.borderLight}
           label="Daily Average"
           value={formatCurrency(Math.round(dailyAvg))}
         />
         <StatCard
           icon="piggy-bank-outline"
-          iconBg="#E8FAF6"
+          iconBg={colors.borderLight}
           label="Savings Estimate"
           value={formatCurrency(Math.max(0, Math.round(estimatedSavings)))}
           subtitle="if you continue like this"

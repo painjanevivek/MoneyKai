@@ -18,7 +18,6 @@ LogBox.ignoreLogs([
   'Unknown event handler property `onResponderGrant`',
   'Unknown event handler property `onResponderRelease`',
   'Unknown event handler property `onResponderTerminate`',
-  'Unknown event handler property `onPressOut`',
   'Maximum update depth exceeded',
 ]);
 

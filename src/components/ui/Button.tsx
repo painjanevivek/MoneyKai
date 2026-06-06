@@ -46,11 +46,11 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const variantStyles: Record<string, { bg: string; text: string; border?: string }> = {
-    primary: { bg: colors.primary, text: '#FFFFFF' },
+    primary: { bg: colors.primary, text: colors.textInverse },
     secondary: { bg: colors.primaryBg, text: colors.primary },
     outline: { bg: 'transparent', text: colors.primary, border: colors.primary },
     ghost: { bg: 'transparent', text: colors.textSecondary },
-    danger: { bg: colors.emergency, text: '#FFFFFF' },
+    danger: { bg: colors.emergency, text: colors.textInverse },
   };
 
   const s = sizeStyles[size];

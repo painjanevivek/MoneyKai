@@ -89,15 +89,15 @@ export const MonthlyReset: React.FC = () => {
       >
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View
-              style={{
+          <View
+            style={{
                 backgroundColor: colors.primary,
                 paddingHorizontal: 8,
                 paddingVertical: 2,
                 borderRadius: 4,
               }}
             >
-              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: '#FFFFFF' }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
                 Auto Reset {settings.auto_reset ? 'On' : 'Off'}
               </Text>
             </View>
@@ -168,15 +168,15 @@ export const MonthlyReset: React.FC = () => {
             <TouchableOpacity
               key={type}
               onPress={() => setAdjustType(type)}
-              style={{
-                paddingHorizontal: Spacing.sm,
-                height: 40,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: adjustType === type ? colors.primary : colors.surface,
-              }}
+                style={{
+                  paddingHorizontal: Spacing.sm,
+                  height: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: adjustType === type ? colors.primary : colors.surface,
+                }}
             >
-              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: adjustType === type ? '#fff' : colors.textSecondary }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: adjustType === type ? colors.textInverse : colors.textSecondary }}>
                 {type === 'add' ? '+ Add' : '- Sub'}
               </Text>
             </TouchableOpacity>
@@ -193,7 +193,7 @@ export const MonthlyReset: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: '#FFFFFF' }}>
+        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
           Update Allowance
         </Text>
       </TouchableOpacity>
@@ -202,4 +202,3 @@ export const MonthlyReset: React.FC = () => {
 };
 
 export default MonthlyReset;
-

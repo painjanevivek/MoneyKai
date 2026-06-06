@@ -223,7 +223,7 @@ export default function SettingsScreen() {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: '#FFF' }}>
+              <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textInverse }}>
                 {user?.full_name?.[0]?.toUpperCase() || 'A'}
               </Text>
             </View>
@@ -241,8 +241,8 @@ export default function SettingsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem
             icon="wallet-outline"
-            iconColor="#0D8C4C"
-            iconBg="#E8F5EE"
+            iconColor="#111111"
+            iconBg="#F4F4F4"
             title="Monthly Allowance"
             subtitle={allowanceSubtitle}
             onPress={() => {
@@ -252,16 +252,16 @@ export default function SettingsScreen() {
           />
           <SettingItem
             icon="calendar-sync"
-            iconColor="#3B82F6"
-            iconBg="#EBF4FF"
+            iconColor="#2B2B2B"
+            iconBg="#F2F2F2"
             title="Auto Reset"
             subtitle={`Resets on day ${settings.reset_day} of each month`}
             right={<Switch value={settings.auto_reset} onValueChange={(v) => updateSettings({ auto_reset: v })} trackColor={{ true: colors.primary }} />}
           />
           <SettingItem
             icon="transfer"
-            iconColor="#8B5CF6"
-            iconBg="#F3EFFE"
+            iconColor="#444444"
+            iconBg="#ECECEC"
             title="Carry Forward"
             subtitle="Move unused balance to the next month"
             right={<Switch value={settings.carry_forward} onValueChange={(v) => updateSettings({ carry_forward: v })} trackColor={{ true: colors.primary }} />}
@@ -272,16 +272,16 @@ export default function SettingsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem
             icon={isDark ? 'weather-night' : 'weather-sunny'}
-            iconColor="#F59E0B"
-            iconBg="#FEF9E7"
+            iconColor="#5A5A5A"
+            iconBg="#EFEFEF"
             title="Dark Mode"
             subtitle={isDark ? 'Currently enabled' : 'Currently disabled'}
             right={<Switch value={isDark} onValueChange={toggleTheme} trackColor={{ true: colors.primary }} />}
           />
           <SettingItem
             icon="currency-inr"
-            iconColor="#14B8A6"
-            iconBg="#E8FAF6"
+            iconColor="#707070"
+            iconBg="#F1F1F1"
             title="Currency"
             subtitle={`${currency} (${currencySymbol})`}
           />
@@ -291,16 +291,16 @@ export default function SettingsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem
             icon="bell-outline"
-            iconColor="#EC4899"
-            iconBg="#FEF0F7"
+            iconColor="#8A8A8A"
+            iconBg="#F2F2F2"
             title="Push Notifications"
             subtitle={notificationsEnabled ? 'Enabled' : 'Disabled'}
             right={<Switch value={notificationsEnabled} onValueChange={handleNotificationsToggle} trackColor={{ true: colors.primary }} />}
           />
           <SettingItem
             icon="vibrate"
-            iconColor="#6366F1"
-            iconBg="#EEEFFD"
+            iconColor="#A3A3A3"
+            iconBg="#F2F2F2"
             title="Haptic Feedback"
             subtitle={hapticEnabled ? 'Enabled' : 'Disabled'}
             right={<Switch value={hapticEnabled} onValueChange={toggleHaptic} trackColor={{ true: colors.primary }} />}
@@ -311,24 +311,24 @@ export default function SettingsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem
             icon="download-outline"
-            iconColor="#0D8C4C"
-            iconBg="#E8F5EE"
+            iconColor="#111111"
+            iconBg="#F4F4F4"
             title="Export Data (CSV)"
             subtitle="Share your transactions as CSV"
             onPress={handleExport}
           />
           <SettingItem
             icon="cloud-upload-outline"
-            iconColor="#3B82F6"
-            iconBg="#EBF4FF"
+            iconColor="#2B2B2B"
+            iconBg="#F2F2F2"
             title="Backup & Restore"
             subtitle="Save to or restore from cloud backup"
             onPress={() => setShowBackupSheet(true)}
           />
           <SettingItem
             icon="shield-lock-outline"
-            iconColor="#8B5CF6"
-            iconBg="#F3EFFE"
+            iconColor="#444444"
+            iconBg="#ECECEC"
             title="Privacy Policy"
             subtitle="Open the privacy policy"
             onPress={handlePrivacy}
@@ -337,9 +337,9 @@ export default function SettingsScreen() {
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>About</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F4F6" title="Version" subtitle="SmartPaisa v1.0.0" />
-          <SettingItem icon="star-outline" iconColor="#F59E0B" iconBg="#FEF9E7" title="Rate the App" onPress={handleRate} />
-          <SettingItem icon="help-circle-outline" iconColor="#14B8A6" iconBg="#E8FAF6" title="Help & Support" onPress={handleSupport} />
+          <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="SmartPaisa v1.0.0" />
+          <SettingItem icon="star-outline" iconColor="#5A5A5A" iconBg="#EFEFEF" title="Rate the App" onPress={handleRate} />
+          <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" onPress={handleSupport} />
         </Card>
 
         <TouchableOpacity

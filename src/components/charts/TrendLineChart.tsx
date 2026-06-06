@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { Platform, View, Text, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
@@ -24,6 +24,41 @@ const LAST_MONTH_DATA = [
 
 export const TrendLineChart: React.FC = () => {
   const { colors } = useTheme();
+  const isWeb = Platform.OS === 'web';
+  const thisMonthData = isWeb
+    ? THIS_MONTH_DATA.map((item) => ({
+        ...item,
+        customDataPoint: () => (
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: colors.primary,
+              borderWidth: 2,
+              borderColor: colors.background,
+            }}
+          />
+        ),
+      }))
+    : THIS_MONTH_DATA;
+  const lastMonthData = isWeb
+    ? LAST_MONTH_DATA.map((item) => ({
+        ...item,
+        customDataPoint: () => (
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: colors.textTertiary,
+              borderWidth: 2,
+              borderColor: colors.background,
+            }}
+          />
+        ),
+      }))
+    : LAST_MONTH_DATA;
 
   return (
     <Card>
@@ -64,8 +99,8 @@ export const TrendLineChart: React.FC = () => {
       </View>
 
       <LineChart
-        data={THIS_MONTH_DATA}
-        data2={LAST_MONTH_DATA}
+        data={thisMonthData}
+        data2={lastMonthData}
         height={150}
         width={280}
         spacing={65}

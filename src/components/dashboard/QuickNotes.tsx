@@ -48,12 +48,12 @@ export const QuickNotes: React.FC<{ onViewAll?: () => void; onNewNote?: () => vo
           key={note.id}
           onPress={handleViewAll}
           style={{
-            backgroundColor: index === 0 ? '#FEF9E7' : colors.surface,
+            backgroundColor: index === 0 ? colors.primaryBg : colors.surface,
             borderRadius: BorderRadius.sm,
             padding: Spacing.md,
             marginBottom: index < recentNotes.length - 1 ? Spacing.sm : 0,
             borderWidth: 1,
-            borderColor: index === 0 ? '#F4A26130' : colors.borderLight,
+            borderColor: index === 0 ? colors.border : colors.borderLight,
           }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -80,7 +80,7 @@ export const QuickNotes: React.FC<{ onViewAll?: () => void; onNewNote?: () => vo
                 {note.content}
               </Text>
             </View>
-            {note.is_pinned && <MaterialCommunityIcons name="pin" size={14} color={colors.accent} />}
+            {note.is_pinned && <MaterialCommunityIcons name="pin" size={14} color={colors.primary} />}
           </View>
           <Text
             style={{
@@ -126,4 +126,3 @@ export const QuickNotes: React.FC<{ onViewAll?: () => void; onNewNote?: () => vo
 };
 
 export default QuickNotes;
-

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart } from 'react-native-gifted-charts';
@@ -22,7 +22,6 @@ const TABS = ['Savings Predictor', 'Challenges', 'Emergency'] as const;
 
 export default function SavingsScreen() {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const { settings, isEmergencyMode, toggleEmergencyMode } = useBudgetStore();
@@ -31,7 +30,6 @@ export default function SavingsScreen() {
   const deactivatedChallenges = getDeactivatedChallenges();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Savings Predictor');
   const [reductions, setReductions] = useState<Record<string, number>>({});
-  const isWide = width >= 900;
 
   const updateReduction = (category: string, percent: number) => {
     setReductions((prev) => ({ ...prev, [category]: percent }));
@@ -412,50 +410,52 @@ export default function SavingsScreen() {
         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Predict savings, take challenges, handle emergencies</Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: Spacing.base,
-          gap: Spacing.sm,
+      <View
+        style={{
+          flexDirection: 'row',
+          marginHorizontal: Spacing.base,
           marginBottom: Spacing.md,
-          paddingBottom: 4,
-          alignItems: 'center',
+          backgroundColor: colors.surface,
+          borderRadius: BorderRadius.lg,
+          borderWidth: 1,
+          borderColor: colors.border,
+          overflow: 'hidden',
         }}
       >
-        {TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            style={{
-              width: isWide ? 172 : 132,
-              height: 48,
-              paddingHorizontal: Spacing.md,
-              borderRadius: BorderRadius.full,
-              backgroundColor: activeTab === tab ? colors.primary : colors.card,
-              borderWidth: activeTab === tab ? 0 : 1,
-              borderColor: colors.border,
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              alignSelf: 'center',
-            }}
-          >
-            <Text
+        {TABS.map((tab, index) => {
+          const active = activeTab === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setActiveTab(tab)}
               style={{
-                fontSize: Typography.fontSize.xs,
-                fontFamily: Typography.fontFamily.medium,
-                color: activeTab === tab ? '#FFFFFF' : colors.textSecondary,
-                textAlign: 'center',
-                lineHeight: 16,
+                flex: 1,
+                minHeight: 44,
+                paddingVertical: 10,
+                paddingHorizontal: 12,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRightWidth: index < TABS.length - 1 ? 1 : 0,
+                borderRightColor: colors.border,
+                backgroundColor: active ? colors.primary : 'transparent',
               }}
-              numberOfLines={2}
             >
-              {tab}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text
+                style={{
+                  fontSize: Typography.fontSize.xs,
+                  fontFamily: Typography.fontFamily.medium,
+                  color: active ? colors.textInverse : colors.textSecondary,
+                  textAlign: 'center',
+                  lineHeight: 16,
+                }}
+                numberOfLines={1}
+              >
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
         {activeTab === 'Savings Predictor' && renderSavingsPredictor()}
