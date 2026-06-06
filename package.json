@@ -55,6 +55,7 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
+    "build": "expo export --platform web",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
