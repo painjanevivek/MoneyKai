@@ -71,9 +71,10 @@ export const useNotificationStore = create<NotificationState>()(
         }),
     }),
     {
-      name: 'smartpaisa-notifications',
+      name: 'moneykai-notifications',
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
 );
+
 

@@ -6,7 +6,7 @@ import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
 import { isSupabaseConfigured } from '@/services/supabase';
 
-// ─── Sample Data ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Sample Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const today = new Date().toISOString().split('T')[0];
 const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().split('T')[0];
@@ -236,7 +236,7 @@ export const useTransactionStore = create<TransactionState>()(
       };
     },
     {
-      name: 'smartpaisa-transactions',
+      name: 'moneykai-transactions',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         transactions: state.transactions,
@@ -257,3 +257,4 @@ export const useTransactionStore = create<TransactionState>()(
     }
   )
 );
+

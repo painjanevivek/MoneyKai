@@ -161,7 +161,7 @@ export const useNotesStore = create<NotesState>()(
       };
     },
     {
-      name: 'smartpaisa-notes',
+      name: 'moneykai-notes',
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
@@ -177,3 +177,4 @@ export const useNotesStore = create<NotesState>()(
     }
   )
 );
+

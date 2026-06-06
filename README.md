@@ -1,40 +1,40 @@
-# 💰 SmartPaisa
+# ðŸ’° MoneyKai
 
 > **"Spend Smart. Save More."**
 
 AI-powered finance management app for students, bachelors, and people living away from home. Built with React Native + Expo SDK 56 and Supabase.
 
-![SmartPaisa](https://img.shields.io/badge/SmartPaisa-v1.0.0-0D8C4C?style=for-the-badge)
+![MoneyKai](https://img.shields.io/badge/MoneyKai-v1.0.0-0D8C4C?style=for-the-badge)
 ![Expo SDK](https://img.shields.io/badge/Expo-SDK%2056-000020?style=for-the-badge)
 ![React Native](https://img.shields.io/badge/React%20Native-0.85-61DAFB?style=for-the-badge)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge)
 
 ---
 
-## ✨ Features
+## âœ¨ Features
 
 ### Core Features
-- 📊 **Smart Dashboard** — Monthly allowance, spending overview, budget health meter, AI insights
-- 💸 **Expense Management** — Add/edit/delete transactions with categories, payment methods, receipts
-- 👥 **Group Splits** — Splitwise-like bill splitting with debt simplification algorithm
-- 🔮 **Savings Predictor** — AI-powered budget simulation with interactive category sliders
-- 🔄 **Monthly Reset** — Auto-reset allowance with carry-forward and manual adjustments
+- ðŸ“Š **Smart Dashboard** â€” Monthly allowance, spending overview, budget health meter, AI insights
+- ðŸ’¸ **Expense Management** â€” Add/edit/delete transactions with categories, payment methods, receipts
+- ðŸ‘¥ **Group Splits** â€” Splitwise-like bill splitting with debt simplification algorithm
+- ðŸ”® **Savings Predictor** â€” AI-powered budget simulation with interactive category sliders
+- ðŸ”„ **Monthly Reset** â€” Auto-reset allowance with carry-forward and manual adjustments
 
 ### Gamification
-- 🏆 **No-Spend Challenges** — Streak tracking, XP system, motivational messages
-- 🎖️ **AI Badges** — Dynamic badge system with glow effects and milestones
-- 📈 **Financial Health Score** — 0-100 gauge with personalized recommendations
+- ðŸ† **No-Spend Challenges** â€” Streak tracking, XP system, motivational messages
+- ðŸŽ–ï¸ **AI Badges** â€” Dynamic badge system with glow effects and milestones
+- ðŸ“ˆ **Financial Health Score** â€” 0-100 gauge with personalized recommendations
 
 ### Special Features
-- 🚨 **Emergency SOS Mode** — Survival budget, essential-only spending, glowing SOS button
-- 📝 **Digital Ledger** — Freeform notes, checklists, pin/search functionality
-- 📊 **Analytics & Reports** — Pie charts, trend lines, weekly heatmaps, category comparisons
-- 🤖 **AI Smart Insights** — Rule-based spending analysis with actionable tips
-- 🌙 **Dark Mode** — Full dark theme support
+- ðŸš¨ **Emergency SOS Mode** â€” Survival budget, essential-only spending, glowing SOS button
+- ðŸ“ **Digital Ledger** â€” Freeform notes, checklists, pin/search functionality
+- ðŸ“Š **Analytics & Reports** â€” Pie charts, trend lines, weekly heatmaps, category comparisons
+- ðŸ¤– **AI Smart Insights** â€” Rule-based spending analysis with actionable tips
+- ðŸŒ™ **Dark Mode** â€” Full dark theme support
 
 ---
 
-## 🛠 Tech Stack
+## ðŸ›  Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -50,59 +50,59 @@ AI-powered finance management app for students, bachelors, and people living awa
 
 ---
 
-## 📁 Project Structure
+## ðŸ“ Project Structure
 
 ```
-SmartPaisa/
-├── src/
-│   ├── app/                    # Expo Router screens
-│   │   ├── _layout.tsx         # Root layout (fonts, providers)
-│   │   ├── index.tsx           # Entry redirect
-│   │   ├── (auth)/             # Auth screens
-│   │   │   ├── login.tsx
-│   │   │   ├── signup.tsx
-│   │   │   └── forgot-password.tsx
-│   │   └── (tabs)/             # Main tab screens
-│   │       ├── index.tsx       # Dashboard
-│   │       ├── transactions.tsx
-│   │       ├── groups.tsx
-│   │       ├── savings.tsx
-│   │       ├── analytics.tsx
-│   │       └── settings.tsx
-│   ├── components/
-│   │   ├── ui/                 # Design system (Card, Button, Input...)
-│   │   ├── charts/             # Chart components
-│   │   └── dashboard/          # Dashboard widgets
-│   ├── stores/                 # Zustand state management
-│   ├── services/               # Supabase client
-│   ├── utils/                  # Business logic engines
-│   ├── hooks/                  # Custom React hooks
-│   ├── constants/              # Theme, categories, badges
-│   └── types/                  # TypeScript interfaces
-├── supabase/
-│   └── migrations/             # SQL database schema
-├── assets/                     # Images, fonts
-├── app.json                    # Expo config
-├── eas.json                    # EAS Build profiles
-└── .env.example                # Environment variables template
+MoneyKai/
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ app/                    # Expo Router screens
+â”‚   â”‚   â”œâ”€â”€ _layout.tsx         # Root layout (fonts, providers)
+â”‚   â”‚   â”œâ”€â”€ index.tsx           # Entry redirect
+â”‚   â”‚   â”œâ”€â”€ (auth)/             # Auth screens
+â”‚   â”‚   â”‚   â”œâ”€â”€ login.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ signup.tsx
+â”‚   â”‚   â”‚   â””â”€â”€ forgot-password.tsx
+â”‚   â”‚   â””â”€â”€ (tabs)/             # Main tab screens
+â”‚   â”‚       â”œâ”€â”€ index.tsx       # Dashboard
+â”‚   â”‚       â”œâ”€â”€ transactions.tsx
+â”‚   â”‚       â”œâ”€â”€ groups.tsx
+â”‚   â”‚       â”œâ”€â”€ savings.tsx
+â”‚   â”‚       â”œâ”€â”€ analytics.tsx
+â”‚   â”‚       â””â”€â”€ settings.tsx
+â”‚   â”œâ”€â”€ components/
+â”‚   â”‚   â”œâ”€â”€ ui/                 # Design system (Card, Button, Input...)
+â”‚   â”‚   â”œâ”€â”€ charts/             # Chart components
+â”‚   â”‚   â””â”€â”€ dashboard/          # Dashboard widgets
+â”‚   â”œâ”€â”€ stores/                 # Zustand state management
+â”‚   â”œâ”€â”€ services/               # Supabase client
+â”‚   â”œâ”€â”€ utils/                  # Business logic engines
+â”‚   â”œâ”€â”€ hooks/                  # Custom React hooks
+â”‚   â”œâ”€â”€ constants/              # Theme, categories, badges
+â”‚   â””â”€â”€ types/                  # TypeScript interfaces
+â”œâ”€â”€ supabase/
+â”‚   â””â”€â”€ migrations/             # SQL database schema
+â”œâ”€â”€ assets/                     # Images, fonts
+â”œâ”€â”€ app.json                    # Expo config
+â”œâ”€â”€ eas.json                    # EAS Build profiles
+â””â”€â”€ .env.example                # Environment variables template
 ```
 
 ---
 
-## 🚀 Getting Started
+## ðŸš€ Getting Started
 
 ### Prerequisites
 - Node.js 18+
 - npm or yarn
 - Expo CLI (`npm install -g expo-cli`)
-- EAS CLI (`npm install -g eas-cli`) — for APK builds
+- EAS CLI (`npm install -g eas-cli`) â€” for APK builds
 - Android Studio (optional, for emulator)
 
 ### 1. Clone & Install
 
 ```bash
 git clone <repository-url>
-cd SmartPaisa
+cd MoneyKai
 npm install
 ```
 
@@ -118,15 +118,15 @@ EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-> **Note:** The app works in **demo mode** without Supabase credentials — all data is stored locally with sample data preloaded.
+> **Note:** The app works in **demo mode** without Supabase credentials â€” all data is stored locally with sample data preloaded.
 
 ### 3. Setup Supabase (Optional)
 
 1. Create a [Supabase project](https://supabase.com)
-2. Go to SQL Editor → paste contents of `supabase/migrations/001_initial_schema.sql`
+2. Go to SQL Editor â†’ paste contents of `supabase/migrations/001_initial_schema.sql`
 3. Run the migration
 4. Copy your project URL and anon key to `.env`
-5. Enable Google OAuth in Authentication → Providers
+5. Enable Google OAuth in Authentication â†’ Providers
 
 ### 4. Run the App
 
@@ -143,7 +143,7 @@ npx expo start --ios
 
 ---
 
-## 📱 APK Build
+## ðŸ“± APK Build
 
 ### Quick APK (for testing)
 
@@ -177,7 +177,7 @@ eas submit -p android --profile production
 
 ---
 
-## 🎨 Design System
+## ðŸŽ¨ Design System
 
 ### Color Palette
 
@@ -192,32 +192,32 @@ eas submit -p android --profile production
 
 ### Typography
 - **Font:** Poppins (Regular, Medium, SemiBold, Bold)
-- **Scale:** 10px — 40px
+- **Scale:** 10px â€” 40px
 
 ---
 
-## 🗄 Database Schema
+## ðŸ—„ Database Schema
 
 The app uses Supabase (PostgreSQL) with Row Level Security:
 
-- **profiles** — User profiles with budget settings
-- **transactions** — Income/expense records
-- **budgets** — Monthly budget cycles
-- **groups** / **group_members** — Split groups
-- **group_expenses** / **expense_splits** — Shared expenses
-- **challenges** — No-spend challenge tracking
-- **badges** — Achievement system
-- **notes** — Digital ledger entries
+- **profiles** â€” User profiles with budget settings
+- **transactions** â€” Income/expense records
+- **budgets** â€” Monthly budget cycles
+- **groups** / **group_members** â€” Split groups
+- **group_expenses** / **expense_splits** â€” Shared expenses
+- **challenges** â€” No-spend challenge tracking
+- **badges** â€” Achievement system
+- **notes** â€” Digital ledger entries
 
 See `supabase/migrations/001_initial_schema.sql` for the complete schema.
 
 ---
 
-## 🧪 Demo Account
+## ðŸ§ª Demo Account
 
 The app ships with demo data. Simply tap **Sign In** with any email/password to see the full dashboard with:
 
-- ₹15,000 monthly allowance
+- â‚¹15,000 monthly allowance
 - 14 sample transactions across all categories
 - 2 groups (Flatmates, Goa Trip)
 - 1 active challenge (No Food Delivery)
@@ -226,7 +226,7 @@ The app ships with demo data. Simply tap **Sign In** with any email/password to 
 
 ---
 
-## 📋 Key Algorithms
+## ðŸ“‹ Key Algorithms
 
 ### Debt Simplification
 Uses a net-balance greedy algorithm to minimize the number of transactions needed to settle group debts. See `src/utils/debtSimplification.ts`.
@@ -239,10 +239,10 @@ Rule-based pattern matching on spending data to generate personalized financial 
 
 ---
 
-## 🔧 Configuration
+## ðŸ”§ Configuration
 
 ### app.json
-- Package: `com.smartpaisa.app`
+- Package: `com.moneykai.app`
 - Orientation: Portrait only
 - Typed routes enabled
 - React Compiler enabled
@@ -253,10 +253,11 @@ Rule-based pattern matching on spending data to generate personalized financial 
 
 ---
 
-## 📄 License
+## ðŸ“„ License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License â€” see [LICENSE](LICENSE) for details.
 
 ---
 
-Built with ❤️ for financial discipline.
+Built with â¤ï¸ for financial discipline.
+

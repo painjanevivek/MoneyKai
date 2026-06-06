@@ -1,4 +1,4 @@
-# SmartPaisa project helpers
+# MoneyKai project helpers
 
 .DEFAULT_GOAL := start
 
@@ -44,4 +44,5 @@ clean:
 	@if exist dist rmdir /s /q dist
 	@if exist coverage rmdir /s /q coverage
 	@if exist .eslintcache del /q .eslintcache
+
 

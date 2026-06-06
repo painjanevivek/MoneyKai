@@ -1,4 +1,4 @@
--- SmartPaisa user backups
+-- MoneyKai user backups
 
 CREATE TABLE IF NOT EXISTS user_backups (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -24,4 +24,5 @@ CREATE POLICY "Users can update own backups" ON user_backups
 
 CREATE POLICY "Users can delete own backups" ON user_backups
   FOR DELETE USING (auth.uid() = user_id);
+
 

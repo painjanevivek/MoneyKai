@@ -61,7 +61,7 @@ export const useBadgeStore = create<BadgeState>()(
       clearRecentUnlock: () => set({ recentUnlock: null }),
     }),
     {
-      name: 'smartpaisa-badges',
+      name: 'moneykai-badges',
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
@@ -72,3 +72,4 @@ export const useBadgeStore = create<BadgeState>()(
     }
   )
 );
+

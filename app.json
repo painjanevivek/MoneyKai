@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "SmartPaisa",
-    "slug": "smartpaisa",
+    "name": "MoneyKai",
+    "slug": "moneykai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "smartpaisa",
+    "scheme": "moneykai",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.smartpaisa.app"
+      "bundleIdentifier": "com.moneykai.app"
     },
     "android": {
-      "package": "com.smartpaisa.app",
+      "package": "com.moneykai.app",
       "adaptiveIcon": {
         "backgroundColor": "#0D8C4C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -47,7 +47,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "SmartPaisa needs access to photos to upload receipt images."
+          "photosPermission": "MoneyKai needs access to photos to upload receipt images."
         }
       ],
       [
@@ -68,3 +68,4 @@
     }
   }
 }
+

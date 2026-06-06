@@ -71,7 +71,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (!isSupabaseConfigured()) {
-            // ── Demo mode ───────────────────────────────────────────────────
+            // â”€â”€ Demo mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             await new Promise((resolve) => setTimeout(resolve, 600));
             set({
               user: {
@@ -118,7 +118,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (!isSupabaseConfigured()) {
-            // ── Demo mode ───────────────────────────────────────────────────
+            // â”€â”€ Demo mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             await new Promise((resolve) => setTimeout(resolve, 800));
             set({
               user: {
@@ -174,7 +174,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (!isSupabaseConfigured()) {
-            // ── Demo mode ───────────────────────────────────────────────────
+            // â”€â”€ Demo mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             // In production wire @react-native-google-signin/google-signin here,
             // obtain the idToken, then call:
             //   supabase.auth.signInWithIdToken({ provider: 'google', token: idToken })
@@ -280,7 +280,7 @@ export const useAuthStore = create<AuthState>()(
         })),
     }),
     {
-      name: 'smartpaisa-auth',
+      name: 'moneykai-auth',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         user: state.user,
@@ -290,3 +290,4 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+

@@ -126,12 +126,12 @@ export default function SettingsScreen() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `smartpaisa_transactions_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `moneykai_transactions_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
         URL.revokeObjectURL(url);
       } else {
         await Share.share({
-          title: 'SmartPaisa transactions CSV',
+          title: 'MoneyKai transactions CSV',
           message: csv,
         });
       }
@@ -147,16 +147,16 @@ export default function SettingsScreen() {
   const handleRate = () => {
     const url =
       Platform.OS === 'ios'
-        ? 'https://apps.apple.com/search?term=SmartPaisa'
-        : 'https://play.google.com/store/search?q=SmartPaisa&c=apps';
+        ? 'https://apps.apple.com/search?term=MoneyKai'
+        : 'https://play.google.com/store/search?q=MoneyKai&c=apps';
     Linking.openURL(url).catch(() => {
-      Alert.alert('Rate the App', 'Search for SmartPaisa in your app store to leave a review.');
+      Alert.alert('Rate the App', 'Search for MoneyKai in your app store to leave a review.');
     });
   };
 
   const handleSupport = () => {
-    Linking.openURL('mailto:support@smartpaisa.app?subject=SmartPaisa Support').catch(() => {
-      Alert.alert('Contact Support', 'Email us at support@smartpaisa.app');
+    Linking.openURL('mailto:support@moneykai.app?subject=MoneyKai Support').catch(() => {
+      Alert.alert('Contact Support', 'Email us at support@moneykai.app');
     });
   };
 
@@ -383,7 +383,7 @@ export default function SettingsScreen() {
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>About</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="SmartPaisa v1.0.0" />
+          <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="MoneyKai v1.0.0" />
           <SettingItem icon="star-outline" iconColor="#5A5A5A" iconBg="#EFEFEF" title="Rate the App" onPress={handleRate} />
           <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" onPress={handleSupport} />
         </Card>
@@ -435,7 +435,7 @@ export default function SettingsScreen() {
           value={allowanceValue}
           onChangeText={(value) => setAllowanceValue(value.replace(/[^0-9]/g, ''))}
           keyboardType="numeric"
-          prefix="₹"
+          prefix="â‚¹"
         />
       </ModalSheet>
 
@@ -469,3 +469,4 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
+

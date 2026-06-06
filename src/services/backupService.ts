@@ -24,7 +24,7 @@ interface BackupAppSettings {
   hapticEnabled: boolean;
 }
 
-export interface SmartPaisaBackupSnapshot {
+export interface MoneyKaiBackupSnapshot {
   version: 1;
   capturedAt: string;
   profile: {
@@ -62,7 +62,7 @@ const normalizeUser = () => {
   return user;
 };
 
-export const buildBackupSnapshot = (): SmartPaisaBackupSnapshot => {
+export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
   const user = normalizeUser();
   const budget = useBudgetStore.getState();
   const transactions = useTransactionStore.getState().transactions;
@@ -126,7 +126,7 @@ export const saveCloudBackup = async () => {
 
   await recordAppNotification({
     title: 'Backup saved',
-    body: 'Your SmartPaisa data was backed up to the cloud.',
+    body: 'Your MoneyKai data was backed up to the cloud.',
     type: 'backup',
     schedule: false,
   });
@@ -153,10 +153,10 @@ export const getLatestCloudBackup = async () => {
     throw new Error('No cloud backup exists yet.');
   }
 
-  return data.snapshot as SmartPaisaBackupSnapshot;
+  return data.snapshot as MoneyKaiBackupSnapshot;
 };
 
-export const restoreBackupSnapshot = (snapshot: SmartPaisaBackupSnapshot) => {
+export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
   const user = normalizeUser();
   if (snapshot.profile.id !== user.id) {
     throw new Error('This backup belongs to a different account.');
@@ -221,3 +221,4 @@ export const restoreLatestCloudBackup = async () => {
 
   return snapshot;
 };
+

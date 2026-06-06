@@ -1,4 +1,4 @@
-# SmartPaisa TODO
+# MoneyKai TODO
 
 This file tracks the remaining setup and verification work after the cleanup pass.
 
@@ -17,4 +17,5 @@ This file tracks the remaining setup and verification work after the cleanup pas
 - [ ] Replace the placeholder store/app identifiers in the project metadata with the final production values when they are available.
 - [ ] Add app-store-specific review links once the real App Store and Play Store IDs exist.
 - [ ] Document the production launch checklist in the repo README once the environment is finalized.
+
 

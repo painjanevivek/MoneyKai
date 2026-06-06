@@ -24,7 +24,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       theme: 'light',
       currency: 'INR',
-      currencySymbol: '₹',
+      currencySymbol: 'â‚¹',
       notificationsEnabled: true,
       hapticEnabled: true,
 
@@ -47,9 +47,10 @@ export const useSettingsStore = create<SettingsState>()(
       })),
     }),
     {
-      name: 'smartpaisa-settings',
+      name: 'moneykai-settings',
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
 );
+
 

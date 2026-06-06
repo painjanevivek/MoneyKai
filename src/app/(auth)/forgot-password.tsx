@@ -32,7 +32,7 @@ export default function ForgotPasswordScreen() {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'smartpaisa://reset-password',
+        redirectTo: 'moneykai://reset-password',
       });
       if (error) throw new Error(error.message);
       setSent(true);
@@ -143,3 +143,4 @@ export default function ForgotPasswordScreen() {
     </SafeAreaView>
   );
 }
+

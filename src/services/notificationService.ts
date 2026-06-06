@@ -24,8 +24,8 @@ Notifications.setNotificationHandler({
 
 export const initializeNotificationChannel = async () => {
   if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync('smartpaisa-default', {
-    name: 'SmartPaisa Alerts',
+  await Notifications.setNotificationChannelAsync('moneykai-default', {
+    name: 'MoneyKai Alerts',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 200, 100, 200],
     lightColor: '#111111',
@@ -114,3 +114,4 @@ export const installNotificationListeners = (onResponse?: (route?: string) => vo
     listenersInstalled = false;
   };
 };
+

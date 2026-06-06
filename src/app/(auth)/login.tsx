@@ -97,7 +97,7 @@ export default function LoginScreen() {
               fontSize: Typography.fontSize['3xl'],
               fontFamily: Typography.fontFamily.bold,
               color: colors.textPrimary,
-            }}>SmartPaisa</Text>
+            }}>MoneyKai</Text>
             <Text style={{
               fontSize: Typography.fontSize.base,
               fontFamily: Typography.fontFamily.regular,
@@ -252,3 +252,4 @@ export default function LoginScreen() {
     </SafeAreaView>
   );
 }
+

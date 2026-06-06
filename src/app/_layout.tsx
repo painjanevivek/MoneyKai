@@ -87,12 +87,12 @@ export default function RootLayout() {
 
       if (__DEV__ && !isSupabaseConfigured()) {
         console.warn(
-          '[SmartPaisa] Supabase is not configured. Configure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable cloud auth.'
+          '[MoneyKai] Supabase is not configured. Configure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable cloud auth.'
         );
       }
 
       hydrateSession().catch((e) => {
-        if (__DEV__) console.warn('[SmartPaisa] hydrateSession error:', e);
+        if (__DEV__) console.warn('[MoneyKai] hydrateSession error:', e);
       });
     }
   }, [fontsLoaded, fontError, hydrateSession]);
@@ -138,3 +138,4 @@ export default function RootLayout() {
     </AppErrorBoundary>
   );
 }
+

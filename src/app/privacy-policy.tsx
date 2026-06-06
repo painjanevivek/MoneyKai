@@ -30,7 +30,7 @@ export default function PrivacyPolicyScreen() {
             Privacy Policy
           </Text>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-            SmartPaisa keeps your financial data private and under your control.
+            MoneyKai keeps your financial data private and under your control.
           </Text>
         </View>
       </View>
@@ -48,7 +48,7 @@ export default function PrivacyPolicyScreen() {
             How we use it
           </Text>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            SmartPaisa uses your data only to power budgeting, insights, reminders, and optional cloud backup and restore.
+            MoneyKai uses your data only to power budgeting, insights, reminders, and optional cloud backup and restore.
           </Text>
 
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
@@ -62,10 +62,11 @@ export default function PrivacyPolicyScreen() {
             Contact
           </Text>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            Questions? Email support@smartpaisa.app.
+            Questions? Email support@moneykai.app.
           </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+

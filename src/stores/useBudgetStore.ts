@@ -25,7 +25,7 @@ export const useBudgetStore = create<BudgetState>()(
         reset_day: 1,
         auto_reset: true,
         carry_forward: false,
-        currency: '₹',
+        currency: 'â‚¹',
       },
       adjustments: [],
       isEmergencyMode: false,
@@ -62,9 +62,10 @@ export const useBudgetStore = create<BudgetState>()(
       })),
     }),
     {
-      name: 'smartpaisa-budget',
+      name: 'moneykai-budget',
       storage: createJSONStorage(() => AsyncStorage),
     }
   )
 );
+
 

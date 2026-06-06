@@ -129,7 +129,7 @@ export const useChallengeStore = create<ChallengeState>()(
     };
   },
     {
-      name: 'smartpaisa-challenges',
+      name: 'moneykai-challenges',
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
@@ -141,3 +141,4 @@ export const useChallengeStore = create<ChallengeState>()(
     }
   )
 );
+

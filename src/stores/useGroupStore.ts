@@ -35,7 +35,7 @@ const SAMPLE_GROUPS: Group[] = [
   {
     id: 'grp2',
     created_by: 'demo',
-    name: 'Goa Trip 🏖️',
+    name: 'Goa Trip ðŸ–ï¸',
     type: 'trip',
     description: 'Goa trip expenses split',
     created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
@@ -117,7 +117,7 @@ export const useGroupStore = create<GroupState>()(
       getGroupExpenses: (groupId) => get().expenses.filter(e => e.group_id === groupId),
     }),
     {
-      name: 'smartpaisa-groups',
+      name: 'moneykai-groups',
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
@@ -129,3 +129,4 @@ export const useGroupStore = create<GroupState>()(
     }
   )
 );
+
