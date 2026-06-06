@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart } from 'react-native-gifted-charts';
@@ -22,13 +22,16 @@ const TABS = ['Savings Predictor', 'Challenges', 'Emergency'] as const;
 
 export default function SavingsScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const { settings, isEmergencyMode, toggleEmergencyMode } = useBudgetStore();
-  const { startChallenge, getActiveChallenges, getDailyMotivation, totalXP } = useChallengeStore();
+  const { startChallenge, getActiveChallenges, getDeactivatedChallenges, deactivateChallenge, getDailyMotivation, totalXP } = useChallengeStore();
   const activeChallenges = getActiveChallenges();
+  const deactivatedChallenges = getDeactivatedChallenges();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Savings Predictor');
   const [reductions, setReductions] = useState<Record<string, number>>({});
+  const isWide = width >= 900;
 
   const updateReduction = (category: string, percent: number) => {
     setReductions((prev) => ({ ...prev, [category]: percent }));
@@ -232,8 +235,38 @@ export default function SavingsScreen() {
             <Card key={ch.id} style={{ marginBottom: Spacing.md }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
                 <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{ch.name}</Text>
-                <View style={{ backgroundColor: colors.primaryBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
-                  <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>Active</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                  <View style={{ backgroundColor: colors.primaryBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                    <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>Active</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      Alert.alert(
+                        'Deactivate Challenge',
+                        `Deactivate "${ch.name}"? You can keep the record and start a new challenge later.`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Deactivate',
+                            style: 'destructive',
+                            onPress: () => deactivateChallenge(ch.id),
+                          },
+                        ]
+                      )
+                    }
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: BorderRadius.full,
+                      backgroundColor: colors.emergencyBg,
+                      borderWidth: 1,
+                      borderColor: `${colors.emergency}30`,
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colors.emergency }}>
+                      Deactivate
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginBottom: Spacing.sm }}>{ch.description}</Text>
@@ -244,6 +277,28 @@ export default function SavingsScreen() {
                 showLabel
                 label={`Day ${ch.current_streak} of ${ch.duration_days}`}
               />
+            </Card>
+          ))}
+        </>
+      )}
+
+      {deactivatedChallenges.length > 0 && (
+        <>
+          <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md, marginTop: Spacing.sm }}>
+            Deactivated Challenges
+          </Text>
+          {deactivatedChallenges.map((ch) => (
+            <Card key={ch.id} style={{ marginBottom: Spacing.md, opacity: 0.92 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
+                <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{ch.name}</Text>
+                <View style={{ backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>Deactivated</Text>
+                </View>
+              </View>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginBottom: Spacing.sm }}>{ch.description}</Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textTertiary }}>
+                Last progress: Day {ch.current_streak} of {ch.duration_days}
+              </Text>
             </Card>
           ))}
         </>
@@ -360,23 +415,30 @@ export default function SavingsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md, paddingBottom: 4 }}
+        contentContainerStyle={{
+          paddingHorizontal: Spacing.base,
+          gap: Spacing.sm,
+          marginBottom: Spacing.md,
+          paddingBottom: 4,
+          alignItems: 'center',
+        }}
       >
         {TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
             style={{
-              minWidth: 124,
-              minHeight: 54,
+              width: isWide ? 172 : 132,
+              height: 48,
               paddingHorizontal: Spacing.md,
-              paddingVertical: 10,
               borderRadius: BorderRadius.full,
               backgroundColor: activeTab === tab ? colors.primary : colors.card,
               borderWidth: activeTab === tab ? 0 : 1,
               borderColor: colors.border,
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
+              alignSelf: 'center',
             }}
           >
             <Text
@@ -385,7 +447,7 @@ export default function SavingsScreen() {
                 fontFamily: Typography.fontFamily.medium,
                 color: activeTab === tab ? '#FFFFFF' : colors.textSecondary,
                 textAlign: 'center',
-                lineHeight: 18,
+                lineHeight: 16,
               }}
               numberOfLines={2}
             >

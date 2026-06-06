@@ -14,12 +14,14 @@ interface ChallengeState {
   // Getters
   getActiveChallenges: () => Challenge[];
   getCompletedChallenges: () => Challenge[];
+  getDeactivatedChallenges: () => Challenge[];
   getDailyMotivation: () => string;
 
   // Actions
   startChallenge: (challenge: Omit<Challenge, 'id' | 'user_id' | 'created_at' | 'current_streak' | 'xp_earned' | 'savings_earned' | 'status'>) => void;
   updateStreak: (id: string) => void;
   failChallenge: (id: string) => void;
+  deactivateChallenge: (id: string) => void;
   completeChallenge: (id: string, xp: number, savings: number) => void;
 }
 
@@ -63,14 +65,16 @@ export const useChallengeStore = create<ChallengeState>()(
           return result;
         },
 
-        getCompletedChallenges: () => {
-          const challenges = get().challenges;
-          if (challenges === lastTxnsForCompleted) return cachedCompleted;
-          const result = challenges.filter(c => c.status === 'completed');
-          lastTxnsForCompleted = challenges;
-          cachedCompleted = result;
-          return result;
-        },
+      getCompletedChallenges: () => {
+        const challenges = get().challenges;
+        if (challenges === lastTxnsForCompleted) return cachedCompleted;
+        const result = challenges.filter(c => c.status === 'completed');
+        lastTxnsForCompleted = challenges;
+        cachedCompleted = result;
+        return result;
+      },
+
+      getDeactivatedChallenges: () => get().challenges.filter((challenge) => challenge.status === 'deactivated'),
 
       getDailyMotivation: () => {
         const index = new Date().getDate() % MOTIVATIONAL_MESSAGES.length;
@@ -107,6 +111,12 @@ export const useChallengeStore = create<ChallengeState>()(
       failChallenge: (id) => set((state) => ({
         challenges: state.challenges.map(c =>
           c.id === id ? { ...c, status: 'failed' as const } : c
+        ),
+      })),
+
+      deactivateChallenge: (id) => set((state) => ({
+        challenges: state.challenges.map(c =>
+          c.id === id ? { ...c, status: 'deactivated' as const } : c
         ),
       })),
 

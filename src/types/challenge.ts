@@ -8,7 +8,7 @@ export interface Challenge {
   current_streak: number;
   xp_earned: number;
   savings_earned: number;
-  status: 'active' | 'completed' | 'failed';
+  status: 'active' | 'completed' | 'failed' | 'deactivated';
   start_date: string;
   end_date: string;
   created_at: string;
