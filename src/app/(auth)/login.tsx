@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -25,8 +25,10 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [googleLoading, setGoogleLoading] = useState(false);
+  const submitting = useRef(false);
 
   const handleLogin = async () => {
+    if (submitting.current) return;
     const newErrors: typeof errors = {};
     if (!email) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Enter a valid email';
@@ -35,23 +37,29 @@ export default function LoginScreen() {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    submitting.current = true;
     try {
       await signIn(email, password);
       router.replace('/(tabs)');
-    } catch {
-      Alert.alert('Login Failed', 'Please check your credentials and try again.');
+    } catch (err) {
+      Alert.alert('Login Failed', err instanceof Error ? err.message : 'Please check your credentials and try again.');
+    } finally {
+      submitting.current = false;
     }
   };
 
   const handleGoogleSignIn = async () => {
+    if (submitting.current) return;
+    submitting.current = true;
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
       router.replace('/(tabs)');
-    } catch {
-      Alert.alert('Google Sign-In', 'Google Sign-In is not configured. Please use email login or set up Google OAuth credentials.');
+    } catch (err) {
+      Alert.alert('Google Sign-In Failed', err instanceof Error ? err.message : 'Google Sign-In is not available. Please use email login.');
     } finally {
       setGoogleLoading(false);
+      submitting.current = false;
     }
   };
 
@@ -111,7 +119,7 @@ export default function LoginScreen() {
               fontFamily: Typography.fontFamily.semiBold,
               color: colors.textPrimary,
               marginBottom: Spacing.xl,
-            }}>Welcome Back 👋</Text>
+            }}>Welcome back</Text>
 
             <Input
               label="Email"
@@ -220,7 +228,7 @@ export default function LoginScreen() {
                 fontFamily: Typography.fontFamily.regular,
                 color: colors.primary,
                 lineHeight: 16,
-              }}>Demo mode: Enter any email and password (6+ chars) to sign in.</Text>
+              }}>Connect Supabase to enable production authentication.</Text>
             </View>
           </View>
 

@@ -1,11 +1,15 @@
 import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Platform, useWindowDimensions, LogBox } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Platform, useWindowDimensions, LogBox } from 'react-native';
 import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
+import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors } from '@/constants/theme';
+import { isSupabaseConfigured } from '@/services/supabase';
+import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
 
 // Suppress known web warnings from react-native-gifted-charts passing RN props to DOM elements
 LogBox.ignoreLogs([
@@ -15,16 +19,62 @@ LogBox.ignoreLogs([
   'Unknown event handler property `onResponderRelease`',
   'Unknown event handler property `onResponderTerminate`',
   'Unknown event handler property `onPressOut`',
-  'Maximum update depth exceeded', // We fixed this via store memoization, but ignore strict-mode double-renders
+  'Maximum update depth exceeded',
 ]);
 
-// Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+WebBrowser.maybeCompleteAuthSession();
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode; colors: typeof Colors.light | typeof Colors.dark },
+  ErrorBoundaryState
+> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[AppErrorBoundary] Unhandled render error:', error, info);
+  }
+
+  handleRetry = () => this.setState({ hasError: false, error: null });
+
+  render() {
+    const { colors } = this.props;
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <Text style={{ fontSize: 20, fontFamily: 'Poppins_700Bold', color: colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>
+            Something went wrong
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+            {this.state.error?.message ?? 'An unexpected error occurred.'}
+          </Text>
+          <TouchableOpacity
+            onPress={this.handleRetry}
+            style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function RootLayout() {
   const theme = useSettingsStore((s) => s.theme);
   const colors = Colors[theme];
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const hydrateSession = useAuthStore((s) => s.hydrateSession);
 
   const [fontsLoaded, fontError] = useFonts({
     Poppins_400Regular,
@@ -36,8 +86,28 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+
+      if (__DEV__ && !isSupabaseConfigured()) {
+        console.warn(
+          '[SmartPaisa] Supabase is not configured. Configure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable cloud auth.'
+        );
+      }
+
+      hydrateSession().catch((e) => {
+        if (__DEV__) console.warn('[SmartPaisa] hydrateSession error:', e);
+      });
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, hydrateSession]);
+
+  useEffect(() => {
+    void initializeNotificationChannel();
+    const uninstall = installNotificationListeners((route) => {
+      if (route) {
+        router.push(route as any);
+      }
+    });
+    return uninstall;
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return (
@@ -47,10 +117,10 @@ export default function RootLayout() {
     );
   }
 
-  // On web desktop, center in a phone-like container
   const isWeb = Platform.OS === 'web';
-  const isDesktop = isWeb && width > 768;
-  const containerMaxWidth = isDesktop ? 430 : '100%';
+  const isDesktop = isWeb && width > 900;
+  const containerWidth = isDesktop ? Math.min(width * 0.92, 1280) : width;
+  const containerHeight = isDesktop ? Math.min(containerWidth * (10 / 16), height * 0.96) : undefined;
 
   const content = (
     <Stack
@@ -63,39 +133,36 @@ export default function RootLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+      <Stack.Screen name="profile-edit" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+      <Stack.Screen name="privacy-policy" options={{ animation: 'slide_from_right', presentation: 'card' }} />
     </Stack>
   );
 
   return (
-    <>
+    <AppErrorBoundary colors={colors}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       {isDesktop ? (
-        <View style={{
-          flex: 1,
-          backgroundColor: '#111827',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <View style={{
-            width: containerMaxWidth as number,
-            height: '100%',
-            maxHeight: 900,
-            backgroundColor: colors.background,
-            borderRadius: isDesktop ? 20 : 0,
-            overflow: 'hidden',
-            // Phone frame shadow
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.3,
-            shadowRadius: 30,
-            elevation: 20,
-          }}>
+        <View style={{ flex: 1, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{
+              width: containerWidth,
+              height: containerHeight,
+              backgroundColor: colors.background,
+              borderRadius: 16,
+              overflow: 'hidden',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 20 },
+              shadowOpacity: 0.45,
+              shadowRadius: 48,
+              elevation: 24,
+            }}
+          >
             {content}
           </View>
         </View>
       ) : (
         content
       )}
-    </>
+    </AppErrorBoundary>
   );
 }

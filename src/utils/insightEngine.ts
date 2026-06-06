@@ -6,15 +6,12 @@ export interface Insight {
   icon: string;
   message: string;
   type: 'tip' | 'warning' | 'achievement' | 'trend';
-  priority: number; // 1 = highest
+  priority: number;
   actionLabel?: string;
 }
 
 /**
  * Rule-based AI Insight Engine
- * 
- * Generates smart financial insights by analyzing spending patterns,
- * category trends, and user behavior.
  */
 export const generateInsights = (
   monthlyAllowance: number,
@@ -29,7 +26,6 @@ export const generateInsights = (
   const budgetDailyLimit = monthlyAllowance / 30;
   const spendRate = monthlyAllowance > 0 ? (totalSpent / monthlyAllowance) * 100 : 0;
 
-  // --- Weekend Spending Pattern ---
   const now = new Date();
   const dayOfWeek = now.getDay();
   if (dayOfWeek === 0 || dayOfWeek === 6) {
@@ -42,10 +38,9 @@ export const generateInsights = (
     });
   }
 
-  // --- Category Trends (vs previous month) ---
   if (previousMonthTotals) {
-    categoryTotals.forEach(current => {
-      const prev = previousMonthTotals.find(p => p.category === current.category);
+    categoryTotals.forEach((current) => {
+      const prev = previousMonthTotals.find((p) => p.category === current.category);
       if (prev && prev.total > 0) {
         const change = ((current.total - prev.total) / prev.total) * 100;
         if (change > 15) {
@@ -71,7 +66,6 @@ export const generateInsights = (
     });
   }
 
-  // --- Savings Rate ---
   if (previousMonthSpent && previousMonthSpent > 0) {
     const prevRate = previousMonthSpent / monthlyAllowance;
     const currRate = totalSpent / monthlyAllowance;
@@ -86,12 +80,11 @@ export const generateInsights = (
     }
   }
 
-  // --- Budget Warnings ---
   if (spendRate > 80 && daysPassed < 25) {
     insights.push({
       id: 'budget_warning',
       icon: 'alert-circle-outline',
-      message: 'You\'ve spent 80% of your budget with days remaining. Consider Emergency Mode.',
+      message: "You've spent 80% of your budget with days remaining. Consider Emergency Mode.",
       type: 'warning',
       priority: 1,
       actionLabel: 'Activate SOS',
@@ -108,7 +101,6 @@ export const generateInsights = (
     });
   }
 
-  // --- Top Category Insight ---
   if (categoryTotals.length > 0) {
     const sorted = [...categoryTotals].sort((a, b) => b.total - a.total);
     const top = sorted[0];
@@ -122,7 +114,6 @@ export const generateInsights = (
       });
     }
 
-    // Savings recommendation from top category
     if (top && top.total > 500) {
       const saveable = Math.round(top.total * 0.2);
       insights.push({
@@ -136,17 +127,14 @@ export const generateInsights = (
     }
   }
 
-  // Sort by priority
   return insights.sort((a, b) => a.priority - b.priority).slice(0, 5);
 };
 
-/**
- * Generate a daily motivational insight
- */
 export const getDailyMotivation = (totalSpent: number, dailyBudget: number): string => {
-  if (totalSpent === 0) return "New day, clean slate! Track every expense today. 🌟";
-  if (totalSpent < dailyBudget * 0.5) return "Excellent start to the day! You're well within budget. 💪";
-  if (totalSpent < dailyBudget) return "Good going! Still within your daily limit. 👍";
-  if (totalSpent < dailyBudget * 1.2) return "Slightly over budget today — try to slow down. ⚡";
-  return "Over budget today! Every extra rupee adds up. Try a no-spend evening. 🛑";
+  if (totalSpent === 0) return 'New day, clean slate! Track every expense today.';
+  if (totalSpent < dailyBudget * 0.5) return 'Excellent start to the day! You are well within budget.';
+  if (totalSpent < dailyBudget) return 'Good going! Still within your daily limit.';
+  if (totalSpent < dailyBudget * 1.2) return 'Slightly over budget today - try to slow down.';
+  return 'Over budget today! Every extra rupee adds up. Try a no-spend evening.';
 };
+

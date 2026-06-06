@@ -15,6 +15,7 @@ interface SettingsState {
   setTheme: (theme: ThemeMode) => void;
   setCurrency: (currency: string, symbol: string) => void;
   toggleNotifications: () => void;
+  setNotificationsEnabled: (enabled: boolean) => void;
   toggleHaptic: () => void;
 }
 
@@ -39,6 +40,8 @@ export const useSettingsStore = create<SettingsState>()(
         notificationsEnabled: !state.notificationsEnabled,
       })),
 
+      setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
+
       toggleHaptic: () => set((state) => ({
         hapticEnabled: !state.hapticEnabled,
       })),
@@ -49,3 +52,4 @@ export const useSettingsStore = create<SettingsState>()(
     }
   )
 );
+

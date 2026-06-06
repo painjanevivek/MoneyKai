@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Transaction, TransactionFilter, CategoryTotal } from '../types/transaction';
+import { recordAppNotification } from '@/services/notificationService';
+import { useBudgetStore } from './useBudgetStore';
+import { isSupabaseConfigured } from '@/services/supabase';
 
 // ─── Sample Data ─────────────────────────────────────────────────────────────
 const today = new Date().toISOString().split('T')[0];
@@ -31,6 +34,7 @@ interface TransactionState {
   transactions: Transaction[];
   filter: TransactionFilter;
   isLoading: boolean;
+  isSeeded: boolean;
 
   // Computed
   getFilteredTransactions: () => Transaction[];
@@ -45,6 +49,8 @@ interface TransactionState {
   deleteTransaction: (id: string) => void;
   setFilter: (filter: Partial<TransactionFilter>) => void;
   resetFilter: () => void;
+  /** Removes all demo seed rows and resets the isSeeded flag. Call on sign-out. */
+  clearSeedData: () => void;
 }
 
 const DEFAULT_FILTER: TransactionFilter = {
@@ -67,9 +73,11 @@ export const useTransactionStore = create<TransactionState>()(
       let lastCountForRecent: number = 0;
 
       return {
-        transactions: SAMPLE_TRANSACTIONS,
+        // Only seed demo data on first launch (isSeeded persists across restarts).
+        transactions: [],
         filter: DEFAULT_FILTER,
         isLoading: false,
+        isSeeded: false,
 
         getFilteredTransactions: () => {
           const { transactions, filter } = get();
@@ -170,7 +178,32 @@ export const useTransactionStore = create<TransactionState>()(
             id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             created_at: new Date().toISOString(),
           };
-          set((state) => ({ transactions: [newTransaction, ...state.transactions] }));
+          const nextTransactions = [newTransaction, ...get().transactions];
+          set({ transactions: nextTransactions });
+
+          if (newTransaction.type === 'expense') {
+            const allowance = useBudgetStore.getState().settings.monthly_allowance;
+            const spent = nextTransactions
+              .filter((item) => item.type === 'expense')
+              .reduce((sum, item) => sum + item.amount, 0);
+            const spendRate = allowance > 0 ? (spent / allowance) * 100 : 0;
+
+            if (spendRate >= 100) {
+              void recordAppNotification({
+                title: 'Budget exhausted',
+                body: 'You have used your full monthly allowance.',
+                type: 'budget',
+                actionRoute: '/(tabs)/analytics',
+              });
+            } else if (spendRate >= 80) {
+              void recordAppNotification({
+                title: 'Spending alert',
+                body: `You have used ${Math.round(spendRate)}% of your monthly allowance.`,
+                type: 'budget',
+                actionRoute: '/(tabs)/analytics',
+              });
+            }
+          }
         },
 
         updateTransaction: (id, updates) => {
@@ -192,12 +225,35 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         resetFilter: () => set({ filter: DEFAULT_FILTER }),
+
+        clearSeedData: () =>
+          set((state) => ({
+            transactions: state.transactions.filter(
+              (t) => t.user_id !== 'demo'
+            ),
+            isSeeded: false,
+          })),
       };
     },
     {
       name: 'smartpaisa-transactions',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ transactions: state.transactions }),
+      partialize: (state) => ({
+        transactions: state.transactions,
+        isSeeded: state.isSeeded,
+      }),
+      onRehydrateStorage: () => (state) => {
+        // Inject sample data only if this is the very first launch.
+        if (!state) return;
+        if (isSupabaseConfigured()) {
+          state.transactions = state.transactions.filter((transaction) => transaction.user_id !== 'demo');
+          return;
+        }
+        if (!state.isSeeded) {
+          state.transactions = SAMPLE_TRANSACTIONS;
+          state.isSeeded = true;
+        }
+      },
     }
   )
 );

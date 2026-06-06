@@ -7,18 +7,43 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase, isSupabaseConfigured } from '@/services/supabase';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
       return;
     }
-    setSent(true);
+
+    if (!isSupabaseConfigured()) {
+      Alert.alert(
+        'Demo Mode',
+        'Password reset emails require Supabase to be configured.\n\nFill in EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env file.'
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'smartpaisa://reset-password',
+      });
+      if (error) throw new Error(error.message);
+      setSent(true);
+    } catch (err) {
+      Alert.alert(
+        'Reset Failed',
+        err instanceof Error ? err.message : 'Could not send the reset link. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -77,7 +102,8 @@ export default function ForgotPasswordScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
-                <Button title="Send Reset Link" onPress={handleReset} fullWidth size="lg" />
+                <Button title="Send Reset Link" onPress={handleReset} fullWidth size="lg" loading={isLoading} />
+
               </>
             ) : (
               <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
@@ -95,7 +121,7 @@ export default function ForgotPasswordScreen() {
                   color: colors.textPrimary,
                   textAlign: 'center',
                   marginBottom: Spacing.sm,
-                }}>Check Your Email 📧</Text>
+                }}>Check your email</Text>
                 <Text style={{
                   fontSize: Typography.fontSize.sm,
                   fontFamily: Typography.fontFamily.regular,

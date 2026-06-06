@@ -82,7 +82,7 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
     id: 'coffee_free',
     name: 'Coffee Free Week',
     category: 'food',
-    description: 'No cafe coffee — make it at home',
+    description: 'No cafe coffee - make it at home',
     icon: 'coffee-off',
     color: '#14B8A6',
     defaultDuration: 7,
@@ -103,14 +103,14 @@ export const CHALLENGE_TEMPLATES: ChallengeTemplate[] = [
 ];
 
 export const MOTIVATIONAL_MESSAGES = [
-  "Every rupee saved is a rupee earned! 💪",
-  "You're building a habit that will last a lifetime 🌟",
-  "Small wins lead to big victories! 🏆",
-  "Your future self will thank you for this 🙏",
-  "Discipline is the bridge between goals and results 🌉",
-  "You're stronger than your cravings! 💎",
-  "Financial freedom starts with one decision at a time 🚀",
-  "Stay focused — the streak is building! 🔥",
-  "You've got this! One more day closer to your goal ✨",
-  "Champions are made when no one is watching 👊",
+  'Every rupee saved is a rupee earned.',
+  'You are building a habit that will last a lifetime.',
+  'Small wins lead to big victories.',
+  'Your future self will thank you for this.',
+  'Discipline is the bridge between goals and results.',
+  'You are stronger than your cravings.',
+  'Financial freedom starts with one decision at a time.',
+  'Stay focused - the streak is building.',
+  'You are one day closer to your goal.',
+  'Champions are made when no one is watching.',
 ];

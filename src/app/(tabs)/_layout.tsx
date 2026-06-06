@@ -92,6 +92,23 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => <TabIcon name="cog-outline" color={color} focused={focused} />,
         }}
       />
+      {/* ── Screens navigated to programmatically; hidden from tab bar ── */}
+      <Tabs.Screen
+        name="notes"
+        options={{
+          title: 'Notes',
+          href: null, // hidden from tab bar
+          tabBarIcon: ({ color, focused }) => <TabIcon name="note-text-outline" color={color} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Notifications',
+          href: null, // hidden from tab bar
+          tabBarIcon: ({ color, focused }) => <TabIcon name="bell-outline" color={color} focused={focused} />,
+        }}
+      />
     </Tabs>
   );
 }

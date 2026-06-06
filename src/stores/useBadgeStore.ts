@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Badge } from '../types/badge';
 import { BADGE_DEFINITIONS } from '../constants/badges';
+import { isSupabaseConfigured } from '@/services/supabase';
 
 interface BadgeState {
   badges: Badge[];
@@ -31,7 +32,7 @@ const createInitialBadges = (userId: string): Badge[] => {
 export const useBadgeStore = create<BadgeState>()(
   persist(
     (set, get) => ({
-      badges: createInitialBadges('demo'),
+      badges: isSupabaseConfigured() ? [] : createInitialBadges('demo'),
       recentUnlock: null,
 
       initializeBadges: (userId) => {
@@ -62,6 +63,12 @@ export const useBadgeStore = create<BadgeState>()(
     {
       name: 'smartpaisa-badges',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (isSupabaseConfigured()) {
+          state.badges = state.badges.filter((badge) => badge.user_id !== 'demo');
+        }
+      },
     }
   )
 );

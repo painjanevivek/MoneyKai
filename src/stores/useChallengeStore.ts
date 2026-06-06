@@ -3,6 +3,9 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Challenge } from '../types/challenge';
 import { MOTIVATIONAL_MESSAGES } from '../types/challenge';
+import { recordAppNotification } from '@/services/notificationService';
+import { useAuthStore } from './useAuthStore';
+import { isSupabaseConfigured } from '@/services/supabase';
 
 interface ChallengeState {
   challenges: Challenge[];
@@ -48,8 +51,8 @@ export const useChallengeStore = create<ChallengeState>()(
       let lastTxnsForCompleted: Challenge[] = [];
 
       return {
-        challenges: SAMPLE_CHALLENGES,
-        totalXP: 250,
+      challenges: isSupabaseConfigured() ? [] : SAMPLE_CHALLENGES,
+      totalXP: isSupabaseConfigured() ? 0 : 250,
 
         getActiveChallenges: () => {
           const challenges = get().challenges;
@@ -75,10 +78,11 @@ export const useChallengeStore = create<ChallengeState>()(
       },
 
       startChallenge: (challenge) => {
+        const userId = useAuthStore.getState().user?.id ?? 'local';
         const newChallenge: Challenge = {
           ...challenge,
           id: `ch_${Date.now()}`,
-          user_id: 'demo',
+          user_id: userId,
           current_streak: 0,
           xp_earned: 0,
           savings_earned: 0,
@@ -86,6 +90,12 @@ export const useChallengeStore = create<ChallengeState>()(
           created_at: new Date().toISOString(),
         };
         set((state) => ({ challenges: [newChallenge, ...state.challenges] }));
+        void recordAppNotification({
+          title: 'Challenge started',
+          body: newChallenge.name,
+          type: 'challenge',
+          actionRoute: '/(tabs)/savings',
+        });
       },
 
       updateStreak: (id) => set((state) => ({
@@ -108,9 +118,16 @@ export const useChallengeStore = create<ChallengeState>()(
       })),
     };
   },
-  {
+    {
       name: 'smartpaisa-challenges',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (isSupabaseConfigured()) {
+          state.challenges = state.challenges.filter((challenge) => challenge.user_id !== 'demo');
+          state.totalXP = state.challenges.reduce((sum, challenge) => sum + challenge.xp_earned, 0);
+        }
+      },
     }
   )
 );

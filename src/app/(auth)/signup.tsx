@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -17,8 +17,10 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const submitting = useRef(false);
 
   const handleSignUp = async () => {
+    if (submitting.current) return;
     const newErrors: Record<string, string> = {};
     if (!fullName || fullName.length < 2) newErrors.fullName = 'Name must be at least 2 characters';
     if (!email || !/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Enter a valid email';
@@ -27,11 +29,14 @@ export default function SignupScreen() {
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    submitting.current = true;
     try {
       await signUp(email, password, fullName);
       router.replace('/(tabs)');
-    } catch {
-      Alert.alert('Sign Up Failed', 'Please try again.');
+    } catch (err) {
+      Alert.alert('Sign Up Failed', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      submitting.current = false;
     }
   };
 
@@ -57,7 +62,7 @@ export default function SignupScreen() {
               fontSize: Typography.fontSize['2xl'],
               fontFamily: Typography.fontFamily.bold,
               color: colors.textPrimary,
-            }}>Create Account ✨</Text>
+            }}>Create account</Text>
             <Text style={{
               fontSize: Typography.fontSize.base,
               fontFamily: Typography.fontFamily.regular,

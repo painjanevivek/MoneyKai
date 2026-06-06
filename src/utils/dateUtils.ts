@@ -81,4 +81,16 @@ export const getPreviousMonth = () => {
   return { start: startOfMonth(prev), end: endOfMonth(prev) };
 };
 
+export const getLastSixMonths = () => {
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, index) => {
+    const date = subMonths(now, index);
+    return {
+      key: format(date, 'yyyy-MM'),
+      label: format(date, 'MMMM yyyy'),
+      date,
+    };
+  }).reverse();
+};
+
 export { format, parseISO, isToday, isYesterday, startOfMonth, endOfMonth, differenceInDays, subMonths, addMonths };

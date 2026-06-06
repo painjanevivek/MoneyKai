@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,40 +28,36 @@ export default function SavingsScreen() {
   const { startChallenge, getActiveChallenges, getDailyMotivation, totalXP } = useChallengeStore();
   const activeChallenges = getActiveChallenges();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Savings Predictor');
-
-  // Savings Predictor State
   const [reductions, setReductions] = useState<Record<string, number>>({});
 
   const updateReduction = (category: string, percent: number) => {
-    setReductions(prev => ({ ...prev, [category]: percent }));
+    setReductions((prev) => ({ ...prev, [category]: percent }));
   };
 
-  const categoryReductions: CategoryReduction[] = categoryTotals.map(cat => ({
+  const categoryReductions: CategoryReduction[] = categoryTotals.map((cat) => ({
     category: cat.category,
     currentAmount: cat.total,
     reductionPercent: reductions[cat.category] || 0,
     savedAmount: 0,
   }));
 
-  const projection = useMemo(() =>
-    calculateSavingsProjection(settings.monthly_allowance, categoryTotals, categoryReductions),
+  const projection = useMemo(
+    () => calculateSavingsProjection(settings.monthly_allowance, categoryTotals, categoryReductions),
     [settings.monthly_allowance, categoryTotals, categoryReductions]
   );
 
-  const emergencyBudget = calculateEmergencyBudget(
-    settings.monthly_allowance - totalSpent,
-    getDaysLeftInMonth()
+  const emergencyBudget = calculateEmergencyBudget(settings.monthly_allowance - totalSpent, getDaysLeftInMonth());
+
+  const comparisonData = React.useMemo(
+    () => [
+      { value: Math.max(0, projection.currentSavings), label: 'Current', frontColor: colors.textTertiary },
+      { value: Math.max(0, projection.projectedSavings), label: 'Projected', frontColor: colors.primary },
+    ],
+    [projection, colors]
   );
 
-  const comparisonData = React.useMemo(() => [
-    { value: Math.max(0, projection.currentSavings), label: 'Current', frontColor: colors.textTertiary },
-    { value: Math.max(0, projection.projectedSavings), label: 'Projected', frontColor: colors.primary },
-  ], [projection, colors]);
-
-  // ─── Savings Predictor Tab ─────────────────────────────────────────────
   const renderSavingsPredictor = () => (
     <>
-      {/* Current vs Projected */}
       <Card style={{ marginBottom: Spacing.md }}>
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
           Savings Projection
@@ -81,10 +77,16 @@ export default function SavingsScreen() {
           </View>
         </View>
         {projection.improvement > 0 && (
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', gap: 8,
-            backgroundColor: colors.primaryBg, borderRadius: BorderRadius.sm, padding: Spacing.md,
-          }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              backgroundColor: colors.primaryBg,
+              borderRadius: BorderRadius.sm,
+              padding: Spacing.md,
+            }}
+          >
             <MaterialCommunityIcons name="trending-up" size={20} color={colors.primary} />
             <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>
               You could save {formatCurrency(projection.improvement)} more! ({projection.improvementPercent}% improvement)
@@ -106,12 +108,11 @@ export default function SavingsScreen() {
             yAxisColor="transparent"
             xAxisColor="transparent"
             isAnimated
-            yAxisLabelPrefix="₹"
+            yAxisLabelPrefix="Rs "
           />
         </View>
       </Card>
 
-      {/* Category Sliders */}
       <Card style={{ marginBottom: Spacing.md }}>
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: 4 }}>
           Adjust Category Spending
@@ -119,7 +120,7 @@ export default function SavingsScreen() {
         <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary, marginBottom: Spacing.md }}>
           Use sliders to simulate reducing spending in each category
         </Text>
-        {categoryTotals.slice(0, 6).map(cat => {
+        {categoryTotals.slice(0, 6).map((cat) => {
           const category = getCategoryById(cat.category);
           const reduction = reductions[cat.category] || 0;
           const saved = Math.round(cat.total * (reduction / 100));
@@ -136,22 +137,30 @@ export default function SavingsScreen() {
                   -{reduction}% {saved > 0 ? `(saves ${formatCurrency(saved)})` : ''}
                 </Text>
               </View>
-              {/* Slider buttons */}
               <View style={{ flexDirection: 'row', gap: 6 }}>
-                {[0, 10, 20, 30, 50].map(pct => (
+                {[0, 10, 20, 30, 50].map((pct) => (
                   <TouchableOpacity
                     key={pct}
                     onPress={() => updateReduction(cat.category, pct)}
                     style={{
-                      flex: 1, paddingVertical: 6, borderRadius: BorderRadius.sm, alignItems: 'center',
+                      flex: 1,
+                      paddingVertical: 6,
+                      borderRadius: BorderRadius.sm,
+                      alignItems: 'center',
                       backgroundColor: reduction === pct ? colors.primary : colors.surface,
-                      borderWidth: 1, borderColor: reduction === pct ? colors.primary : colors.border,
+                      borderWidth: 1,
+                      borderColor: reduction === pct ? colors.primary : colors.border,
                     }}
                   >
-                    <Text style={{
-                      fontSize: 11, fontFamily: Typography.fontFamily.medium,
-                      color: reduction === pct ? '#FFFFFF' : colors.textSecondary,
-                    }}>{pct}%</Text>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontFamily: Typography.fontFamily.medium,
+                        color: reduction === pct ? '#FFFFFF' : colors.textSecondary,
+                      }}
+                    >
+                      {pct}%
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -160,7 +169,6 @@ export default function SavingsScreen() {
         })}
       </Card>
 
-      {/* AI Recommendations */}
       {projection.recommendations.length > 0 && (
         <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.md }}>
@@ -168,10 +176,16 @@ export default function SavingsScreen() {
             <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>AI Recommendations</Text>
           </View>
           {projection.recommendations.map((rec, i) => (
-            <View key={i} style={{
-              flexDirection: 'row', gap: 8, paddingVertical: Spacing.sm,
-              borderTopWidth: i > 0 ? 1 : 0, borderTopColor: colors.borderLight,
-            }}>
+            <View
+              key={i}
+              style={{
+                flexDirection: 'row',
+                gap: 8,
+                paddingVertical: Spacing.sm,
+                borderTopWidth: i > 0 ? 1 : 0,
+                borderTopColor: colors.borderLight,
+              }}
+            >
               <MaterialCommunityIcons name="check-circle-outline" size={16} color={colors.primary} style={{ marginTop: 2 }} />
               <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary, lineHeight: 20 }}>{rec}</Text>
             </View>
@@ -181,10 +195,8 @@ export default function SavingsScreen() {
     </>
   );
 
-  // ─── Challenges Tab ────────────────────────────────────────────────────
   const renderChallenges = () => (
     <>
-      {/* XP Header */}
       <Card style={{ marginBottom: Spacing.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
@@ -198,21 +210,25 @@ export default function SavingsScreen() {
         </View>
       </Card>
 
-      {/* Daily Motivation */}
-      <View style={{
-        backgroundColor: colors.primaryBg, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md,
-        borderLeftWidth: 3, borderLeftColor: colors.primary,
-      }}>
+      <View
+        style={{
+          backgroundColor: colors.primaryBg,
+          borderRadius: BorderRadius.md,
+          padding: Spacing.md,
+          marginBottom: Spacing.md,
+          borderLeftWidth: 3,
+          borderLeftColor: colors.primary,
+        }}
+      >
         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.primary, lineHeight: 20 }}>
-          💡 {getDailyMotivation()}
+          {getDailyMotivation()}
         </Text>
       </View>
 
-      {/* Active Challenges */}
       {activeChallenges.length > 0 && (
         <>
           <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>Active Challenges</Text>
-          {activeChallenges.map(ch => (
+          {activeChallenges.map((ch) => (
             <Card key={ch.id} style={{ marginBottom: Spacing.md }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
                 <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{ch.name}</Text>
@@ -233,15 +249,20 @@ export default function SavingsScreen() {
         </>
       )}
 
-      {/* Available Challenges */}
       <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md, marginTop: Spacing.sm }}>Start a Challenge</Text>
-      {CHALLENGE_TEMPLATES.map(template => (
+      {CHALLENGE_TEMPLATES.map((template) => (
         <Card key={template.id} style={{ marginBottom: Spacing.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-            <View style={{
-              width: 44, height: 44, borderRadius: BorderRadius.md,
-              backgroundColor: `${template.color}15`, alignItems: 'center', justifyContent: 'center',
-            }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: BorderRadius.md,
+                backgroundColor: `${template.color}15`,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <MaterialCommunityIcons name={template.icon as any} size={22} color={template.color} />
             </View>
             <View style={{ flex: 1 }}>
@@ -249,14 +270,16 @@ export default function SavingsScreen() {
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>{template.defaultDuration} days • Est. savings {formatCurrency(template.estimatedSavings)}</Text>
             </View>
             <TouchableOpacity
-              onPress={() => startChallenge({
-                name: template.name,
-                category: template.category,
-                description: template.description,
-                duration_days: template.defaultDuration,
-                start_date: new Date().toISOString().split('T')[0],
-                end_date: new Date(Date.now() + template.defaultDuration * 86400000).toISOString().split('T')[0],
-              })}
+              onPress={() =>
+                startChallenge({
+                  name: template.name,
+                  category: template.category,
+                  description: template.description,
+                  duration_days: template.defaultDuration,
+                  start_date: new Date().toISOString().split('T')[0],
+                  end_date: new Date(Date.now() + template.defaultDuration * 86400000).toISOString().split('T')[0],
+                })
+              }
               style={{ backgroundColor: colors.primaryBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: BorderRadius.full }}
             >
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>Start</Text>
@@ -267,7 +290,6 @@ export default function SavingsScreen() {
     </>
   );
 
-  // ─── Emergency Tab ─────────────────────────────────────────────────────
   const renderEmergency = () => (
     <>
       <Card style={{ marginBottom: Spacing.md, borderWidth: isEmergencyMode ? 2 : 0, borderColor: colors.emergency }}>
@@ -275,9 +297,12 @@ export default function SavingsScreen() {
           <TouchableOpacity
             onPress={toggleEmergencyMode}
             style={{
-              width: 100, height: 100, borderRadius: 50,
+              width: 100,
+              height: 100,
+              borderRadius: 50,
               backgroundColor: isEmergencyMode ? colors.emergency : `${colors.emergency}15`,
-              alignItems: 'center', justifyContent: 'center',
+              alignItems: 'center',
+              justifyContent: 'center',
               ...(isEmergencyMode ? Shadows.glow(colors.emergency) : {}),
               marginBottom: Spacing.md,
             }}
@@ -285,7 +310,7 @@ export default function SavingsScreen() {
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.bold, color: isEmergencyMode ? '#FFF' : colors.emergency }}>SOS</Text>
           </TouchableOpacity>
           <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: isEmergencyMode ? colors.emergency : colors.textPrimary }}>
-            {isEmergencyMode ? '🚨 Emergency Mode Active' : 'Emergency Mode'}
+            {isEmergencyMode ? 'Emergency Mode Active' : 'Emergency Mode'}
           </Text>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginTop: 4 }}>
             {isEmergencyMode ? 'Your spending is restricted to essentials only' : 'Tap SOS to activate survival budget mode'}
@@ -332,26 +357,42 @@ export default function SavingsScreen() {
         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Predict savings, take challenges, handle emergencies</Text>
       </View>
 
-      {/* Tabs */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}>
-        {TABS.map(tab => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}
+      >
+        {TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
             style={{
-              paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+              minWidth: 116,
+              paddingHorizontal: Spacing.md,
+              paddingVertical: 12,
               borderRadius: BorderRadius.full,
               backgroundColor: activeTab === tab ? colors.primary : colors.card,
-              borderWidth: activeTab === tab ? 0 : 1, borderColor: colors.border,
+              borderWidth: activeTab === tab ? 0 : 1,
+              borderColor: colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <Text style={{
-              fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium,
-              color: activeTab === tab ? '#FFFFFF' : colors.textSecondary,
-            }}>{tab}</Text>
+            <Text
+              style={{
+                fontSize: Typography.fontSize.xs,
+                fontFamily: Typography.fontFamily.medium,
+                color: activeTab === tab ? '#FFFFFF' : colors.textSecondary,
+                textAlign: 'center',
+                lineHeight: 16,
+              }}
+              numberOfLines={2}
+            >
+              {tab}
+            </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
         {activeTab === 'Savings Predictor' && renderSavingsPredictor()}
@@ -361,3 +402,5 @@ export default function SavingsScreen() {
     </SafeAreaView>
   );
 }
+
+

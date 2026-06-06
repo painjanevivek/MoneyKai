@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, FlatList, Modal, Alert, TextI
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,6 +18,7 @@ const FILTER_TABS = ['All', 'Expense', 'Income'] as const;
 
 export default function TransactionsScreen() {
   const { colors } = useTheme();
+  const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const { addTransaction, deleteTransaction, setFilter } = useTransactionStore();
   const filteredTransactions = useTransactionStore((s) => s.getFilteredTransactions());
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
@@ -25,12 +27,19 @@ export default function TransactionsScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Add Transaction Form State
   const [txnType, setTxnType] = useState<'expense' | 'income'>('expense');
   const [txnAmount, setTxnAmount] = useState('');
   const [txnCategory, setTxnCategory] = useState('');
   const [txnDescription, setTxnDescription] = useState('');
   const [txnPayment, setTxnPayment] = useState('upi');
+
+  const resetForm = () => {
+    setTxnAmount('');
+    setTxnCategory('');
+    setTxnDescription('');
+    setTxnPayment('upi');
+    setTxnType('expense');
+  };
 
   const handleTabChange = (tab: typeof FILTER_TABS[number]) => {
     setActiveTab(tab);
@@ -49,8 +58,9 @@ export default function TransactionsScreen() {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
+
     addTransaction({
-      user_id: 'demo',
+      user_id: userId,
       type: txnType,
       amount: Number(txnAmount),
       category: txnCategory,
@@ -60,14 +70,6 @@ export default function TransactionsScreen() {
     });
     setShowAddModal(false);
     resetForm();
-  };
-
-  const resetForm = () => {
-    setTxnAmount('');
-    setTxnCategory('');
-    setTxnDescription('');
-    setTxnPayment('upi');
-    setTxnType('expense');
   };
 
   const handleDelete = (id: string) => {
@@ -82,6 +84,7 @@ export default function TransactionsScreen() {
   const renderTransaction = ({ item: txn }: { item: Transaction }) => {
     const category = getCategoryById(txn.category);
     const isExpense = txn.type === 'expense';
+
     return (
       <TouchableOpacity
         onLongPress={() => handleDelete(txn.id)}
@@ -97,23 +100,32 @@ export default function TransactionsScreen() {
           shadowColor: colors.shadowColor,
         }}
       >
-        <View style={{
-          width: 44, height: 44, borderRadius: BorderRadius.sm,
-          backgroundColor: category?.colorLight || '#F3F4F6',
-          alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md,
-        }}>
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: BorderRadius.sm,
+            backgroundColor: category?.colorLight || '#F3F4F6',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: Spacing.md,
+          }}
+        >
           <MaterialCommunityIcons name={(category?.icon || 'help-circle-outline') as any} size={22} color={category?.color || '#6B7280'} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>{txn.description}</Text>
           <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary }}>
-            {category?.name} • {formatRelativeDate(txn.transaction_date)} • {PAYMENT_METHODS.find(p => p.id === txn.payment_method)?.name || txn.payment_method}
+            {category?.name} • {formatRelativeDate(txn.transaction_date)} • {PAYMENT_METHODS.find((p) => p.id === txn.payment_method)?.name || txn.payment_method}
           </Text>
         </View>
-        <Text style={{
-          fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold,
-          color: isExpense ? colors.emergency : colors.primaryLight,
-        }}>
+        <Text
+          style={{
+            fontSize: Typography.fontSize.md,
+            fontFamily: Typography.fontFamily.semiBold,
+            color: isExpense ? colors.emergency : colors.primaryLight,
+          }}
+        >
           {isExpense ? '-' : '+'}{formatCurrency(txn.amount)}
         </Text>
       </TouchableOpacity>
@@ -122,13 +134,11 @@ export default function TransactionsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* Header */}
       <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
         <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>Transactions</Text>
         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Manage your income and expenses</Text>
       </View>
 
-      {/* Summary */}
       <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}>
         <View style={{ flex: 1, backgroundColor: '#FEF0F0', borderRadius: BorderRadius.md, padding: Spacing.md }}>
           <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.emergency }}>Total Spent</Text>
@@ -140,13 +150,19 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      {/* Search */}
       <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.sm }}>
-        <View style={{
-          flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
-          borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, height: 44,
-          borderWidth: 1, borderColor: colors.border,
-        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.card,
+            borderRadius: BorderRadius.md,
+            paddingHorizontal: Spacing.md,
+            height: 44,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
           <MaterialCommunityIcons name="magnify" size={20} color={colors.textTertiary} />
           <TextInput
             placeholder="Search transactions..."
@@ -158,72 +174,97 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      {/* Filter Tabs */}
       <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}>
-        {FILTER_TABS.map(tab => (
+        {FILTER_TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
             onPress={() => handleTabChange(tab)}
             style={{
-              paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
+              paddingHorizontal: Spacing.base,
+              paddingVertical: Spacing.sm,
               borderRadius: BorderRadius.full,
               backgroundColor: activeTab === tab ? colors.primary : colors.card,
               borderWidth: activeTab === tab ? 0 : 1,
               borderColor: colors.border,
             }}
           >
-            <Text style={{
-              fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium,
-              color: activeTab === tab ? '#FFFFFF' : colors.textSecondary,
-            }}>{tab}</Text>
+            <Text
+              style={{
+                fontSize: Typography.fontSize.sm,
+                fontFamily: Typography.fontFamily.medium,
+                color: activeTab === tab ? '#FFFFFF' : colors.textSecondary,
+              }}
+            >
+              {tab}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Transaction List */}
       <FlatList
         data={filteredTransactions}
         renderItem={renderTransaction}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 120 }}
         ListEmptyComponent={<EmptyState icon="receipt" title="No Transactions" message="Start tracking by adding your first transaction." />}
       />
 
-      {/* FAB */}
       <TouchableOpacity
         onPress={() => setShowAddModal(true)}
         style={{
-          position: 'absolute', bottom: 90, right: 20,
-          width: 56, height: 56, borderRadius: 28,
-          backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
-          ...Shadows.lg, shadowColor: colors.primary,
+          position: 'absolute',
+          bottom: 90,
+          right: 20,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...Shadows.lg,
+          shadowColor: colors.primary,
         }}
       >
         <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* Add Transaction Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-          <View style={{
-            backgroundColor: colors.card, borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl,
-            padding: Spacing.xl, maxHeight: '85%',
-          }}>
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderTopLeftRadius: BorderRadius.xl,
+              borderTopRightRadius: BorderRadius.xl,
+              padding: Spacing.xl,
+              maxHeight: '85%',
+            }}
+          >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg }}>
               <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>Add Transaction</Text>
-              <TouchableOpacity onPress={() => { setShowAddModal(false); resetForm(); }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowAddModal(false);
+                  resetForm();
+                }}
+              >
                 <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
+
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Type Toggle */}
               <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
-                {(['expense', 'income'] as const).map(type => (
+                {(['expense', 'income'] as const).map((type) => (
                   <TouchableOpacity
                     key={type}
-                    onPress={() => { setTxnType(type); setTxnCategory(''); }}
+                    onPress={() => {
+                      setTxnType(type);
+                      setTxnCategory('');
+                    }}
                     style={{
-                      flex: 1, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, alignItems: 'center',
+                      flex: 1,
+                      paddingVertical: Spacing.sm,
+                      borderRadius: BorderRadius.md,
+                      alignItems: 'center',
                       backgroundColor: txnType === type ? (type === 'expense' ? colors.emergencyBg : colors.primaryBg) : colors.surface,
                       borderWidth: txnType === type ? 2 : 1,
                       borderColor: txnType === type ? (type === 'expense' ? colors.emergency : colors.primary) : colors.border,
@@ -234,11 +275,17 @@ export default function TransactionsScreen() {
                       size={20}
                       color={txnType === type ? (type === 'expense' ? colors.emergency : colors.primary) : colors.textTertiary}
                     />
-                    <Text style={{
-                      fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold,
-                      color: txnType === type ? (type === 'expense' ? colors.emergency : colors.primary) : colors.textSecondary,
-                      marginTop: 4, textTransform: 'capitalize',
-                    }}>{type}</Text>
+                    <Text
+                      style={{
+                        fontSize: Typography.fontSize.sm,
+                        fontFamily: Typography.fontFamily.semiBold,
+                        color: txnType === type ? (type === 'expense' ? colors.emergency : colors.primary) : colors.textSecondary,
+                        marginTop: 4,
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      {type}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -246,16 +293,18 @@ export default function TransactionsScreen() {
               <Input label="Amount" placeholder="0" value={txnAmount} onChangeText={setTxnAmount} prefix="₹" keyboardType="numeric" icon="currency-inr" />
               <Input label="Description" placeholder="What was this for?" value={txnDescription} onChangeText={setTxnDescription} icon="text-short" />
 
-              {/* Category Selector */}
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary, marginBottom: Spacing.sm }}>Category</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base }}>
-                {categories.map(cat => (
+                {categories.map((cat) => (
                   <TouchableOpacity
                     key={cat.id}
                     onPress={() => setTxnCategory(cat.id)}
                     style={{
-                      flexDirection: 'row', alignItems: 'center', gap: 6,
-                      paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingHorizontal: Spacing.md,
+                      paddingVertical: Spacing.sm,
                       borderRadius: BorderRadius.full,
                       backgroundColor: txnCategory === cat.id ? `${cat.color}15` : colors.surface,
                       borderWidth: 1.5,
@@ -263,23 +312,29 @@ export default function TransactionsScreen() {
                     }}
                   >
                     <MaterialCommunityIcons name={cat.icon as any} size={16} color={txnCategory === cat.id ? cat.color : colors.textTertiary} />
-                    <Text style={{
-                      fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium,
-                      color: txnCategory === cat.id ? cat.color : colors.textSecondary,
-                    }}>{cat.name.split(' ')[0]}</Text>
+                    <Text
+                      style={{
+                        fontSize: Typography.fontSize.xs,
+                        fontFamily: Typography.fontFamily.medium,
+                        color: txnCategory === cat.id ? cat.color : colors.textSecondary,
+                      }}
+                    >
+                      {cat.name.split(' ')[0]}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              {/* Payment Method */}
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary, marginBottom: Spacing.sm }}>Payment Method</Text>
               <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg }}>
-                {PAYMENT_METHODS.map(pm => (
+                {PAYMENT_METHODS.map((pm) => (
                   <TouchableOpacity
                     key={pm.id}
                     onPress={() => setTxnPayment(pm.id)}
                     style={{
-                      flex: 1, alignItems: 'center', paddingVertical: Spacing.sm,
+                      flex: 1,
+                      alignItems: 'center',
+                      paddingVertical: Spacing.sm,
                       borderRadius: BorderRadius.md,
                       backgroundColor: txnPayment === pm.id ? colors.primaryBg : colors.surface,
                       borderWidth: 1.5,
@@ -287,10 +342,16 @@ export default function TransactionsScreen() {
                     }}
                   >
                     <MaterialCommunityIcons name={pm.icon as any} size={18} color={txnPayment === pm.id ? colors.primary : colors.textTertiary} />
-                    <Text style={{
-                      fontSize: 10, fontFamily: Typography.fontFamily.medium, marginTop: 2,
-                      color: txnPayment === pm.id ? colors.primary : colors.textSecondary,
-                    }}>{pm.name}</Text>
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontFamily: Typography.fontFamily.medium,
+                        marginTop: 2,
+                        color: txnPayment === pm.id ? colors.primary : colors.textSecondary,
+                      }}
+                    >
+                      {pm.name}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -303,3 +364,4 @@ export default function TransactionsScreen() {
     </SafeAreaView>
   );
 }
+

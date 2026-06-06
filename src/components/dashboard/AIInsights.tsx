@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useTransactionStore } from '../../stores/useTransactionStore';
@@ -67,7 +68,10 @@ export const AIInsights: React.FC = () => {
           <MaterialCommunityIcons name="chevron-right" size={16} color={colors.textTertiary} />
         </View>
       ))}
-      <TouchableOpacity style={{
+      <TouchableOpacity
+        onPress={() => router.push('/(tabs)/analytics')}
+        style={{
+
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',

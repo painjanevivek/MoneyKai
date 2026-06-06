@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Group, GroupExpense } from '../types/group';
+import { recordAppNotification } from '@/services/notificationService';
+import { isSupabaseConfigured } from '@/services/supabase';
 
 interface GroupState {
   groups: Group[];
@@ -71,8 +73,8 @@ const SAMPLE_EXPENSES: GroupExpense[] = [
 export const useGroupStore = create<GroupState>()(
   persist(
     (set, get) => ({
-      groups: SAMPLE_GROUPS,
-      expenses: SAMPLE_EXPENSES,
+      groups: isSupabaseConfigured() ? [] : SAMPLE_GROUPS,
+      expenses: isSupabaseConfigured() ? [] : SAMPLE_EXPENSES,
 
       addGroup: (group) => {
         const newGroup: Group = {
@@ -81,6 +83,12 @@ export const useGroupStore = create<GroupState>()(
           created_at: new Date().toISOString(),
         };
         set((state) => ({ groups: [newGroup, ...state.groups] }));
+        void recordAppNotification({
+          title: 'Group created',
+          body: newGroup.name,
+          type: 'system',
+          actionRoute: '/(tabs)/groups',
+        });
       },
 
       addGroupExpense: (expense) => {
@@ -111,6 +119,13 @@ export const useGroupStore = create<GroupState>()(
     {
       name: 'smartpaisa-groups',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (isSupabaseConfigured()) {
+          state.groups = state.groups.filter((group) => group.created_by !== 'demo');
+          state.expenses = state.expenses.filter((expense) => expense.group_id !== 'grp1' && expense.group_id !== 'grp2');
+        }
+      },
     }
   )
 );

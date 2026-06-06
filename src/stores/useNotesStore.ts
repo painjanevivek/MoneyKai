@@ -2,21 +2,26 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Note, ChecklistItem } from '../types/note';
+import { recordAppNotification } from '@/services/notificationService';
+import { isSupabaseConfigured } from '@/services/supabase';
 
 interface NotesState {
   notes: Note[];
+  isSeeded: boolean;
 
   // Getters
   getPinnedNotes: () => Note[];
   getRecentNotes: (count?: number) => Note[];
 
   // Actions
-  addNote: (note: Omit<Note, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => void;
+  addNote: (note: Omit<Note, 'id' | 'user_id' | 'created_at' | 'updated_at'>, userId?: string) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   togglePin: (id: string) => void;
   toggleChecklistItem: (noteId: string, itemId: string) => void;
   addChecklistItem: (noteId: string, text: string) => void;
+  /** Removes demo seed notes and resets isSeeded. Call on sign-out. */
+  clearSeedData: () => void;
 }
 
 const SAMPLE_NOTES: Note[] = [
@@ -60,7 +65,8 @@ export const useNotesStore = create<NotesState>()(
       let lastCountForRecent: number = 0;
 
       return {
-        notes: SAMPLE_NOTES,
+        notes: [],
+        isSeeded: false,
 
         getPinnedNotes: () => {
           const notes = get().notes;
@@ -84,16 +90,22 @@ export const useNotesStore = create<NotesState>()(
           return result;
         },
 
-        addNote: (note) => {
+        addNote: (note, userId = 'local') => {
           const now = new Date().toISOString();
           const newNote: Note = {
             ...note,
-            id: `note_${Date.now()}`,
-            user_id: 'demo',
+            id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            user_id: userId,
             created_at: now,
             updated_at: now,
           };
           set((state) => ({ notes: [newNote, ...state.notes] }));
+          void recordAppNotification({
+            title: 'Note saved',
+            body: newNote.title,
+            type: 'system',
+            actionRoute: '/(tabs)/notes',
+          });
         },
 
         updateNote: (id, updates) => set((state) => ({
@@ -133,18 +145,35 @@ export const useNotesStore = create<NotesState>()(
                   ...n,
                   checklist_items: [
                     ...(n.checklist_items || []),
-                    { id: `cl_${Date.now()}`, text, completed: false },
+                    { id: `cl_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, text, completed: false },
                   ],
                   updated_at: new Date().toISOString(),
                 }
               : n
           ),
         })),
+
+        clearSeedData: () =>
+          set((state) => ({
+            notes: state.notes.filter((n) => n.user_id !== 'demo'),
+            isSeeded: false,
+          })),
       };
     },
     {
       name: 'smartpaisa-notes',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (isSupabaseConfigured()) {
+          state.notes = state.notes.filter((note) => note.user_id !== 'demo');
+          return;
+        }
+        if (!state.isSeeded) {
+          state.notes = SAMPLE_NOTES;
+          state.isSeeded = true;
+        }
+      },
     }
   )
 );
