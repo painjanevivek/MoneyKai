@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useGroupStore } from '@/stores/useGroupStore';
@@ -30,6 +30,7 @@ const GROUP_TYPE_COLORS: Record<string, string> = {
 
 export default function GroupsScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const { groups, addGroup, settleExpense, getGroupExpenses } = useGroupStore();
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export default function GroupsScreen() {
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 100 }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}>
           <Card style={{ marginBottom: Spacing.md }}>
             <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>Members</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
@@ -186,7 +187,7 @@ export default function GroupsScreen() {
         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Split expenses with friends and flatmates</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}>
         {groups.map((group) => {
           const color = GROUP_TYPE_COLORS[group.type] || colors.primary;
           const icon = GROUP_TYPE_ICONS[group.type] || 'account-group';
@@ -250,8 +251,8 @@ export default function GroupsScreen() {
         onPress={() => setShowCreateModal(true)}
         style={{
           position: 'absolute',
-          bottom: 90,
-          right: 20,
+          bottom: insets.bottom + 96,
+          right: 16,
           width: 56,
           height: 56,
           borderRadius: 28,
@@ -305,4 +306,3 @@ export default function GroupsScreen() {
     </SafeAreaView>
   );
 }
-

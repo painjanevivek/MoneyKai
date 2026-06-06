@@ -43,7 +43,7 @@ export default function DashboardScreen() {
 
   const handleSignOut = async () => {
     setShowProfileMenu(false);
-    await signOut();
+    void signOut();
     router.replace('/(auth)/login');
   };
 
@@ -78,7 +78,7 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160 }}>
         <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.sm }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.md }}>
             <View style={{ flex: 1 }}>

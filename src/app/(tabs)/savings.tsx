@@ -360,16 +360,17 @@ export default function SavingsScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md, paddingBottom: 4 }}
       >
         {TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
             onPress={() => setActiveTab(tab)}
             style={{
-              minWidth: 116,
+              minWidth: 124,
+              minHeight: 54,
               paddingHorizontal: Spacing.md,
-              paddingVertical: 12,
+              paddingVertical: 10,
               borderRadius: BorderRadius.full,
               backgroundColor: activeTab === tab ? colors.primary : colors.card,
               borderWidth: activeTab === tab ? 0 : 1,
@@ -384,7 +385,7 @@ export default function SavingsScreen() {
                 fontFamily: Typography.fontFamily.medium,
                 color: activeTab === tab ? '#FFFFFF' : colors.textSecondary,
                 textAlign: 'center',
-                lineHeight: 16,
+                lineHeight: 18,
               }}
               numberOfLines={2}
             >
@@ -394,7 +395,7 @@ export default function SavingsScreen() {
         ))}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
         {activeTab === 'Savings Predictor' && renderSavingsPredictor()}
         {activeTab === 'Challenges' && renderChallenges()}
         {activeTab === 'Emergency' && renderEmergency()}

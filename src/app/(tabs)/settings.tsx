@@ -88,7 +88,7 @@ export default function SettingsScreen() {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          await signOut();
+          void signOut();
           router.replace('/(auth)/login');
         },
       },
@@ -210,7 +210,7 @@ export default function SettingsScreen() {
         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Manage your account and preferences</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
         <Card style={{ marginBottom: Spacing.lg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
             <View

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, TouchableOpacity, ActivityIndicator, Platform, useWindowDimensions, LogBox } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, LogBox } from 'react-native';
 import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
@@ -73,7 +73,6 @@ class AppErrorBoundary extends React.Component<
 export default function RootLayout() {
   const theme = useSettingsStore((s) => s.theme);
   const colors = Colors[theme];
-  const { width, height } = useWindowDimensions();
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -117,11 +116,6 @@ export default function RootLayout() {
     );
   }
 
-  const isWeb = Platform.OS === 'web';
-  const isDesktop = isWeb && width > 900;
-  const containerWidth = isDesktop ? Math.min(width * 0.92, 1280) : width;
-  const containerHeight = isDesktop ? Math.min(containerWidth * (10 / 16), height * 0.96) : undefined;
-
   const content = (
     <Stack
       screenOptions={{
@@ -141,28 +135,7 @@ export default function RootLayout() {
   return (
     <AppErrorBoundary colors={colors}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      {isDesktop ? (
-        <View style={{ flex: 1, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center' }}>
-          <View
-            style={{
-              width: containerWidth,
-              height: containerHeight,
-              backgroundColor: colors.background,
-              borderRadius: 16,
-              overflow: 'hidden',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 20 },
-              shadowOpacity: 0.45,
-              shadowRadius: 48,
-              elevation: 24,
-            }}
-          >
-            {content}
-          </View>
-        </View>
-      ) : (
-        content
-      )}
+      <View style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
     </AppErrorBoundary>
   );
 }

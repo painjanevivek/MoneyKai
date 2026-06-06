@@ -241,6 +241,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
+        // Clear the local session immediately so navigation can happen without waiting
+        // on network cleanup or store resets.
+        set({ user: null, isAuthenticated: false, isLoading: false });
+
+        const cleanup = async () => {
         if (isSupabaseConfigured()) {
           await supabase.auth.signOut().catch(() => {
             // Ignore network errors during sign-out; local state is cleared regardless.
@@ -259,7 +264,11 @@ export const useAuthStore = create<AuthState>()(
         useChallengeStore.setState({ challenges: [], totalXP: 0 });
         useBadgeStore.setState({ badges: [], recentUnlock: null });
         useNotificationStore.getState().clearNotifications();
-        set({ user: null, isAuthenticated: false });
+        };
+
+        void cleanup().catch(() => {
+          // Best-effort cleanup only; the user has already been signed out locally.
+        });
       },
 
       setLoading: (loading) => set({ isLoading: loading }),

@@ -52,7 +52,7 @@ export default function NotificationsScreen() {
         />
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 100 }}
+          contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
         >
           {notifications.map((notification, index) => (
@@ -109,4 +109,3 @@ export default function NotificationsScreen() {
     </SafeAreaView>
   );
 }
-

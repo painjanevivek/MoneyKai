@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList, Modal, Alert, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
@@ -18,6 +18,7 @@ const FILTER_TABS = ['All', 'Expense', 'Income'] as const;
 
 export default function TransactionsScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const { addTransaction, deleteTransaction, setFilter } = useTransactionStore();
   const filteredTransactions = useTransactionStore((s) => s.getFilteredTransactions());
@@ -205,7 +206,7 @@ export default function TransactionsScreen() {
         data={filteredTransactions}
         renderItem={renderTransaction}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}
         ListEmptyComponent={<EmptyState icon="receipt" title="No Transactions" message="Start tracking by adding your first transaction." />}
       />
 
@@ -213,8 +214,8 @@ export default function TransactionsScreen() {
         onPress={() => setShowAddModal(true)}
         style={{
           position: 'absolute',
-          bottom: 90,
-          right: 20,
+          bottom: insets.bottom + 96,
+          right: 16,
           width: 56,
           height: 56,
           borderRadius: 28,
@@ -364,4 +365,3 @@ export default function TransactionsScreen() {
     </SafeAreaView>
   );
 }
-

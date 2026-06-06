@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { useBudgetStore } from '../../stores/useBudgetStore';
 import { Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
@@ -70,6 +71,7 @@ export const EmergencyWidget: React.FC<{ onPress?: () => void }> = ({ onPress })
 // Floating SOS Button
 export const SOSFloatingButton: React.FC<{ onPress: () => void }> = ({ onPress }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { isEmergencyMode } = useBudgetStore();
 
   if (!isEmergencyMode) return null;
@@ -80,8 +82,8 @@ export const SOSFloatingButton: React.FC<{ onPress: () => void }> = ({ onPress }
       activeOpacity={0.8}
       style={{
         position: 'absolute',
-        bottom: 100,
-        right: 20,
+        bottom: insets.bottom + 24,
+        right: 16,
         width: 56,
         height: 56,
         borderRadius: 28,
