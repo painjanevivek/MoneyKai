@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isSupabaseConfigured } from '@/services/supabase';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
@@ -219,20 +220,12 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
         <Card style={{ marginBottom: Spacing.lg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: colors.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textInverse }}>
-                {user?.full_name?.[0]?.toUpperCase() || 'A'}
-              </Text>
-            </View>
+            <UserAvatar
+              name={user?.full_name}
+              email={user?.email}
+              avatarUrl={user?.avatar_url}
+              size={56}
+            />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{user?.full_name || 'Demo User'}</Text>
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>{user?.email || 'No email available'}</Text>

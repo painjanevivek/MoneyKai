@@ -18,6 +18,7 @@ import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { BADGE_DEFINITIONS } from '@/constants/badges';
 import { formatDate, getLastSixMonths } from '@/utils/dateUtils';
 import { ModalSheet } from '@/components/ui/ModalSheet';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
@@ -133,16 +134,18 @@ export default function DashboardScreen() {
                   width: 40,
                   height: 40,
                   borderRadius: 20,
-                  backgroundColor: colors.primary,
                   alignItems: 'center',
                   justifyContent: 'center',
                   ...Shadows.sm,
                   shadowColor: colors.primary,
                 }}
               >
-                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.bold, color: colors.textInverse }}>
-                  {user?.full_name?.[0]?.toUpperCase() || 'U'}
-                </Text>
+                <UserAvatar
+                  name={user?.full_name}
+                  email={user?.email}
+                  avatarUrl={user?.avatar_url}
+                  size={40}
+                />
               </TouchableOpacity>
             </View>
           </View>
