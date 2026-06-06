@@ -53,7 +53,7 @@ AI-powered finance management app for students, bachelors, and people living awa
 ## 📁 Project Structure
 
 ```
-budget-manager/
+SmartPaisa/
 ├── src/
 │   ├── app/                    # Expo Router screens
 │   │   ├── _layout.tsx         # Root layout (fonts, providers)
@@ -102,7 +102,7 @@ budget-manager/
 
 ```bash
 git clone <repository-url>
-cd budget-manager
+cd SmartPaisa
 npm install
 ```
 
