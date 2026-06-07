@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart } from 'react-native-gifted-charts';
@@ -10,6 +10,7 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { SavingsAnalyticsSnapshot } from '@/components/charts/SavingsAnalyticsSnapshot';
 import { getCategoryById } from '@/constants/categories';
 import { CHALLENGE_TEMPLATES } from '@/types/challenge';
 import { calculateSavingsProjection, calculateEmergencyBudget } from '@/utils/savingsEngine';
@@ -22,6 +23,8 @@ const TABS = ['Savings Predictor', 'Challenges', 'Emergency'] as const;
 
 export default function SavingsScreen() {
   const { colors, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width > 900;
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const { settings, isEmergencyMode, toggleEmergencyMode } = useBudgetStore();
@@ -59,60 +62,70 @@ export default function SavingsScreen() {
 
   const renderSavingsPredictor = () => (
     <>
-      <Card style={{ marginBottom: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
-          Savings Projection
-        </Text>
-        <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg }}>
-          <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: colors.borderLight }}>
-            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Current Trajectory</Text>
-            <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-              {formatCurrency(Math.max(0, projection.currentSavings))}
-            </Text>
+      <View
+        style={{
+          flexDirection: isWide ? 'row' : 'column',
+          gap: Spacing.md,
+          marginBottom: Spacing.md,
+        }}
+      >
+        <Card style={{ flex: 1 }}>
+          <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
+            Savings Projection
+          </Text>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg }}>
+            <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: colors.borderLight }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Current Trajectory</Text>
+              <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
+                {formatCurrency(Math.max(0, projection.currentSavings))}
+              </Text>
+            </View>
+            <View style={{ flex: 1, backgroundColor: colors.primaryBg, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: `${colors.primary}30` }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>After Reductions</Text>
+              <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.primary }}>
+                {formatCurrency(Math.max(0, projection.projectedSavings))}
+              </Text>
+            </View>
           </View>
-          <View style={{ flex: 1, backgroundColor: colors.primaryBg, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: `${colors.primary}30` }}>
-            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>After Reductions</Text>
-            <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.primary }}>
-              {formatCurrency(Math.max(0, projection.projectedSavings))}
-            </Text>
+          {projection.improvement > 0 && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: colors.primaryBg,
+                borderRadius: BorderRadius.sm,
+                padding: Spacing.md,
+              }}
+            >
+              <MaterialCommunityIcons name="trending-up" size={20} color={colors.primary} />
+              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>
+                You could save {formatCurrency(projection.improvement)} more! ({projection.improvementPercent}% improvement)
+              </Text>
+            </View>
+          )}
+          <View style={{ alignItems: 'center', marginTop: Spacing.md }}>
+            <BarChart
+              data={comparisonData}
+              barWidth={50}
+              spacing={40}
+              roundedTop
+              roundedBottom
+              height={120}
+              noOfSections={3}
+              yAxisTextStyle={{ fontSize: 10, color: colors.textTertiary }}
+              xAxisLabelTextStyle={{ fontSize: 10, color: colors.textSecondary, fontFamily: Typography.fontFamily.medium }}
+              hideRules
+              yAxisColor="transparent"
+              xAxisColor="transparent"
+              isAnimated
+              yAxisLabelPrefix="₹"
+            />
           </View>
-        </View>
-        {projection.improvement > 0 && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              backgroundColor: colors.primaryBg,
-              borderRadius: BorderRadius.sm,
-              padding: Spacing.md,
-            }}
-          >
-            <MaterialCommunityIcons name="trending-up" size={20} color={colors.primary} />
-            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>
-              You could save {formatCurrency(projection.improvement)} more! ({projection.improvementPercent}% improvement)
-            </Text>
-          </View>
-        )}
-        <View style={{ alignItems: 'center', marginTop: Spacing.md }}>
-          <BarChart
-            data={comparisonData}
-            barWidth={50}
-            spacing={40}
-            roundedTop
-            roundedBottom
-            height={120}
-            noOfSections={3}
-            yAxisTextStyle={{ fontSize: 10, color: colors.textTertiary }}
-            xAxisLabelTextStyle={{ fontSize: 10, color: colors.textSecondary, fontFamily: Typography.fontFamily.medium }}
-            hideRules
-            yAxisColor="transparent"
-            xAxisColor="transparent"
-            isAnimated
-            yAxisLabelPrefix="Rs "
-          />
-        </View>
-      </Card>
+        </Card>
+
+        <SavingsAnalyticsSnapshot />
+      </View>
 
       <Card style={{ marginBottom: Spacing.md }}>
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: 4 }}>

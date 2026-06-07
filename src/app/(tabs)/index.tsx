@@ -1,30 +1,30 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { BalanceCards } from '@/components/dashboard/BalanceCards';
 import { SpendingPieChart } from '@/components/charts/SpendingPieChart';
-import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
 import { QuickNotes } from '@/components/dashboard/QuickNotes';
 import { NoteModal } from '@/components/dashboard/NoteModal';
-import { EmergencyWidget } from '@/components/dashboard/EmergencyWidget';
-import { TrendLineChart } from '@/components/charts/TrendLineChart';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { BADGE_DEFINITIONS } from '@/constants/badges';
 import { formatDate, getLastSixMonths } from '@/utils/dateUtils';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
+  const tourCompleted = useSettingsStore((s) => s.tourCompleted);
+  const setTourCompleted = useSettingsStore((s) => s.setTourCompleted);
   const activeChallenges = useChallengeStore((s) => s.getActiveChallenges());
   const { badges } = useBadgeStore();
   const unlockedBadges = badges.filter((b) => b.is_unlocked).slice(0, 4);
@@ -33,9 +33,10 @@ export default function DashboardScreen() {
   const [showMonthMenu, setShowMonthMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [tourDismissedFor, setTourDismissedFor] = useState<string | null>(null);
+  const showTour = Boolean(user?.id && !tourCompleted && tourDismissedFor !== user.id);
 
   const selectedMonthLabel = months.find((month) => month.key === selectedMonthKey)?.label ?? months[months.length - 1]?.label ?? '';
-  const isWide = width > 900;
 
   const openProfileSettings = () => {
     setShowProfileMenu(false);
@@ -46,6 +47,11 @@ export default function DashboardScreen() {
     setShowProfileMenu(false);
     await signOut();
     router.replace('/login');
+  };
+
+  const completeTour = () => {
+    setTourCompleted(true);
+    setTourDismissedFor(user?.id ?? null);
   };
 
   const monthTiles = (
@@ -159,17 +165,9 @@ export default function DashboardScreen() {
           <SpendingPieChart />
         </View>
 
-        <View
-          style={{
-            paddingHorizontal: Spacing.base,
-            marginBottom: Spacing.lg,
-            flexDirection: isWide ? 'row' : 'column',
-            gap: Spacing.base,
-          }}
-        >
+        <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.lg }}>
           <View
             style={{
-              flex: 1,
               backgroundColor: colors.card,
               borderRadius: BorderRadius.lg,
               padding: Spacing.base,
@@ -208,18 +206,6 @@ export default function DashboardScreen() {
               </Text>
             )}
           </View>
-
-          <View style={{ flex: 1 }}>
-            <EmergencyWidget />
-          </View>
-        </View>
-
-        <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.lg }}>
-          <TrendLineChart />
-        </View>
-
-        <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
-          <MonthlyReset />
         </View>
 
         <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
@@ -275,6 +261,13 @@ export default function DashboardScreen() {
       </ScrollView>
 
       <NoteModal visible={showNoteModal} onClose={() => setShowNoteModal(false)} />
+
+      <FirstLoginTour
+        key={`${user?.id ?? 'guest'}-${showTour ? 'open' : 'closed'}`}
+        visible={showTour}
+        onFinish={completeTour}
+        onSkip={completeTour}
+      />
 
       <ModalSheet
         visible={showMonthMenu}

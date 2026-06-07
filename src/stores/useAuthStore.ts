@@ -104,6 +104,7 @@ export const useAuthStore = create<AuthState>()(
             },
             isAuthenticated: true,
             isLoading: false,
+            isOnboarded: false,
           });
           return;
         }
@@ -136,7 +137,7 @@ export const useAuthStore = create<AuthState>()(
             },
             isAuthenticated: true,
             isLoading: false,
-            isOnboarded: true,
+            isOnboarded: false,
           });
           return;
         }
@@ -168,18 +169,19 @@ export const useAuthStore = create<AuthState>()(
         try {
           if (!isFirebaseConfigured()) {
             await new Promise((resolve) => setTimeout(resolve, 800));
-            set({
-              user: {
-                id: 'sample-google-001',
-                email: 'sample.google@example.com',
-                full_name: 'Google User',
-                auth_provider: 'google',
-              },
-              isAuthenticated: true,
-              isLoading: false,
-            });
-            return;
-          }
+          set({
+            user: {
+              id: 'sample-google-001',
+              email: 'sample.google@example.com',
+              full_name: 'Google User',
+              auth_provider: 'google',
+            },
+            isAuthenticated: true,
+            isLoading: false,
+            isOnboarded: false,
+          });
+          return;
+        }
 
           if (Platform.OS !== 'web') {
             throw new Error('Google sign-in is only enabled on web right now. Use email login on mobile until native Google auth is configured.');
@@ -202,7 +204,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
-        set({ user: null, isAuthenticated: false, isLoading: false });
+        set({ user: null, isAuthenticated: false, isLoading: false, isOnboarded: false });
 
         const cleanup = async () => {
           const { resetLocalAppState } = await import('@/services/remoteSync');

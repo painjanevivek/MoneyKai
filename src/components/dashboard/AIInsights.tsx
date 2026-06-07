@@ -86,7 +86,7 @@ export const AIInsights: React.FC = () => {
         </View>
       )}
       <TouchableOpacity
-        onPress={() => router.push('/(tabs)/analytics')}
+        onPress={() => router.push('/(tabs)/savings')}
         style={{
 
         flexDirection: 'row',

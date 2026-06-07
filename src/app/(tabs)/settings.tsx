@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
@@ -251,22 +252,6 @@ export default function SettingsScreen() {
             }}
           />
           <SettingItem
-            icon="calendar-sync"
-            iconColor="#2B2B2B"
-            iconBg="#F2F2F2"
-            title="Auto Reset"
-            subtitle={`Resets on day ${settings.reset_day} of each month`}
-            right={
-              <Switch
-                value={settings.auto_reset}
-                onValueChange={(v) => updateSettings({ auto_reset: v })}
-                trackColor={switchTrack}
-                thumbColor={switchThumb}
-                ios_backgroundColor={colors.borderLight}
-              />
-            }
-          />
-          <SettingItem
             icon="transfer"
             iconColor="#444444"
             iconBg="#ECECEC"
@@ -283,6 +268,10 @@ export default function SettingsScreen() {
             }
           />
         </Card>
+
+        <View style={{ marginBottom: Spacing.lg }}>
+          <MonthlyReset />
+        </View>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Appearance</Text>
         <Card style={{ marginBottom: Spacing.lg }}>

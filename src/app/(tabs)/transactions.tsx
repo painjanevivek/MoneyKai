@@ -320,6 +320,7 @@ export default function TransactionsScreen() {
                   <TouchableOpacity
                     key={cat.id}
                     onPress={() => setTxnCategory(cat.id)}
+                    activeOpacity={0.85}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -342,6 +343,27 @@ export default function TransactionsScreen() {
                     >
                       {cat.name.split(' ')[0]}
                     </Text>
+                    {(cat.id === 'others' || cat.id === 'other_income') && txnCategory === cat.id && (
+                      <View
+                        style={{
+                          marginLeft: 4,
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: BorderRadius.full,
+                          backgroundColor: colors.surface,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontFamily: Typography.fontFamily.medium,
+                            color: colors.textTertiary,
+                          }}
+                        >
+                          custom
+                        </Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -385,3 +407,4 @@ export default function TransactionsScreen() {
     </SafeAreaView>
   );
 }
+

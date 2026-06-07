@@ -24,6 +24,7 @@ export const resetLocalAppState = () => {
     currencySymbol: '₹',
     notificationsEnabled: true,
     hapticEnabled: true,
+    tourCompleted: false,
   });
 
   useBudgetStore.setState({
@@ -82,6 +83,7 @@ export const syncRemoteState = async () => {
     currencySymbol: snapshot.settings.app.currencySymbol,
     notificationsEnabled: snapshot.settings.app.notificationsEnabled,
     hapticEnabled: snapshot.settings.app.hapticEnabled,
+    tourCompleted: snapshot.settings.app.tourCompleted ?? false,
   });
 
   useBudgetStore.setState({

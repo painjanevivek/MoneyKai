@@ -55,6 +55,12 @@
         {
           "color": "#0D8C4C"
         }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "MoneyKai needs access to your contacts so you can choose people for split bills."
+        }
       ]
     ],
     "experiments": {

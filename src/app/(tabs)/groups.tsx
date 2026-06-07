@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { SplitBillSheet } from '@/components/groups/SplitBillSheet';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatRelativeDate } from '@/utils/dateUtils';
 import { simplifyDebts } from '@/utils/debtSimplification';
@@ -34,10 +35,12 @@ export default function GroupsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
+  const userName = useAuthStore((s) => s.user?.full_name ?? 'You');
   const { groups, addGroup, settleExpense, getGroupExpenses, archiveGroup, restoreGroup, deleteGroup } = useGroupStore();
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
+  const [showSplitBillSheet, setShowSplitBillSheet] = useState(false);
   const [actionGroupId, setActionGroupId] = useState<string | null>(null);
   const [groupView, setGroupView] = useState<GroupView>('active');
   const [newGroupName, setNewGroupName] = useState('');
@@ -144,6 +147,15 @@ export default function GroupsScreen() {
             </Card>
           )}
 
+          <Button
+            title="Share split bill"
+            onPress={() => setShowSplitBillSheet(true)}
+            variant="outline"
+            icon="share-variant-outline"
+            fullWidth
+            style={{ marginBottom: Spacing.md }}
+          />
+
           <Card style={{ marginBottom: Spacing.md }}>
             <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>Members</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
@@ -240,6 +252,14 @@ export default function GroupsScreen() {
             </Card>
           ))}
         </ScrollView>
+
+        <SplitBillSheet
+          key={`${selectedGroupData.id}-${showSplitBillSheet ? 'open' : 'closed'}`}
+          visible={showSplitBillSheet}
+          groupName={selectedGroupData.name}
+          payerName={userName}
+          onClose={() => setShowSplitBillSheet(false)}
+        />
 
         <Modal visible={showActionModal} transparent animationType="fade" onRequestClose={() => setShowActionModal(false)}>
           <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: Spacing.base }}>

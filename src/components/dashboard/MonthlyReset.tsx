@@ -5,6 +5,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useBudgetStore } from '../../stores/useBudgetStore';
 import { getNextResetDate, formatDate } from '../../utils/dateUtils';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 
 export const MonthlyReset: React.FC = () => {
@@ -25,13 +26,13 @@ export const MonthlyReset: React.FC = () => {
     addAdjustment({
       amount: parsed,
       type: adjustType,
-      reason: 'Manual adjustment from dashboard',
+      reason: 'Manual adjustment from settings',
       date: new Date().toISOString(),
     });
     setAmount('');
     Alert.alert(
       'Budget Updated',
-      `₹${parsed.toLocaleString('en-IN')} ${adjustType === 'add' ? 'added to' : 'subtracted from'} your monthly budget.`
+      `${formatCurrency(parsed)} ${adjustType === 'add' ? 'added to' : 'subtracted from'} your monthly budget.`
     );
   };
 

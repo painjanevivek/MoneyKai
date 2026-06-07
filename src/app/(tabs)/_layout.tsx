@@ -114,14 +114,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="analytics"
-        options={{
-          title: 'Analytics',
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Analytics" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon name="chart-bar" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
         name="learn-center"
         options={{
           title: 'Learn',

@@ -114,7 +114,7 @@ export const SpendingPieChart: React.FC = () => {
           fontSize: Typography.fontSize.sm,
           fontFamily: Typography.fontFamily.medium,
           color: colors.primary,
-        }}>View Detailed Analytics</Text>
+        }}>View in Savings</Text>
         <Text style={{ color: colors.primary }}>→</Text>
       </TouchableOpacity>
     </Card>

@@ -121,6 +121,7 @@ def get_app_settings(user_id: str) -> dict[str, Any]:
         "currencySymbol": "₹",
         "notificationsEnabled": True,
         "hapticEnabled": True,
+        "tourCompleted": False,
     }
 
 

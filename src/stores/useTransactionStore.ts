@@ -228,14 +228,14 @@ export const useTransactionStore = create<TransactionState>()(
                 title: 'Budget exhausted',
                 body: 'You have used your full monthly budget.',
                 type: 'budget',
-                actionRoute: '/(tabs)/analytics',
+                actionRoute: '/(tabs)/savings',
               });
             } else if (spendRate >= 80) {
               void recordAppNotification({
                 title: 'Spending alert',
                 body: `You have used ${Math.round(spendRate)}% of your monthly budget.`,
                 type: 'budget',
-                actionRoute: '/(tabs)/analytics',
+                actionRoute: '/(tabs)/savings',
               });
             }
           }
