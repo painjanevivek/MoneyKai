@@ -211,25 +211,6 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Demo Account Hint */}
-            <View style={{
-              marginTop: Spacing.lg,
-              padding: Spacing.md,
-              backgroundColor: colors.primaryBg,
-              borderRadius: BorderRadius.md,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: Spacing.sm,
-            }}>
-              <MaterialCommunityIcons name="information-outline" size={18} color={colors.primary} />
-              <Text style={{
-                flex: 1,
-                fontSize: Typography.fontSize.xs,
-                fontFamily: Typography.fontFamily.regular,
-                color: colors.primary,
-                lineHeight: 16,
-              }}>Connect Firebase to enable production authentication.</Text>
-            </View>
           </View>
 
           {/* Sign Up Link */}
