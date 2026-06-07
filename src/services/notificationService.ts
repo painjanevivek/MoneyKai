@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useNotificationStore, type NotificationType } from '@/stores/useNotificationStore';
+import { backendApi, isBackendConfigured } from './backendApi';
 
 const ICON_STYLES: Record<NotificationType, { icon: string; iconColor: string; iconBg: string }> = {
   budget: { icon: 'wallet-outline', iconColor: '#111111', iconBg: '#F4F4F4' },
@@ -12,6 +13,7 @@ const ICON_STYLES: Record<NotificationType, { icon: string; iconColor: string; i
 };
 
 let listenersInstalled = false;
+let pendingBackendWrites = 0;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -65,8 +67,7 @@ export const recordAppNotification = async (params: {
   const type = params.type ?? 'system';
   const style = ICON_STYLES[type];
   const createdAt = new Date().toISOString();
-
-  useNotificationStore.getState().appendNotification({
+  const notification = {
     title: params.title,
     body: params.body,
     type,
@@ -76,7 +77,19 @@ export const recordAppNotification = async (params: {
     createdAt,
     read: params.read ?? false,
     actionRoute: params.actionRoute,
-  });
+  };
+
+  useNotificationStore.getState().appendNotification(notification);
+
+  if (isBackendConfigured()) {
+    pendingBackendWrites += 1;
+    void backendApi
+      .createResource('notifications', notification)
+      .catch(() => undefined)
+      .finally(() => {
+        pendingBackendWrites = Math.max(0, pendingBackendWrites - 1);
+      });
+  }
 
   const enabled = useSettingsStore.getState().notificationsEnabled;
   if (!enabled || Platform.OS === 'web' || params.schedule === false) {

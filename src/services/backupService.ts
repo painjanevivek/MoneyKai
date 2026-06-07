@@ -15,6 +15,7 @@ import { useNotesStore } from '@/stores/useNotesStore';
 import { useGroupStore } from '@/stores/useGroupStore';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 import { recordAppNotification } from './notificationService';
 import type { BudgetAdjustment, BudgetSettings } from '@/types/budget';
 import type { Transaction } from '@/types/transaction';
@@ -22,6 +23,7 @@ import type { Note } from '@/types/note';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
+import type { AppNotification } from '@/types/notification';
 import type { ThemeMode } from '@/constants/theme';
 import { firebaseDb, isFirebaseConfigured } from './firebase';
 import { backendApi, isBackendConfigured } from './backendApi';
@@ -61,6 +63,7 @@ export interface MoneyKaiBackupSnapshot {
     challenges: Challenge[];
     totalXP: number;
     badges: Badge[];
+    notifications: AppNotification[];
   };
 }
 
@@ -108,6 +111,7 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
   const challenges = useChallengeStore.getState().challenges;
   const totalXP = useChallengeStore.getState().totalXP;
   const badges = useBadgeStore.getState().badges;
+  const notifications = useNotificationStore.getState().notifications;
 
   return {
     version: 1,
@@ -142,6 +146,7 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
       challenges,
       totalXP,
       badges,
+      notifications,
     },
   };
 };
@@ -267,6 +272,8 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
     ...useBadgeStore.getState(),
     badges: snapshot.data.badges,
   });
+
+  useNotificationStore.getState().replaceNotifications(snapshot.data.notifications ?? []);
 };
 
 export const restoreLatestCloudBackup = async () => {

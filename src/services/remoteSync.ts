@@ -120,4 +120,6 @@ export const syncRemoteState = async () => {
     ...useBadgeStore.getState(),
     badges: snapshot.data.badges,
   });
+
+  useNotificationStore.getState().replaceNotifications(snapshot.data.notifications ?? []);
 };

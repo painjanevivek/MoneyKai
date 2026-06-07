@@ -4,6 +4,7 @@ import type { Note } from './note';
 import type { Group, GroupExpense } from './group';
 import type { Challenge } from './challenge';
 import type { Badge } from './badge';
+import type { AppNotification } from './notification';
 import type { ThemeMode } from '@/constants/theme';
 
 export interface BackendAppSettings {
@@ -41,6 +42,7 @@ export interface BackendSnapshot {
     challenges: Challenge[];
     totalXP: number;
     badges: Badge[];
+    notifications: AppNotification[];
     backups?: unknown[];
   };
   summary?: {

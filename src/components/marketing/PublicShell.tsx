@@ -1,7 +1,7 @@
 import React, { type PropsWithChildren } from 'react';
 import { Link, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Image, ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
@@ -26,6 +26,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 960;
+  const isCompact = width < 640;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
@@ -57,13 +58,13 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
         />
 
         <View style={{ width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1, paddingHorizontal: Spacing.base }}>
-          <View style={{ gap: Spacing.md, paddingTop: Spacing.base, paddingBottom: Spacing.lg }}>
+          <View style={{ gap: isCompact ? Spacing.sm : Spacing.md, paddingTop: isCompact ? Spacing.sm : Spacing.base, paddingBottom: Spacing.lg }}>
             <View
               style={{
                 flexDirection: isWide ? 'row' : 'column',
                 alignItems: isWide ? 'center' : 'stretch',
                 justifyContent: 'space-between',
-                gap: Spacing.md,
+                gap: isCompact ? Spacing.sm : Spacing.md,
               }}
             >
               <TouchableOpacity
@@ -102,36 +103,75 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
               </TouchableOpacity>
 
               {!isAuthenticated ? (
-                <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' }}>
-                  <Button title="Sign in" onPress={() => router.push('/(auth)/login')} variant="outline" />
-                  <Button title="Create account" onPress={() => router.push('/(auth)/signup')} />
+                <View
+                  style={{
+                    flexDirection: isCompact ? 'column' : 'row',
+                    gap: Spacing.sm,
+                    alignSelf: isCompact ? 'stretch' : 'flex-start',
+                  }}
+                >
+                  <Button
+                    title="Sign in"
+                    onPress={() => router.push('/(auth)/login')}
+                    variant="outline"
+                    fullWidth={isCompact}
+                  />
+                  <Button
+                    title="Create account"
+                    onPress={() => router.push('/(auth)/signup')}
+                    fullWidth={isCompact}
+                  />
                 </View>
               ) : (
                 <Button title="Open app" onPress={() => router.push('/(tabs)')} />
               )}
             </View>
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs }}>
-              {PRIMARY_LINKS.map((item) => (
-                <Link key={item.href} href={item.href as any} asChild>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={{
-                      paddingHorizontal: Spacing.md,
-                      paddingVertical: 10,
-                      borderRadius: BorderRadius.full,
-                      backgroundColor: colors.surface,
-                      borderWidth: 1,
-                      borderColor: colors.borderLight,
-                    }}
-                  >
-                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                </Link>
-              ))}
-            </View>
+            {isCompact ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xs, paddingRight: Spacing.base }}>
+                {PRIMARY_LINKS.map((item) => (
+                  <Link key={item.href} href={item.href as any} asChild>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={{
+                        paddingHorizontal: Spacing.md,
+                        paddingVertical: 10,
+                        borderRadius: BorderRadius.full,
+                        backgroundColor: colors.surface,
+                        borderWidth: 1,
+                        borderColor: colors.borderLight,
+                      }}
+                    >
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </Link>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs }}>
+                {PRIMARY_LINKS.map((item) => (
+                  <Link key={item.href} href={item.href as any} asChild>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      style={{
+                        paddingHorizontal: Spacing.md,
+                        paddingVertical: 10,
+                        borderRadius: BorderRadius.full,
+                        backgroundColor: colors.surface,
+                        borderWidth: 1,
+                        borderColor: colors.borderLight,
+                      }}
+                    >
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </Link>
+                ))}
+              </View>
+            )}
           </View>
 
           {(title || description) ? (

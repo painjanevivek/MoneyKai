@@ -1,21 +1,9 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-export type NotificationType = 'budget' | 'transaction' | 'challenge' | 'backup' | 'system';
-
-export interface AppNotification {
-  id: string;
-  title: string;
-  body: string;
-  type: NotificationType;
-  icon: string;
-  iconColor: string;
-  iconBg: string;
-  createdAt: string;
-  read: boolean;
-  actionRoute?: string;
-}
+import type { AppNotification } from '@/types/notification';
+export type { AppNotification } from '@/types/notification';
+export type { NotificationType } from '@/types/notification';
 
 interface NotificationState {
   notifications: AppNotification[];

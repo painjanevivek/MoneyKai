@@ -275,6 +275,7 @@ def restore_snapshot_for_user(user_id: str, snapshot: dict[str, Any]) -> None:
     replace_user_resource(user_id, "notes", snapshot.get("data", {}).get("notes", []))
     replace_user_resource(user_id, "challenges", snapshot.get("data", {}).get("challenges", []))
     replace_user_resource(user_id, "badges", snapshot.get("data", {}).get("badges", []))
+    replace_user_resource(user_id, "notifications", snapshot.get("data", {}).get("notifications", []))
     set_app_settings(user_id, snapshot.get("settings", {}).get("app", {}))
     set_budget_settings(user_id, snapshot.get("settings", {}).get("budget", {}))
 
@@ -293,6 +294,7 @@ def build_bootstrap_snapshot(user: CurrentUser) -> dict[str, Any]:
     notes = list_user_resources(user.uid, "notes")
     challenges = list_user_resources(user.uid, "challenges")
     badges = list_user_resources(user.uid, "badges")
+    notifications = list_user_resources(user.uid, "notifications")
     groups = list_groups_for_user(user.uid)
     group_expenses: list[dict[str, Any]] = []
     for group in groups:
@@ -322,6 +324,7 @@ def build_bootstrap_snapshot(user: CurrentUser) -> dict[str, Any]:
             "challenges": challenges,
             "totalXP": total_xp,
             "badges": badges,
+            "notifications": notifications,
             "backups": backups,
         },
         "summary": {
