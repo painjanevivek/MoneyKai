@@ -80,7 +80,6 @@ export default function RootLayout() {
     Poppins_500Medium,
     Poppins_600SemiBold,
     Poppins_700Bold,
-    AkiraDEMO: require('../../assets/fonts/AkiraDEMO.otf'),
   });
 
   useEffect(() => {
