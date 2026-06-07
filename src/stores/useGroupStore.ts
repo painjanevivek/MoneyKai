@@ -9,11 +9,12 @@ interface GroupState {
   groups: Group[];
   expenses: GroupExpense[];
 
-  // Actions
   addGroup: (group: Omit<Group, 'id' | 'created_at'>) => void;
   addGroupExpense: (expense: Omit<GroupExpense, 'id' | 'created_at'>) => void;
   settleExpense: (splitId: string) => void;
   deleteGroup: (id: string) => void;
+  archiveGroup: (id: string) => void;
+  restoreGroup: (id: string) => void;
   getGroupExpenses: (groupId: string) => GroupExpense[];
 }
 
@@ -25,6 +26,7 @@ const SAMPLE_GROUPS: Group[] = [
     type: 'flatmates',
     description: 'Shared flat expenses',
     created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+    archived: false,
     members: [
       { id: 'm1', group_id: 'grp1', user_id: 'demo', role: 'admin', joined_at: '', user_name: 'Aditya' },
       { id: 'm2', group_id: 'grp1', user_id: 'u2', role: 'member', joined_at: '', user_name: 'Rahul' },
@@ -35,10 +37,11 @@ const SAMPLE_GROUPS: Group[] = [
   {
     id: 'grp2',
     created_by: 'demo',
-    name: 'Goa Trip ðŸ–ï¸',
+    name: 'Goa Trip',
     type: 'trip',
     description: 'Goa trip expenses split',
     created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+    archived: false,
     members: [
       { id: 'm4', group_id: 'grp2', user_id: 'demo', role: 'admin', joined_at: '', user_name: 'Aditya' },
       { id: 'm5', group_id: 'grp2', user_id: 'u4', role: 'member', joined_at: '', user_name: 'Vikram' },
@@ -51,8 +54,13 @@ const SAMPLE_GROUPS: Group[] = [
 
 const SAMPLE_EXPENSES: GroupExpense[] = [
   {
-    id: 'ge1', group_id: 'grp1', paid_by: 'demo', amount: 1500, description: 'Electricity Bill',
-    split_type: 'equal', created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    id: 'ge1',
+    group_id: 'grp1',
+    paid_by: 'demo',
+    amount: 1500,
+    description: 'Electricity Bill',
+    split_type: 'equal',
+    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
     paid_by_name: 'Aditya',
     splits: [
       { id: 's1', group_expense_id: 'ge1', user_id: 'u2', amount: 500, is_settled: false, user_name: 'Rahul' },
@@ -60,8 +68,13 @@ const SAMPLE_EXPENSES: GroupExpense[] = [
     ],
   },
   {
-    id: 'ge2', group_id: 'grp1', paid_by: 'u2', amount: 3000, description: 'Grocery Run',
-    split_type: 'equal', created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    id: 'ge2',
+    group_id: 'grp1',
+    paid_by: 'u2',
+    amount: 3000,
+    description: 'Grocery Run',
+    split_type: 'equal',
+    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
     paid_by_name: 'Rahul',
     splits: [
       { id: 's3', group_expense_id: 'ge2', user_id: 'demo', amount: 1000, is_settled: false, user_name: 'Aditya' },
@@ -81,6 +94,7 @@ export const useGroupStore = create<GroupState>()(
           ...group,
           id: `grp_${Date.now()}`,
           created_at: new Date().toISOString(),
+          archived: group.archived ?? false,
         };
         set((state) => ({ groups: [newGroup, ...state.groups] }));
         void recordAppNotification({
@@ -100,21 +114,39 @@ export const useGroupStore = create<GroupState>()(
         set((state) => ({ expenses: [newExpense, ...state.expenses] }));
       },
 
-      settleExpense: (splitId) => set((state) => ({
-        expenses: state.expenses.map(e => ({
-          ...e,
-          splits: e.splits?.map(s =>
-            s.id === splitId ? { ...s, is_settled: true, settled_at: new Date().toISOString() } : s
+      settleExpense: (splitId) =>
+        set((state) => ({
+          expenses: state.expenses.map((expense) => ({
+            ...expense,
+            splits: expense.splits?.map((split) =>
+              split.id === splitId
+                ? { ...split, is_settled: true, settled_at: new Date().toISOString() }
+                : split
+            ),
+          })),
+        })),
+
+      deleteGroup: (id) =>
+        set((state) => ({
+          groups: state.groups.filter((group) => group.id !== id),
+          expenses: state.expenses.filter((expense) => expense.group_id !== id),
+        })),
+
+      archiveGroup: (id) =>
+        set((state) => ({
+          groups: state.groups.map((group) =>
+            group.id === id ? { ...group, archived: true } : group
           ),
         })),
-      })),
 
-      deleteGroup: (id) => set((state) => ({
-        groups: state.groups.filter(g => g.id !== id),
-        expenses: state.expenses.filter(e => e.group_id !== id),
-      })),
+      restoreGroup: (id) =>
+        set((state) => ({
+          groups: state.groups.map((group) =>
+            group.id === id ? { ...group, archived: false } : group
+          ),
+        })),
 
-      getGroupExpenses: (groupId) => get().expenses.filter(e => e.group_id === groupId),
+      getGroupExpenses: (groupId) => get().expenses.filter((expense) => expense.group_id === groupId),
     }),
     {
       name: 'moneykai-groups',
@@ -129,4 +161,3 @@ export const useGroupStore = create<GroupState>()(
     }
   )
 );
-

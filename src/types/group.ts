@@ -5,6 +5,7 @@ export interface Group {
   type: 'flatmates' | 'friends' | 'trip' | 'event';
   description: string;
   created_at: string;
+  archived?: boolean;
   members?: GroupMember[];
   total_expenses?: number;
 }

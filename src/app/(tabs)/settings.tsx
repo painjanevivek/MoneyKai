@@ -428,7 +428,7 @@ export default function SettingsScreen() {
           value={allowanceValue}
           onChangeText={(value) => setAllowanceValue(value.replace(/[^0-9]/g, ''))}
           keyboardType="numeric"
-          prefix="â‚¹"
+          prefix="₹"
         />
       </ModalSheet>
 

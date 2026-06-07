@@ -24,7 +24,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       theme: 'light',
       currency: 'INR',
-      currencySymbol: 'â‚¹',
+      currencySymbol: '₹',
       notificationsEnabled: true,
       hapticEnabled: true,
 
@@ -52,5 +52,3 @@ export const useSettingsStore = create<SettingsState>()(
     }
   )
 );
-
-

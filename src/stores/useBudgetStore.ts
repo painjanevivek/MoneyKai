@@ -25,7 +25,7 @@ export const useBudgetStore = create<BudgetState>()(
         reset_day: 1,
         auto_reset: true,
         carry_forward: false,
-        currency: 'â‚¹',
+        currency: '₹',
       },
       adjustments: [],
       isEmergencyMode: false,
@@ -67,5 +67,3 @@ export const useBudgetStore = create<BudgetState>()(
     }
   )
 );
-
-
