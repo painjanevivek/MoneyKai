@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { SITE } from '@/constants/site';
 import { Button } from '@/components/ui/Button';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 type ShellProps = PropsWithChildren<{
   eyebrow?: string;
@@ -14,10 +15,10 @@ type ShellProps = PropsWithChildren<{
   description?: string;
 }>;
 
-const NAV_LINKS = [
+const PRIMARY_LINKS = [
   { href: '/features', label: 'Features' },
-  { href: '/how-it-works', label: 'How it works' },
-  { href: '/trust', label: 'Trust' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/security', label: 'Security' },
   { href: '/learn', label: 'Learn' },
 ] as const;
 
@@ -25,6 +26,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 960;
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -55,84 +57,80 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
         />
 
         <View style={{ width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1, paddingHorizontal: Spacing.base }}>
-          <View
-            style={{
-              flexDirection: isWide ? 'row' : 'column',
-              alignItems: isWide ? 'center' : 'stretch',
-              justifyContent: 'space-between',
-              gap: Spacing.md,
-              paddingTop: Spacing.base,
-              paddingBottom: Spacing.lg,
-            }}
-          >
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push('/')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'flex-start' }}
-            >
-              <View
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 16,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  ...Shadows.md,
-                  shadowColor: colors.shadowColor,
-                }}
-              >
-                <Image
-                  source={require('../../../assets/images/moneykai-logo.png')}
-                  style={{ width: 34, height: 34 }}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                  {SITE.name}
-                </Text>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                  Calm personal finance for real life
-                </Text>
-              </View>
-            </TouchableOpacity>
-
+          <View style={{ gap: Spacing.md, paddingTop: Spacing.base, paddingBottom: Spacing.lg }}>
             <View
               style={{
                 flexDirection: isWide ? 'row' : 'column',
                 alignItems: isWide ? 'center' : 'stretch',
-                gap: Spacing.sm,
+                justifyContent: 'space-between',
+                gap: Spacing.md,
               }}
             >
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs }}>
-                {NAV_LINKS.map((item) => (
-                  <Link key={item.href} href={item.href as any} asChild>
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      style={{
-                        paddingHorizontal: Spacing.md,
-                        paddingVertical: 10,
-                        borderRadius: BorderRadius.full,
-                        backgroundColor: colors.surface,
-                        borderWidth: 1,
-                        borderColor: colors.borderLight,
-                      }}
-                    >
-                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  </Link>
-                ))}
-              </View>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push('/')}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'flex-start' }}
+              >
+                <View
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 16,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.borderLight,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    ...Shadows.md,
+                    shadowColor: colors.shadowColor,
+                  }}
+                >
+                  <Image
+                    source={require('../../../assets/images/moneykai-logo.png')}
+                    style={{ width: 34, height: 34 }}
+                    resizeMode="contain"
+                  />
+                </View>
+                <View>
+                  <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    {SITE.name}
+                  </Text>
+                  <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                    Calm personal finance for real life
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                <Button title="Sign in" onPress={() => router.push('/(auth)/login')} variant="outline" />
-                <Button title="Create account" onPress={() => router.push('/(auth)/signup')} />
-              </View>
+              {!isAuthenticated ? (
+                <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' }}>
+                  <Button title="Sign in" onPress={() => router.push('/(auth)/login')} variant="outline" />
+                  <Button title="Create account" onPress={() => router.push('/(auth)/signup')} />
+                </View>
+              ) : (
+                <Button title="Open app" onPress={() => router.push('/(tabs)')} />
+              )}
+            </View>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs }}>
+              {PRIMARY_LINKS.map((item) => (
+                <Link key={item.href} href={item.href as any} asChild>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={{
+                      paddingHorizontal: Spacing.md,
+                      paddingVertical: 10,
+                      borderRadius: BorderRadius.full,
+                      backgroundColor: colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.borderLight,
+                    }}
+                  >
+                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              ))}
             </View>
           </View>
 
@@ -210,10 +208,13 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
               {[
+                { href: '/about', label: 'About' },
+                { href: '/faq', label: 'FAQ' },
+                { href: '/contact', label: 'Contact' },
+                { href: '/pricing', label: 'Pricing' },
                 { href: '/privacy-policy', label: 'Privacy policy' },
                 { href: '/security', label: 'Security' },
-                { href: '/trust', label: 'Trust' },
-                { href: '/financial-first-aid', label: 'Financial first aid' },
+                { href: '/terms', label: 'Terms' },
               ].map((item) => (
                 <Link key={item.href} href={item.href as any} asChild>
                   <TouchableOpacity activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

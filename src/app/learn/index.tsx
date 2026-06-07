@@ -22,7 +22,7 @@ export default function LearnIndexScreen() {
       />
       <PublicShell
         eyebrow="MoneyKai Learn"
-        title="Original, indexable finance content built around the product’s real use cases."
+        title="Original, indexable finance content built around the product's real use cases."
         description="MoneyKai Learn avoids scraped articles and generic filler. It focuses on the questions people actually face when budgeting, splitting costs, and recovering from stressful money periods."
       >
         <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md, flexWrap: 'wrap' }}>

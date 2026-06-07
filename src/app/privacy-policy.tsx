@@ -1,6 +1,6 @@
 import React from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
@@ -14,7 +14,7 @@ export default function PrivacyPolicyScreen() {
     <>
       <SeoHead
         title="MoneyKai Privacy Policy | How account and finance data is used"
-        description="Read MoneyKai’s privacy policy for data storage, backups, account handling, and how personal finance information is used inside the app."
+        description="Read MoneyKai's privacy policy for data storage, backups, account handling, and how personal finance information is used inside the app."
         path="/privacy-policy"
         keywords={['privacy policy', 'MoneyKai privacy', 'finance app data policy']}
       />
@@ -23,7 +23,10 @@ export default function PrivacyPolicyScreen() {
         title="MoneyKai keeps personal finance data visible, useful, and under user control."
         description="This page explains the basic privacy model for MoneyKai in plain language so people can understand the product before creating an account."
       >
-        <View style={{ gap: Spacing.md }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ gap: Spacing.md, paddingBottom: Spacing['5xl'] }}
+        >
           {[
             {
               title: 'Data we store',
@@ -56,7 +59,7 @@ export default function PrivacyPolicyScreen() {
               </View>
             </SectionCard>
           ))}
-        </View>
+        </ScrollView>
       </PublicShell>
     </>
   );

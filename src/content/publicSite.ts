@@ -8,7 +8,7 @@ export type PublicFeature = {
   heroDescription: string;
   benefits: string[];
   useCases: string[];
-  faqs: Array<{ question: string; answer: string }>;
+  faqs: { question: string; answer: string }[];
   keywords: string[];
 };
 

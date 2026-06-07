@@ -6,60 +6,55 @@ import { SeoHead } from '@/components/marketing/SeoHead';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
-const AUDIENCE = [
-  'Individuals who want a clearer daily money picture',
-  'People trying to manage monthly budgets more consistently',
-  'Couples, roommates, friends, and families with shared expenses',
-  'Users building savings habits and financial first-aid routines',
-];
-
-export default function AboutPage() {
+export default function PricingPage() {
   const { colors } = useTheme();
 
   return (
     <>
       <SeoHead
-        title="About MoneyKai | Personal finance for everyday life"
-        description="Learn what MoneyKai is, who it is for, and how it helps people track expenses, manage budgets, handle shared spending, and build better money habits."
-        path="/about"
-        keywords={['about MoneyKai', 'personal finance app', 'budget app', 'shared spending app']}
+        title="MoneyKai Pricing | Clear, simple public pricing information"
+        description="Read MoneyKai pricing information and see how the product currently presents access without a complicated public pricing structure."
+        path="/pricing"
+        keywords={['MoneyKai pricing', 'budget app pricing', 'personal finance app pricing']}
       />
       <PublicShell
-        eyebrow="About MoneyKai"
-        title="MoneyKai is built to make personal finance feel clearer, calmer, and more usable."
-        description="The product exists to help people understand everyday money flow, manage shared costs, stay closer to savings goals, and handle stressful financial moments with more clarity."
+        eyebrow="Pricing"
+        title="Simple pricing information is better than a confusing pricing wall."
+        description="MoneyKai’s public website should explain pricing clearly. At this stage, the product does not rely on aggressive upsell messaging or a cluttered pricing ladder."
       >
         <View style={{ gap: Spacing.md }}>
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              What MoneyKai focuses on
+              Current public access
+            </Text>
+            <Text style={{ marginTop: 10, fontSize: Typography.fontSize['3xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Free to get started
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
-              MoneyKai combines expense tracking, budgeting, shared expense organization, savings visibility, analytics, backup continuity, and financial first aid in one product. The public-facing website is designed to explain that clearly before signup.
+              MoneyKai currently presents a simple entry point for users who want to explore expense tracking, budgeting, groups, savings, analytics, backups, and the broader trust layer without navigating complicated plan decisions first.
             </Text>
           </SectionCard>
 
-          <View style={{ gap: Spacing.md }}>
-            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Who it is for
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
-              {AUDIENCE.map((item) => (
-                <SectionCard key={item} style={{ flexBasis: 260, flexGrow: 1 }}>
-                  <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 22, color: colors.textPrimary }}>
-                    {item}
-                  </Text>
-                </SectionCard>
-              ))}
-            </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+            {[
+              'No aggressive pricing ladder on the public homepage',
+              'Clear route for product exploration before signup',
+              'Focus on usefulness, trust, and clarity first',
+            ].map((point) => (
+              <SectionCard key={point} style={{ flexBasis: 260, flexGrow: 1 }}>
+                <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 22, color: colors.textPrimary }}>
+                  {point}
+                </Text>
+              </SectionCard>
+            ))}
           </View>
 
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Why the website matters
+              Explore the product first
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
-              A finance product should not force people to sign up before they understand what it does, how it handles trust, or whether it fits their situation. MoneyKai’s public site is meant to be a clear front door, not a thin marketing wrapper.
+              Users usually want to understand the product, the trust layer, and the feature set before they care about future pricing changes. MoneyKai’s public structure is built around that order.
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg }}>
               {[

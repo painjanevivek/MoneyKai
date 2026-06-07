@@ -39,7 +39,7 @@ export default function SecurityScreen() {
       <PublicShell
         eyebrow="Security"
         title="Security communication should be specific, calm, and honest."
-        description="MoneyKai’s public security layer focuses on authentication, continuity, and clear boundaries. It avoids making inflated claims and explains what the app is designed to protect."
+        description="MoneyKai's public security layer focuses on authentication, continuity, and clear boundaries. It avoids making inflated claims and explains what the app is designed to protect."
       >
         <View style={{ gap: Spacing.md }}>
           {SECURITY_SECTIONS.map((section) => (

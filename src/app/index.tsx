@@ -264,7 +264,7 @@ export default function LandingScreen() {
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
               Simple guides on budgeting, saving money, tracking expenses, and personal finance habits.
             </Text>
-            <Link href="/learn" asChild>
+            <Link href={'/learn' as any} asChild>
               <TouchableOpacity
                 activeOpacity={0.82}
                 style={{
@@ -334,7 +334,7 @@ export default function LandingScreen() {
               />
               <Button
                 title="Explore MoneyKai Learn"
-                onPress={() => router.push('/learn')}
+                onPress={() => router.push('/learn' as any)}
                 size="lg"
                 variant="outline"
                 style={{ minWidth: isWide ? 220 : '100%' }}
