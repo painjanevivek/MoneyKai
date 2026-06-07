@@ -2,8 +2,8 @@ import React from 'react';
 import { FeatureDetailPage } from '@/components/marketing/FeatureDetailPage';
 import { PUBLIC_FEATURES } from '@/content/publicSite';
 
-export default function BackupRestoreFeaturePage() {
-  const feature = PUBLIC_FEATURES.find((item) => item.slug === 'backup-restore');
+export default function BudgetingFeaturePage() {
+  const feature = PUBLIC_FEATURES.find((item) => item.slug === 'budgeting');
 
   if (!feature) {
     return null;

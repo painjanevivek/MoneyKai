@@ -5,35 +5,26 @@ import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native'
 import { Button } from '@/components/ui/Button';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
-import { LEARN_ARTICLES } from '@/content/learn';
+import { HOME_FAQS, PUBLIC_FEATURES } from '@/content/publicSite';
 import { SITE } from '@/constants/site';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 
-const POSITIONING = [
-  {
-    title: 'See spending clearly',
-    body: 'Dashboard, transactions, and analytics help people understand what is happening before they try to fix it.',
-    icon: 'chart-line',
-  },
-  {
-    title: 'Handle shared money calmly',
-    body: 'Groups and shared expense flows help couples, roommates, families, and small teams stay aligned.',
-    icon: 'account-group-outline',
-  },
-  {
-    title: 'Stay steady when money gets stressful',
-    body: 'MoneyKai reframes emergency support into financial first aid with practical next steps and continuity tools.',
-    icon: 'lifebuoy',
-  },
+const PROBLEMS = [
+  'People lose track of daily expenses.',
+  'Monthly budgets become hard to manage.',
+  'Shared expenses with friends, family, couples, or roommates become confusing.',
+  'Savings goals are easy to forget.',
+  'Financial emergencies feel stressful when users do not have a clear plan.',
 ];
 
-const TRUST_ITEMS = [
-  'Public trust and security pages',
-  'Privacy policy in plain language',
-  'Backup and restore support',
-  'Original Learn content for discovery',
+const TRUST_POINTS = [
+  'Secure login',
+  'User-controlled data',
+  'Cloud backup and restore',
+  'Privacy-first approach',
+  'Clear data handling',
 ];
 
 export default function LandingScreen() {
@@ -54,71 +45,59 @@ export default function LandingScreen() {
         path="/"
         keywords={['budget management app', 'personal finance app', 'shared expense tracker', 'financial first aid']}
       />
-      <PublicShell
-        eyebrow="Personal finance and budgeting"
-        title="MoneyKai gives personal finance a calmer public face and a stronger everyday workflow."
-        description="Budgeting, analytics, groups, savings, transactions, notes, backups, settings, and financial first aid come together in one product that explains itself clearly before signup."
-      >
+      <PublicShell>
         <View style={{ gap: Spacing.xl }}>
           <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
-            <SectionCard style={{ flex: 1.2 }}>
-              <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-                Better public positioning
+            <SectionCard style={{ flex: 1.3 }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                PERSONAL FINANCE AND BUDGET MANAGEMENT
               </Text>
-              <Text style={{ marginTop: 10, fontSize: Typography.fontSize.md, lineHeight: 24, color: colors.textSecondary }}>
-                MoneyKai is not just a collection of product screens. It is a budgeting and personal finance app with a clear public website, stronger trust layer, helpful onboarding, and original educational content.
+              <Text
+                style={{
+                  marginTop: Spacing.md,
+                  fontSize: isWide ? 52 : 38,
+                  lineHeight: isWide ? 56 : 42,
+                  fontFamily: Typography.fontFamily.display,
+                  color: colors.textPrimary,
+                }}
+              >
+                Take control of your money with MoneyKai
               </Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg }}>
-                {TRUST_ITEMS.map((item) => (
-                  <View
-                    key={item}
-                    style={{
-                      paddingHorizontal: Spacing.md,
-                      paddingVertical: 10,
-                      borderRadius: BorderRadius.full,
-                      backgroundColor: colors.surface,
-                      borderWidth: 1,
-                      borderColor: colors.borderLight,
-                    }}
-                  >
-                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                      {item}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+              <Text style={{ marginTop: Spacing.md, fontSize: Typography.fontSize.md, lineHeight: 26, color: colors.textSecondary }}>
+                Track expenses, manage budgets, handle shared spending, and build better money habits with a simple personal finance app designed for everyday life.
+              </Text>
               <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.sm, marginTop: Spacing.lg }}>
                 <Button
-                  title="Create account"
+                  title="Get Started"
                   onPress={() => router.push('/(auth)/signup')}
                   size="lg"
                   style={{ minWidth: isWide ? 180 : '100%' }}
                 />
                 <Button
-                  title="Sign in"
-                  onPress={() => router.push('/(auth)/login')}
+                  title="Explore Features"
+                  onPress={() => router.push('/features')}
                   size="lg"
                   variant="outline"
-                  style={{ minWidth: isWide ? 160 : '100%' }}
+                  style={{ minWidth: isWide ? 180 : '100%' }}
                 />
               </View>
             </SectionCard>
 
             <SectionCard style={{ flex: 0.9 }}>
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                QUICK POSITIONING
+                WHY THE PUBLIC SITE MATTERS
               </Text>
               <View style={{ marginTop: Spacing.md, gap: Spacing.md }}>
                 {[
-                  'Personal finance and budget management',
-                  'Web and mobile friendly route structure',
-                  'Trust pages that support conversion',
-                  'Discoverability through original Learn content',
-                ].map((line) => (
-                  <View key={line} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                  'A public homepage that explains the product clearly',
+                  'Feature pages that support discoverability',
+                  'Trust, privacy, and security context before signup',
+                  'Original Learn content instead of scraped SEO filler',
+                ].map((point) => (
+                  <View key={point} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                     <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
                     <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-                      {line}
+                      {point}
                     </Text>
                   </View>
                 ))}
@@ -126,96 +105,240 @@ export default function LandingScreen() {
             </SectionCard>
           </View>
 
-          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
-            {POSITIONING.map((item) => (
-              <SectionCard key={item.title} style={{ flex: 1 }}>
-                <View
-                  style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 16,
-                    backgroundColor: colors.primaryBg,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: Spacing.md,
-                  }}
-                >
-                  <MaterialCommunityIcons name={item.icon as any} size={22} color={colors.primary} />
-                </View>
-                <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                  {item.title}
-                </Text>
-                <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-                  {item.body}
-                </Text>
-              </SectionCard>
-            ))}
-          </View>
-
-          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
-            {[
-              {
-                title: 'Start in three steps',
-                body: 'Create an account, add your real money picture, and let the dashboard show what needs attention first.',
-                href: '/how-it-works' as const,
-              },
-              {
-                title: 'See the trust layer',
-                body: 'Open the privacy, security, and trust pages before signup to understand how MoneyKai handles finance data and continuity.',
-                href: '/trust' as const,
-              },
-              {
-                title: 'Read original Learn content',
-                body: 'MoneyKai Learn focuses on budgeting, shared expenses, and recovery topics connected to real product use cases.',
-                href: '/learn' as any,
-              },
-            ].map((item) => (
-              <Link key={item.href} href={item.href} asChild>
-                <TouchableOpacity activeOpacity={0.82} style={{ flex: 1 }}>
-                  <SectionCard>
-                    <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                      {item.title}
+          <View style={{ gap: Spacing.md }}>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Common money problems feel bigger when there is no clear system
+            </Text>
+            <View style={{ gap: Spacing.md }}>
+              {PROBLEMS.map((problem) => (
+                <SectionCard key={problem}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md }}>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 14,
+                        backgroundColor: colors.primaryBg,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.primary} />
+                    </View>
+                    <Text style={{ flex: 1, fontSize: Typography.fontSize.md, lineHeight: 24, color: colors.textPrimary }}>
+                      {problem}
                     </Text>
-                    <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-                      {item.body}
-                    </Text>
-                  </SectionCard>
-                </TouchableOpacity>
-              </Link>
-            ))}
+                  </View>
+                </SectionCard>
+              ))}
+            </View>
           </View>
 
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              MoneyKai Learn
+              MoneyKai helps turn those problems into a more manageable routine
             </Text>
-            <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-              Original content gives the product a more durable SEO foundation than thin feature copy or scraped articles.
+            <Text style={{ marginTop: 10, fontSize: Typography.fontSize.md, lineHeight: 26, color: colors.textSecondary }}>
+              MoneyKai helps users track expenses, manage budgets, organize shared money, monitor savings, understand spending patterns, and stay prepared for financial emergencies.
             </Text>
-            <View style={{ marginTop: Spacing.lg, gap: Spacing.md }}>
-              {LEARN_ARTICLES.map((article) => (
-                <Link key={article.slug} href={`/learn/${article.slug}` as any} asChild>
-                  <TouchableOpacity activeOpacity={0.82}>
-                    <View
-                      style={{
-                        paddingBottom: Spacing.md,
-                        borderBottomWidth: 1,
-                        borderBottomColor: colors.borderLight,
-                      }}
-                    >
-                      <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                        {article.category} · {article.readTime}
+          </SectionCard>
+
+          <View style={{ gap: Spacing.md }}>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Feature preview
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+              {PUBLIC_FEATURES.map((feature) => (
+                <Link key={feature.slug} href={`/features/${feature.slug}` as const} asChild>
+                  <TouchableOpacity activeOpacity={0.82} style={{ flexBasis: 280, flexGrow: 1 }}>
+                    <SectionCard>
+                      <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                        {feature.title}
                       </Text>
-                      <Text style={{ marginTop: 6, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                        {article.title}
+                      <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                        {feature.description}
                       </Text>
-                      <Text style={{ marginTop: 8, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-                        {article.description}
-                      </Text>
-                    </View>
+                      <View
+                        style={{
+                          alignSelf: 'flex-start',
+                          marginTop: Spacing.md,
+                          paddingHorizontal: Spacing.md,
+                          paddingVertical: 10,
+                          borderRadius: BorderRadius.full,
+                          backgroundColor: colors.surface,
+                          borderWidth: 1,
+                          borderColor: colors.borderLight,
+                        }}
+                      >
+                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                          Open feature
+                        </Text>
+                      </View>
+                    </SectionCard>
                   </TouchableOpacity>
                 </Link>
               ))}
+
+              <Link href="/financial-first-aid" asChild>
+                <TouchableOpacity activeOpacity={0.82} style={{ flexBasis: 280, flexGrow: 1 }}>
+                  <SectionCard>
+                    <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                      Financial First Aid
+                    </Text>
+                    <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                      A calmer way to respond to money stress with clearer next steps, protected essentials, and less panic.
+                    </Text>
+                    <View
+                      style={{
+                        alignSelf: 'flex-start',
+                        marginTop: Spacing.md,
+                        paddingHorizontal: Spacing.md,
+                        paddingVertical: 10,
+                        borderRadius: BorderRadius.full,
+                        backgroundColor: colors.surface,
+                        borderWidth: 1,
+                        borderColor: colors.borderLight,
+                      }}
+                    >
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                        Open feature
+                      </Text>
+                    </View>
+                  </SectionCard>
+                </TouchableOpacity>
+              </Link>
+            </View>
+          </View>
+
+          <SectionCard>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Security and trust preview
+            </Text>
+            <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+              MoneyKai’s trust layer explains how secure login, clear data handling, backup continuity, and privacy-first thinking fit into the product experience.
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg }}>
+              {TRUST_POINTS.map((item) => (
+                <View
+                  key={item}
+                  style={{
+                    paddingHorizontal: Spacing.md,
+                    paddingVertical: 10,
+                    borderRadius: BorderRadius.full,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.borderLight,
+                  }}
+                >
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                    {item}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Link href="/security" asChild>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={{
+                  alignSelf: 'flex-start',
+                  marginTop: Spacing.lg,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: 12,
+                  borderRadius: BorderRadius.full,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  Visit security page
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          </SectionCard>
+
+          <SectionCard>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Learn better money habits
+            </Text>
+            <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+              Simple guides on budgeting, saving money, tracking expenses, and personal finance habits.
+            </Text>
+            <Link href="/learn" asChild>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={{
+                  alignSelf: 'flex-start',
+                  marginTop: Spacing.lg,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: 12,
+                  borderRadius: BorderRadius.full,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  Explore Learn
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          </SectionCard>
+
+          <View style={{ gap: Spacing.md }}>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Frequently asked questions
+            </Text>
+            <View style={{ gap: Spacing.md }}>
+              {HOME_FAQS.map((faq) => (
+                <SectionCard key={faq.question}>
+                  <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    {faq.question}
+                  </Text>
+                  <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                    {faq.answer}
+                  </Text>
+                </SectionCard>
+              ))}
+            </View>
+            <Link href="/faq" asChild>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={{
+                  alignSelf: 'flex-start',
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: 12,
+                  borderRadius: BorderRadius.full,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  View full FAQ
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+
+          <SectionCard>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Start managing your money with clarity
+            </Text>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.sm, marginTop: Spacing.lg }}>
+              <Button
+                title="Get Started"
+                onPress={() => router.push('/(auth)/signup')}
+                size="lg"
+                style={{ minWidth: isWide ? 180 : '100%' }}
+              />
+              <Button
+                title="Explore MoneyKai Learn"
+                onPress={() => router.push('/learn')}
+                size="lg"
+                variant="outline"
+                style={{ minWidth: isWide ? 220 : '100%' }}
+              />
             </View>
           </SectionCard>
         </View>
