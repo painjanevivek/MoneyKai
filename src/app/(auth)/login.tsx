@@ -95,7 +95,7 @@ export default function LoginScreen() {
             </View>
             <Text style={{
               fontSize: Typography.fontSize['3xl'],
-              fontFamily: Typography.fontFamily.bold,
+              fontFamily: Typography.fontFamily.display,
               color: colors.textPrimary,
             }}>MoneyKai</Text>
             <Text style={{
@@ -116,7 +116,7 @@ export default function LoginScreen() {
           }}>
             <Text style={{
               fontSize: Typography.fontSize.xl,
-              fontFamily: Typography.fontFamily.semiBold,
+              fontFamily: Typography.fontFamily.display,
               color: colors.textPrimary,
               marginBottom: Spacing.xl,
             }}>Welcome back</Text>

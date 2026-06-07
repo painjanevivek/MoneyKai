@@ -87,6 +87,7 @@ export const Typography = {
     medium: 'Poppins_500Medium',
     semiBold: 'Poppins_600SemiBold',
     bold: 'Poppins_700Bold',
+    display: 'AkiraDEMO',
   },
   fontSize: {
     xs: 10,

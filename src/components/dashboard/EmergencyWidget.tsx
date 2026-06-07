@@ -14,14 +14,18 @@ export const EmergencyWidget: React.FC<{ onPress?: () => void }> = ({ onPress })
       onPress={onPress || toggleEmergencyMode}
       activeOpacity={0.8}
       style={{
+        position: 'relative',
+        zIndex: 2,
         backgroundColor: isEmergencyMode ? colors.emergencyBg : colors.card,
         borderRadius: BorderRadius.lg,
         padding: Spacing.base,
+        paddingBottom: Spacing.lg,
         borderWidth: isEmergencyMode ? 2 : 1,
         borderColor: isEmergencyMode ? colors.emergency : colors.border,
         ...Shadows.md,
         shadowColor: isEmergencyMode ? colors.emergency : colors.shadowColor,
-        marginBottom: Spacing.xs,
+        marginBottom: Spacing.base,
+        alignSelf: 'stretch',
       }}
     >
       <Text style={{

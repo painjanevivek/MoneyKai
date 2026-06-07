@@ -60,7 +60,7 @@ export default function SignupScreen() {
           <View style={{ marginBottom: Spacing['2xl'] }}>
             <Text style={{
               fontSize: Typography.fontSize['2xl'],
-              fontFamily: Typography.fontFamily.bold,
+              fontFamily: Typography.fontFamily.display,
               color: colors.textPrimary,
             }}>Create account</Text>
             <Text style={{
