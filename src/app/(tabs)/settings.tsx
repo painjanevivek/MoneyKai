@@ -435,7 +435,7 @@ export default function SettingsScreen() {
       <ModalSheet
         visible={showBackupSheet}
         title="Backup & Restore"
-        subtitle={isFirebaseConfigured() ? 'Create a cloud backup or restore the latest snapshot.' : 'Firebase is required for cloud backup.'}
+        subtitle={isFirebaseConfigured() ? 'Firestore must be created once in Firebase Console before your first backup.' : 'Firebase is required for cloud backup.'}
         onClose={() => setShowBackupSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
@@ -455,9 +455,27 @@ export default function SettingsScreen() {
           </View>
         }
       >
-        <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-          Cloud backups store your current transactions, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device.
-        </Text>
+        <View style={{ gap: Spacing.sm }}>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+            Cloud backups store your current transactions, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device.
+          </Text>
+          <View style={{
+            padding: Spacing.md,
+            borderRadius: BorderRadius.md,
+            backgroundColor: colors.primaryBg,
+            borderWidth: 1,
+            borderColor: `${colors.primary}22`,
+          }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary, marginBottom: 4 }}>
+              First backup checklist
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+              1. Firestore database exists in Firebase Console.{"\n"}
+              2. You are signed in to MoneyKai.{"\n"}
+              3. Firestore rules allow the signed-in user to read and write {"`users/{uid}/backups`"}.
+            </Text>
+          </View>
+        </View>
       </ModalSheet>
     </SafeAreaView>
   );
