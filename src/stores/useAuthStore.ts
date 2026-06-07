@@ -11,6 +11,7 @@ import {
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
 import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
+import { isBackendConfigured } from '@/services/backendApi';
 
 export interface User {
   id: string;
@@ -50,6 +51,21 @@ const toAppUser = (user: import('firebase/auth').User): User => {
   };
 };
 
+const hydrateBackendSnapshot = async () => {
+  if (!isBackendConfigured()) {
+    return;
+  }
+
+  try {
+    const { syncRemoteState } = await import('@/services/remoteSync');
+    await syncRemoteState();
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[MoneyKai] backend sync failed:', error);
+    }
+  }
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -68,6 +84,7 @@ export const useAuthStore = create<AuthState>()(
         const sessionUser = await waitForAuthState();
         if (sessionUser) {
           set({ user: toAppUser(sessionUser), isAuthenticated: true });
+          await hydrateBackendSnapshot();
         } else {
           set({ user: null, isAuthenticated: false });
         }
@@ -78,18 +95,18 @@ export const useAuthStore = create<AuthState>()(
         try {
           if (!isFirebaseConfigured()) {
             await new Promise((resolve) => setTimeout(resolve, 600));
-            set({
-              user: {
-                id: 'sample-user-001',
-                email,
-                full_name: 'Sample User',
-                auth_provider: 'email',
-              },
-              isAuthenticated: true,
-              isLoading: false,
-            });
-            return;
-          }
+          set({
+            user: {
+              id: 'sample-user-001',
+              email,
+              full_name: 'Sample User',
+              auth_provider: 'email',
+            },
+            isAuthenticated: true,
+            isLoading: false,
+          });
+          return;
+        }
 
           const credentials = await signInWithEmailAndPassword(firebaseAuth, email, password);
           set({
@@ -97,6 +114,8 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+
+          await hydrateBackendSnapshot();
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Sign in failed');
@@ -108,19 +127,19 @@ export const useAuthStore = create<AuthState>()(
         try {
           if (!isFirebaseConfigured()) {
             await new Promise((resolve) => setTimeout(resolve, 800));
-            set({
-              user: {
-                id: 'sample-user-001',
-                email,
-                full_name: fullName,
-                auth_provider: 'email',
-              },
-              isAuthenticated: true,
-              isLoading: false,
-              isOnboarded: true,
-            });
-            return;
-          }
+          set({
+            user: {
+              id: 'sample-user-001',
+              email,
+              full_name: fullName,
+              auth_provider: 'email',
+            },
+            isAuthenticated: true,
+            isLoading: false,
+            isOnboarded: true,
+          });
+          return;
+        }
 
           const credentials = await createUserWithEmailAndPassword(firebaseAuth, email, password);
           await updateFirebaseProfile(credentials.user, {
@@ -136,6 +155,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             isOnboarded: true,
           });
+
+          await hydrateBackendSnapshot();
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Sign up failed');
@@ -172,6 +193,8 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+
+          await hydrateBackendSnapshot();
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Google sign-in failed');
@@ -182,28 +205,17 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, isAuthenticated: false, isLoading: false });
 
         const cleanup = async () => {
+          const { resetLocalAppState } = await import('@/services/remoteSync');
+          resetLocalAppState();
+
           if (isFirebaseConfigured()) {
             await firebaseSignOut(firebaseAuth).catch(() => {
               // Local sign-out already happened; ignore network cleanup failures.
             });
           }
-
-          const { useTransactionStore } = await import('./useTransactionStore');
-          const { useNotesStore } = await import('./useNotesStore');
-          const { useGroupStore } = await import('./useGroupStore');
-          const { useChallengeStore } = await import('./useChallengeStore');
-          const { useBadgeStore } = await import('./useBadgeStore');
-          const { useNotificationStore } = await import('./useNotificationStore');
-
-          useTransactionStore.getState().clearSeedData();
-          useNotesStore.getState().clearSeedData();
-          useGroupStore.setState({ groups: [], expenses: [] });
-          useChallengeStore.setState({ challenges: [], totalXP: 0 });
-          useBadgeStore.setState({ badges: [], recentUnlock: null });
-          useNotificationStore.getState().clearNotifications();
         };
 
-        void cleanup().catch(() => {
+        await cleanup().catch(() => {
           // Best effort cleanup only.
         });
       },

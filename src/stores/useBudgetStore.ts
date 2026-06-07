@@ -21,18 +21,15 @@ export const useBudgetStore = create<BudgetState>()(
   persist(
     (set) => ({
       settings: {
-        monthly_allowance: 15000,
+        monthly_allowance: 0,
         reset_day: 1,
         auto_reset: true,
         carry_forward: false,
-        currency: '₹',
+        currency: 'INR',
       },
       adjustments: [],
       isEmergencyMode: false,
-      resetHistory: [
-        { date: '2025-05-01', amount: 15000, carryForward: 0 },
-        { date: '2025-04-01', amount: 15000, carryForward: 1200 },
-      ],
+      resetHistory: [],
 
       updateSettings: (updates) => set((state) => ({
         settings: { ...state.settings, ...updates },

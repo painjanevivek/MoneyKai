@@ -24,6 +24,7 @@ import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { ThemeMode } from '@/constants/theme';
 import { firebaseDb, isFirebaseConfigured } from './firebase';
+import { backendApi, isBackendConfigured } from './backendApi';
 
 interface BackupAppSettings {
   theme: ThemeMode;
@@ -146,6 +147,18 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
 };
 
 export const saveCloudBackup = async () => {
+  if (isBackendConfigured()) {
+    const response = await backendApi.createBackup();
+    const snapshot = response.item.snapshot;
+    await recordAppNotification({
+      title: 'Backup saved',
+      body: 'Your MoneyKai data was backed up to the cloud.',
+      type: 'backup',
+      schedule: false,
+    });
+    return snapshot;
+  }
+
   if (!isFirebaseConfigured()) {
     throw new Error('Configure Firebase to enable cloud backup.');
   }
@@ -174,6 +187,11 @@ export const saveCloudBackup = async () => {
 
 export const getLatestCloudBackup = async () => {
   const user = normalizeUser();
+  if (isBackendConfigured()) {
+    const response = await backendApi.getLatestBackup();
+    return response.item.snapshot;
+  }
+
   if (!isFirebaseConfigured()) {
     throw new Error('Configure Firebase to restore cloud backups.');
   }
@@ -252,6 +270,20 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
 };
 
 export const restoreLatestCloudBackup = async () => {
+  if (isBackendConfigured()) {
+    const response = await backendApi.restoreLatestBackup();
+    restoreBackupSnapshot(response.item);
+
+    await recordAppNotification({
+      title: 'Backup restored',
+      body: 'Your cloud backup was restored on this device.',
+      type: 'backup',
+      schedule: false,
+    });
+
+    return response.item;
+  }
+
   const snapshot = await getLatestCloudBackup();
   restoreBackupSnapshot(snapshot);
 

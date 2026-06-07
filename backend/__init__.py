@@ -1,0 +1,1 @@
+"""MoneyKai backend package."""

@@ -11,7 +11,6 @@ import {
   Image,
 } from 'react-native';
 import { router } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
@@ -62,6 +61,13 @@ export default function LoginScreen() {
       setGoogleLoading(false);
       submitting.current = false;
     }
+  };
+
+  const googleColors = {
+    blue: '#4285F4',
+    red: '#EA4335',
+    yellow: '#FBBC05',
+    green: '#34A853',
   };
 
   return (
@@ -192,25 +198,41 @@ export default function LoginScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: Spacing.md,
-                  borderRadius: BorderRadius.md,
-                  borderWidth: 1.5,
-                  borderColor: colors.border,
+                  paddingVertical: Spacing.md,
+                  paddingHorizontal: Spacing.lg,
+                  borderRadius: BorderRadius.xl,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
                   backgroundColor: colors.surface,
-                  gap: Spacing.sm,
+                  gap: Spacing.md,
                   opacity: googleLoading ? 0.6 : 1,
+                  ...Shadows.sm,
+                  shadowColor: colors.shadowColor,
                 }}
               >
                 {googleLoading ? (
                   <ActivityIndicator size="small" color={colors.textPrimary} />
                 ) : (
                   <>
-                    <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
-                      <MaterialCommunityIcons name="google" size={22} color="#DB4437" />
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: '#FFFFFF',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderWidth: 1,
+                        borderColor: '#F1F3F4',
+                      }}
+                    >
+                      <Text style={{ fontSize: 18, fontFamily: Typography.fontFamily.bold, lineHeight: 20 }}>
+                        <Text style={{ color: googleColors.blue }}>G</Text>
+                      </Text>
                     </View>
                     <Text style={{
                       fontSize: Typography.fontSize.base,
-                      fontFamily: Typography.fontFamily.medium,
+                      fontFamily: Typography.fontFamily.semiBold,
                       color: colors.textPrimary,
                     }}>Continue with Google</Text>
                   </>
