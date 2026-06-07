@@ -71,6 +71,32 @@ const normalizeUser = () => {
   return user;
 };
 
+const formatBackupError = (error: unknown, action: 'save' | 'restore'): Error => {
+  const code = typeof error === 'object' && error && 'code' in error ? String((error as { code?: string }).code ?? '') : '';
+  const baseMessage =
+    action === 'save'
+      ? 'Could not create the cloud backup.'
+      : 'Could not restore the cloud backup.';
+
+  switch (code) {
+    case 'permission-denied':
+      return new Error(
+        `${baseMessage} Firestore is rejecting this request. Check your Firestore rules and make sure the signed-in user can read and write \`users/{uid}/backups\`.`
+      );
+    case 'failed-precondition':
+    case 'unavailable':
+      return new Error(
+        `${baseMessage} Firestore may not be created yet in Firebase Console. Create the Firestore database, then try again.`
+      );
+    case 'not-found':
+      return new Error(
+        `${baseMessage} No backup collection exists yet for this account. Create one backup first.`
+      );
+    default:
+      return error instanceof Error ? error : new Error(baseMessage);
+  }
+};
+
 export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
   const user = normalizeUser();
   const budget = useBudgetStore.getState();
@@ -125,12 +151,16 @@ export const saveCloudBackup = async () => {
   }
 
   const snapshot = buildBackupSnapshot();
-  await addDoc(collection(firebaseDb, 'users', snapshot.profile.id, 'backups'), {
-    backup_name: `Backup ${new Date().toLocaleString()}`,
-    snapshot,
-    createdAt: serverTimestamp(),
-    createdAtMs: Date.now(),
-  });
+  try {
+    await addDoc(collection(firebaseDb, 'users', snapshot.profile.id, 'backups'), {
+      backup_name: `Backup ${new Date().toLocaleString()}`,
+      snapshot,
+      createdAt: serverTimestamp(),
+      createdAtMs: Date.now(),
+    });
+  } catch (error) {
+    throw formatBackupError(error, 'save');
+  }
 
   await recordAppNotification({
     title: 'Backup saved',
@@ -154,8 +184,13 @@ export const getLatestCloudBackup = async () => {
     limit(1)
   );
 
-  const results = await getDocs(snapshotQuery);
-  const latestBackup = results.docs[0]?.data();
+  let latestBackup;
+  try {
+    const results = await getDocs(snapshotQuery);
+    latestBackup = results.docs[0]?.data();
+  } catch (error) {
+    throw formatBackupError(error, 'restore');
+  }
 
   if (!latestBackup?.snapshot) {
     throw new Error('No cloud backup exists yet.');
