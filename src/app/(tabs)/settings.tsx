@@ -74,9 +74,11 @@ export default function SettingsScreen() {
 
   const [showAllowanceEditor, setShowAllowanceEditor] = useState(false);
   const [showBackupSheet, setShowBackupSheet] = useState(false);
+  const [showSignOutSheet, setShowSignOutSheet] = useState(false);
   const [allowanceValue, setAllowanceValue] = useState(String(settings.monthly_allowance));
   const [savingAllowance, setSavingAllowance] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [signOutBusy, setSignOutBusy] = useState(false);
 
   const switchTrack = {
     false: colors.border,
@@ -89,18 +91,18 @@ export default function SettingsScreen() {
     [currencySymbol, settings.monthly_allowance]
   );
 
-  const handleSignOut = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          void signOut();
-          router.replace('/(auth)/login');
-        },
-      },
-    ]);
+  const handleSignOut = async () => {
+    if (signOutBusy) return;
+    setSignOutBusy(true);
+    try {
+      await signOut();
+      setShowSignOutSheet(false);
+      router.replace('/login');
+    } catch (err) {
+      Alert.alert('Sign out failed', err instanceof Error ? err.message : 'Could not sign out right now.');
+    } finally {
+      setSignOutBusy(false);
+    }
   };
 
   const handleExport = async () => {
@@ -387,8 +389,8 @@ export default function SettingsScreen() {
           />
         </Card>
 
-        <TouchableOpacity
-          onPress={handleSignOut}
+          <TouchableOpacity
+          onPress={() => setShowSignOutSheet(true)}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -489,6 +491,34 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </View>
+      </ModalSheet>
+
+      <ModalSheet
+        visible={showSignOutSheet}
+        title="Sign out"
+        subtitle="You will need to sign in again to access your MoneyKai account on this device."
+        onClose={() => (signOutBusy ? undefined : setShowSignOutSheet(false))}
+        footer={
+          <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
+            <Button
+              title="Cancel"
+              onPress={() => setShowSignOutSheet(false)}
+              variant="outline"
+              style={{ flex: 1 }}
+              disabled={signOutBusy}
+            />
+            <Button
+              title="Sign Out"
+              onPress={handleSignOut}
+              loading={signOutBusy}
+              style={{ flex: 1 }}
+            />
+          </View>
+        }
+      >
+        <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
+          This will clear your local session and take you back to the login screen.
+        </Text>
       </ModalSheet>
     </SafeAreaView>
   );

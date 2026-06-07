@@ -13,6 +13,7 @@ export interface BackendAppSettings {
   currencySymbol: string;
   notificationsEnabled: boolean;
   hapticEnabled: boolean;
+  tourCompleted?: boolean;
 }
 
 export interface BackendSnapshot {

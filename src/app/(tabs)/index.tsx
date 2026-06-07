@@ -44,8 +44,8 @@ export default function DashboardScreen() {
 
   const handleSignOut = async () => {
     setShowProfileMenu(false);
-    void signOut();
-    router.replace('/(auth)/login');
+    await signOut();
+    router.replace('/login');
   };
 
   const monthTiles = (
