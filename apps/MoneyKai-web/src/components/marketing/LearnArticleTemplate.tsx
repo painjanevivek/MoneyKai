@@ -1,7 +1,7 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import type { LearnArticle, LearnFaq, LearnSection } from '@/data/learnArticles';
@@ -17,6 +17,10 @@ const formatDate = (value: string) =>
 
 function RenderFaq({ faq }: { faq: LearnFaq }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 960;
+  const { width } = useWindowDimensions();
+  const isWide = width >= 960;
   return (
     <SectionCard>
       <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
@@ -82,6 +86,10 @@ function renderNumbered(items: string[] | undefined, color: string, accent: stri
 
 function RenderSection({ section }: { section: LearnSection }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 960;
+  const { width } = useWindowDimensions();
+  const isWide = width >= 960;
   return (
     <SectionCard style={{ gap: Spacing.md }}>
       <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
@@ -127,6 +135,10 @@ export function LearnArticleTemplate({
   relatedArticles: LearnArticle[];
 }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 960;
+  const { width } = useWindowDimensions();
+  const isWide = width >= 960;
 
   return (
     <>
@@ -136,8 +148,7 @@ export function LearnArticleTemplate({
         path={`/learn/${article.slug}`}
         keywords={article.keywords}
       />
-      <PublicShell eyebrow={`MoneyKai Learn · ${article.category}`} title={article.title} description={article.excerpt}>
-        <View style={{ gap: Spacing.lg }}>
+      <PublicShell eyebrow={`MoneyKai Learn · ${article.category}`} title={article.title} description={article.excerpt}>`r`n        <View style={{ gap: Spacing.lg, paddingBottom: Spacing['2xl'] }}>
           <View
             style={{
               flexDirection: 'row',
@@ -186,13 +197,13 @@ export function LearnArticleTemplate({
               }}
             >
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
-                By {article.author} · {formatDate(article.publishedAt)}
+                By {article.author} Â· {formatDate(article.publishedAt)}
               </Text>
             </View>
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg }}>
-            <View style={{ flexGrow: 1, flexBasis: 460, gap: Spacing.md }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.lg }}>
+            <View style={{ flexGrow: 1, flexBasis: isWide ? 460 : undefined, gap: Spacing.md }}>
               <SectionCard variant="elevated" borderRadius="2xl" style={{ gap: Spacing.md, overflow: 'hidden' }}>
                 <View style={{ gap: Spacing.sm }}>
                   <Text style={{ fontSize: Typography.fontSize['4xl'], lineHeight: Typography.lineHeight['4xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
@@ -229,7 +240,7 @@ export function LearnArticleTemplate({
               </SectionCard>
             </View>
 
-            <View style={{ flexGrow: 1, flexBasis: 320, gap: Spacing.md }}>
+            <View style={{ flexGrow: 1, flexBasis: isWide ? 320 : undefined, gap: Spacing.md }}>
               <SectionCard style={{ gap: Spacing.sm }}>
                 <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                   Table of contents
@@ -298,13 +309,13 @@ export function LearnArticleTemplate({
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               Related articles
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.md }}>
               {relatedArticles.map((related) => (
                 <Link key={related.slug} href={`/learn/${related.slug}` as any} asChild>
                   <TouchableOpacity activeOpacity={0.82} style={{ flexGrow: 1, flexBasis: 280 }}>
                     <SectionCard style={{ gap: 8 }}>
                       <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                        {related.category} · {related.readingTime}
+                        {related.category} Â· {related.readingTime}
                       </Text>
                       <Text style={{ fontSize: Typography.fontSize.lg, lineHeight: 24, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                         {related.title}
@@ -323,3 +334,5 @@ export function LearnArticleTemplate({
     </>
   );
 }
+
+

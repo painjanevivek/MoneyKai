@@ -58,7 +58,10 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
           }}
         />
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: Spacing['4xl'] }}
+        >
           <View style={{ width: '100%', maxWidth: 1180, alignSelf: 'center', flexGrow: 1, paddingHorizontal: Spacing.base }}>
             <View
               style={{
@@ -239,7 +242,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
               </View>
             ) : null}
 
-            <View style={{ flexGrow: 1, paddingBottom: Spacing['3xl'] }}>{children}</View>
+            <View style={{ flexGrow: 1, minHeight: 0, paddingBottom: Spacing['4xl'] }}>{children}</View>
 
             <View
               style={{
@@ -248,6 +251,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                 borderTopWidth: 1,
                 borderTopColor: colors.borderLight,
                 gap: Spacing.md,
+                marginTop: Spacing['2xl'],
               }}
             >
               <View style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'space-between', gap: Spacing.sm }}>

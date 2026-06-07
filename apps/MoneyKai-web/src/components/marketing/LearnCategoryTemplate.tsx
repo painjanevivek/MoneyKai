@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import type { LearnArticle, LearnCategory } from '@/data/learnArticles';
@@ -16,6 +16,10 @@ export function LearnCategoryTemplate({
   articles: LearnArticle[];
 }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
 
   return (
     <>
@@ -26,7 +30,7 @@ export function LearnCategoryTemplate({
         keywords={[category.title, 'MoneyKai Learn']}
       />
       <PublicShell eyebrow="MoneyKai Learn" title={category.title} description={category.description}>
-        <View style={{ gap: Spacing.lg }}>
+        <View style={{ gap: Spacing.lg, paddingBottom: Spacing['2xl'] }}>
           <SectionCard variant="elevated" borderRadius="2xl" style={{ gap: Spacing.sm }}>
             <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               {category.title} articles
@@ -36,10 +40,10 @@ export function LearnCategoryTemplate({
             </Text>
           </SectionCard>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.md }}>
             {articles.map((article) => (
               <Link key={article.slug} href={`/learn/${article.slug}` as any} asChild>
-                <TouchableOpacity activeOpacity={0.82} style={{ flexGrow: 1, flexBasis: 300 }}>
+                <TouchableOpacity activeOpacity={0.82} style={{ flexGrow: 1, flexBasis: isWide ? 300 : undefined }}>
                   <SectionCard style={{ gap: 8 }}>
                     <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
                       {article.readingTime}
