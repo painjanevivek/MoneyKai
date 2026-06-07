@@ -20,6 +20,7 @@ const PRIMARY_LINKS = [
   { href: '/pricing', label: 'Pricing' },
   { href: '/security', label: 'Security' },
   { href: '/learn', label: 'Learn' },
+  { href: '/news', label: 'News' },
 ] as const;
 
 export function PublicShell({ eyebrow, title, description, children }: ShellProps) {
@@ -263,6 +264,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                   { href: '/faq', label: 'FAQ' },
                   { href: '/contact', label: 'Contact' },
                   { href: '/pricing', label: 'Pricing' },
+                  { href: '/news', label: 'News' },
                   { href: '/privacy-policy', label: 'Privacy policy' },
                   { href: '/security', label: 'Security' },
                   { href: '/terms', label: 'Terms' },
@@ -283,20 +285,33 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
   );
 }
 
-export function SectionCard({ children, style }: PropsWithChildren<{ style?: object }>) {
+export function SectionCard({
+  children,
+  style,
+  variant = 'default',
+  borderRadius = 'xl',
+}: PropsWithChildren<{
+  style?: object;
+  variant?: 'default' | 'elevated' | 'outlined';
+  borderRadius?: keyof typeof BorderRadius;
+}>) {
   const { colors } = useTheme();
 
   return (
     <View
       style={[
         {
-          backgroundColor: colors.card,
-          borderRadius: BorderRadius.xl,
-          borderWidth: 1,
-          borderColor: colors.borderLight,
+          backgroundColor: variant === 'elevated' ? colors.surfaceElevated : colors.card,
+          borderRadius: BorderRadius[borderRadius],
           padding: Spacing.lg,
-          ...Shadows.md,
-          shadowColor: colors.shadowColor,
+          ...(variant === 'outlined'
+            ? { borderWidth: 1, borderColor: colors.borderLight }
+            : {
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+                ...(variant === 'elevated' ? { ...Shadows.lg } : { ...Shadows.md }),
+                shadowColor: colors.shadowColor,
+              }),
         },
         style,
       ]}

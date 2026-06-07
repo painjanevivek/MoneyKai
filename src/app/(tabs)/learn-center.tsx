@@ -98,7 +98,7 @@ export default function LearnCenterScreen() {
 
         <View style={{ gap: Spacing.md }}>
           {LEARN_ARTICLES.map((article, index) => (
-            <Link key={article.slug} href={`/learn/${article.slug}` as const} asChild>
+            <Link key={article.slug} href={`/learn/${article.slug}` as any} asChild>
               <TouchableOpacity activeOpacity={0.85}>
                 <Card
                   variant={index === 0 ? 'elevated' : 'default'}
@@ -111,7 +111,7 @@ export default function LearnCenterScreen() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md }}>
                     <View style={{ flex: 1, gap: 6 }}>
                       <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                        {article.category} · {article.readTime}
+                        {article.category} · {article.readingTime}
                       </Text>
                       <Text
                         style={{
