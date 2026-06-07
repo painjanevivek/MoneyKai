@@ -1,72 +1,63 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Text, View } from 'react-native';
+import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
+import { SeoHead } from '@/components/marketing/SeoHead';
+import { SITE } from '@/constants/site';
+import { Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 
 export default function PrivacyPolicyScreen() {
   const { colors } = useTheme();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: Spacing.md,
-          paddingHorizontal: Spacing.base,
-          paddingVertical: Spacing.md,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.borderLight,
-        }}
+    <>
+      <SeoHead
+        title="MoneyKai Privacy Policy | How account and finance data is used"
+        description="Read MoneyKai’s privacy policy for data storage, backups, account handling, and how personal finance information is used inside the app."
+        path="/privacy-policy"
+        keywords={['privacy policy', 'MoneyKai privacy', 'finance app data policy']}
+      />
+      <PublicShell
+        eyebrow="Privacy"
+        title="MoneyKai keeps personal finance data visible, useful, and under user control."
+        description="This page explains the basic privacy model for MoneyKai in plain language so people can understand the product before creating an account."
       >
-        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back">
-          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-            Privacy Policy
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-            MoneyKai keeps your financial data private and under your control.
-          </Text>
+        <View style={{ gap: Spacing.md }}>
+          {[
+            {
+              title: 'Data we store',
+              body: 'Your profile, transactions, notes, groups, savings-related records, settings, and notification preferences may be stored locally on your device and, when backup is enabled, in your connected Firebase setup.',
+            },
+            {
+              title: 'How data is used',
+              body: 'MoneyKai uses this information to power budgeting, analytics, shared expense coordination, notes, reminders, and backup and restore experiences.',
+            },
+            {
+              title: 'Sharing and selling',
+              body: 'MoneyKai does not sell your personal finance data. Backup data is intended to remain accessible only to the authenticated account connected to that environment.',
+            },
+            {
+              title: 'Support contact',
+              body: `Questions about privacy can be sent to ${SITE.supportEmail}.`,
+            },
+          ].map((section) => (
+            <SectionCard key={section.title}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md }}>
+                <MaterialCommunityIcons name="shield-lock-outline" size={22} color={colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    {section.title}
+                  </Text>
+                  <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                    {section.body}
+                  </Text>
+                </View>
+              </View>
+            </SectionCard>
+          ))}
         </View>
-      </View>
-
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 100 }}>
-        <View style={{ backgroundColor: colors.card, borderRadius: BorderRadius.lg, padding: Spacing.base, gap: Spacing.md }}>
-          <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            Data we store
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            Your profile, transactions, notes, groups, challenges, badges, budget settings, and notification preferences may be stored locally on your device and, when you choose to back up, in your connected Firebase project.
-          </Text>
-
-          <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            How we use it
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            MoneyKai uses your data only to power budgeting, insights, reminders, and optional cloud backup and restore.
-          </Text>
-
-          <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            Sharing
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            We do not sell your data. Backup data stays in your own Firebase project and is only accessible to your authenticated account.
-          </Text>
-
-          <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            Contact
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            Questions? Email support@moneykai.app.
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      </PublicShell>
+    </>
   );
 }
-

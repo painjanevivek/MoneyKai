@@ -6,6 +6,21 @@ import { MOTIVATIONAL_MESSAGES } from '../types/challenge';
 import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { backendApi, isBackendConfigured } from '@/services/backendApi';
+
+const syncChallengeCreate = (challenge: Challenge) => {
+  if (!isBackendConfigured()) return;
+  void backendApi.createChallenge(challenge).catch((error) => {
+    if (__DEV__) console.warn('[MoneyKai] failed to sync challenge create:', error);
+  });
+};
+
+const syncChallengeUpdate = (challengeId: string, payload: Partial<Challenge>) => {
+  if (!isBackendConfigured()) return;
+  void backendApi.updateChallenge(challengeId, payload).catch((error) => {
+    if (__DEV__) console.warn('[MoneyKai] failed to sync challenge update:', error);
+  });
+};
 
 interface ChallengeState {
   challenges: Challenge[];
@@ -103,6 +118,7 @@ export const useChallengeStore = create<ChallengeState>()(
           created_at: new Date().toISOString(),
         };
         set((state) => ({ challenges: [newChallenge, ...state.challenges] }));
+        syncChallengeCreate(newChallenge);
         void recordAppNotification({
           title: 'Challenge started',
           body: newChallenge.name,
@@ -111,36 +127,60 @@ export const useChallengeStore = create<ChallengeState>()(
         });
       },
 
-      updateStreak: (id) => set((state) => ({
-        challenges: state.challenges.map(c =>
-          c.id === id ? { ...c, current_streak: c.current_streak + 1 } : c
-        ),
-      })),
+      updateStreak: (id) => {
+        const challenge = get().challenges.find((item) => item.id === id);
+        if (!challenge) return;
+        const next = { current_streak: challenge.current_streak + 1 };
+        set((state) => ({
+          challenges: state.challenges.map(c =>
+            c.id === id ? { ...c, ...next } : c
+          ),
+        }));
+        syncChallengeUpdate(id, next);
+      },
 
-      failChallenge: (id) => set((state) => ({
-        challenges: state.challenges.map(c =>
-          c.id === id ? { ...c, status: 'failed' as const } : c
-        ),
-      })),
+      failChallenge: (id) => {
+        set((state) => ({
+          challenges: state.challenges.map(c =>
+            c.id === id ? { ...c, status: 'failed' as const } : c
+          ),
+        }));
+        syncChallengeUpdate(id, { status: 'failed' });
+      },
 
-      deactivateChallenge: (id) => set((state) => ({
-        challenges: state.challenges.map(c =>
-          c.id === id ? { ...c, status: 'deactivated' as const } : c
-        ),
-      })),
+      deactivateChallenge: (id) => {
+        set((state) => ({
+          challenges: state.challenges.map(c =>
+            c.id === id ? { ...c, status: 'deactivated' as const } : c
+          ),
+        }));
+        void backendApi.deactivateChallenge(id).catch((error) => {
+          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge deactivate:', error);
+        });
+      },
 
-      reactivateChallenge: (id) => set((state) => ({
-        challenges: state.challenges.map(c =>
-          c.id === id ? { ...c, status: 'active' as const } : c
-        ),
-      })),
+      reactivateChallenge: (id) => {
+        set((state) => ({
+          challenges: state.challenges.map(c =>
+            c.id === id ? { ...c, status: 'active' as const } : c
+          ),
+        }));
+        void backendApi.reactivateChallenge(id).catch((error) => {
+          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge reactivate:', error);
+        });
+      },
 
-      completeChallenge: (id, xp, savings) => set((state) => ({
-        challenges: state.challenges.map(c =>
-          c.id === id ? { ...c, status: 'completed' as const, xp_earned: xp, savings_earned: savings } : c
-        ),
-        totalXP: state.totalXP + xp,
-      })),
+      completeChallenge: (id, xp, savings) => {
+        set((state) => ({
+          challenges: state.challenges.map(c =>
+            c.id === id ? { ...c, status: 'completed' as const, xp_earned: xp, savings_earned: savings } : c
+          ),
+          totalXP: state.totalXP + xp,
+        }));
+        void backendApi.completeChallenge(id, { xp_earned: xp, savings_earned: savings }).catch((error) => {
+          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge completion:', error);
+        });
+      },
     };
   },
     {

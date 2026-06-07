@@ -15,6 +15,7 @@ import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { isBackendConfigured } from '@/services/backendApi';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
 
@@ -156,9 +157,7 @@ export default function SettingsScreen() {
   };
 
   const handleSupport = () => {
-    Linking.openURL('mailto:support@moneykai.app?subject=MoneyKai Support').catch(() => {
-      Alert.alert('Contact Support', 'Email us at support@moneykai.app');
-    });
+    router.push('/contact' as any);
   };
 
   const saveAllowance = async () => {
@@ -378,7 +377,14 @@ export default function SettingsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="MoneyKai v1.0.0" />
           <SettingItem icon="star-outline" iconColor="#5A5A5A" iconBg="#EFEFEF" title="Rate the App" onPress={handleRate} />
-          <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" onPress={handleSupport} />
+          <SettingItem
+            icon="help-circle-outline"
+            iconColor="#707070"
+            iconBg="#F1F1F1"
+            title="Help & Support"
+            subtitle="Open contact and support options"
+            onPress={handleSupport}
+          />
         </Card>
 
         <TouchableOpacity
@@ -435,7 +441,13 @@ export default function SettingsScreen() {
       <ModalSheet
         visible={showBackupSheet}
         title="Cloud backups"
-        subtitle={isFirebaseConfigured() ? 'Create Firestore once in Firebase Console before your first cloud backup.' : 'Firebase is required for cloud backups.'}
+        subtitle={
+          isBackendConfigured()
+            ? 'Make sure the MoneyKai backend is running and Firestore is available for cloud backups.'
+            : isFirebaseConfigured()
+              ? 'Create Firestore once in Firebase Console before your first cloud backup.'
+              : 'Firebase is required for cloud backups.'
+        }
         onClose={() => setShowBackupSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
@@ -443,14 +455,14 @@ export default function SettingsScreen() {
               title="Back Up Now"
               onPress={handleCloudBackup}
               loading={backupBusy}
-              disabled={!isFirebaseConfigured()}
+              disabled={!isFirebaseConfigured() && !isBackendConfigured()}
             />
             <Button
               title="Restore Latest Backup"
               onPress={handleCloudRestore}
               variant="outline"
               loading={backupBusy}
-              disabled={!isFirebaseConfigured()}
+              disabled={!isFirebaseConfigured() && !isBackendConfigured()}
             />
           </View>
         }
@@ -470,9 +482,10 @@ export default function SettingsScreen() {
               First backup checklist
             </Text>
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-              1. Firestore database exists in Firebase Console.{"\n"}
-              2. You are signed in to MoneyKai.{"\n"}
-              3. Firestore rules allow the signed-in user to read and write {'users/{uid}/backups'}.
+              1. The MoneyKai backend is deployed and reachable.{"\n"}
+              2. Firestore database exists in Firebase Console.{"\n"}
+              3. You are signed in to MoneyKai with a real Firebase account.{"\n"}
+              4. Firestore permissions allow the backend service account to store backups.
             </Text>
           </View>
         </View>

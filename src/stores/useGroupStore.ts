@@ -4,6 +4,42 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Group, GroupExpense } from '../types/group';
 import { recordAppNotification } from '@/services/notificationService';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { backendApi, isBackendConfigured } from '@/services/backendApi';
+
+const syncGroupCreate = (group: Group) => {
+  if (!isBackendConfigured()) return;
+  void backendApi.createGroup(group).catch((error) => {
+    if (__DEV__) console.warn('[MoneyKai] failed to sync group create:', error);
+  });
+};
+
+const syncGroupUpdate = (groupId: string, payload: Partial<Group>) => {
+  if (!isBackendConfigured()) return;
+  void backendApi.updateGroup(groupId, payload).catch((error) => {
+    if (__DEV__) console.warn('[MoneyKai] failed to sync group update:', error);
+  });
+};
+
+const syncGroupDelete = (groupId: string) => {
+  if (!isBackendConfigured()) return;
+  void backendApi.deleteGroup(groupId).catch((error) => {
+    if (__DEV__) console.warn('[MoneyKai] failed to sync group delete:', error);
+  });
+};
+
+const syncGroupExpenseCreate = (expense: GroupExpense) => {
+  if (!isBackendConfigured()) return;
+  void backendApi.createGroupExpense(expense.group_id, expense).catch((error) => {
+    if (__DEV__) console.warn('[MoneyKai] failed to sync group expense create:', error);
+  });
+};
+
+const syncGroupExpenseUpdate = (expense: GroupExpense) => {
+  if (!isBackendConfigured()) return;
+  void backendApi.updateGroupExpense(expense.group_id, expense.id, expense).catch((error) => {
+    if (__DEV__) console.warn('[MoneyKai] failed to sync group expense update:', error);
+  });
+};
 
 interface GroupState {
   groups: Group[];
@@ -97,6 +133,7 @@ export const useGroupStore = create<GroupState>()(
           archived: group.archived ?? false,
         };
         set((state) => ({ groups: [newGroup, ...state.groups] }));
+        syncGroupCreate(newGroup);
         void recordAppNotification({
           title: 'Group created',
           body: newGroup.name,
@@ -112,39 +149,59 @@ export const useGroupStore = create<GroupState>()(
           created_at: new Date().toISOString(),
         };
         set((state) => ({ expenses: [newExpense, ...state.expenses] }));
+        syncGroupExpenseCreate(newExpense);
       },
 
-      settleExpense: (splitId) =>
+      settleExpense: (splitId) => {
+        let updatedExpense: GroupExpense | null = null;
         set((state) => ({
-          expenses: state.expenses.map((expense) => ({
-            ...expense,
-            splits: expense.splits?.map((split) =>
-              split.id === splitId
-                ? { ...split, is_settled: true, settled_at: new Date().toISOString() }
-                : split
-            ),
-          })),
-        })),
+          expenses: state.expenses.map((expense) => {
+            if (!expense.splits?.some((split) => split.id === splitId)) {
+              return expense;
+            }
 
-      deleteGroup: (id) =>
+            updatedExpense = {
+              ...expense,
+              splits: expense.splits?.map((split) =>
+                split.id === splitId
+                  ? { ...split, is_settled: true, settled_at: new Date().toISOString() }
+                  : split
+              ),
+            };
+            return updatedExpense;
+          }),
+        }));
+
+        if (updatedExpense) {
+          syncGroupExpenseUpdate(updatedExpense);
+        }
+      },
+
+      deleteGroup: (id) => {
         set((state) => ({
           groups: state.groups.filter((group) => group.id !== id),
           expenses: state.expenses.filter((expense) => expense.group_id !== id),
-        })),
+        }));
+        syncGroupDelete(id);
+      },
 
-      archiveGroup: (id) =>
+      archiveGroup: (id) => {
         set((state) => ({
           groups: state.groups.map((group) =>
             group.id === id ? { ...group, archived: true } : group
           ),
-        })),
+        }));
+        syncGroupUpdate(id, { archived: true });
+      },
 
-      restoreGroup: (id) =>
+      restoreGroup: (id) => {
         set((state) => ({
           groups: state.groups.map((group) =>
             group.id === id ? { ...group, archived: false } : group
           ),
-        })),
+        }));
+        syncGroupUpdate(id, { archived: false });
+      },
 
       getGroupExpenses: (groupId) => get().expenses.filter((expense) => expense.group_id === groupId),
     }),

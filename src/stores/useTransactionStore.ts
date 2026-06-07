@@ -5,6 +5,7 @@ import type { Transaction, TransactionFilter, CategoryTotal } from '../types/tra
 import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { backendApi, isBackendConfigured } from '@/services/backendApi';
 
 // Sample data used when Firebase is not configured locally.
 const today = new Date().toISOString().split('T')[0];
@@ -56,6 +57,39 @@ interface TransactionState {
 const DEFAULT_FILTER: TransactionFilter = {
   dateRange: 'monthly',
   searchQuery: '',
+};
+
+const syncTransactionCreate = (transaction: Transaction) => {
+  if (!isBackendConfigured()) {
+    return;
+  }
+  void backendApi.createResource<Transaction>('transactions', transaction).catch((error) => {
+    if (__DEV__) {
+      console.warn('[MoneyKai] failed to sync transaction create:', error);
+    }
+  });
+};
+
+const syncTransactionUpdate = (id: string, updates: Partial<Transaction>) => {
+  if (!isBackendConfigured()) {
+    return;
+  }
+  void backendApi.updateResource<Transaction>('transactions', id, updates).catch((error) => {
+    if (__DEV__) {
+      console.warn('[MoneyKai] failed to sync transaction update:', error);
+    }
+  });
+};
+
+const syncTransactionDelete = (id: string) => {
+  if (!isBackendConfigured()) {
+    return;
+  }
+  void backendApi.deleteResource('transactions', id).catch((error) => {
+    if (__DEV__) {
+      console.warn('[MoneyKai] failed to sync transaction delete:', error);
+    }
+  });
 };
 
 export const useTransactionStore = create<TransactionState>()(
@@ -180,6 +214,7 @@ export const useTransactionStore = create<TransactionState>()(
           };
           const nextTransactions = [newTransaction, ...get().transactions];
           set({ transactions: nextTransactions });
+          syncTransactionCreate(newTransaction);
 
           if (newTransaction.type === 'expense') {
             const allowance = useBudgetStore.getState().settings.monthly_allowance;
@@ -212,12 +247,14 @@ export const useTransactionStore = create<TransactionState>()(
               t.id === id ? { ...t, ...updates } : t
             ),
           }));
+          syncTransactionUpdate(id, updates);
         },
 
         deleteTransaction: (id) => {
           set((state) => ({
             transactions: state.transactions.filter(t => t.id !== id),
           }));
+          syncTransactionDelete(id);
         },
 
         setFilter: (filter) => {

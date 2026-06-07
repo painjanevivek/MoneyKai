@@ -2,6 +2,27 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ThemeMode } from '../constants/theme';
+import { backendApi, isBackendConfigured } from '@/services/backendApi';
+
+type PersistedAppSettings = {
+  theme: ThemeMode;
+  currency: string;
+  currencySymbol: string;
+  notificationsEnabled: boolean;
+  hapticEnabled: boolean;
+};
+
+const persistAppSettings = (settings: PersistedAppSettings) => {
+  if (!isBackendConfigured()) {
+    return;
+  }
+
+  void backendApi.updateAppSettings(settings).catch((error) => {
+    if (__DEV__) {
+      console.warn('[MoneyKai] failed to sync app settings:', error);
+    }
+  });
+};
 
 interface SettingsState {
   theme: ThemeMode;
@@ -28,23 +49,84 @@ export const useSettingsStore = create<SettingsState>()(
       notificationsEnabled: true,
       hapticEnabled: true,
 
-      toggleTheme: () => set((state) => ({
-        theme: state.theme === 'light' ? 'dark' : 'light',
-      })),
+      toggleTheme: () =>
+        set((state) => {
+          const theme: ThemeMode = state.theme === 'light' ? 'dark' : 'light';
+          const next: PersistedAppSettings = {
+            theme,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+          };
+          persistAppSettings(next);
+          return { theme };
+        }),
 
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) =>
+        set((state) => {
+          const next: PersistedAppSettings = {
+            theme,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+          };
+          persistAppSettings(next);
+          return { theme };
+        }),
 
-      setCurrency: (currency, symbol) => set({ currency, currencySymbol: symbol }),
+      setCurrency: (currency, symbol) =>
+        set((state) => {
+          const next: PersistedAppSettings = {
+            theme: state.theme,
+            currency,
+            currencySymbol: symbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+          };
+          persistAppSettings(next);
+          return { currency, currencySymbol: symbol };
+        }),
 
-      toggleNotifications: () => set((state) => ({
-        notificationsEnabled: !state.notificationsEnabled,
-      })),
+      toggleNotifications: () =>
+        set((state) => {
+          const next: PersistedAppSettings = {
+            theme: state.theme,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: !state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+          };
+          persistAppSettings(next);
+          return { notificationsEnabled: next.notificationsEnabled };
+        }),
 
-      setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
+      setNotificationsEnabled: (enabled) =>
+        set((state) => {
+          const next: PersistedAppSettings = {
+            theme: state.theme,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: enabled,
+            hapticEnabled: state.hapticEnabled,
+          };
+          persistAppSettings(next);
+          return { notificationsEnabled: enabled };
+        }),
 
-      toggleHaptic: () => set((state) => ({
-        hapticEnabled: !state.hapticEnabled,
-      })),
+      toggleHaptic: () =>
+        set((state) => {
+          const next: PersistedAppSettings = {
+            theme: state.theme,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: !state.hapticEnabled,
+          };
+          persistAppSettings(next);
+          return { hapticEnabled: next.hapticEnabled };
+        }),
     }),
     {
       name: 'moneykai-settings',

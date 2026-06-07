@@ -4,6 +4,41 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Note, ChecklistItem } from '../types/note';
 import { recordAppNotification } from '@/services/notificationService';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { useAuthStore } from './useAuthStore';
+
+const syncNoteCreate = (note: Note) => {
+  if (!isBackendConfigured()) {
+    return;
+  }
+  void backendApi.createResource<Note>('notes', note).catch((error) => {
+    if (__DEV__) {
+      console.warn('[MoneyKai] failed to sync note create:', error);
+    }
+  });
+};
+
+const syncNoteUpdate = (id: string, updates: Partial<Note>) => {
+  if (!isBackendConfigured()) {
+    return;
+  }
+  void backendApi.updateResource<Note>('notes', id, updates).catch((error) => {
+    if (__DEV__) {
+      console.warn('[MoneyKai] failed to sync note update:', error);
+    }
+  });
+};
+
+const syncNoteDelete = (id: string) => {
+  if (!isBackendConfigured()) {
+    return;
+  }
+  void backendApi.deleteResource('notes', id).catch((error) => {
+    if (__DEV__) {
+      console.warn('[MoneyKai] failed to sync note delete:', error);
+    }
+  });
+};
 
 interface NotesState {
   notes: Note[];
@@ -90,7 +125,7 @@ export const useNotesStore = create<NotesState>()(
           return result;
         },
 
-        addNote: (note, userId = 'local') => {
+        addNote: (note, userId = useAuthStore.getState().user?.id ?? 'local') => {
           const now = new Date().toISOString();
           const newNote: Note = {
             ...note,
@@ -100,6 +135,7 @@ export const useNotesStore = create<NotesState>()(
             updated_at: now,
           };
           set((state) => ({ notes: [newNote, ...state.notes] }));
+          syncNoteCreate(newNote);
           void recordAppNotification({
             title: 'Note saved',
             body: newNote.title,
@@ -108,50 +144,65 @@ export const useNotesStore = create<NotesState>()(
           });
         },
 
-        updateNote: (id, updates) => set((state) => ({
-          notes: state.notes.map(n =>
-            n.id === id ? { ...n, ...updates, updated_at: new Date().toISOString() } : n
-          ),
-        })),
+        updateNote: (id, updates) => {
+          const next = { ...updates, updated_at: new Date().toISOString() };
+          set((state) => ({
+            notes: state.notes.map(n =>
+              n.id === id ? { ...n, ...next } : n
+            ),
+          }));
+          syncNoteUpdate(id, next);
+        },
 
-        deleteNote: (id) => set((state) => ({
-          notes: state.notes.filter(n => n.id !== id),
-        })),
+        deleteNote: (id) => {
+          set((state) => ({
+            notes: state.notes.filter(n => n.id !== id),
+          }));
+          syncNoteDelete(id);
+        },
 
-        togglePin: (id) => set((state) => ({
-          notes: state.notes.map(n =>
-            n.id === id ? { ...n, is_pinned: !n.is_pinned } : n
-          ),
-        })),
+        togglePin: (id) => {
+          const note = get().notes.find((item) => item.id === id);
+          if (!note) return;
+          const next = { is_pinned: !note.is_pinned, updated_at: new Date().toISOString() };
+          set((state) => ({
+            notes: state.notes.map(n =>
+              n.id === id ? { ...n, ...next } : n
+            ),
+          }));
+          syncNoteUpdate(id, next);
+        },
 
-        toggleChecklistItem: (noteId, itemId) => set((state) => ({
-          notes: state.notes.map(n =>
-            n.id === noteId && n.checklist_items
-              ? {
-                  ...n,
-                  checklist_items: n.checklist_items.map((item: ChecklistItem) =>
-                    item.id === itemId ? { ...item, completed: !item.completed } : item
-                  ),
-                  updated_at: new Date().toISOString(),
-                }
-              : n
-          ),
-        })),
+        toggleChecklistItem: (noteId, itemId) => {
+          const note = get().notes.find((item) => item.id === noteId);
+          if (!note?.checklist_items) return;
+          const nextChecklistItems = note.checklist_items.map((item: ChecklistItem) =>
+            item.id === itemId ? { ...item, completed: !item.completed } : item
+          );
+          const next = { checklist_items: nextChecklistItems, updated_at: new Date().toISOString() };
+          set((state) => ({
+            notes: state.notes.map(n =>
+              n.id === noteId ? { ...n, ...next } : n
+            ),
+          }));
+          syncNoteUpdate(noteId, next);
+        },
 
-        addChecklistItem: (noteId, text) => set((state) => ({
-          notes: state.notes.map(n =>
-            n.id === noteId
-              ? {
-                  ...n,
-                  checklist_items: [
-                    ...(n.checklist_items || []),
-                    { id: `cl_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, text, completed: false },
-                  ],
-                  updated_at: new Date().toISOString(),
-                }
-              : n
-          ),
-        })),
+        addChecklistItem: (noteId, text) => {
+          const note = get().notes.find((item) => item.id === noteId);
+          if (!note) return;
+          const nextChecklistItems = [
+            ...(note.checklist_items || []),
+            { id: `cl_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, text, completed: false },
+          ];
+          const next = { checklist_items: nextChecklistItems, updated_at: new Date().toISOString() };
+          set((state) => ({
+            notes: state.notes.map(n =>
+              n.id === noteId ? { ...n, ...next } : n
+            ),
+          }));
+          syncNoteUpdate(noteId, next);
+        },
 
         clearSeedData: () =>
           set((state) => ({

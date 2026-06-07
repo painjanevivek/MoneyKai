@@ -4,6 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Badge } from '../types/badge';
 import { BADGE_DEFINITIONS } from '../constants/badges';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { backendApi, isBackendConfigured } from '@/services/backendApi';
+
+const syncBadgeUpdate = (badge: Badge) => {
+  if (!isBackendConfigured()) return;
+  void backendApi.updateResource<Badge>('badges', badge.id, badge).catch((error) => {
+    if (__DEV__) console.warn('[MoneyKai] failed to sync badge update:', error);
+  });
+};
 
 interface BadgeState {
   badges: Badge[];
@@ -36,27 +44,47 @@ export const useBadgeStore = create<BadgeState>()(
       recentUnlock: null,
 
       initializeBadges: (userId) => {
+        if (isBackendConfigured()) {
+          return;
+        }
         if (get().badges.length === 0) {
           set({ badges: createInitialBadges(userId) });
         }
       },
 
-      unlockBadge: (badgeType) => set((state) => ({
-        badges: state.badges.map(b =>
-          b.badge_type === badgeType
-            ? { ...b, is_unlocked: true, unlocked_at: new Date().toISOString(), progress: 100 }
-            : b
-        ),
-        recentUnlock: badgeType,
-      })),
+      unlockBadge: (badgeType) => {
+        const updated: Badge[] = [];
+        set((state) => {
+          const badges = state.badges.map((b) => {
+            if (b.badge_type !== badgeType) return b;
+            const next = { ...b, is_unlocked: true, unlocked_at: new Date().toISOString(), progress: 100 };
+            updated.push(next);
+            return next;
+          });
+          return {
+            badges,
+            recentUnlock: badgeType,
+          };
+        });
+        updated.forEach(syncBadgeUpdate);
+      },
 
-      updateProgress: (badgeType, progress) => set((state) => ({
-        badges: state.badges.map(b =>
-          b.badge_type === badgeType && !b.is_unlocked
-            ? { ...b, progress: Math.min(100, progress) }
-            : b
-        ),
-      })),
+      updateProgress: (badgeType, progress) => {
+        const updated: Badge[] = [];
+        set((state) => {
+          const badges = state.badges.map((b) =>
+            b.badge_type === badgeType && !b.is_unlocked
+              ? (() => {
+                  const next = { ...b, progress: Math.min(100, progress) };
+                  updated.push(next);
+                  return next;
+                })()
+              : b
+          );
+          return { badges };
+        });
+        updated.forEach(syncBadgeUpdate);
+      },
 
       clearRecentUnlock: () => set({ recentUnlock: null }),
     }),

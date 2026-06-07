@@ -1,40 +1,39 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, Animated, Image } from 'react-native';
+import React from 'react';
 import { Link, Redirect, router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useAuthStore } from '@/stores/useAuthStore';
-import { useTheme } from '@/hooks/useTheme';
-import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Button } from '@/components/ui/Button';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
+import { SeoHead } from '@/components/marketing/SeoHead';
+import { LEARN_ARTICLES } from '@/content/learn';
+import { SITE } from '@/constants/site';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
+import { useAuthStore } from '@/stores/useAuthStore';
 
-const HIGHLIGHTS = [
+const POSITIONING = [
   {
-    label: 'Daily flow',
-    title: 'One place to see where money is going',
-    body: 'Spending, savings, shared costs, and backups stay visible without making the app feel heavy.',
-    icon: 'clock-outline',
+    title: 'See spending clearly',
+    body: 'Dashboard, transactions, and analytics help people understand what is happening before they try to fix it.',
+    icon: 'chart-line',
   },
   {
-    label: 'Shared costs',
-    title: 'Group expenses that stay easy to follow',
-    body: 'Split bills, track who paid, and keep the conversation around money simple for everyone involved.',
+    title: 'Handle shared money calmly',
+    body: 'Groups and shared expense flows help couples, roommates, families, and small teams stay aligned.',
     icon: 'account-group-outline',
   },
   {
-    label: 'Peace of mind',
-    title: 'Backups that travel with the account',
-    body: 'Transactions, notes, and settings stay ready to restore when cloud sync is turned on.',
-    icon: 'cloud-check-outline',
+    title: 'Stay steady when money gets stressful',
+    body: 'MoneyKai reframes emergency support into financial first aid with practical next steps and continuity tools.',
+    icon: 'lifebuoy',
   },
 ];
 
-const PRODUCT_TAGS = [
-  'For one person or many',
-  'Private by design',
-  'Works on web and mobile',
-  'Ready for cloud backup',
+const TRUST_ITEMS = [
+  'Public trust and security pages',
+  'Privacy policy in plain language',
+  'Backup and restore support',
+  'Original Learn content for discovery',
 ];
 
 export default function LandingScreen() {
@@ -42,237 +41,53 @@ export default function LandingScreen() {
   const { width } = useWindowDimensions();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isWide = width >= 960;
-  const [scrollY] = useState(() => new Animated.Value(0));
-
-  const heroShift = useMemo(
-    () =>
-      scrollY.interpolate({
-        inputRange: [0, 420],
-        outputRange: [0, -42],
-        extrapolate: 'clamp',
-      }),
-    [scrollY]
-  );
-
-  const previewLift = useMemo(
-    () =>
-      scrollY.interpolate({
-        inputRange: [0, 340],
-        outputRange: [0, -18],
-        extrapolate: 'clamp',
-      }),
-    [scrollY]
-  );
-
-  const sectionFade = useMemo(
-    () =>
-      scrollY.interpolate({
-        inputRange: [180, 430],
-        outputRange: [0.35, 1],
-        extrapolate: 'clamp',
-      }),
-    [scrollY]
-  );
 
   if (isAuthenticated) {
     return <Redirect href="/(tabs)" />;
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <Animated.ScrollView
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
-        contentContainerStyle={{
-          paddingHorizontal: Spacing.base,
-          paddingBottom: Spacing['3xl'],
-        }}
+    <>
+      <SeoHead
+        title={SITE.title}
+        description={SITE.description}
+        path="/"
+        keywords={['budget management app', 'personal finance app', 'shared expense tracker', 'financial first aid']}
+      />
+      <PublicShell
+        eyebrow="Personal finance and budgeting"
+        title="MoneyKai gives personal finance a calmer public face and a stronger everyday workflow."
+        description="Budgeting, analytics, groups, savings, transactions, notes, backups, settings, and financial first aid come together in one product that explains itself clearly before signup."
       >
-        <View style={{ maxWidth: 1180, alignSelf: 'center', width: '100%' }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: Spacing.base,
-              paddingBottom: Spacing.lg,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 16,
-                  backgroundColor: colors.surface,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  ...Shadows.md,
-                  shadowColor: colors.shadowColor,
-                }}
-              >
-                <Image
-                  source={require('../../assets/images/moneykai-logo.png')}
-                  style={{ width: 36, height: 36 }}
-                  resizeMode="contain"
-                />
-              </View>
-              <View>
-                <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                  MoneyKai
-                </Text>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                  Calm money management for real life
-                </Text>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-              <Link href="/(auth)/login" asChild>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={{
-                    paddingHorizontal: Spacing.md,
-                    paddingVertical: 10,
-                    borderRadius: BorderRadius.full,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    backgroundColor: colors.surface,
-                  }}
-                >
-                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                    Sign in
-                  </Text>
-                </TouchableOpacity>
-              </Link>
-              <Link href="/(auth)/signup" asChild>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={{
-                    paddingHorizontal: Spacing.md,
-                    paddingVertical: 10,
-                    borderRadius: BorderRadius.full,
-                    backgroundColor: colors.primary,
-                    ...Shadows.sm,
-                    shadowColor: colors.primary,
-                  }}
-                >
-                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
-                    Create account
-                  </Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
-          </View>
-
-          <View
-            style={{
-              flexDirection: isWide ? 'row' : 'column',
-              alignItems: isWide ? 'center' : 'stretch',
-              gap: Spacing.xl,
-              paddingVertical: Spacing.lg,
-            }}
-          >
-            <Animated.View style={{ flex: 1.05, gap: Spacing.lg, transform: [{ translateY: heroShift }] }}>
-              <View
-                style={{
-                  alignSelf: 'flex-start',
-                  width: isWide ? 124 : 104,
-                  height: isWide ? 124 : 104,
-                  borderRadius: 28,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  ...Shadows.lg,
-                  shadowColor: colors.shadowColor,
-                }}
-              >
-                <Image
-                  source={require('../../assets/images/moneykai-logo.png')}
-                  style={{ width: isWide ? 90 : 74, height: isWide ? 90 : 74 }}
-                  resizeMode="contain"
-                />
-              </View>
-
-              <View
-                style={{
-                  alignSelf: 'flex-start',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  paddingHorizontal: Spacing.md,
-                  paddingVertical: 8,
-                  borderRadius: 999,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                }}
-              >
-                <View
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: 999,
-                    backgroundColor: colors.primary,
-                  }}
-                />
-                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
-                  Quiet, clean, and easy to trust
-                </Text>
-              </View>
-
-              <Text
-                style={{
-                  fontSize: isWide ? 58 : 42,
-                  lineHeight: isWide ? 60 : 44,
-                  fontFamily: Typography.fontFamily.display,
-                  color: colors.textPrimary,
-                  maxWidth: 660,
-                }}
-              >
-                Money management that feels calm, not crowded.
+        <View style={{ gap: Spacing.xl }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
+            <SectionCard style={{ flex: 1.2 }}>
+              <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+                Better public positioning
               </Text>
-
-              <Text
-                style={{
-                  maxWidth: 600,
-                  fontSize: Typography.fontSize.md,
-                  lineHeight: 26,
-                  color: colors.textSecondary,
-                }}
-              >
-                MoneyKai brings budgeting, shared expenses, savings, and cloud backups into one quiet space so each person gets a view that fits them.
+              <Text style={{ marginTop: 10, fontSize: Typography.fontSize.md, lineHeight: 24, color: colors.textSecondary }}>
+                MoneyKai is not just a collection of product screens. It is a budgeting and personal finance app with a clear public website, stronger trust layer, helpful onboarding, and original educational content.
               </Text>
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-                {PRODUCT_TAGS.map((tag) => (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg }}>
+                {TRUST_ITEMS.map((item) => (
                   <View
-                    key={tag}
+                    key={item}
                     style={{
-                      minWidth: 150,
-                      padding: Spacing.md,
+                      paddingHorizontal: Spacing.md,
+                      paddingVertical: 10,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: colors.card,
+                      backgroundColor: colors.surface,
                       borderWidth: 1,
                       borderColor: colors.borderLight,
                     }}
                   >
-                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary, textAlign: 'center' }}>
-                      {tag}
+                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                      {item}
                     </Text>
                   </View>
                 ))}
               </View>
-
-              <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.sm, marginTop: Spacing.sm }}>
+              <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.sm, marginTop: Spacing.lg }}>
                 <Button
                   title="Create account"
                   onPress={() => router.push('/(auth)/signup')}
@@ -287,278 +102,124 @@ export default function LandingScreen() {
                   style={{ minWidth: isWide ? 160 : '100%' }}
                 />
               </View>
+            </SectionCard>
 
-              <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textTertiary }}>
-                Already have an account? {' '}
-                <Text onPress={() => router.push('/(auth)/login')} style={{ color: colors.primary, fontFamily: Typography.fontFamily.semiBold }}>
-                  Open login
-                </Text>
+            <SectionCard style={{ flex: 0.9 }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                QUICK POSITIONING
               </Text>
-            </Animated.View>
-
-            <Animated.View style={{ flex: 0.95, width: '100%', transform: [{ translateY: previewLift }] }}>
-              <View
-                style={{
-                  borderRadius: 34,
-                  backgroundColor: colors.card,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  padding: Spacing.md,
-                  ...Shadows.xl,
-                  shadowColor: colors.shadowColor,
-                }}
-              >
-                <LinearGradient
-                  colors={[`${colors.primary}08`, `${colors.primary}16`, `${colors.surface}`]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{
-                    minHeight: isWide ? 520 : 460,
-                    borderRadius: 28,
-                    padding: Spacing.lg,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <View
-                    pointerEvents="none"
-                    style={{
-                      position: 'absolute',
-                      top: -26,
-                      right: -18,
-                      width: 210,
-                      height: 210,
-                      borderRadius: 999,
-                      backgroundColor: `${colors.primary}10`,
-                    }}
-                  />
-                  <View
-                    pointerEvents="none"
-                    style={{
-                      position: 'absolute',
-                      left: -42,
-                      bottom: 68,
-                      width: 150,
-                      height: 150,
-                      borderRadius: 999,
-                      backgroundColor: `${colors.accent}12`,
-                    }}
-                  />
-
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
-                    <View>
-                      <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textTertiary }}>
-                        Today
-                      </Text>
-                      <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                        A live preview
-                      </Text>
-                    </View>
-                    <View
-                      style={{
-                        paddingHorizontal: Spacing.md,
-                        paddingVertical: 8,
-                        borderRadius: 999,
-                        backgroundColor: colors.surface,
-                        borderWidth: 1,
-                        borderColor: colors.borderLight,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      <View style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: colors.primary }} />
-                      <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                        live on the web
-                      </Text>
-                    </View>
+              <View style={{ marginTop: Spacing.md, gap: Spacing.md }}>
+                {[
+                  'Personal finance and budget management',
+                  'Web and mobile friendly route structure',
+                  'Trust pages that support conversion',
+                  'Discoverability through original Learn content',
+                ].map((line) => (
+                  <View key={line} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                    <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
+                    <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                      {line}
+                    </Text>
                   </View>
-
-                  <View
-                    style={{
-                      borderRadius: 26,
-                      backgroundColor: colors.surface,
-                      borderWidth: 1,
-                      borderColor: colors.borderLight,
-                      padding: Spacing.lg,
-                      marginBottom: Spacing.md,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: Spacing.md }}>
-                      <View>
-                        <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
-                          Personalized budget view
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: isWide ? 26 : 22,
-                            lineHeight: isWide ? 30 : 26,
-                            fontFamily: Typography.fontFamily.semiBold,
-                            color: colors.textPrimary,
-                            maxWidth: 390,
-                          }}
-                          numberOfLines={2}
-                          ellipsizeMode="tail"
-                        >
-                          Made to fit different routines
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        gap: 4,
-                        marginTop: 2,
-                      }}
-                    >
-                      <View
-                        style={{
-                          flex: 3,
-                          height: 10,
-                          borderRadius: 999,
-                          backgroundColor: colors.primary,
-                        }}
-                      />
-                      <View
-                        style={{
-                          flex: 5,
-                          height: 10,
-                          borderRadius: 999,
-                          backgroundColor: colors.primaryBg,
-                        }}
-                      />
-                      <View
-                        style={{
-                          flex: 2,
-                          height: 10,
-                          borderRadius: 999,
-                          backgroundColor: colors.primaryBg,
-                          opacity: 0.65,
-                        }}
-                        />
-                      </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm }}>
-                      <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
-                        built for each person
-                      </Text>
-                      <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
-                        no preset numbers
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={{ flexDirection: 'row', gap: Spacing.md, flexWrap: 'wrap' }}>
-                      <View
-                        style={{
-                          flex: 1,
-                          minWidth: 180,
-                          borderRadius: 22,
-                          padding: Spacing.md,
-                          backgroundColor: colors.surface,
-                          borderWidth: 1,
-                          borderColor: colors.borderLight,
-                          overflow: 'hidden',
-                        }}
-                      >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                        <MaterialCommunityIcons name="account-group-outline" size={18} color={colors.primary} />
-                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                          Shared spaces
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }} numberOfLines={3}>
-                        Designed for roommates, couples, families, and small teams that share costs in different ways.
-                      </Text>
-                    </View>
-
-                      <View
-                        style={{
-                          flex: 1,
-                          minWidth: 180,
-                          borderRadius: 22,
-                          padding: Spacing.md,
-                          backgroundColor: colors.surface,
-                          borderWidth: 1,
-                          borderColor: colors.borderLight,
-                          overflow: 'hidden',
-                        }}
-                      >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                        <MaterialCommunityIcons name="cloud-check-outline" size={18} color={colors.primary} />
-                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                          Backup ready
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }} numberOfLines={3}>
-                        Backups are ready when cloud sync is turned on for the account.
-                      </Text>
-                    </View>
-                  </View>
-                </LinearGradient>
+                ))}
               </View>
-            </Animated.View>
+            </SectionCard>
           </View>
 
-          <Animated.View style={{ marginTop: Spacing['3xl'], gap: Spacing.md, opacity: sectionFade }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                Why people keep it open
-              </Text>
-              <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textTertiary }}>
-                Simple, polished, useful
-              </Text>
-            </View>
-
-            <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
-              {HIGHLIGHTS.map((item) => (
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
+            {POSITIONING.map((item) => (
+              <SectionCard key={item.title} style={{ flex: 1 }}>
                 <View
-                  key={item.title}
                   style={{
-                    flex: 1,
-                    backgroundColor: colors.card,
-                    borderRadius: BorderRadius.xl,
-                    borderWidth: 1,
-                    borderColor: colors.borderLight,
-                    padding: Spacing.lg,
-                    minHeight: 190,
+                    width: 46,
+                    height: 46,
+                    borderRadius: 16,
+                    backgroundColor: colors.primaryBg,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: Spacing.md,
                   }}
                 >
-                  <View
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 14,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: colors.primaryBg,
-                      marginBottom: Spacing.md,
-                    }}
-                  >
-                    <MaterialCommunityIcons name={item.icon as any} size={20} color={colors.primary} />
-                  </View>
-                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary, marginBottom: 8 }}>
-                    {item.label}
-                  </Text>
-                  <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, lineHeight: 26 }}>
-                    {item.title}
-                  </Text>
-                  <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
-                    {item.body}
-                  </Text>
+                  <MaterialCommunityIcons name={item.icon as any} size={22} color={colors.primary} />
                 </View>
+                <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  {item.title}
+                </Text>
+                <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                  {item.body}
+                </Text>
+              </SectionCard>
+            ))}
+          </View>
+
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
+            {[
+              {
+                title: 'Start in three steps',
+                body: 'Create an account, add your real money picture, and let the dashboard show what needs attention first.',
+                href: '/how-it-works' as const,
+              },
+              {
+                title: 'See the trust layer',
+                body: 'Open the privacy, security, and trust pages before signup to understand how MoneyKai handles finance data and continuity.',
+                href: '/trust' as const,
+              },
+              {
+                title: 'Read original Learn content',
+                body: 'MoneyKai Learn focuses on budgeting, shared expenses, and recovery topics connected to real product use cases.',
+                href: '/learn' as any,
+              },
+            ].map((item) => (
+              <Link key={item.href} href={item.href} asChild>
+                <TouchableOpacity activeOpacity={0.82} style={{ flex: 1 }}>
+                  <SectionCard>
+                    <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                      {item.title}
+                    </Text>
+                    <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                      {item.body}
+                    </Text>
+                  </SectionCard>
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
+
+          <SectionCard>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              MoneyKai Learn
+            </Text>
+            <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+              Original content gives the product a more durable SEO foundation than thin feature copy or scraped articles.
+            </Text>
+            <View style={{ marginTop: Spacing.lg, gap: Spacing.md }}>
+              {LEARN_ARTICLES.map((article) => (
+                <Link key={article.slug} href={`/learn/${article.slug}` as any} asChild>
+                  <TouchableOpacity activeOpacity={0.82}>
+                    <View
+                      style={{
+                        paddingBottom: Spacing.md,
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.borderLight,
+                      }}
+                    >
+                      <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                        {article.category} · {article.readTime}
+                      </Text>
+                      <Text style={{ marginTop: 6, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                        {article.title}
+                      </Text>
+                      <Text style={{ marginTop: 8, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                        {article.description}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </Link>
               ))}
             </View>
-          </Animated.View>
-
-          <View style={{ alignItems: 'center', marginTop: Spacing['3xl'], marginBottom: Spacing['2xl'] }}>
-            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textTertiary, textAlign: 'center', lineHeight: 20 }}>
-              MoneyKai keeps the homepage open, the login route separate, and the app easy to return to.
-            </Text>
-          </View>
+          </SectionCard>
         </View>
-      </Animated.ScrollView>
-    </SafeAreaView>
+      </PublicShell>
+    </>
   );
 }

@@ -128,7 +128,10 @@ export default function RootLayout() {
       <Stack.Screen name="(auth)" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
       <Stack.Screen name="profile-edit" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+      <Stack.Screen name="learn" options={{ animation: 'slide_from_right', presentation: 'card' }} />
       <Stack.Screen name="privacy-policy" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+      <Stack.Screen name="terms" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+      <Stack.Screen name="contact" options={{ animation: 'slide_from_right', presentation: 'card' }} />
     </Stack>
   );
 
