@@ -18,8 +18,6 @@ export function LearnCategoryTemplate({
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 900;
-  const { width } = useWindowDimensions();
-  const isWide = width >= 900;
 
   return (
     <>

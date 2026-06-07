@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/ui/Card';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
@@ -28,6 +28,8 @@ const learnHighlights = [
 
 export default function LearnCenterScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -55,13 +57,13 @@ export default function LearnCenterScreen() {
         </View>
 
         <Card variant="elevated" borderRadius="2xl" style={{ marginBottom: Spacing.lg, padding: Spacing.lg }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.sm }}>
             {learnHighlights.map((item) => (
               <View
                 key={item.title}
                 style={{
                   flexGrow: 1,
-                  flexBasis: 220,
+                  flexBasis: isWide ? 220 : '100%',
                   gap: Spacing.sm,
                   padding: Spacing.md,
                   borderRadius: BorderRadius.lg,
@@ -108,7 +110,7 @@ export default function LearnCenterScreen() {
                     overflow: 'hidden',
                   }}
                 >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md }}>
+                  <View style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'space-between', gap: Spacing.md }}>
                     <View style={{ flex: 1, gap: 6 }}>
                       <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
                         {article.category} · {article.readingTime}
@@ -135,6 +137,7 @@ export default function LearnCenterScreen() {
                         backgroundColor: colors.primaryBg,
                         alignItems: 'center',
                         justifyContent: 'center',
+                        alignSelf: isWide ? 'auto' : 'flex-end',
                       }}
                     >
                       <MaterialCommunityIcons name="arrow-top-right" size={20} color={colors.primary} />

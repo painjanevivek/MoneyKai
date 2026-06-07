@@ -41,7 +41,7 @@ export default function LearnIndexScreen() {
             <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary, maxWidth: 760 }}>
               The strongest starting points for people who want practical guidance without noise.
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.sm }}>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.sm }}>
               {featuredArticles.map((article) => (
                 <Link key={article.slug} href={`/learn/${article.slug}` as any} asChild>
                   <TouchableOpacity activeOpacity={0.82} style={{ flexGrow: 1, flexBasis: isWide ? 300 : '100%' }}>
@@ -83,7 +83,7 @@ export default function LearnIndexScreen() {
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               Latest articles
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.md }}>
               {latestArticles.map((article) => (
                 <Link key={article.slug} href={`/learn/${article.slug}` as any} asChild>
                   <TouchableOpacity activeOpacity={0.82} style={{ flexGrow: 1, flexBasis: isWide ? 280 : '100%' }}>
@@ -108,7 +108,7 @@ export default function LearnIndexScreen() {
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               Browse by category
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.md }}>
               {LEARN_CATEGORIES.map((category) => {
                 const count = getLearnArticlesByCategorySlug(category.slug).length;
                 return (
@@ -136,7 +136,7 @@ export default function LearnIndexScreen() {
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               All articles
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.md }}>
               {LEARN_ARTICLES.map((article) => (
                 <Link key={article.slug} href={`/learn/${article.slug}` as any} asChild>
                   <TouchableOpacity activeOpacity={0.82} style={{ flexGrow: 1, flexBasis: isWide ? 300 : '100%' }}>

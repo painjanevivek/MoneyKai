@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
@@ -17,10 +17,6 @@ const formatDate = (value: string) =>
 
 function RenderFaq({ faq }: { faq: LearnFaq }) {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
-  const isWide = width >= 960;
-  const { width } = useWindowDimensions();
-  const isWide = width >= 960;
   return (
     <SectionCard>
       <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
@@ -86,10 +82,6 @@ function renderNumbered(items: string[] | undefined, color: string, accent: stri
 
 function RenderSection({ section }: { section: LearnSection }) {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
-  const isWide = width >= 960;
-  const { width } = useWindowDimensions();
-  const isWide = width >= 960;
   return (
     <SectionCard style={{ gap: Spacing.md }}>
       <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
@@ -137,8 +129,6 @@ export function LearnArticleTemplate({
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 960;
-  const { width } = useWindowDimensions();
-  const isWide = width >= 960;
 
   return (
     <>
@@ -148,7 +138,8 @@ export function LearnArticleTemplate({
         path={`/learn/${article.slug}`}
         keywords={article.keywords}
       />
-      <PublicShell eyebrow={`MoneyKai Learn · ${article.category}`} title={article.title} description={article.excerpt}>`r`n        <View style={{ gap: Spacing.lg, paddingBottom: Spacing['2xl'] }}>
+      <PublicShell eyebrow={`MoneyKai Learn · ${article.category}`} title={article.title} description={article.excerpt}>
+        <View style={{ gap: Spacing.lg, paddingBottom: Spacing['2xl'] }}>
           <View
             style={{
               flexDirection: 'row',
@@ -197,7 +188,7 @@ export function LearnArticleTemplate({
               }}
             >
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
-                By {article.author} Â· {formatDate(article.publishedAt)}
+                By {article.author} · {formatDate(article.publishedAt)}
               </Text>
             </View>
           </View>
@@ -206,7 +197,14 @@ export function LearnArticleTemplate({
             <View style={{ flexGrow: 1, flexBasis: isWide ? 460 : undefined, gap: Spacing.md }}>
               <SectionCard variant="elevated" borderRadius="2xl" style={{ gap: Spacing.md, overflow: 'hidden' }}>
                 <View style={{ gap: Spacing.sm }}>
-                  <Text style={{ fontSize: Typography.fontSize['4xl'], lineHeight: Typography.lineHeight['4xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+                  <Text
+                    style={{
+                      fontSize: isWide ? Typography.fontSize['4xl'] : Typography.fontSize['3xl'],
+                      lineHeight: isWide ? Typography.lineHeight['4xl'] : 40,
+                      fontFamily: Typography.fontFamily.display,
+                      color: colors.textPrimary,
+                    }}
+                  >
                     {article.title}
                   </Text>
                   <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 26, color: colors.textSecondary }}>
@@ -315,7 +313,7 @@ export function LearnArticleTemplate({
                   <TouchableOpacity activeOpacity={0.82} style={{ flexGrow: 1, flexBasis: 280 }}>
                     <SectionCard style={{ gap: 8 }}>
                       <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                        {related.category} Â· {related.readingTime}
+                        {related.category} · {related.readingTime}
                       </Text>
                       <Text style={{ fontSize: Typography.fontSize.lg, lineHeight: 24, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                         {related.title}
