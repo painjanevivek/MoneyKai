@@ -4,6 +4,7 @@ import {
   TextInput,
   Text,
   TouchableOpacity,
+  type TextInputProps,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
@@ -29,6 +30,11 @@ interface InputProps {
   suffix?: string;
   maxLength?: number;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoComplete?: TextInputProps['autoComplete'];
+  textContentType?: TextInputProps['textContentType'];
+  returnKeyType?: TextInputProps['returnKeyType'];
+  onSubmitEditing?: TextInputProps['onSubmitEditing'];
+  autoCorrect?: boolean;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -49,10 +55,16 @@ export const Input: React.FC<InputProps> = ({
   suffix,
   maxLength,
   autoCapitalize = 'sentences',
+  autoComplete,
+  textContentType,
+  returnKeyType,
+  onSubmitEditing,
+  autoCorrect,
 }) => {
   const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [isSecureVisible, setIsSecureVisible] = useState(!secureTextEntry);
+  const resolvedAutoCorrect = autoCorrect ?? (!secureTextEntry && keyboardType !== 'email-address');
 
   const borderColor = error
     ? colors.error
@@ -119,6 +131,11 @@ export const Input: React.FC<InputProps> = ({
           editable={editable}
           maxLength={maxLength}
           autoCapitalize={autoCapitalize}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
+          autoCorrect={resolvedAutoCorrect}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           style={[
@@ -128,6 +145,7 @@ export const Input: React.FC<InputProps> = ({
               fontFamily: Typography.fontFamily.regular,
               color: colors.textPrimary,
               paddingVertical: multiline ? 0 : 12,
+              textAlignVertical: multiline ? 'top' : 'center',
             },
             inputStyle,
           ]}

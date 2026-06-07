@@ -3,14 +3,16 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ThemeMode } from '../constants/theme';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { queueSyncOperation } from '@/services/syncQueue';
 
-type PersistedAppSettings = {
+export type PersistedAppSettings = {
   theme: ThemeMode;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;
   hapticEnabled: boolean;
   tourCompleted: boolean;
+  appLockEnabled: boolean;
 };
 
 const persistAppSettings = (settings: PersistedAppSettings) => {
@@ -22,6 +24,7 @@ const persistAppSettings = (settings: PersistedAppSettings) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync app settings:', error);
     }
+    void queueSyncOperation({ kind: 'appSettings', payload: settings });
   });
 };
 
@@ -32,6 +35,7 @@ interface SettingsState {
   notificationsEnabled: boolean;
   hapticEnabled: boolean;
   tourCompleted: boolean;
+  appLockEnabled: boolean;
 
   // Actions
   toggleTheme: () => void;
@@ -41,6 +45,7 @@ interface SettingsState {
   setNotificationsEnabled: (enabled: boolean) => void;
   toggleHaptic: () => void;
   setTourCompleted: (completed: boolean) => void;
+  setAppLockEnabled: (enabled: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -52,6 +57,7 @@ export const useSettingsStore = create<SettingsState>()(
       notificationsEnabled: true,
       hapticEnabled: true,
       tourCompleted: false,
+      appLockEnabled: false,
 
       toggleTheme: () =>
         set((state) => {
@@ -63,6 +69,7 @@ export const useSettingsStore = create<SettingsState>()(
             notificationsEnabled: state.notificationsEnabled,
             hapticEnabled: state.hapticEnabled,
             tourCompleted: state.tourCompleted,
+            appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
           return { theme };
@@ -77,6 +84,7 @@ export const useSettingsStore = create<SettingsState>()(
             notificationsEnabled: state.notificationsEnabled,
             hapticEnabled: state.hapticEnabled,
             tourCompleted: state.tourCompleted,
+            appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
           return { theme };
@@ -91,6 +99,7 @@ export const useSettingsStore = create<SettingsState>()(
             notificationsEnabled: state.notificationsEnabled,
             hapticEnabled: state.hapticEnabled,
             tourCompleted: state.tourCompleted,
+            appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
           return { currency, currencySymbol: symbol };
@@ -105,6 +114,7 @@ export const useSettingsStore = create<SettingsState>()(
             notificationsEnabled: !state.notificationsEnabled,
             hapticEnabled: state.hapticEnabled,
             tourCompleted: state.tourCompleted,
+            appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
           return { notificationsEnabled: next.notificationsEnabled };
@@ -119,6 +129,7 @@ export const useSettingsStore = create<SettingsState>()(
             notificationsEnabled: enabled,
             hapticEnabled: state.hapticEnabled,
             tourCompleted: state.tourCompleted,
+            appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
           return { notificationsEnabled: enabled };
@@ -133,6 +144,7 @@ export const useSettingsStore = create<SettingsState>()(
             notificationsEnabled: state.notificationsEnabled,
             hapticEnabled: !state.hapticEnabled,
             tourCompleted: state.tourCompleted,
+            appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
           return { hapticEnabled: next.hapticEnabled };
@@ -147,9 +159,25 @@ export const useSettingsStore = create<SettingsState>()(
             notificationsEnabled: state.notificationsEnabled,
             hapticEnabled: state.hapticEnabled,
             tourCompleted: completed,
+            appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
           return { tourCompleted: completed };
+        }),
+
+      setAppLockEnabled: (enabled) =>
+        set((state) => {
+          const next: PersistedAppSettings = {
+            theme: state.theme,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+            tourCompleted: state.tourCompleted,
+            appLockEnabled: enabled,
+          };
+          persistAppSettings(next);
+          return { appLockEnabled: enabled };
         }),
     }),
     {

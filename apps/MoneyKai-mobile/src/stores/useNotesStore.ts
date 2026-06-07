@@ -3,9 +3,10 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Note, ChecklistItem } from '../types/note';
 import { recordAppNotification } from '@/services/notificationService';
-import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { useAuthStore } from './useAuthStore';
+import { isDemoModeEnabled } from '@/config/environment';
+import { queueSyncOperation } from '@/services/syncQueue';
 
 const syncNoteCreate = (note: Note) => {
   if (!isBackendConfigured()) {
@@ -15,6 +16,7 @@ const syncNoteCreate = (note: Note) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note create:', error);
     }
+    void queueSyncOperation({ kind: 'resource', action: 'create', resource: 'notes', payload: note });
   });
 };
 
@@ -26,6 +28,7 @@ const syncNoteUpdate = (id: string, updates: Partial<Note>) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note update:', error);
     }
+    void queueSyncOperation({ kind: 'resource', action: 'update', resource: 'notes', itemId: id, payload: updates });
   });
 };
 
@@ -37,6 +40,7 @@ const syncNoteDelete = (id: string) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note delete:', error);
     }
+    void queueSyncOperation({ kind: 'resource', action: 'delete', resource: 'notes', itemId: id });
   });
 };
 
@@ -100,7 +104,7 @@ export const useNotesStore = create<NotesState>()(
       let lastCountForRecent: number = 0;
 
       return {
-        notes: [],
+        notes: isDemoModeEnabled() ? SAMPLE_NOTES : [],
         isSeeded: false,
 
         getPinnedNotes: () => {
@@ -216,8 +220,9 @@ export const useNotesStore = create<NotesState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (isFirebaseConfigured()) {
+        if (!isDemoModeEnabled()) {
           state.notes = state.notes.filter((note) => note.user_id !== 'sample');
+          state.isSeeded = false;
           return;
         }
         if (!state.isSeeded) {

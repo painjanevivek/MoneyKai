@@ -1,10 +1,10 @@
 import { firebaseAuth } from './firebase';
+import { getBackendBaseUrl } from '@/config/environment';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 
-const rawBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL?.trim() || '';
-const backendBaseUrl = rawBaseUrl.replace(/\/$/, '');
+const backendBaseUrl = getBackendBaseUrl();
 
 export const isBackendConfigured = (): boolean => backendBaseUrl.length > 0;
 
@@ -64,12 +64,12 @@ export const backendApi = {
   createBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups', { method: 'POST' }),
   getLatestBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups/latest'),
   restoreLatestBackup: async () => request<{ item: BackendSnapshot }>('/v1/backups/restore-latest', { method: 'POST' }),
-  updateAppSettings: async (payload: Record<string, unknown>) =>
+  updateAppSettings: async (payload: object) =>
     request<{ app: Record<string, unknown> }>('/v1/settings/app', {
       method: 'PUT',
       body: JSON.stringify(payload),
     }),
-  updateBudgetSettings: async (payload: Record<string, unknown>) =>
+  updateBudgetSettings: async (payload: object) =>
     request<{ budget: Record<string, unknown> }>('/v1/settings/budget', {
       method: 'PUT',
       body: JSON.stringify(payload),

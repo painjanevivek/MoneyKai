@@ -13,18 +13,14 @@
     },
     "android": {
       "package": "com.moneykai.mobile",
+      "allowBackup": false,
+      "predictiveBackGestureEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#0D8C4C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "NOTIFICATIONS"
-      ]
+      }
     },
     "web": {
       "output": "static",
@@ -34,6 +30,12 @@
       "expo-router",
       "expo-secure-store",
       "expo-sqlite",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "MoneyKai uses Face ID or device authentication to protect your account."
+        }
+      ],
       [
         "expo-splash-screen",
         {

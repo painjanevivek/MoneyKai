@@ -29,3 +29,15 @@ npm run backend:compile
 ```
 
 The two app packages each have their own config and entry points under `apps/`, so the mobile and website surfaces can evolve independently while sharing the same repository.
+
+## Production Launch Checklist
+
+Before a release candidate goes out, verify these items in order:
+
+1. Fill in the real `EXPO_PUBLIC_FIREBASE_*` values for both app packages.
+2. Enable Email/Password auth in Firebase Authentication.
+3. Enable Google auth if browser and native Google sign-in should be available.
+4. Create the Firestore database and verify backup/restore end to end.
+5. Set `EXPO_PUBLIC_BACKEND_BASE_URL` to the deployed FastAPI backend.
+6. Optionally add `EXPO_PUBLIC_APP_STORE_URL` and `EXPO_PUBLIC_PLAY_STORE_URL` so the Settings `Rate the App` action opens the final listing instead of a store search page.
+7. Re-run `npm run typecheck`, `npm run lint`, and a real login/backup/restore smoke test before publishing.

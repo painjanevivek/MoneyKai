@@ -5,13 +5,15 @@ import type { Challenge } from '../types/challenge';
 import { MOTIVATIONAL_MESSAGES } from '../types/challenge';
 import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
-import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { isDemoModeEnabled } from '@/config/environment';
+import { queueSyncOperation } from '@/services/syncQueue';
 
 const syncChallengeCreate = (challenge: Challenge) => {
   if (!isBackendConfigured()) return;
   void backendApi.createChallenge(challenge).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync challenge create:', error);
+    void queueSyncOperation({ kind: 'challenge', action: 'create', payload: challenge });
   });
 };
 
@@ -19,6 +21,7 @@ const syncChallengeUpdate = (challengeId: string, payload: Partial<Challenge>) =
   if (!isBackendConfigured()) return;
   void backendApi.updateChallenge(challengeId, payload).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync challenge update:', error);
+    void queueSyncOperation({ kind: 'challenge', action: 'update', challengeId, payload });
   });
 };
 
@@ -69,8 +72,8 @@ export const useChallengeStore = create<ChallengeState>()(
       let lastTxnsForCompleted: Challenge[] = [];
 
       return {
-      challenges: isFirebaseConfigured() ? [] : SAMPLE_CHALLENGES,
-      totalXP: isFirebaseConfigured() ? 0 : 250,
+      challenges: isDemoModeEnabled() ? SAMPLE_CHALLENGES : [],
+      totalXP: isDemoModeEnabled() ? 250 : 0,
 
         getActiveChallenges: () => {
           const challenges = get().challenges;
@@ -156,6 +159,7 @@ export const useChallengeStore = create<ChallengeState>()(
         }));
         void backendApi.deactivateChallenge(id).catch((error) => {
           if (__DEV__) console.warn('[MoneyKai] failed to sync challenge deactivate:', error);
+          void queueSyncOperation({ kind: 'challenge', action: 'deactivate', challengeId: id });
         });
       },
 
@@ -167,6 +171,7 @@ export const useChallengeStore = create<ChallengeState>()(
         }));
         void backendApi.reactivateChallenge(id).catch((error) => {
           if (__DEV__) console.warn('[MoneyKai] failed to sync challenge reactivate:', error);
+          void queueSyncOperation({ kind: 'challenge', action: 'reactivate', challengeId: id });
         });
       },
 
@@ -179,6 +184,12 @@ export const useChallengeStore = create<ChallengeState>()(
         }));
         void backendApi.completeChallenge(id, { xp_earned: xp, savings_earned: savings }).catch((error) => {
           if (__DEV__) console.warn('[MoneyKai] failed to sync challenge completion:', error);
+          void queueSyncOperation({
+            kind: 'challenge',
+            action: 'complete',
+            challengeId: id,
+            payload: { xp_earned: xp, savings_earned: savings },
+          });
         });
       },
     };
@@ -188,7 +199,7 @@ export const useChallengeStore = create<ChallengeState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (isFirebaseConfigured()) {
+        if (!isDemoModeEnabled()) {
           state.challenges = state.challenges.filter((challenge) => challenge.user_id !== 'sample');
           state.totalXP = state.challenges.reduce((sum, challenge) => sum + challenge.xp_earned, 0);
         }

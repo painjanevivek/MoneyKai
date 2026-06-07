@@ -86,6 +86,8 @@ export default function SignupScreen() {
               onChangeText={setFullName}
               error={errors.fullName}
               icon="account-outline"
+              autoComplete="name"
+              textContentType="name"
             />
             <Input
               label="Email"
@@ -96,6 +98,8 @@ export default function SignupScreen() {
               icon="email-outline"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
             />
             <Input
               label="Password"
@@ -105,6 +109,8 @@ export default function SignupScreen() {
               error={errors.password}
               icon="lock-outline"
               secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
             />
             <Input
               label="Confirm Password"
@@ -114,6 +120,8 @@ export default function SignupScreen() {
               error={errors.confirmPassword}
               icon="lock-check-outline"
               secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
             />
             <Button
               title="Create Account"

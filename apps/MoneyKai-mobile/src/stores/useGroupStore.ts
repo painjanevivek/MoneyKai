@@ -3,13 +3,15 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Group, GroupExpense } from '../types/group';
 import { recordAppNotification } from '@/services/notificationService';
-import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { isDemoModeEnabled } from '@/config/environment';
+import { queueSyncOperation } from '@/services/syncQueue';
 
 const syncGroupCreate = (group: Group) => {
   if (!isBackendConfigured()) return;
   void backendApi.createGroup(group).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync group create:', error);
+    void queueSyncOperation({ kind: 'group', action: 'create', payload: group });
   });
 };
 
@@ -17,6 +19,7 @@ const syncGroupUpdate = (groupId: string, payload: Partial<Group>) => {
   if (!isBackendConfigured()) return;
   void backendApi.updateGroup(groupId, payload).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync group update:', error);
+    void queueSyncOperation({ kind: 'group', action: 'update', groupId, payload });
   });
 };
 
@@ -24,6 +27,7 @@ const syncGroupDelete = (groupId: string) => {
   if (!isBackendConfigured()) return;
   void backendApi.deleteGroup(groupId).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync group delete:', error);
+    void queueSyncOperation({ kind: 'group', action: 'delete', groupId });
   });
 };
 
@@ -31,6 +35,7 @@ const syncGroupExpenseCreate = (expense: GroupExpense) => {
   if (!isBackendConfigured()) return;
   void backendApi.createGroupExpense(expense.group_id, expense).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync group expense create:', error);
+    void queueSyncOperation({ kind: 'groupExpense', action: 'create', groupId: expense.group_id, payload: expense });
   });
 };
 
@@ -38,6 +43,13 @@ const syncGroupExpenseUpdate = (expense: GroupExpense) => {
   if (!isBackendConfigured()) return;
   void backendApi.updateGroupExpense(expense.group_id, expense.id, expense).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync group expense update:', error);
+    void queueSyncOperation({
+      kind: 'groupExpense',
+      action: 'update',
+      groupId: expense.group_id,
+      expenseId: expense.id,
+      payload: expense,
+    });
   });
 };
 
@@ -122,8 +134,8 @@ const SAMPLE_EXPENSES: GroupExpense[] = [
 export const useGroupStore = create<GroupState>()(
   persist(
     (set, get) => ({
-      groups: isFirebaseConfigured() ? [] : SAMPLE_GROUPS,
-      expenses: isFirebaseConfigured() ? [] : SAMPLE_EXPENSES,
+      groups: isDemoModeEnabled() ? SAMPLE_GROUPS : [],
+      expenses: isDemoModeEnabled() ? SAMPLE_EXPENSES : [],
 
       addGroup: (group) => {
         const newGroup: Group = {
@@ -210,7 +222,7 @@ export const useGroupStore = create<GroupState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (isFirebaseConfigured()) {
+        if (!isDemoModeEnabled()) {
           state.groups = state.groups.filter((group) => group.created_by !== 'sample');
           state.expenses = state.expenses.filter((expense) => expense.group_id !== 'grp1' && expense.group_id !== 'grp2');
         }

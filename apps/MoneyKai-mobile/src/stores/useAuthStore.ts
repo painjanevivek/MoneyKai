@@ -1,17 +1,16 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import {
   createUserWithEmailAndPassword,
-  GoogleAuthProvider,
   signInWithEmailAndPassword,
-  signInWithPopup,
   signOut as firebaseSignOut,
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
 import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
+import { isDemoModeEnabled } from '@/config/environment';
+import { signInWithGoogleAsync } from '@/services/googleAuth';
 
 export interface User {
   id: string;
@@ -26,6 +25,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isOnboarded: boolean;
+  isHydratingSession: boolean;
   setUser: (user: User | null) => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
@@ -73,41 +73,53 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       isOnboarded: false,
+      isHydratingSession: true,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
 
       hydrateSession: async () => {
+        set({ isHydratingSession: true });
+
         if (!isFirebaseConfigured()) {
+          set({ isHydratingSession: false });
           return;
         }
 
-        const sessionUser = await waitForAuthState();
-        if (sessionUser) {
-          set({ user: toAppUser(sessionUser), isAuthenticated: true });
-          await hydrateBackendSnapshot();
-        } else {
-          set({ user: null, isAuthenticated: false });
+        try {
+          const sessionUser = await waitForAuthState();
+          if (sessionUser) {
+            set({ user: toAppUser(sessionUser), isAuthenticated: true });
+            await hydrateBackendSnapshot();
+          } else {
+            set({ user: null, isAuthenticated: false });
+          }
+        } finally {
+          set({ isHydratingSession: false });
         }
       },
 
       signIn: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          if (!isFirebaseConfigured()) {
+          if (isDemoModeEnabled()) {
             await new Promise((resolve) => setTimeout(resolve, 600));
-          set({
-            user: {
-              id: 'sample-user-001',
-              email,
-              full_name: 'Sample User',
-              auth_provider: 'email',
-            },
-            isAuthenticated: true,
-            isLoading: false,
-            isOnboarded: false,
-          });
-          return;
-        }
+            set({
+              user: {
+                id: 'sample-user-001',
+                email,
+                full_name: 'Sample User',
+                auth_provider: 'email',
+              },
+              isAuthenticated: true,
+              isLoading: false,
+              isOnboarded: false,
+            });
+            return;
+          }
+
+          if (!isFirebaseConfigured()) {
+            throw new Error('Firebase is not configured. Set the EXPO_PUBLIC_FIREBASE_* values in .env to enable sign in.');
+          }
 
           const credentials = await signInWithEmailAndPassword(firebaseAuth, email, password);
           set({
@@ -126,21 +138,25 @@ export const useAuthStore = create<AuthState>()(
       signUp: async (email: string, password: string, fullName: string) => {
         set({ isLoading: true });
         try {
-          if (!isFirebaseConfigured()) {
+          if (isDemoModeEnabled()) {
             await new Promise((resolve) => setTimeout(resolve, 800));
-          set({
-            user: {
-              id: 'sample-user-001',
-              email,
-              full_name: fullName,
-              auth_provider: 'email',
-            },
-            isAuthenticated: true,
-            isLoading: false,
-            isOnboarded: false,
-          });
-          return;
-        }
+            set({
+              user: {
+                id: 'sample-user-001',
+                email,
+                full_name: fullName,
+                auth_provider: 'email',
+              },
+              isAuthenticated: true,
+              isLoading: false,
+              isOnboarded: false,
+            });
+            return;
+          }
+
+          if (!isFirebaseConfigured()) {
+            throw new Error('Firebase is not configured. Set the EXPO_PUBLIC_FIREBASE_* values in .env to enable sign up.');
+          }
 
           const credentials = await createUserWithEmailAndPassword(firebaseAuth, email, password);
           await updateFirebaseProfile(credentials.user, {
@@ -167,31 +183,30 @@ export const useAuthStore = create<AuthState>()(
       signInWithGoogle: async () => {
         set({ isLoading: true });
         try {
-          if (!isFirebaseConfigured()) {
+          if (isDemoModeEnabled()) {
             await new Promise((resolve) => setTimeout(resolve, 800));
-          set({
-            user: {
-              id: 'sample-google-001',
-              email: 'sample.google@example.com',
-              full_name: 'Google User',
-              auth_provider: 'google',
-            },
-            isAuthenticated: true,
-            isLoading: false,
-            isOnboarded: false,
-          });
-          return;
-        }
-
-          if (Platform.OS !== 'web') {
-            throw new Error('Google sign-in is only enabled on web right now. Use email login on mobile until native Google auth is configured.');
+            set({
+              user: {
+                id: 'sample-google-001',
+                email: 'sample.google@example.com',
+                full_name: 'Google User',
+                auth_provider: 'google',
+              },
+              isAuthenticated: true,
+              isLoading: false,
+              isOnboarded: false,
+            });
+            return;
           }
 
-          const provider = new GoogleAuthProvider();
-          const credentials = await signInWithPopup(firebaseAuth, provider);
+          if (!isFirebaseConfigured()) {
+            throw new Error('Firebase is not configured. Set the EXPO_PUBLIC_FIREBASE_* values in .env to enable Google sign in.');
+          }
+
+          const user = await signInWithGoogleAsync();
 
           set({
-            user: toAppUser(credentials.user),
+            user: toAppUser(user),
             isAuthenticated: true,
             isLoading: false,
           });
@@ -207,8 +222,8 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, isAuthenticated: false, isLoading: false, isOnboarded: false });
 
         const cleanup = async () => {
-          const { resetLocalAppState } = await import('@/services/remoteSync');
-          resetLocalAppState();
+          const { resetAllRemoteState } = await import('@/services/remoteSync');
+          await resetAllRemoteState();
 
           if (isFirebaseConfigured()) {
             await firebaseSignOut(firebaseAuth).catch(() => {

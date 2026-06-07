@@ -11,6 +11,8 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
+import { AppLockGate } from '@/components/security/AppLockGate';
+import { SyncCoordinator } from '@/components/sync/SyncCoordinator';
 
 // Suppress known web warnings from react-native-gifted-charts passing RN props to DOM elements
 LogBox.ignoreLogs([
@@ -74,6 +76,7 @@ export default function RootLayout() {
   const theme = useSettingsStore((s) => s.theme);
   const colors = Colors[theme];
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
+  const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
 
   const [fontsLoaded, fontError] = useFonts({
     Poppins_400Regular,
@@ -84,8 +87,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-
       if (__DEV__ && !isFirebaseConfigured()) {
         console.warn(
           '[MoneyKai] Firebase is not configured. Configure the EXPO_PUBLIC_FIREBASE_* keys to enable cloud auth and backup.'
@@ -99,6 +100,12 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError, hydrateSession]);
 
   useEffect(() => {
+    if ((fontsLoaded || fontError) && !isHydratingSession) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError, isHydratingSession]);
+
+  useEffect(() => {
     void initializeNotificationChannel();
     const uninstall = installNotificationListeners((route) => {
       if (route) {
@@ -109,6 +116,14 @@ export default function RootLayout() {
   }, []);
 
   if (!fontsLoaded && !fontError) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isHydratingSession) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -138,7 +153,10 @@ export default function RootLayout() {
   return (
     <AppErrorBoundary colors={colors}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <View style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
+      <SyncCoordinator />
+      <AppLockGate>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
+      </AppLockGate>
     </AppErrorBoundary>
   );
 }

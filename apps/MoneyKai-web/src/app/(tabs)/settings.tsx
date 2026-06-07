@@ -19,6 +19,7 @@ import { isFirebaseConfigured } from '@/services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
+import { getStoreReviewUrl } from '@/config/environment';
 
 interface SettingItemProps {
   icon: string;
@@ -150,12 +151,9 @@ export default function SettingsScreen() {
   };
 
   const handleRate = () => {
-    const url =
-      Platform.OS === 'ios'
-        ? 'https://apps.apple.com/search?term=MoneyKai'
-        : 'https://play.google.com/store/search?q=MoneyKai&c=apps';
+    const url = getStoreReviewUrl(Platform.OS === 'ios' ? 'ios' : 'android');
     Linking.openURL(url).catch(() => {
-      Alert.alert('Rate the App', 'Search for MoneyKai in your app store to leave a review.');
+      Alert.alert('Rate the App', 'Open the store listing for MoneyKai to leave a review.');
     });
   };
 

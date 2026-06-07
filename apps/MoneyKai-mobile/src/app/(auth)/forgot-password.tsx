@@ -54,6 +54,7 @@ export default function ForgotPasswordScreen() {
             paddingHorizontal: Spacing.xl,
             paddingVertical: Spacing['2xl'],
           }}
+          keyboardShouldPersistTaps="handled"
         >
           <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: Spacing.lg }}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />

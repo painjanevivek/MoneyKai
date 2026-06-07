@@ -143,6 +143,9 @@ export default function LoginScreen() {
               icon="email-outline"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
+              returnKeyType="next"
             />
 
             <Input
@@ -153,6 +156,9 @@ export default function LoginScreen() {
               error={errors.password}
               icon="lock-outline"
               secureTextEntry
+              autoComplete="password"
+              textContentType="password"
+              returnKeyType="done"
             />
 
             <TouchableOpacity

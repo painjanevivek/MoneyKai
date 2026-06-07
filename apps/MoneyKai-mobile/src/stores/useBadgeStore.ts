@@ -3,13 +3,15 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Badge } from '../types/badge';
 import { BADGE_DEFINITIONS } from '../constants/badges';
-import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { isDemoModeEnabled } from '@/config/environment';
+import { queueSyncOperation } from '@/services/syncQueue';
 
 const syncBadgeUpdate = (badge: Badge) => {
   if (!isBackendConfigured()) return;
   void backendApi.updateResource<Badge>('badges', badge.id, badge).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync badge update:', error);
+    void queueSyncOperation({ kind: 'resource', action: 'update', resource: 'badges', itemId: badge.id, payload: badge });
   });
 };
 
@@ -40,7 +42,7 @@ const createInitialBadges = (userId: string): Badge[] => {
 export const useBadgeStore = create<BadgeState>()(
   persist(
     (set, get) => ({
-      badges: isFirebaseConfigured() ? [] : createInitialBadges('sample'),
+      badges: isDemoModeEnabled() ? createInitialBadges('sample') : [],
       recentUnlock: null,
 
       initializeBadges: (userId) => {
@@ -93,7 +95,7 @@ export const useBadgeStore = create<BadgeState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (isFirebaseConfigured()) {
+        if (!isDemoModeEnabled()) {
           state.badges = state.badges.filter((badge) => badge.user_id !== 'sample');
         }
       },

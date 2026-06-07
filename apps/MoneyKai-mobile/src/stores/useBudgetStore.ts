@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { BudgetSettings, BudgetAdjustment } from '../types/budget';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { queueSyncOperation } from '@/services/syncQueue';
 
 const persistBudgetSettings = (state: {
   settings: BudgetSettings;
@@ -18,6 +19,7 @@ const persistBudgetSettings = (state: {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync budget settings:', error);
     }
+    void queueSyncOperation({ kind: 'budgetSettings', payload: state });
   });
 };
 

@@ -8,6 +8,8 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { backendApi, isBackendConfigured } from './backendApi';
 import { useNotificationStore } from '@/stores/useNotificationStore';
+import { useSyncStore } from '@/stores/useSyncStore';
+import { clearSyncQueue } from './syncQueue';
 
 const EMPTY_BUDGET_SETTINGS = {
   monthly_allowance: 0,
@@ -62,6 +64,7 @@ export const resetLocalAppState = () => {
   });
 
   useNotificationStore.getState().clearNotifications();
+  useSyncStore.getState().setPendingCount(0);
 };
 
 export const syncRemoteState = async () => {
@@ -74,54 +77,69 @@ export const syncRemoteState = async () => {
     return;
   }
 
+  const syncStore = useSyncStore.getState();
+  syncStore.startSync();
+
+  try {
+    const snapshot = await backendApi.getBootstrap();
+
+    resetLocalAppState();
+
+    useSettingsStore.setState({
+      theme: snapshot.settings.app.theme,
+      currency: snapshot.settings.app.currency,
+      currencySymbol: snapshot.settings.app.currencySymbol,
+      notificationsEnabled: snapshot.settings.app.notificationsEnabled,
+      hapticEnabled: snapshot.settings.app.hapticEnabled,
+      tourCompleted: snapshot.settings.app.tourCompleted ?? false,
+    });
+
+    useBudgetStore.setState({
+      ...useBudgetStore.getState(),
+      settings: snapshot.settings.budget.settings,
+      adjustments: snapshot.settings.budget.adjustments,
+      isEmergencyMode: snapshot.settings.budget.isEmergencyMode,
+      resetHistory: snapshot.settings.budget.resetHistory,
+    });
+
+    useTransactionStore.setState({
+      ...useTransactionStore.getState(),
+      transactions: snapshot.data.transactions,
+      isSeeded: true,
+    });
+
+    useNotesStore.setState({
+      ...useNotesStore.getState(),
+      notes: snapshot.data.notes,
+      isSeeded: true,
+    });
+
+    useGroupStore.setState({
+      ...useGroupStore.getState(),
+      groups: snapshot.data.groups,
+      expenses: snapshot.data.groupExpenses,
+    });
+
+    useChallengeStore.setState({
+      ...useChallengeStore.getState(),
+      challenges: snapshot.data.challenges,
+      totalXP: snapshot.data.totalXP,
+    });
+
+    useBadgeStore.setState({
+      ...useBadgeStore.getState(),
+      badges: snapshot.data.badges,
+    });
+
+    useNotificationStore.getState().replaceNotifications(snapshot.data.notifications ?? []);
+    syncStore.finishSync(snapshot.capturedAt);
+  } catch (error) {
+    syncStore.failSync(error instanceof Error ? error.message : 'Failed to sync remote data.');
+    throw error;
+  }
+};
+
+export const resetAllRemoteState = async () => {
+  await clearSyncQueue();
   resetLocalAppState();
-  const snapshot = await backendApi.getBootstrap();
-
-  useSettingsStore.setState({
-    theme: snapshot.settings.app.theme,
-    currency: snapshot.settings.app.currency,
-    currencySymbol: snapshot.settings.app.currencySymbol,
-    notificationsEnabled: snapshot.settings.app.notificationsEnabled,
-    hapticEnabled: snapshot.settings.app.hapticEnabled,
-    tourCompleted: snapshot.settings.app.tourCompleted ?? false,
-  });
-
-  useBudgetStore.setState({
-    ...useBudgetStore.getState(),
-    settings: snapshot.settings.budget.settings,
-    adjustments: snapshot.settings.budget.adjustments,
-    isEmergencyMode: snapshot.settings.budget.isEmergencyMode,
-    resetHistory: snapshot.settings.budget.resetHistory,
-  });
-
-  useTransactionStore.setState({
-    ...useTransactionStore.getState(),
-    transactions: snapshot.data.transactions,
-    isSeeded: true,
-  });
-
-  useNotesStore.setState({
-    ...useNotesStore.getState(),
-    notes: snapshot.data.notes,
-    isSeeded: true,
-  });
-
-  useGroupStore.setState({
-    ...useGroupStore.getState(),
-    groups: snapshot.data.groups,
-    expenses: snapshot.data.groupExpenses,
-  });
-
-  useChallengeStore.setState({
-    ...useChallengeStore.getState(),
-    challenges: snapshot.data.challenges,
-    totalXP: snapshot.data.totalXP,
-  });
-
-  useBadgeStore.setState({
-    ...useBadgeStore.getState(),
-    badges: snapshot.data.badges,
-  });
-
-  useNotificationStore.getState().replaceNotifications(snapshot.data.notifications ?? []);
 };

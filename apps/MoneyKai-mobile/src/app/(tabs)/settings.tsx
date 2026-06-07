@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
+import { useSyncStore } from '@/stores/useSyncStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -19,6 +20,7 @@ import { isFirebaseConfigured } from '@/services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
+import { getStoreReviewUrl } from '@/config/environment';
 
 interface SettingItemProps {
   icon: string;
@@ -69,9 +71,12 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
 export default function SettingsScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
   const { user, signOut } = useAuthStore();
-  const { notificationsEnabled, hapticEnabled, toggleHaptic, currency, currencySymbol } = useSettingsStore();
+  const { notificationsEnabled, hapticEnabled, toggleHaptic, currency, currencySymbol, appLockEnabled, setAppLockEnabled } = useSettingsStore();
   const { settings, updateSettings } = useBudgetStore();
   const transactions = useTransactionStore((s) => s.transactions);
+  const syncStatus = useSyncStore((s) => s.status);
+  const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt);
+  const syncError = useSyncStore((s) => s.error);
 
   const [showAllowanceEditor, setShowAllowanceEditor] = useState(false);
   const [showBackupSheet, setShowBackupSheet] = useState(false);
@@ -150,12 +155,9 @@ export default function SettingsScreen() {
   };
 
   const handleRate = () => {
-    const url =
-      Platform.OS === 'ios'
-        ? 'https://apps.apple.com/search?term=MoneyKai'
-        : 'https://play.google.com/store/search?q=MoneyKai&c=apps';
+    const url = getStoreReviewUrl(Platform.OS === 'ios' ? 'ios' : 'android');
     Linking.openURL(url).catch(() => {
-      Alert.alert('Rate the App', 'Search for MoneyKai in your app store to leave a review.');
+      Alert.alert('Rate the App', 'Open the store listing for MoneyKai to leave a review.');
     });
   };
 
@@ -338,6 +340,37 @@ export default function SettingsScreen() {
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Data & Privacy</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
+          <SettingItem
+            icon="cloud-sync-outline"
+            iconColor="#111111"
+            iconBg="#F4F4F4"
+            title="Cloud Sync"
+            subtitle={
+              syncStatus === 'syncing'
+                ? 'Syncing your data now'
+                : syncStatus === 'failed'
+                  ? syncError ?? 'Last sync failed'
+                  : lastSyncedAt
+                    ? `Last synced ${new Date(lastSyncedAt).toLocaleString()}`
+                    : 'Not synced yet'
+            }
+          />
+          <SettingItem
+            icon="shield-lock-outline"
+            iconColor="#111111"
+            iconBg="#F4F4F4"
+            title="App Lock"
+            subtitle={appLockEnabled ? 'Biometric lock enabled' : 'Biometric lock disabled'}
+            right={
+              <Switch
+                value={appLockEnabled}
+                onValueChange={setAppLockEnabled}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
+          />
           <SettingItem
             icon="download-outline"
             iconColor="#111111"

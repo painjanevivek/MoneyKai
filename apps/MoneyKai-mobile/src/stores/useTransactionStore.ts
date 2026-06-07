@@ -4,8 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Transaction, TransactionFilter, CategoryTotal } from '../types/transaction';
 import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
-import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { isDemoModeEnabled } from '@/config/environment';
+import { queueSyncOperation } from '@/services/syncQueue';
 
 // Sample data used when Firebase is not configured locally.
 const today = new Date().toISOString().split('T')[0];
@@ -67,6 +68,7 @@ const syncTransactionCreate = (transaction: Transaction) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction create:', error);
     }
+    void queueSyncOperation({ kind: 'resource', action: 'create', resource: 'transactions', payload: transaction });
   });
 };
 
@@ -78,6 +80,7 @@ const syncTransactionUpdate = (id: string, updates: Partial<Transaction>) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction update:', error);
     }
+    void queueSyncOperation({ kind: 'resource', action: 'update', resource: 'transactions', itemId: id, payload: updates });
   });
 };
 
@@ -89,6 +92,7 @@ const syncTransactionDelete = (id: string) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction delete:', error);
     }
+    void queueSyncOperation({ kind: 'resource', action: 'delete', resource: 'transactions', itemId: id });
   });
 };
 
@@ -280,10 +284,10 @@ export const useTransactionStore = create<TransactionState>()(
         isSeeded: state.isSeeded,
       }),
       onRehydrateStorage: () => (state) => {
-        // Inject sample data only if this is the very first launch.
         if (!state) return;
-        if (isFirebaseConfigured()) {
+        if (!isDemoModeEnabled()) {
           state.transactions = state.transactions.filter((transaction) => transaction.user_id !== 'sample');
+          state.isSeeded = false;
           return;
         }
         if (!state.isSeeded) {

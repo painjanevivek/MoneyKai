@@ -1,7 +1,7 @@
 import type { NewsCategory, NewsFeedResponse } from '@/types/news';
+import { getBackendBaseUrl } from '@/config/environment';
 
-const rawBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL?.trim() || 'http://localhost:8000';
-const backendBaseUrl = rawBaseUrl.replace(/\/$/, '');
+const backendBaseUrl = getBackendBaseUrl();
 
 class NewsApiError extends Error {
   constructor(message: string, public status: number) {
@@ -11,6 +11,10 @@ class NewsApiError extends Error {
 }
 
 export async function fetchLiveNews(category: NewsCategory = 'all', refresh = false): Promise<NewsFeedResponse> {
+  if (!backendBaseUrl) {
+    throw new NewsApiError('Live news requires the backend to be configured.', 0);
+  }
+
   const url = new URL('/v1/news', backendBaseUrl);
   url.searchParams.set('limit', '18');
   if (category !== 'all') {
