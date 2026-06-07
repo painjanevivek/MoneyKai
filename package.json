@@ -1,0 +1,29 @@
+{
+  "name": "moneykai-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "start": "npm run mobile:start",
+    "web": "npm run web:start",
+    "mobile:start": "npm --prefix apps/MoneyKai-mobile run start",
+    "mobile:web": "npm --prefix apps/MoneyKai-mobile run web",
+    "mobile:android": "npm --prefix apps/MoneyKai-mobile run android",
+    "mobile:ios": "npm --prefix apps/MoneyKai-mobile run ios",
+    "mobile:lint": "npm --prefix apps/MoneyKai-mobile run lint",
+    "mobile:typecheck": "npm --prefix apps/MoneyKai-mobile run typecheck",
+    "mobile:build": "npm --prefix apps/MoneyKai-mobile run build",
+    "web:start": "npm --prefix apps/MoneyKai-web run start",
+    "web:lint": "npm --prefix apps/MoneyKai-web run lint",
+    "web:typecheck": "npm --prefix apps/MoneyKai-web run typecheck",
+    "web:build": "npm --prefix apps/MoneyKai-web run build",
+    "lint": "npm run mobile:lint && npm run web:lint",
+    "typecheck": "npm run mobile:typecheck && npm run web:typecheck",
+    "build": "npm run web:build",
+    "install": "npm --prefix apps/MoneyKai-mobile install && npm --prefix apps/MoneyKai-web install",
+    "backend:dev": "python -m uvicorn backend.app.main:app --reload --app-dir backend --port 8000",
+    "backend:test": "python -m pytest backend/tests",
+    "backend:compile": "python -m compileall backend"
+  }
+}

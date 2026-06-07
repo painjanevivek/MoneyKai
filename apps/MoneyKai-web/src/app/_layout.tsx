@@ -1,0 +1,145 @@
+import React, { useEffect } from 'react';
+import { Stack, router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { View, Text, TouchableOpacity, ActivityIndicator, LogBox } from 'react-native';
+import { useFonts } from 'expo-font';
+import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
+import * as SplashScreen from 'expo-splash-screen';
+import * as WebBrowser from 'expo-web-browser';
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { Colors } from '@/constants/theme';
+import { isFirebaseConfigured } from '@/services/firebase';
+import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
+
+// Suppress known web warnings from react-native-gifted-charts passing RN props to DOM elements
+LogBox.ignoreLogs([
+  'Unknown event handler property `onStartShouldSetResponder`',
+  'Unknown event handler property `onResponderTerminationRequest`',
+  'Unknown event handler property `onResponderGrant`',
+  'Unknown event handler property `onResponderRelease`',
+  'Unknown event handler property `onResponderTerminate`',
+  'Maximum update depth exceeded',
+]);
+
+SplashScreen.preventAutoHideAsync();
+WebBrowser.maybeCompleteAuthSession();
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode; colors: typeof Colors.light | typeof Colors.dark },
+  ErrorBoundaryState
+> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[AppErrorBoundary] Unhandled render error:', error, info);
+  }
+
+  handleRetry = () => this.setState({ hasError: false, error: null });
+
+  render() {
+    const { colors } = this.props;
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+          <Text style={{ fontSize: 20, fontFamily: 'Poppins_700Bold', color: colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>
+            Something went wrong
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+            {this.state.error?.message ?? 'An unexpected error occurred.'}
+          </Text>
+          <TouchableOpacity
+            onPress={this.handleRetry}
+            style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
+          >
+            <Text style={{ color: colors.textInverse, fontWeight: '600', fontSize: 15 }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function RootLayout() {
+  const theme = useSettingsStore((s) => s.theme);
+  const colors = Colors[theme];
+  const hydrateSession = useAuthStore((s) => s.hydrateSession);
+
+  const [fontsLoaded, fontError] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+
+      if (__DEV__ && !isFirebaseConfigured()) {
+        console.warn(
+          '[MoneyKai] Firebase is not configured. Configure the EXPO_PUBLIC_FIREBASE_* keys to enable cloud auth and backup.'
+        );
+      }
+
+      hydrateSession().catch((e) => {
+        if (__DEV__) console.warn('[MoneyKai] hydrateSession error:', e);
+      });
+    }
+  }, [fontsLoaded, fontError, hydrateSession]);
+
+  useEffect(() => {
+    void initializeNotificationChannel();
+    const uninstall = installNotificationListeners((route) => {
+      if (route) {
+        router.push(route as any);
+      }
+    });
+    return uninstall;
+  }, []);
+
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  const content = (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(auth)" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+      <Stack.Screen name="profile-edit" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+      <Stack.Screen name="learn" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+      <Stack.Screen name="privacy-policy" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+      <Stack.Screen name="terms" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+      <Stack.Screen name="contact" options={{ animation: 'slide_from_right', presentation: 'card' }} />
+    </Stack>
+  );
+
+  return (
+    <AppErrorBoundary colors={colors}>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <View style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
+    </AppErrorBoundary>
+  );
+}
+

@@ -7,23 +7,23 @@
 # Start the Expo dev server with hot reloading.
 # Expo already handles live reload/hot refresh, so no extra watcher is required.
 start:
-	npm.cmd run start
+	npm.cmd run mobile:start
 
 # Open the app in the browser.
 web:
-	npm.cmd run web
+	npm.cmd run web:start
 
 # Open the app in an Android emulator/device.
 android:
-	npm.cmd run android
+	npm.cmd run mobile:android
 
 # Open the app in an iOS simulator.
 ios:
-	npm.cmd run ios
+	npm.cmd run mobile:ios
 
 # Install dependencies for a fresh checkout.
 install:
-	npm.cmd install
+	npm.cmd run install
 
 # Run lint checks.
 lint:
@@ -40,6 +40,14 @@ setup: install lint typecheck
 clean:
 	@if exist .expo rmdir /s /q .expo
 	@if exist .expo-shared rmdir /s /q .expo-shared
+	@if exist apps\MoneyKai-mobile\.expo rmdir /s /q apps\MoneyKai-mobile\.expo
+	@if exist apps\MoneyKai-mobile\.expo-shared rmdir /s /q apps\MoneyKai-mobile\.expo-shared
+	@if exist apps\MoneyKai-mobile\web-build rmdir /s /q apps\MoneyKai-mobile\web-build
+	@if exist apps\MoneyKai-mobile\dist rmdir /s /q apps\MoneyKai-mobile\dist
+	@if exist apps\MoneyKai-web\.expo rmdir /s /q apps\MoneyKai-web\.expo
+	@if exist apps\MoneyKai-web\.expo-shared rmdir /s /q apps\MoneyKai-web\.expo-shared
+	@if exist apps\MoneyKai-web\web-build rmdir /s /q apps\MoneyKai-web\web-build
+	@if exist apps\MoneyKai-web\dist rmdir /s /q apps\MoneyKai-web\dist
 	@if exist web-build rmdir /s /q web-build
 	@if exist dist rmdir /s /q dist
 	@if exist coverage rmdir /s /q coverage

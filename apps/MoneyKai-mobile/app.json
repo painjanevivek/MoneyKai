@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "MoneyKai",
-    "slug": "moneykai",
+    "name": "MoneyKai Mobile",
+    "slug": "moneykai-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "moneykai",
+    "scheme": "moneykai-mobile",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.moneykai.app"
+      "bundleIdentifier": "com.moneykai.mobile"
     },
     "android": {
-      "package": "com.moneykai.app",
+      "package": "com.moneykai.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#0D8C4C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

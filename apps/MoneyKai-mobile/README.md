@@ -1,265 +1,30 @@
-# ðŸ’° MoneyKai
+# MoneyKai Mobile
 
-> **"Spend Smart. Save More."**
+This package contains the Expo Router mobile app for MoneyKai.
 
-AI-powered finance management app for students, bachelors, and people living away from home. Built with React Native + Expo SDK 56 and Firebase.
-
-![MoneyKai](https://img.shields.io/badge/MoneyKai-v1.0.0-0D8C4C?style=for-the-badge)
-![Expo SDK](https://img.shields.io/badge/Expo-SDK%2056-000020?style=for-the-badge)
-![React Native](https://img.shields.io/badge/React%20Native-0.85-61DAFB?style=for-the-badge)
-![Firebase](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-FFCA28?style=for-the-badge)
-
----
-
-## âœ¨ Features
-
-### Core Features
-- ðŸ“Š **Smart Dashboard** â€” Monthly allowance, spending overview, budget health meter, AI insights
-- ðŸ’¸ **Expense Management** â€” Add/edit/delete transactions with categories, payment methods, receipts
-- ðŸ‘¥ **Group Splits** â€” Splitwise-like bill splitting with debt simplification algorithm
-- ðŸ”® **Savings Predictor** â€” AI-powered budget simulation with interactive category sliders
-- ðŸ”„ **Monthly Reset** â€” Auto-reset allowance with carry-forward and manual adjustments
-
-### Gamification
-- ðŸ† **No-Spend Challenges** â€” Streak tracking, XP system, motivational messages
-- ðŸŽ–ï¸ **AI Badges** â€” Dynamic badge system with glow effects and milestones
-- ðŸ“ˆ **Financial Health Score** â€” 0-100 gauge with personalized recommendations
-
-### Special Features
-- ðŸš¨ **Emergency SOS Mode** â€” Survival budget, essential-only spending, glowing SOS button
-- ðŸ“ **Digital Ledger** â€” Freeform notes, checklists, pin/search functionality
-- ðŸ“Š **Analytics & Reports** â€” Pie charts, trend lines, weekly heatmaps, category comparisons
-- ðŸ¤– **AI Smart Insights** â€” Rule-based spending analysis with actionable tips
-- ðŸŒ™ **Dark Mode** â€” Full dark theme support
-
----
-
-## ðŸ›  Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Framework** | React Native + Expo SDK 56 |
-| **Routing** | Expo Router (file-based) |
-| **State** | Zustand + AsyncStorage persistence |
-| **Backend** | Firebase (Auth, Firestore) |
-| **Charts** | react-native-gifted-charts |
-| **Animations** | react-native-reanimated |
-| **Typography** | Poppins (Google Fonts) |
-| **Validation** | react-hook-form + Zod |
-| **Language** | TypeScript |
-
----
-
-## ðŸ“ Project Structure
-
-```
-MoneyKai/
-â”œâ”€â”€ src/
-â”‚   â”œâ”€â”€ app/                    # Expo Router screens
-â”‚   â”‚   â”œâ”€â”€ _layout.tsx         # Root layout (fonts, providers)
-â”‚   â”‚   â”œâ”€â”€ index.tsx           # Entry redirect
-â”‚   â”‚   â”œâ”€â”€ (auth)/             # Auth screens
-â”‚   â”‚   â”‚   â”œâ”€â”€ login.tsx
-â”‚   â”‚   â”‚   â”œâ”€â”€ signup.tsx
-â”‚   â”‚   â”‚   â””â”€â”€ forgot-password.tsx
-â”‚   â”‚   â””â”€â”€ (tabs)/             # Main tab screens
-â”‚   â”‚       â”œâ”€â”€ index.tsx       # Dashboard
-â”‚   â”‚       â”œâ”€â”€ transactions.tsx
-â”‚   â”‚       â”œâ”€â”€ groups.tsx
-â”‚   â”‚       â”œâ”€â”€ savings.tsx
-â”‚   â”‚       â”œâ”€â”€ analytics.tsx
-â”‚   â”‚       â””â”€â”€ settings.tsx
-â”‚   â”œâ”€â”€ components/
-â”‚   â”‚   â”œâ”€â”€ ui/                 # Design system (Card, Button, Input...)
-â”‚   â”‚   â”œâ”€â”€ charts/             # Chart components
-â”‚   â”‚   â””â”€â”€ dashboard/          # Dashboard widgets
-â”‚   â”œâ”€â”€ stores/                 # Zustand state management
-â”‚   â”œâ”€â”€ services/               # Firebase and app services
-â”‚   â”œâ”€â”€ utils/                  # Business logic engines
-â”‚   â”œâ”€â”€ hooks/                  # Custom React hooks
-â”‚   â”œâ”€â”€ constants/              # Theme, categories, badges
-â”‚   â””â”€â”€ types/                  # TypeScript interfaces
-â”œâ”€â”€ assets/                     # Images, fonts
-â”œâ”€â”€ app.json                    # Expo config
-â”œâ”€â”€ eas.json                    # EAS Build profiles
-â””â”€â”€ .env.example                # Environment variables template
-```
-
----
-
-## ðŸš€ Getting Started
-
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Expo CLI (`npm install -g expo-cli`)
-- EAS CLI (`npm install -g eas-cli`) â€” for APK builds
-- Android Studio (optional, for emulator)
-
-### 1. Clone & Install
+## Run from the monorepo root
 
 ```bash
-git clone <repository-url>
-cd MoneyKai
-npm install
+npm run start
+npm run web
+npm run lint
+npm run typecheck
+npm run build
 ```
 
-### 2. Configure Environment
+## Direct package commands
 
 ```bash
-cp .env.example .env
+cd apps/MoneyKai-mobile
+npm run start
 ```
 
-Edit `.env` with your Firebase credentials:
-```
-EXPO_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-EXPO_PUBLIC_FIREBASE_APP_ID=your-firebase-app-id
-```
+## Environment
 
-> **Note:** The app works in **demo mode** without Firebase credentials and keeps sample data locally until cloud features are configured.
+Set the Firebase web client values in `apps/MoneyKai-mobile/.env`.
 
-### 3. Setup Firebase (Optional)
+## Notes
 
-1. Create a [Firebase project](https://console.firebase.google.com)
-2. Add a web app inside the project settings
-3. Copy the Firebase config values into `.env`
-4. Enable Email/Password in Authentication â†’ Sign-in method
-5. Enable Google in Authentication if you want web Google sign-in
-
-### 4. Run the App
-
-```bash
-# Start development server
-npx expo start
-
-# Run on Android emulator
-npx expo start --android
-
-# Run on iOS simulator (macOS only)
-npx expo start --ios
-```
-
----
-
-## ðŸ“± APK Build
-
-### Quick APK (for testing)
-
-```bash
-# Login to Expo
-eas login
-
-# Build APK
-eas build -p android --profile preview
-```
-
-The APK download link will appear in your terminal and at [expo.dev](https://expo.dev).
-
-### Production Build
-
-```bash
-# Build AAB for Google Play
-eas build -p android --profile production
-
-# Submit to Play Store
-eas submit -p android --profile production
-```
-
-### EAS Build Profiles
-
-| Profile | Output | Usage |
-|---|---|---|
-| `development` | Dev client | Development with hot reload |
-| `preview` | APK | Testing on devices |
-| `production` | AAB | Google Play Store |
-
----
-
-## ðŸŽ¨ Design System
-
-### Color Palette
-
-| Color | Hex | Usage |
-|---|---|---|
-| Primary Green | `#0D8C4C` | Headers, CTAs, active states |
-| Secondary Green | `#22C55E` | Success, positive values |
-| Accent Orange | `#F4A261` | Warnings, highlights, badges |
-| Background | `#F8FAFC` | Light mode background |
-| Dark Background | `#0F172A` | Dark mode background |
-| Emergency Red | `#FF5A5A` | SOS, over-budget alerts |
-
-### Typography
-- **Font:** Poppins (Regular, Medium, SemiBold, Bold)
-- **Scale:** 10px â€” 40px
-
----
-
-## ðŸ—„ Database Schema
-
-The app uses Firebase Auth for identity and Firestore for optional cloud backup:
-
-- **profiles** â€” User profiles with budget settings
-- **transactions** â€” Income/expense records
-- **budgets** â€” Monthly budget cycles
-- **groups** / **group_members** â€” Split groups
-- **group_expenses** / **expense_splits** â€” Shared expenses
-- **challenges** â€” No-spend challenge tracking
-- **badges** â€” Achievement system
-- **notes** â€” Digital ledger entries
-
-Backups are stored per-user inside a Firestore subcollection so they can be restored on another device after sign-in.
-
----
-
-## ðŸ§ª Demo Account
-
-The app ships with demo data. Simply tap **Sign In** with any email/password to see the full dashboard with:
-
-- â‚¹15,000 monthly allowance
-- 14 sample transactions across all categories
-- 2 groups (Flatmates, Goa Trip)
-- 1 active challenge (No Food Delivery)
-- 4 unlocked badges
-- Sample notes
-
----
-
-## ðŸ“‹ Key Algorithms
-
-### Debt Simplification
-Uses a net-balance greedy algorithm to minimize the number of transactions needed to settle group debts. See `src/utils/debtSimplification.ts`.
-
-### Savings Engine
-Projects month-end savings based on current spending velocity, with interactive category reduction sliders. See `src/utils/savingsEngine.ts`.
-
-### AI Insight Engine
-Rule-based pattern matching on spending data to generate personalized financial insights. See `src/utils/insightEngine.ts`.
-
----
-
-## ðŸ”§ Configuration
-
-### app.json
-- Package: `com.moneykai.app`
-- Orientation: Portrait only
-- Typed routes enabled
-- React Compiler enabled
-
-### eas.json
-- Preview profile generates `.apk` files
-- Production profile generates `.aab` files
-
----
-
-## ðŸ“„ License
-
-MIT License â€” see [LICENSE](LICENSE) for details.
-
----
-
-Built with â¤ï¸ for financial discipline.
-
+- The website frontend lives in `apps/MoneyKai-web/`.
+- The backend lives in `backend/`.
+- Shared app code can be extracted into a future shared package as the monorepo grows.

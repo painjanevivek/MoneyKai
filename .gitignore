@@ -9,6 +9,11 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+apps/*/.expo/
+apps/*/.expo-shared/
+apps/*/dist/
+apps/*/web-build/
+apps/*/expo-env.d.ts
 
 # Native
 .kotlin/
@@ -50,5 +55,5 @@ coverage/
 example
 
 # generated native folders
-/ios
-/android
+apps/*/ios/
+apps/*/android/
