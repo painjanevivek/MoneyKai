@@ -122,6 +122,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="learn-center"
+        options={{
+          title: 'Learn',
+          tabBarLabel: ({ color, focused }) => <TabLabel label="Learn" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="book-open-outline" color={color} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
