@@ -23,7 +23,7 @@ const createInitialBadges = (userId: string): Badge[] => {
     badge_type: def.id,
     name: def.name,
     description: def.description,
-    is_unlocked: index < 4, // First 4 badges unlocked for demo
+    is_unlocked: index < 4, // First four badges unlocked for starter content
     unlocked_at: index < 4 ? new Date(Date.now() - (index * 7 * 86400000)).toISOString() : undefined,
     progress: index < 4 ? 100 : Math.floor(Math.random() * 70),
   }));
@@ -32,7 +32,7 @@ const createInitialBadges = (userId: string): Badge[] => {
 export const useBadgeStore = create<BadgeState>()(
   persist(
     (set, get) => ({
-      badges: isFirebaseConfigured() ? [] : createInitialBadges('demo'),
+      badges: isFirebaseConfigured() ? [] : createInitialBadges('sample'),
       recentUnlock: null,
 
       initializeBadges: (userId) => {
@@ -66,7 +66,7 @@ export const useBadgeStore = create<BadgeState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         if (isFirebaseConfigured()) {
-          state.badges = state.badges.filter((badge) => badge.user_id !== 'demo');
+          state.badges = state.badges.filter((badge) => badge.user_id !== 'sample');
         }
       },
     }

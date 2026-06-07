@@ -20,14 +20,14 @@ interface NotesState {
   togglePin: (id: string) => void;
   toggleChecklistItem: (noteId: string, itemId: string) => void;
   addChecklistItem: (noteId: string, text: string) => void;
-  /** Removes demo seed notes and resets isSeeded. Call on sign-out. */
+  /** Removes seeded sample notes and resets isSeeded. Call on sign-out. */
   clearSeedData: () => void;
 }
 
 const SAMPLE_NOTES: Note[] = [
   {
     id: 'note1',
-    user_id: 'demo',
+    user_id: 'sample',
     title: 'Monthly Budget Plan',
     content: 'Plan for the month of May. Focus on saving more and avoid unnecessary expenses.',
     is_pinned: true,
@@ -37,7 +37,7 @@ const SAMPLE_NOTES: Note[] = [
   },
   {
     id: 'note2',
-    user_id: 'demo',
+    user_id: 'sample',
     title: 'Grocery List',
     content: 'Milk, Bread, Eggs, Rice, Dal',
     is_pinned: false,
@@ -155,7 +155,7 @@ export const useNotesStore = create<NotesState>()(
 
         clearSeedData: () =>
           set((state) => ({
-            notes: state.notes.filter((n) => n.user_id !== 'demo'),
+            notes: state.notes.filter((n) => n.user_id !== 'sample'),
             isSeeded: false,
           })),
       };
@@ -166,7 +166,7 @@ export const useNotesStore = create<NotesState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         if (isFirebaseConfigured()) {
-          state.notes = state.notes.filter((note) => note.user_id !== 'demo');
+          state.notes = state.notes.filter((note) => note.user_id !== 'sample');
           return;
         }
         if (!state.isSeeded) {

@@ -68,7 +68,7 @@ export default function SignupScreen() {
               fontFamily: Typography.fontFamily.regular,
               color: colors.textSecondary,
               marginTop: 4,
-            }}>Start your journey to financial discipline</Text>
+            }}>Create a home for your money.</Text>
           </View>
 
           {/* Form */}

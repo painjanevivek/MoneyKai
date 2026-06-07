@@ -82,7 +82,7 @@ export const BalanceCards: React.FC = () => {
         <StatCard
           icon="wallet-outline"
           iconBg={colors.primaryBg}
-          label="Monthly Allowance"
+          label="Monthly Budget"
           value={formatCurrency(allowance)}
           subtitle={`Resets in ${daysLeft} days`}
         />
@@ -91,7 +91,7 @@ export const BalanceCards: React.FC = () => {
           iconBg={colors.borderLight}
           label="Total Spent"
           value={formatCurrency(totalSpent)}
-          subtitle={`${spentPercent}% of allowance`}
+          subtitle={`${spentPercent}% of budget`}
           subtitleColor={Number(spentPercent) > 80 ? colors.emergency : colors.textTertiary}
         />
       </View>
@@ -99,9 +99,9 @@ export const BalanceCards: React.FC = () => {
         <StatCard
           icon="cash-multiple"
           iconBg={colors.primaryBg}
-          label="Amount Left"
+          label="Remaining"
           value={formatCurrency(Math.max(0, remaining))}
-          subtitle={`${remainingPercent}% of allowance`}
+          subtitle={`${remainingPercent}% of budget`}
           subtitleColor={remaining < 0 ? colors.emergency : colors.primaryLight}
         />
         <StatCard

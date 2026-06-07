@@ -25,7 +25,7 @@ export default function SavingsScreen() {
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const { settings, isEmergencyMode, toggleEmergencyMode } = useBudgetStore();
-  const { startChallenge, getActiveChallenges, getDeactivatedChallenges, deactivateChallenge, getDailyMotivation, totalXP } = useChallengeStore();
+  const { startChallenge, getActiveChallenges, getDeactivatedChallenges, deactivateChallenge, reactivateChallenge, getDailyMotivation, totalXP } = useChallengeStore();
   const activeChallenges = getActiveChallenges();
   const deactivatedChallenges = getDeactivatedChallenges();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Savings Predictor');
@@ -247,7 +247,10 @@ export default function SavingsScreen() {
                           {
                             text: 'Deactivate',
                             style: 'destructive',
-                            onPress: () => deactivateChallenge(ch.id),
+                            onPress: () => {
+                              deactivateChallenge(ch.id);
+                              Alert.alert('Challenge deactivated', `"${ch.name}" moved to Deactivated Challenges.`);
+                            },
                           },
                         ]
                       )
@@ -289,8 +292,25 @@ export default function SavingsScreen() {
             <Card key={ch.id} style={{ marginBottom: Spacing.md, opacity: 0.92 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
                 <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{ch.name}</Text>
-                <View style={{ backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
-                  <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>Deactivated</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
+                    <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>Deactivated</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => reactivateChallenge(ch.id)}
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: BorderRadius.full,
+                      backgroundColor: colors.primaryBg,
+                      borderWidth: 1,
+                      borderColor: `${colors.primary}30`,
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
+                      Reactivate
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginBottom: Spacing.sm }}>{ch.description}</Text>

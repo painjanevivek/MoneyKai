@@ -164,7 +164,7 @@ export default function SettingsScreen() {
   const saveAllowance = async () => {
     const parsed = Number(allowanceValue.replace(/,/g, '').trim());
     if (!Number.isFinite(parsed) || parsed <= 0) {
-      Alert.alert('Invalid Amount', 'Enter a positive monthly allowance.');
+      Alert.alert('Invalid amount', 'Enter a positive monthly budget.');
       return;
     }
 
@@ -227,7 +227,7 @@ export default function SettingsScreen() {
               size={56}
             />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{user?.full_name || 'Demo User'}</Text>
+              <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{user?.full_name || 'Your profile'}</Text>
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>{user?.email || 'No email available'}</Text>
             </View>
             <TouchableOpacity onPress={() => router.push('/profile-edit' as any)}>
@@ -242,7 +242,7 @@ export default function SettingsScreen() {
             icon="wallet-outline"
             iconColor="#111111"
             iconBg="#F4F4F4"
-            title="Monthly Allowance"
+            title="Monthly Budget"
             subtitle={allowanceSubtitle}
             onPress={() => {
               setAllowanceValue(String(settings.monthly_allowance));
@@ -360,8 +360,8 @@ export default function SettingsScreen() {
             icon="cloud-upload-outline"
             iconColor="#2B2B2B"
             iconBg="#F2F2F2"
-            title="Backup & Restore"
-            subtitle="Save to or restore from cloud backup"
+            title="Cloud backups"
+            subtitle="Save to or restore a cloud backup"
             onPress={() => setShowBackupSheet(true)}
           />
           <SettingItem
@@ -402,7 +402,7 @@ export default function SettingsScreen() {
 
       <ModalSheet
         visible={showAllowanceEditor}
-        title="Edit Monthly Allowance"
+        title="Edit Monthly Budget"
         subtitle="Update the budget used across your savings and dashboard calculations."
         onClose={() => setShowAllowanceEditor(false)}
         footer={
@@ -423,7 +423,7 @@ export default function SettingsScreen() {
         }
       >
         <Input
-          label="Monthly allowance"
+          label="Monthly budget"
           placeholder="15000"
           value={allowanceValue}
           onChangeText={(value) => setAllowanceValue(value.replace(/[^0-9]/g, ''))}
@@ -434,8 +434,8 @@ export default function SettingsScreen() {
 
       <ModalSheet
         visible={showBackupSheet}
-        title="Backup & Restore"
-        subtitle={isFirebaseConfigured() ? 'Firestore must be created once in Firebase Console before your first backup.' : 'Firebase is required for cloud backup.'}
+        title="Cloud backups"
+        subtitle={isFirebaseConfigured() ? 'Create Firestore once in Firebase Console before your first cloud backup.' : 'Firebase is required for cloud backups.'}
         onClose={() => setShowBackupSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
@@ -472,7 +472,7 @@ export default function SettingsScreen() {
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
               1. Firestore database exists in Firebase Console.{"\n"}
               2. You are signed in to MoneyKai.{"\n"}
-              3. Firestore rules allow the signed-in user to read and write {"`users/{uid}/backups`"}.
+              3. Firestore rules allow the signed-in user to read and write {'users/{uid}/backups'}.
             </Text>
           </View>
         </View>
@@ -480,4 +480,6 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
+
+
 

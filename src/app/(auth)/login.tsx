@@ -103,7 +103,7 @@ export default function LoginScreen() {
               fontFamily: Typography.fontFamily.regular,
               color: colors.textSecondary,
               marginTop: 4,
-            }}>Spend Smart. Save More.</Text>
+            }}>Money that feels easier to manage.</Text>
           </View>
 
           {/* Login Form */}

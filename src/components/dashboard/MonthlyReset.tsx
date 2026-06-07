@@ -30,8 +30,8 @@ export const MonthlyReset: React.FC = () => {
     });
     setAmount('');
     Alert.alert(
-      'Allowance Updated',
-      `₹${parsed.toLocaleString('en-IN')} ${adjustType === 'add' ? 'added to' : 'subtracted from'} your monthly allowance.`
+      'Budget Updated',
+      `₹${parsed.toLocaleString('en-IN')} ${adjustType === 'add' ? 'added to' : 'subtracted from'} your monthly budget.`
     );
   };
 
@@ -91,15 +91,15 @@ export const MonthlyReset: React.FC = () => {
       >
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View
-            style={{
+            <View
+              style={{
                 backgroundColor: isDark ? colors.textPrimary : colors.primary,
                 paddingHorizontal: 8,
                 paddingVertical: 2,
                 borderRadius: 4,
               }}
             >
-              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: isDark ? colors.textInverse : colors.textInverse }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
                 Auto Reset {settings.auto_reset ? 'On' : 'Off'}
               </Text>
             </View>
@@ -129,7 +129,7 @@ export const MonthlyReset: React.FC = () => {
         Manual Adjustment
       </Text>
       <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary, marginBottom: Spacing.sm }}>
-        Adjust allowance for this month
+        Adjust budget for this month
       </Text>
 
       <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md }}>
@@ -170,13 +170,13 @@ export const MonthlyReset: React.FC = () => {
             <TouchableOpacity
               key={type}
               onPress={() => setAdjustType(type)}
-                style={{
-                  paddingHorizontal: Spacing.sm,
-                  height: 40,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: adjustType === type ? (isDark ? colors.textPrimary : colors.primary) : colors.surface,
-                }}
+              style={{
+                paddingHorizontal: Spacing.sm,
+                height: 40,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: adjustType === type ? (isDark ? colors.textPrimary : colors.primary) : colors.surface,
+              }}
             >
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: adjustType === type ? (isDark ? colors.textInverse : colors.textInverse) : colors.textSecondary }}>
                 {type === 'add' ? '+ Add' : '- Sub'}
@@ -196,7 +196,7 @@ export const MonthlyReset: React.FC = () => {
         }}
       >
         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
-          Update Allowance
+          Update Budget
         </Text>
       </TouchableOpacity>
     </Card>

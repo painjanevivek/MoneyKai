@@ -19,7 +19,7 @@ export const EXPENSE_CATEGORIES: Category[] = [
 ];
 
 export const INCOME_CATEGORIES: Category[] = [
-  { id: 'allowance', name: 'Salary / Allowance', icon: 'cash-multiple', color: '#111111', colorLight: '#F4F4F4' },
+  { id: 'allowance', name: 'Income', icon: 'cash-multiple', color: '#111111', colorLight: '#F4F4F4' },
   { id: 'freelance', name: 'Freelance', icon: 'laptop', color: '#2B2B2B', colorLight: '#F2F2F2' },
   { id: 'bonus', name: 'Bonus', icon: 'gift-outline', color: '#444444', colorLight: '#ECECEC' },
   { id: 'refund', name: 'Refund', icon: 'cash-refund', color: '#5A5A5A', colorLight: '#E8E8E8' },

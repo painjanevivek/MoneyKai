@@ -4,7 +4,7 @@ import { getDaysLeftInMonth, getDaysPassed, getDaysInCurrentMonth } from './date
 
 /**
  * Savings Prediction Engine
- * 
+ *
  * Calculates projected savings based on category reduction sliders.
  * Uses current spending patterns to forecast month-end balance.
  */
@@ -20,21 +20,18 @@ export const calculateSavingsProjection = (
   const daysLeft = getDaysLeftInMonth();
   const totalDays = getDaysInCurrentMonth();
 
-  // Current daily average
   const currentDailyAvg = daysPassed > 0 ? totalSpent / daysPassed : 0;
 
-  // Calculate savings from reductions
   let totalSavedFromReductions = 0;
   const recommendations: string[] = [];
 
-  reductions.forEach(reduction => {
+  reductions.forEach((reduction) => {
     if (reduction.reductionPercent > 0) {
       const projectedCategorySpend = (reduction.currentAmount / daysPassed) * totalDays;
       const savedAmount = projectedCategorySpend * (reduction.reductionPercent / 100);
       totalSavedFromReductions += savedAmount;
       reduction.savedAmount = Math.round(savedAmount);
 
-      // Generate recommendation
       if (savedAmount > 500) {
         const categoryName = reduction.category.charAt(0).toUpperCase() + reduction.category.slice(1);
         recommendations.push(
@@ -44,12 +41,10 @@ export const calculateSavingsProjection = (
     }
   });
 
-  // Project remaining spending with reductions
   const reducedDailyRate = Math.max(0, currentDailyAvg - (totalSavedFromReductions / totalDays));
   const projectedTotalSpend = totalSpent + (reducedDailyRate * daysLeft);
   const projectedSavings = monthlyAllowance + additionalIncome - projectedTotalSpend;
 
-  // Current trajectory (without reductions)
   const currentProjectedSpend = totalSpent + (currentDailyAvg * daysLeft);
   const currentSavings = monthlyAllowance + additionalIncome - currentProjectedSpend;
 
@@ -58,12 +53,11 @@ export const calculateSavingsProjection = (
     ? (improvement / Math.abs(currentSavings)) * 100
     : improvement > 0 ? 100 : 0;
 
-  // Add general recommendations
   if (currentDailyAvg > monthlyAllowance / totalDays) {
-    recommendations.push('Your daily spending exceeds your daily budget. Consider cutting non-essential expenses.');
+    recommendations.push('Your daily spending is running ahead of your budget. Try trimming a few non-essential expenses.');
   }
   if (daysLeft > 0 && projectedSavings > 0) {
-    recommendations.push(`You can safely spend ₹${Math.round(projectedSavings / daysLeft).toLocaleString('en-IN')} per day for the rest of the month.`);
+    recommendations.push(`A comfortable daily spend for the rest of the month is ₹${Math.round(projectedSavings / daysLeft).toLocaleString('en-IN')}.`);
   }
 
   return {
@@ -84,23 +78,23 @@ export const calculateBudgetHealth = (
   monthlyAllowance: number,
   totalSpent: number,
 ): { score: number; label: string; color: string; message: string } => {
-  if (monthlyAllowance <= 0) return { score: 0, label: 'No Budget', color: '#6B7280', message: 'Set your monthly allowance to get started.' };
+  if (monthlyAllowance <= 0) {
+    return { score: 0, label: 'No Budget', color: '#6B7280', message: 'Set your monthly budget to get started.' };
+  }
 
   const daysPassed = getDaysPassed();
   const totalDays = getDaysInCurrentMonth();
   const expectedSpendRate = daysPassed / totalDays;
   const actualSpendRate = totalSpent / monthlyAllowance;
 
-  // Score: 100 = spending nothing, 0 = exceeded budget
-  // Adjusted for time in month
   const ratio = actualSpendRate / Math.max(expectedSpendRate, 0.01);
   const score = Math.max(0, Math.min(100, Math.round((1 - (ratio - 0.5)) * 100)));
 
-  if (score >= 80) return { score, label: 'Excellent', color: '#111111', message: "Outstanding! You're well under budget." };
-  if (score >= 60) return { score, label: 'Good', color: '#2B2B2B', message: "You're doing great! Keep tracking to improve savings." };
-  if (score >= 40) return { score, label: 'Fair', color: '#5A5A5A', message: 'Watch your spending. Consider reducing non-essentials.' };
-  if (score >= 20) return { score, label: 'Poor', color: '#8A8A8A', message: 'Spending is high. Emergency mode recommended.' };
-  return { score, label: 'Critical', color: '#111111', message: 'Budget exceeded! Activate Emergency Mode immediately.' };
+  if (score >= 80) return { score, label: 'Excellent', color: '#111111', message: "You're in a great spot this month." };
+  if (score >= 60) return { score, label: 'Good', color: '#2B2B2B', message: 'Things are on track. Keep going.' };
+  if (score >= 40) return { score, label: 'Fair', color: '#5A5A5A', message: 'Spending is a little high. A few small cuts could help.' };
+  if (score >= 20) return { score, label: 'Poor', color: '#8A8A8A', message: 'Spending is rising fast. Emergency mode may help.' };
+  return { score, label: 'Critical', color: '#111111', message: 'You have gone past budget. Emergency mode is a good next step.' };
 };
 
 /**
@@ -115,24 +109,24 @@ export const calculateEmergencyBudget = (
   suggestions: string[];
 } => {
   const dailyLimit = Math.max(0, Math.round(remainingBalance / Math.max(1, daysLeft)));
-  const essentialBudget = Math.round(dailyLimit * 0.7); // 70% for essentials
+  const essentialBudget = Math.round(dailyLimit * 0.7);
 
   const suggestions: string[] = [];
 
   if (dailyLimit < 200) {
     suggestions.push('Cook at home instead of ordering food.');
     suggestions.push('Use public transport instead of cabs.');
-    suggestions.push('Avoid all non-essential purchases.');
+    suggestions.push('Pause any non-essential purchases for now.');
   } else if (dailyLimit < 500) {
-    suggestions.push('Reduce food delivery frequency to once a week.');
+    suggestions.push('Cut food delivery back to once or twice a week.');
     suggestions.push('Walk or cycle for short distances.');
-    suggestions.push('Postpone any shopping to next month.');
+    suggestions.push('Hold off on shopping until next month.');
   } else {
-    suggestions.push('You have a reasonable daily budget — stick to it!');
+    suggestions.push('You have a comfortable daily budget. Stick to it.');
     suggestions.push('Avoid impulsive spending on weekends.');
   }
 
-  suggestions.push('Track every expense, no matter how small.');
+  suggestions.push('Track every expense, even the small ones.');
 
   return { dailyLimit, essentialBudget, suggestions };
 };

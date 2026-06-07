@@ -33,41 +33,58 @@ export const AIInsights: React.FC = () => {
           color: colors.textPrimary,
         }}>AI Insights</Text>
       </View>
-      {insights.slice(0, 3).map((insight, index) => (
-        <View key={insight.id} style={{
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          paddingVertical: Spacing.sm,
-          borderTopWidth: index > 0 ? 1 : 0,
-          borderTopColor: colors.borderLight,
-          gap: Spacing.sm,
-        }}>
-          <View style={{
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            backgroundColor: `${iconColors[insight.type]}15`,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: 2,
+      {insights.length > 0 ? (
+        insights.slice(0, 3).map((insight, index) => (
+          <View key={insight.id} style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            paddingVertical: Spacing.sm,
+            borderTopWidth: index > 0 ? 1 : 0,
+            borderTopColor: colors.borderLight,
+            gap: Spacing.sm,
           }}>
-            <MaterialCommunityIcons
-              name={(insight.icon || 'lightbulb-on-outline') as any}
-              size={16}
-              color={iconColors[insight.type]}
-            />
+            <View style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: `${iconColors[insight.type]}15`,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 2,
+            }}>
+              <MaterialCommunityIcons
+                name={(insight.icon || 'lightbulb-on-outline') as any}
+                size={16}
+                color={iconColors[insight.type]}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                fontSize: Typography.fontSize.sm,
+                fontFamily: Typography.fontFamily.regular,
+                color: colors.textPrimary,
+                lineHeight: 20,
+              }}>{insight.message}</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={16} color={colors.textTertiary} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{
-              fontSize: Typography.fontSize.sm,
-              fontFamily: Typography.fontFamily.regular,
-              color: colors.textPrimary,
-              lineHeight: 20,
-            }}>{insight.message}</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={16} color={colors.textTertiary} />
+        ))
+      ) : (
+        <View style={{
+          paddingVertical: Spacing.sm,
+          borderTopWidth: 1,
+          borderTopColor: colors.borderLight,
+        }}>
+          <Text style={{
+            fontSize: Typography.fontSize.sm,
+            fontFamily: Typography.fontFamily.regular,
+            color: colors.textSecondary,
+            lineHeight: 20,
+          }}>
+            Add a few transactions and we’ll surface personalized insights here.
+          </Text>
         </View>
-      ))}
+      )}
       <TouchableOpacity
         onPress={() => router.push('/(tabs)/analytics')}
         style={{

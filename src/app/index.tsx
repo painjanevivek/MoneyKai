@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions, Animated, Image } from 'react-native';
 import { Link, Redirect, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,30 +11,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HIGHLIGHTS = [
   {
-    label: 'Daily control',
-    title: 'One place for your money rhythm',
-    body: 'Allowance, spending, savings, and backups stay visible without turning the interface into a spreadsheet.',
+    label: 'Daily flow',
+    title: 'One place to see where money is going',
+    body: 'Spending, savings, shared costs, and backups stay visible without making the app feel heavy.',
     icon: 'clock-outline',
   },
   {
-    label: 'Shared spaces',
-    title: 'Group expenses with less friction',
-    body: 'Split expenses, track who paid, and keep the numbers readable for everyone in the group.',
+    label: 'Shared costs',
+    title: 'Group expenses that stay easy to follow',
+    body: 'Split bills, track who paid, and keep the conversation around money simple for everyone involved.',
     icon: 'account-group-outline',
   },
   {
-    label: 'Recovery',
-    title: 'Cloud backup built in',
-    body: 'Your transactions, notes, and settings can move with you across devices when Firebase is enabled.',
+    label: 'Peace of mind',
+    title: 'Backups that travel with the account',
+    body: 'Transactions, notes, and settings stay ready to restore when cloud sync is turned on.',
     icon: 'cloud-check-outline',
   },
 ];
 
 const PRODUCT_TAGS = [
-  'Multiple users ready',
-  'Private by default',
-  'Web + mobile friendly',
-  'Cloud backup capable',
+  'For one person or many',
+  'Private by design',
+  'Works on web and mobile',
+  'Ready for cloud backup',
 ];
 
 export default function LandingScreen() {
@@ -105,24 +105,30 @@ export default function LandingScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 13,
-                  backgroundColor: colors.primary,
+                  width: 46,
+                  height: 46,
+                  borderRadius: 16,
+                  backgroundColor: colors.surface,
                   alignItems: 'center',
                   justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
                   ...Shadows.md,
-                  shadowColor: colors.primary,
+                  shadowColor: colors.shadowColor,
                 }}
               >
-                <MaterialCommunityIcons name="chart-line" size={20} color={colors.textInverse} />
+                <Image
+                  source={require('../../assets/images/moneykai-logo.png')}
+                  style={{ width: 30, height: 30 }}
+                  resizeMode="contain"
+                />
               </View>
               <View>
                 <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                   MoneyKai
                 </Text>
                 <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                  Calm money management
+                  Calm money management for real life
                 </Text>
               </View>
             </View>
@@ -177,6 +183,28 @@ export default function LandingScreen() {
               <View
                 style={{
                   alignSelf: 'flex-start',
+                  width: isWide ? 98 : 84,
+                  height: isWide ? 98 : 84,
+                  borderRadius: 28,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  ...Shadows.lg,
+                  shadowColor: colors.shadowColor,
+                }}
+              >
+                <Image
+                  source={require('../../assets/images/moneykai-logo.png')}
+                  style={{ width: isWide ? 68 : 58, height: isWide ? 68 : 58 }}
+                  resizeMode="contain"
+                />
+              </View>
+
+              <View
+                style={{
+                  alignSelf: 'flex-start',
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 8,
@@ -197,7 +225,7 @@ export default function LandingScreen() {
                   }}
                 />
                 <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
-                  Minimal, aesthetic, and built for clarity
+                  Quiet, clean, and easy to trust
                 </Text>
               </View>
 
@@ -210,7 +238,7 @@ export default function LandingScreen() {
                   maxWidth: 660,
                 }}
               >
-                Budgeting that feels like a premium product, not a data dump.
+                Money management that feels calm, not crowded.
               </Text>
 
               <Text
@@ -221,7 +249,7 @@ export default function LandingScreen() {
                   color: colors.textSecondary,
                 }}
               >
-                MoneyKai brings budgeting, shared expenses, savings, and cloud backups into one quiet workspace so every user sees a clear path, not a noisy dashboard.
+                MoneyKai brings budgeting, shared expenses, savings, and cloud backups into one quiet space so each person gets a view that fits them.
               </Text>
 
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
@@ -322,7 +350,7 @@ export default function LandingScreen() {
                         Today
                       </Text>
                       <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                        Product snapshot
+                        A live preview
                       </Text>
                     </View>
                     <View
@@ -340,7 +368,7 @@ export default function LandingScreen() {
                     >
                       <View style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: colors.primary }} />
                       <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                        public website
+                        live on the web
                       </Text>
                     </View>
                   </View>
@@ -372,7 +400,7 @@ export default function LandingScreen() {
                           numberOfLines={2}
                           ellipsizeMode="tail"
                         >
-                          Clean, adaptable, user-specific
+                          Made to fit different routines
                         </Text>
                       </View>
                     </View>
@@ -408,15 +436,15 @@ export default function LandingScreen() {
                           backgroundColor: colors.primaryBg,
                           opacity: 0.65,
                         }}
-                      />
-                    </View>
+                        />
+                      </View>
 
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm }}>
                       <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
-                        adapts to every account
+                        built for each person
                       </Text>
                       <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
-                        no hardcoded demo values
+                        no preset numbers
                       </Text>
                     </View>
                   </View>
@@ -441,7 +469,7 @@ export default function LandingScreen() {
                         </Text>
                       </View>
                       <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }} numberOfLines={3}>
-                        Designed for roommates, couples, families, and teams with different spending patterns.
+                        Designed for roommates, couples, families, and small teams that share costs in different ways.
                       </Text>
                     </View>
 
@@ -464,7 +492,7 @@ export default function LandingScreen() {
                         </Text>
                       </View>
                       <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }} numberOfLines={3}>
-                        Cloud backup and restore are available when the account is connected.
+                        Backups are ready when cloud sync is turned on for the account.
                       </Text>
                     </View>
                   </View>
@@ -476,10 +504,10 @@ export default function LandingScreen() {
           <Animated.View style={{ marginTop: Spacing['3xl'], gap: Spacing.md, opacity: sectionFade }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                Built for clarity
+                Why people keep it open
               </Text>
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textTertiary }}>
-                Minimal, premium, practical
+                Simple, polished, useful
               </Text>
             </View>
 
@@ -526,7 +554,7 @@ export default function LandingScreen() {
 
           <View style={{ alignItems: 'center', marginTop: Spacing['3xl'], marginBottom: Spacing['2xl'] }}>
             <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textTertiary, textAlign: 'center', lineHeight: 20 }}>
-              MoneyKai keeps the homepage public, the login route separate, and the product flow focused on the app experience.
+              MoneyKai keeps the homepage open, the login route separate, and the app easy to return to.
             </Text>
           </View>
         </View>

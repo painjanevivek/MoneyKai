@@ -11,7 +11,7 @@ export interface Insight {
 }
 
 /**
- * Rule-based AI Insight Engine
+ * Rule-based insight engine
  */
 export const generateInsights = (
   monthlyAllowance: number,
@@ -21,6 +21,12 @@ export const generateInsights = (
   previousMonthSpent?: number,
 ): Insight[] => {
   const insights: Insight[] = [];
+  const hasSpendingHistory = totalSpent > 0 || categoryTotals.length > 0 || (previousMonthSpent ?? 0) > 0;
+
+  if (!hasSpendingHistory) {
+    return insights;
+  }
+
   const daysPassed = getDaysPassed();
   const dailyAvg = daysPassed > 0 ? totalSpent / daysPassed : 0;
   const budgetDailyLimit = monthlyAllowance / 30;
@@ -28,7 +34,7 @@ export const generateInsights = (
 
   const now = new Date();
   const dayOfWeek = now.getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
+  if ((dayOfWeek === 0 || dayOfWeek === 6) && totalSpent > 0) {
     insights.push({
       id: 'weekend_alert',
       icon: 'calendar-weekend',
@@ -91,7 +97,7 @@ export const generateInsights = (
     });
   }
 
-  if (dailyAvg > budgetDailyLimit * 1.2) {
+  if (totalSpent > 0 && dailyAvg > budgetDailyLimit * 1.2) {
     insights.push({
       id: 'daily_overspend',
       icon: 'speedometer',
@@ -137,4 +143,3 @@ export const getDailyMotivation = (totalSpent: number, dailyBudget: number): str
   if (totalSpent < dailyBudget * 1.2) return 'Slightly over budget today - try to slow down.';
   return 'Over budget today! Every extra rupee adds up. Try a no-spend evening.';
 };
-

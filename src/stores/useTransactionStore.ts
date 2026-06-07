@@ -6,7 +6,7 @@ import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
 import { isFirebaseConfigured } from '@/services/firebase';
 
-// â”€â”€â”€ Sample Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Sample data used when Firebase is not configured locally.
 const today = new Date().toISOString().split('T')[0];
 const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().split('T')[0];
@@ -14,20 +14,20 @@ const threeDaysAgo = new Date(Date.now() - 259200000).toISOString().split('T')[0
 const fiveDaysAgo = new Date(Date.now() - 432000000).toISOString().split('T')[0];
 
 const SAMPLE_TRANSACTIONS: Transaction[] = [
-  { id: '1', user_id: 'demo', type: 'expense', amount: 350, category: 'food', description: 'Zomato', payment_method: 'upi', transaction_date: today, created_at: today },
-  { id: '2', user_id: 'demo', type: 'expense', amount: 120, category: 'transport', description: 'Metro Card Recharge', payment_method: 'upi', transaction_date: today, created_at: today },
-  { id: '3', user_id: 'demo', type: 'expense', amount: 1250, category: 'shopping', description: 'Amazon', payment_method: 'card', transaction_date: yesterday, created_at: yesterday },
-  { id: '4', user_id: 'demo', type: 'expense', amount: 480, category: 'entertainment', description: 'BookMyShow', payment_method: 'upi', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
-  { id: '5', user_id: 'demo', type: 'income', amount: 15000, category: 'allowance', description: 'Salary / Allowance', payment_method: 'bank', transaction_date: fiveDaysAgo, created_at: fiveDaysAgo },
-  { id: '6', user_id: 'demo', type: 'expense', amount: 2500, category: 'rent', description: 'Room Rent Share', payment_method: 'bank', transaction_date: fiveDaysAgo, created_at: fiveDaysAgo },
-  { id: '7', user_id: 'demo', type: 'expense', amount: 650, category: 'food', description: 'Swiggy Groceries', payment_method: 'upi', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
-  { id: '8', user_id: 'demo', type: 'expense', amount: 200, category: 'transport', description: 'Uber', payment_method: 'upi', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
-  { id: '9', user_id: 'demo', type: 'expense', amount: 450, category: 'bills', description: 'Mobile Recharge', payment_method: 'upi', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
-  { id: '10', user_id: 'demo', type: 'expense', amount: 180, category: 'food', description: 'Cafe Coffee Day', payment_method: 'cash', transaction_date: yesterday, created_at: yesterday },
-  { id: '11', user_id: 'demo', type: 'expense', amount: 800, category: 'education', description: 'Udemy Course', payment_method: 'card', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
-  { id: '12', user_id: 'demo', type: 'expense', amount: 320, category: 'healthcare', description: 'Pharmacy', payment_method: 'cash', transaction_date: yesterday, created_at: yesterday },
-  { id: '13', user_id: 'demo', type: 'expense', amount: 900, category: 'food', description: 'Dominos Pizza', payment_method: 'upi', transaction_date: today, created_at: today },
-  { id: '14', user_id: 'demo', type: 'expense', amount: 1050, category: 'shopping', description: 'Myntra', payment_method: 'card', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
+  { id: '1', user_id: 'sample', type: 'expense', amount: 350, category: 'food', description: 'Zomato', payment_method: 'upi', transaction_date: today, created_at: today },
+  { id: '2', user_id: 'sample', type: 'expense', amount: 120, category: 'transport', description: 'Metro Card Recharge', payment_method: 'upi', transaction_date: today, created_at: today },
+  { id: '3', user_id: 'sample', type: 'expense', amount: 1250, category: 'shopping', description: 'Amazon', payment_method: 'card', transaction_date: yesterday, created_at: yesterday },
+  { id: '4', user_id: 'sample', type: 'expense', amount: 480, category: 'entertainment', description: 'BookMyShow', payment_method: 'upi', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
+  { id: '5', user_id: 'sample', type: 'income', amount: 15000, category: 'income', description: 'Salary', payment_method: 'bank', transaction_date: fiveDaysAgo, created_at: fiveDaysAgo },
+  { id: '6', user_id: 'sample', type: 'expense', amount: 2500, category: 'rent', description: 'Room Rent Share', payment_method: 'bank', transaction_date: fiveDaysAgo, created_at: fiveDaysAgo },
+  { id: '7', user_id: 'sample', type: 'expense', amount: 650, category: 'food', description: 'Swiggy Groceries', payment_method: 'upi', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
+  { id: '8', user_id: 'sample', type: 'expense', amount: 200, category: 'transport', description: 'Uber', payment_method: 'upi', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
+  { id: '9', user_id: 'sample', type: 'expense', amount: 450, category: 'bills', description: 'Mobile Recharge', payment_method: 'upi', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
+  { id: '10', user_id: 'sample', type: 'expense', amount: 180, category: 'food', description: 'Cafe Coffee Day', payment_method: 'cash', transaction_date: yesterday, created_at: yesterday },
+  { id: '11', user_id: 'sample', type: 'expense', amount: 800, category: 'education', description: 'Udemy Course', payment_method: 'card', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
+  { id: '12', user_id: 'sample', type: 'expense', amount: 320, category: 'healthcare', description: 'Pharmacy', payment_method: 'cash', transaction_date: yesterday, created_at: yesterday },
+  { id: '13', user_id: 'sample', type: 'expense', amount: 900, category: 'food', description: 'Dominos Pizza', payment_method: 'upi', transaction_date: today, created_at: today },
+  { id: '14', user_id: 'sample', type: 'expense', amount: 1050, category: 'shopping', description: 'Myntra', payment_method: 'card', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
 ];
 
 interface TransactionState {
@@ -49,7 +49,7 @@ interface TransactionState {
   deleteTransaction: (id: string) => void;
   setFilter: (filter: Partial<TransactionFilter>) => void;
   resetFilter: () => void;
-  /** Removes all demo seed rows and resets the isSeeded flag. Call on sign-out. */
+  /** Removes seeded sample rows and resets the isSeeded flag. Call on sign-out. */
   clearSeedData: () => void;
 }
 
@@ -73,7 +73,7 @@ export const useTransactionStore = create<TransactionState>()(
       let lastCountForRecent: number = 0;
 
       return {
-        // Only seed demo data on first launch (isSeeded persists across restarts).
+        // Only seed sample data on first launch (isSeeded persists across restarts).
         transactions: [],
         filter: DEFAULT_FILTER,
         isLoading: false,
@@ -191,14 +191,14 @@ export const useTransactionStore = create<TransactionState>()(
             if (spendRate >= 100) {
               void recordAppNotification({
                 title: 'Budget exhausted',
-                body: 'You have used your full monthly allowance.',
+                body: 'You have used your full monthly budget.',
                 type: 'budget',
                 actionRoute: '/(tabs)/analytics',
               });
             } else if (spendRate >= 80) {
               void recordAppNotification({
                 title: 'Spending alert',
-                body: `You have used ${Math.round(spendRate)}% of your monthly allowance.`,
+                body: `You have used ${Math.round(spendRate)}% of your monthly budget.`,
                 type: 'budget',
                 actionRoute: '/(tabs)/analytics',
               });
@@ -229,7 +229,7 @@ export const useTransactionStore = create<TransactionState>()(
         clearSeedData: () =>
           set((state) => ({
             transactions: state.transactions.filter(
-              (t) => t.user_id !== 'demo'
+              (t) => t.user_id !== 'sample'
             ),
             isSeeded: false,
           })),
@@ -246,7 +246,7 @@ export const useTransactionStore = create<TransactionState>()(
         // Inject sample data only if this is the very first launch.
         if (!state) return;
         if (isFirebaseConfigured()) {
-          state.transactions = state.transactions.filter((transaction) => transaction.user_id !== 'demo');
+          state.transactions = state.transactions.filter((transaction) => transaction.user_id !== 'sample');
           return;
         }
         if (!state.isSeeded) {
@@ -257,4 +257,6 @@ export const useTransactionStore = create<TransactionState>()(
     }
   )
 );
+
+
 

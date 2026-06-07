@@ -69,7 +69,7 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {
     id: 'smart_investor',
     name: 'Smart Investor',
-    description: 'Save more than 40% of your allowance',
+    description: 'Save more than 40% of your monthly budget',
     icon: 'trending-up',
     color: '#707070',
     glowColor: 'rgba(112, 112, 112, 0.22)',

@@ -80,9 +80,9 @@ export const useAuthStore = create<AuthState>()(
             await new Promise((resolve) => setTimeout(resolve, 600));
             set({
               user: {
-                id: 'demo-user-001',
+                id: 'sample-user-001',
                 email,
-                full_name: 'Demo User',
+                full_name: 'Sample User',
                 auth_provider: 'email',
               },
               isAuthenticated: true,
@@ -110,7 +110,7 @@ export const useAuthStore = create<AuthState>()(
             await new Promise((resolve) => setTimeout(resolve, 800));
             set({
               user: {
-                id: 'demo-user-001',
+                id: 'sample-user-001',
                 email,
                 full_name: fullName,
                 auth_provider: 'email',
@@ -149,9 +149,9 @@ export const useAuthStore = create<AuthState>()(
             await new Promise((resolve) => setTimeout(resolve, 800));
             set({
               user: {
-                id: 'demo-google-001',
-                email: 'demo.google@example.com',
-                full_name: 'Google Demo User',
+                id: 'sample-google-001',
+                email: 'sample.google@example.com',
+                full_name: 'Google User',
                 auth_provider: 'google',
               },
               isAuthenticated: true,

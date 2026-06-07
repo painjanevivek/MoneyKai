@@ -22,13 +22,14 @@ interface ChallengeState {
   updateStreak: (id: string) => void;
   failChallenge: (id: string) => void;
   deactivateChallenge: (id: string) => void;
+  reactivateChallenge: (id: string) => void;
   completeChallenge: (id: string, xp: number, savings: number) => void;
 }
 
 const SAMPLE_CHALLENGES: Challenge[] = [
   {
     id: 'ch1',
-    user_id: 'demo',
+    user_id: 'sample',
     name: 'No Food Delivery',
     category: 'food',
     description: 'Avoid food delivery for 7 days',
@@ -83,6 +84,14 @@ export const useChallengeStore = create<ChallengeState>()(
 
       startChallenge: (challenge) => {
         const userId = useAuthStore.getState().user?.id ?? 'local';
+        const alreadyActive = get().challenges.some(
+          (item) => item.status === 'active' && item.name === challenge.name && item.category === challenge.category
+        );
+
+        if (alreadyActive) {
+          return;
+        }
+
         const newChallenge: Challenge = {
           ...challenge,
           id: `ch_${Date.now()}`,
@@ -120,6 +129,12 @@ export const useChallengeStore = create<ChallengeState>()(
         ),
       })),
 
+      reactivateChallenge: (id) => set((state) => ({
+        challenges: state.challenges.map(c =>
+          c.id === id ? { ...c, status: 'active' as const } : c
+        ),
+      })),
+
       completeChallenge: (id, xp, savings) => set((state) => ({
         challenges: state.challenges.map(c =>
           c.id === id ? { ...c, status: 'completed' as const, xp_earned: xp, savings_earned: savings } : c
@@ -134,7 +149,7 @@ export const useChallengeStore = create<ChallengeState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         if (isFirebaseConfigured()) {
-          state.challenges = state.challenges.filter((challenge) => challenge.user_id !== 'demo');
+          state.challenges = state.challenges.filter((challenge) => challenge.user_id !== 'sample');
           state.totalXP = state.challenges.reduce((sum, challenge) => sum + challenge.xp_earned, 0);
         }
       },

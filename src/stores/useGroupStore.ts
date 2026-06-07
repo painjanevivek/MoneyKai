@@ -21,14 +21,14 @@ interface GroupState {
 const SAMPLE_GROUPS: Group[] = [
   {
     id: 'grp1',
-    created_by: 'demo',
+    created_by: 'sample',
     name: 'Flat 302 - Roommates',
     type: 'flatmates',
     description: 'Shared flat expenses',
     created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
     archived: false,
     members: [
-      { id: 'm1', group_id: 'grp1', user_id: 'demo', role: 'admin', joined_at: '', user_name: 'Aditya' },
+      { id: 'm1', group_id: 'grp1', user_id: 'sample', role: 'admin', joined_at: '', user_name: 'Aditya' },
       { id: 'm2', group_id: 'grp1', user_id: 'u2', role: 'member', joined_at: '', user_name: 'Rahul' },
       { id: 'm3', group_id: 'grp1', user_id: 'u3', role: 'member', joined_at: '', user_name: 'Priya' },
     ],
@@ -36,14 +36,14 @@ const SAMPLE_GROUPS: Group[] = [
   },
   {
     id: 'grp2',
-    created_by: 'demo',
+    created_by: 'sample',
     name: 'Goa Trip',
     type: 'trip',
     description: 'Goa trip expenses split',
     created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
     archived: false,
     members: [
-      { id: 'm4', group_id: 'grp2', user_id: 'demo', role: 'admin', joined_at: '', user_name: 'Aditya' },
+      { id: 'm4', group_id: 'grp2', user_id: 'sample', role: 'admin', joined_at: '', user_name: 'Aditya' },
       { id: 'm5', group_id: 'grp2', user_id: 'u4', role: 'member', joined_at: '', user_name: 'Vikram' },
       { id: 'm6', group_id: 'grp2', user_id: 'u5', role: 'member', joined_at: '', user_name: 'Sneha' },
       { id: 'm7', group_id: 'grp2', user_id: 'u6', role: 'member', joined_at: '', user_name: 'Amit' },
@@ -56,7 +56,7 @@ const SAMPLE_EXPENSES: GroupExpense[] = [
   {
     id: 'ge1',
     group_id: 'grp1',
-    paid_by: 'demo',
+    paid_by: 'sample',
     amount: 1500,
     description: 'Electricity Bill',
     split_type: 'equal',
@@ -77,7 +77,7 @@ const SAMPLE_EXPENSES: GroupExpense[] = [
     created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
     paid_by_name: 'Rahul',
     splits: [
-      { id: 's3', group_expense_id: 'ge2', user_id: 'demo', amount: 1000, is_settled: false, user_name: 'Aditya' },
+      { id: 's3', group_expense_id: 'ge2', user_id: 'sample', amount: 1000, is_settled: false, user_name: 'Aditya' },
       { id: 's4', group_expense_id: 'ge2', user_id: 'u3', amount: 1000, is_settled: false, user_name: 'Priya' },
     ],
   },
@@ -154,7 +154,7 @@ export const useGroupStore = create<GroupState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         if (isFirebaseConfigured()) {
-          state.groups = state.groups.filter((group) => group.created_by !== 'demo');
+          state.groups = state.groups.filter((group) => group.created_by !== 'sample');
           state.expenses = state.expenses.filter((expense) => expense.group_id !== 'grp1' && expense.group_id !== 'grp2');
         }
       },
