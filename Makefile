@@ -2,12 +2,19 @@
 
 .DEFAULT_GOAL := start
 
-.PHONY: start web ios android install lint typecheck clean setup
+.PHONY: start web ios android backend server install lint typecheck clean setup
 
 # Start the Expo dev server with hot reloading.
 # Expo already handles live reload/hot refresh, so no extra watcher is required.
 start:
 	npm.cmd run mobile:start
+
+# Start the FastAPI backend server in development mode.
+backend:
+	npm.cmd run backend:dev
+
+# Alias for starting the backend server.
+server: backend
 
 # Open the app in the browser.
 web:
