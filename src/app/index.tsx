@@ -119,7 +119,7 @@ export default function LandingScreen() {
               >
                 <Image
                   source={require('../../assets/images/moneykai-logo.png')}
-                  style={{ width: 30, height: 30 }}
+                  style={{ width: 36, height: 36 }}
                   resizeMode="contain"
                 />
               </View>
@@ -183,8 +183,8 @@ export default function LandingScreen() {
               <View
                 style={{
                   alignSelf: 'flex-start',
-                  width: isWide ? 98 : 84,
-                  height: isWide ? 98 : 84,
+                  width: isWide ? 124 : 104,
+                  height: isWide ? 124 : 104,
                   borderRadius: 28,
                   backgroundColor: colors.surface,
                   borderWidth: 1,
@@ -197,7 +197,7 @@ export default function LandingScreen() {
               >
                 <Image
                   source={require('../../assets/images/moneykai-logo.png')}
-                  style={{ width: isWide ? 68 : 58, height: isWide ? 68 : 58 }}
+                  style={{ width: isWide ? 90 : 74, height: isWide ? 90 : 74 }}
                   resizeMode="contain"
                 />
               </View>

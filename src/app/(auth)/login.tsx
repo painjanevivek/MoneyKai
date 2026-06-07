@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -84,14 +85,20 @@ export default function LoginScreen() {
               width: 72,
               height: 72,
               borderRadius: 20,
-              backgroundColor: colors.primary,
+              backgroundColor: colors.surface,
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: Spacing.base,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
               ...Shadows.lg,
-              shadowColor: colors.primary,
+              shadowColor: colors.shadowColor,
             }}>
-              <MaterialCommunityIcons name="chart-line" size={36} color={colors.textInverse} />
+              <Image
+                source={require('../../../assets/images/moneykai-logo.png')}
+                style={{ width: 44, height: 44 }}
+                resizeMode="contain"
+              />
             </View>
             <Text style={{
               fontSize: Typography.fontSize['3xl'],
