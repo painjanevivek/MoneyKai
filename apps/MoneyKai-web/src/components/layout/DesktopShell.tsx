@@ -44,6 +44,9 @@ const normalizePath = (pathname: string) => pathname.replace('/(tabs)', '') || '
 const isRouteActive = (pathname: string, href: string) => {
   const normalized = normalizePath(pathname);
   if (href === '/') return normalized === '/';
+  if (href === '/reports' && (normalized === '/savings' || normalized === '/analytics')) {
+    return true;
+  }
   return normalized === href || normalized.startsWith(`${href}/`);
 };
 

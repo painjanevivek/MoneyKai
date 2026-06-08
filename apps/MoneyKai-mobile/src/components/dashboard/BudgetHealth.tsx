@@ -5,7 +5,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { useBudgetStore } from '../../stores/useBudgetStore';
-import { calculateBudgetHealth } from '../../utils/savingsEngine';
+import { calculateBudgetHealth, getBudgetHealthColor } from '../../utils/savingsEngine';
 import { Typography, Spacing } from '../../constants/theme';
 
 export const BudgetHealth: React.FC<{ totalSpent?: number }> = ({ totalSpent: totalSpentProp }) => {
@@ -14,6 +14,8 @@ export const BudgetHealth: React.FC<{ totalSpent?: number }> = ({ totalSpent: to
   const { settings } = useBudgetStore();
   const totalSpent = totalSpentProp ?? storeTotalSpent;
   const health = calculateBudgetHealth(settings.monthly_allowance, totalSpent);
+  const healthColor = getBudgetHealthColor(health.level, colors);
+  const trackColor = colors.border;
 
   return (
     <Card>
@@ -38,7 +40,7 @@ export const BudgetHealth: React.FC<{ totalSpent?: number }> = ({ totalSpent: to
             height: 140,
             borderRadius: 70,
             borderWidth: 12,
-            borderColor: colors.borderLight,
+            borderColor: trackColor,
             borderBottomColor: 'transparent',
             borderLeftColor: 'transparent',
             transform: [{ rotate: '0deg' }],
@@ -51,8 +53,8 @@ export const BudgetHealth: React.FC<{ totalSpent?: number }> = ({ totalSpent: to
             borderRadius: 70,
             borderWidth: 12,
             borderColor: 'transparent',
-            borderTopColor: health.color,
-            borderRightColor: health.score > 50 ? health.color : 'transparent',
+            borderTopColor: healthColor,
+            borderRightColor: health.score > 50 ? healthColor : 'transparent',
             transform: [{ rotate: '-90deg' }],
           }} />
           {/* Score labels */}
@@ -78,14 +80,16 @@ export const BudgetHealth: React.FC<{ totalSpent?: number }> = ({ totalSpent: to
             width: 48,
             height: 48,
             borderRadius: 24,
-            backgroundColor: `${health.color}15`,
+            backgroundColor: `${healthColor}24`,
             alignItems: 'center',
             justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: `${healthColor}40`,
           }}>
             <MaterialCommunityIcons
               name={health.score >= 60 ? 'heart' : health.score >= 30 ? 'heart-half-full' : 'heart-broken'}
               size={24}
-              color={health.color}
+              color={healthColor}
             />
           </View>
         </View>
@@ -96,7 +100,7 @@ export const BudgetHealth: React.FC<{ totalSpent?: number }> = ({ totalSpent: to
         <Text style={{
           fontSize: Typography.fontSize.xl,
           fontFamily: Typography.fontFamily.bold,
-          color: health.color,
+          color: healthColor,
           marginBottom: 4,
         }}>{health.label}</Text>
         <Text style={{

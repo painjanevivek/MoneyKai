@@ -9,7 +9,6 @@ import { ProgressBar } from '../ui/ProgressBar';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { useBudgetStore } from '../../stores/useBudgetStore';
 import { getCategoryById } from '../../constants/categories';
-import { calculateBudgetHealth } from '../../utils/savingsEngine';
 import { generateInsights } from '../../utils/insightEngine';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 
@@ -20,11 +19,11 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
   const transactions = useTransactionStore((s) => s.transactions);
   const { settings } = useBudgetStore();
 
-  const health = calculateBudgetHealth(settings.monthly_allowance, totalSpent);
   const insights = generateInsights(settings.monthly_allowance, totalSpent, categoryTotals);
 
   const remaining = settings.monthly_allowance - totalSpent;
   const savingsRate = settings.monthly_allowance > 0 ? (remaining / settings.monthly_allowance) * 100 : 0;
+  const savingsToneColor = savingsRate >= 0 ? colors.primary : colors.emergency;
 
   const topCategory = useMemo(() => {
     return categoryTotals[0] ? getCategoryById(categoryTotals[0].category)?.name ?? categoryTotals[0].category : 'No spending yet';
@@ -63,22 +62,26 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
           width: 72,
           height: 72,
           borderRadius: 36,
-          backgroundColor: `${health.color}14`,
+          backgroundColor: `${savingsToneColor}18`,
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 3,
-          borderColor: health.color,
+          borderColor: `${savingsToneColor}90`,
         }}>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: health.color }}>
-            {health.score}
-          </Text>
+          <MaterialCommunityIcons
+            name={savingsRate >= 0 ? 'piggy-bank-outline' : 'alert-circle-outline'}
+            size={28}
+            color={savingsToneColor}
+          />
         </View>
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: health.color }}>
-            {health.label}
+          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+            Savings position
           </Text>
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-            {health.message}
+            {remaining >= 0
+              ? `${Math.round(Math.max(0, savingsRate))}% of this month's budget is still available.`
+              : `Spending is ${Math.abs(Math.round(savingsRate))}% beyond this month's budget.`}
           </Text>
         </View>
       </View>

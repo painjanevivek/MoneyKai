@@ -9,7 +9,7 @@ import { ProgressBar } from '../ui/ProgressBar';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { useBudgetStore } from '../../stores/useBudgetStore';
 import { getCategoryById } from '../../constants/categories';
-import { calculateBudgetHealth } from '../../utils/savingsEngine';
+import { calculateBudgetHealth, getBudgetHealthColor } from '../../utils/savingsEngine';
 import { generateInsights } from '../../utils/insightEngine';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 
@@ -21,6 +21,7 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
   const { settings } = useBudgetStore();
 
   const health = calculateBudgetHealth(settings.monthly_allowance, totalSpent);
+  const healthColor = getBudgetHealthColor(health.level, colors);
   const insights = generateInsights(settings.monthly_allowance, totalSpent, categoryTotals);
 
   const remaining = settings.monthly_allowance - totalSpent;
@@ -63,18 +64,18 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
           width: 72,
           height: 72,
           borderRadius: 36,
-          backgroundColor: `${health.color}14`,
+          backgroundColor: `${healthColor}18`,
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 3,
-          borderColor: health.color,
+          borderColor: `${healthColor}90`,
         }}>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: health.color }}>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: healthColor }}>
             {health.score}
           </Text>
         </View>
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: health.color }}>
+          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: healthColor }}>
             {health.label}
           </Text>
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>

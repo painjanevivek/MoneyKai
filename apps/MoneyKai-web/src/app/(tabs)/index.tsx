@@ -18,7 +18,6 @@ import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { QuickNotes } from '@/components/dashboard/QuickNotes';
 import { NoteModal } from '@/components/dashboard/NoteModal';
-import { BudgetHealth } from '@/components/dashboard/BudgetHealth';
 import { AIInsights } from '@/components/dashboard/AIInsights';
 import { EmergencyWidget } from '@/components/dashboard/EmergencyWidget';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
@@ -246,7 +245,6 @@ export default function DashboardScreen() {
         </View>
 
         <View style={{ flex: 1, gap: Spacing.xl, minWidth: isWide ? 380 : '100%' as any }}>
-          <BudgetHealth />
           <EmergencyWidget />
 
           <Card>

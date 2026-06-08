@@ -28,7 +28,8 @@ export interface BudgetAdjustment {
 
 export interface BudgetHealth {
   score: number; // 0-100
-  label: 'Critical' | 'Poor' | 'Fair' | 'Good' | 'Excellent';
+  level: 'empty' | 'critical' | 'poor' | 'fair' | 'good' | 'excellent';
+  label: 'No Budget' | 'Critical' | 'Poor' | 'Fair' | 'Good' | 'Excellent';
   color: string;
   message: string;
 }

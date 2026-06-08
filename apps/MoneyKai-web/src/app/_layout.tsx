@@ -12,6 +12,7 @@ import { Colors } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
 import { AutoBackupCoordinator } from '@/components/backup/AutoBackupCoordinator';
+import { BudgetResetCoordinator } from '@/components/dashboard/BudgetResetCoordinator';
 
 // Suppress known web warnings from react-native-gifted-charts passing RN props to DOM elements
 LogBox.ignoreLogs([
@@ -153,6 +154,7 @@ export default function RootLayout() {
     <AppErrorBoundary colors={colors}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <AutoBackupCoordinator />
+      <BudgetResetCoordinator />
       <View style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
     </AppErrorBoundary>
   );

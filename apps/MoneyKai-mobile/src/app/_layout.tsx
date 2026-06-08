@@ -14,6 +14,7 @@ import { isFirebaseConfigured } from '@/services/firebase';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
 import { AppLockGate } from '@/components/security/AppLockGate';
 import { AutoBackupCoordinator } from '@/components/backup/AutoBackupCoordinator';
+import { BudgetResetCoordinator } from '@/components/dashboard/BudgetResetCoordinator';
 import { SyncCoordinator } from '@/components/sync/SyncCoordinator';
 import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordinator';
 
@@ -184,6 +185,7 @@ export default function RootLayout() {
     <AppErrorBoundary colors={colors}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <AutoBackupCoordinator />
+      <BudgetResetCoordinator />
       <AutoCaptureCoordinator />
       {Platform.OS !== 'web' ? <NativeNotificationResponseRouter /> : null}
       <SyncCoordinator />

@@ -103,8 +103,8 @@ export default function GoalsScreen() {
             <EmptyState
               icon="target"
               title="No active goals yet"
-              message="Start a challenge from Savings to track a real goal and build a consistent habit."
-              action={<Button title="Open Savings" onPress={() => router.push('/savings' as any)} />}
+              message="Start a challenge from Reports to track a real goal and build a consistent habit."
+              action={<Button title="Open Reports" onPress={() => router.push('/reports' as any)} />}
             />
           )}
 
