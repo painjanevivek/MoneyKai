@@ -71,5 +71,10 @@
   "engines": {
     "node": ">=22.13.0"
   },
+  "expo": {
+    "autolinking": {
+      "nativeModulesDir": "./modules"
+    }
+  },
   "private": true
 }

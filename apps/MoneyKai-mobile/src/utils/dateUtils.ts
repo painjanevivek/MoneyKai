@@ -65,9 +65,10 @@ export const getDaysPassed = (): number => {
 
 export const getNextResetDate = (resetDay: number): Date => {
   const now = new Date();
-  let resetDate = setDate(now, resetDay);
+  const getSafeResetDate = (date: Date) => setDate(date, Math.min(Math.max(1, resetDay), endOfMonth(date).getDate()));
+  let resetDate = getSafeResetDate(now);
   if (isBefore(resetDate, now) || resetDate.getTime() === now.getTime()) {
-    resetDate = setDate(addMonths(now, 1), resetDay);
+    resetDate = getSafeResetDate(addMonths(now, 1));
   }
   return resetDate;
 };

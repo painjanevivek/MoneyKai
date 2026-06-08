@@ -14,7 +14,7 @@ export function SeoHead({ title, description, path = '', keywords = [] }: SeoHea
 
   return (
     <Head>
-      <title>{title}</title>
+      <title>{SITE.name}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords.join(', ')} />
       <meta name="robots" content="index,follow" />

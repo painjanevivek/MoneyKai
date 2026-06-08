@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useBudgetStore } from '../../stores/useBudgetStore';
@@ -12,9 +13,11 @@ export const MonthlyReset: React.FC = () => {
   const { colors, isDark } = useTheme();
   const { settings, updateSettings, addAdjustment } = useBudgetStore();
   const nextReset = getNextResetDate(settings.reset_day);
+  const resetDateInputValue = formatDate(nextReset, 'yyyy-MM-dd');
 
   const [amount, setAmount] = useState('');
   const [adjustType, setAdjustType] = useState<'add' | 'subtract'>('add');
+  const [showResetPicker, setShowResetPicker] = useState(false);
 
   const handleUpdateAllowance = () => {
     const parsed = parseFloat(amount);
@@ -36,37 +39,14 @@ export const MonthlyReset: React.FC = () => {
     );
   };
 
-  const handleResetDayPicker = () => {
-    if (Platform.OS === 'ios') {
-      Alert.prompt(
-        'Reset Day',
-        'Enter the day of the month (1-28) when your budget resets:',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Save',
-            onPress: (value: string | undefined) => {
-              const day = parseInt(value ?? '', 10);
-              if (Number.isNaN(day) || day < 1 || day > 28) {
-                Alert.alert('Invalid day', 'Please enter a number between 1 and 28.');
-              } else {
-                updateSettings({ reset_day: day });
-              }
-            },
-          },
-        ],
-        'plain-text',
-        String(settings.reset_day)
-      );
+  const handleResetDateChange = (date: Date) => {
+    if (!Number.isFinite(date.getTime())) {
+      Alert.alert('Invalid date', 'Choose a valid reset date.');
       return;
     }
 
-    const options = [1, 5, 10, 15, 20, 25, 28].map((d) => ({
-      text: `Day ${d}`,
-      onPress: () => updateSettings({ reset_day: d }),
-    }));
-
-    Alert.alert('Reset Day', 'Choose the day your budget resets each month:', [...options, { text: 'Cancel', style: 'cancel' as const }]);
+    updateSettings({ reset_day: date.getDate() });
+    setShowResetPicker(false);
   };
 
   return (
@@ -110,7 +90,7 @@ export const MonthlyReset: React.FC = () => {
           </Text>
         </View>
         <TouchableOpacity
-          onPress={handleResetDayPicker}
+          onPress={() => setShowResetPicker((current) => !current)}
           style={{
             width: 40,
             height: 40,
@@ -125,6 +105,52 @@ export const MonthlyReset: React.FC = () => {
           <MaterialCommunityIcons name="calendar-clock" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
+
+      {showResetPicker ? (
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            borderRadius: BorderRadius.sm,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: Spacing.md,
+            marginBottom: Spacing.md,
+            gap: Spacing.sm,
+          }}
+        >
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
+            Choose the date your allowance arrives. MoneyKai will repeat this reset day every month.
+          </Text>
+          {Platform.OS === 'web' ? (
+            <input
+              type="date"
+              value={resetDateInputValue}
+              min={formatDate(new Date(), 'yyyy-MM-dd')}
+              onChange={(event) => handleResetDateChange(new Date(`${event.currentTarget.value}T12:00:00`))}
+              style={{
+                width: '100%',
+                border: `1px solid ${colors.border}`,
+                borderRadius: 8,
+                background: colors.card,
+                color: colors.textPrimary,
+                fontSize: Typography.fontSize.sm,
+                fontFamily: Typography.fontFamily.regular,
+                padding: '10px 12px',
+                outline: 'none',
+              }}
+            />
+          ) : (
+            <ExpoDateTimePicker
+              value={nextReset}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'inline' : 'default'}
+              minimumDate={new Date()}
+              onDismiss={() => setShowResetPicker(false)}
+              onValueChange={(_, date) => handleResetDateChange(date)}
+            />
+          )}
+        </View>
+      ) : null}
 
       <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
         Manual Adjustment

@@ -21,6 +21,7 @@ import { isFirebaseConfigured } from '@/services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
+import { openNativeCaptureSettings } from '@/services/nativeCaptureBridge';
 import { getStoreReviewUrl } from '@/config/environment';
 
 interface SettingItemProps {
@@ -205,6 +206,13 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleOpenNativeCaptureSettings = async () => {
+    const opened = await openNativeCaptureSettings();
+    if (!opened) {
+      Alert.alert('Android build required', 'Install a MoneyKai Android development build to grant notification access for automatic capture.');
+    }
+  };
+
   const handleCloudBackup = async () => {
     setBackupBusy(true);
     try {
@@ -385,6 +393,16 @@ export default function SettingsScreen() {
               />
             }
           />
+          {Platform.OS === 'android' ? (
+            <SettingItem
+              icon="cellphone-cog"
+              iconColor="#444444"
+              iconBg="#ECECEC"
+              title="Android Notification Access"
+              subtitle="Open system access settings for the MoneyKai capture listener"
+              onPress={handleOpenNativeCaptureSettings}
+            />
+          ) : null}
           <SettingItem
             icon="message-processing-outline"
             iconColor="#5A5A5A"
