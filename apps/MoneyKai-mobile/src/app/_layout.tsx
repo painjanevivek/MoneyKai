@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, TouchableOpacity, ActivityIndicator, LogBox } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
@@ -77,6 +78,7 @@ export default function RootLayout() {
   const colors = Colors[theme];
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
   const [fontsLoaded, fontError] = useFonts({
     Poppins_400Regular,
@@ -114,6 +116,23 @@ export default function RootLayout() {
     });
     return uninstall;
   }, []);
+
+  useEffect(() => {
+    if (!lastNotificationResponse) {
+      return;
+    }
+
+    if (lastNotificationResponse.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+      return;
+    }
+
+    const route = lastNotificationResponse.notification.request.content.data?.actionRoute;
+    if (typeof route === 'string' && route.trim().length > 0) {
+      router.push(route as any);
+    }
+
+    void Notifications.clearLastNotificationResponseAsync().catch(() => undefined);
+  }, [lastNotificationResponse]);
 
   if (!fontsLoaded && !fontError) {
     return (

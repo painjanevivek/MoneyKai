@@ -117,6 +117,10 @@ export const installNotificationListeners = (onResponse?: (route?: string) => vo
   }
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+      return;
+    }
+
     const route = (response.notification.request.content.data?.actionRoute as string | undefined) ?? '/(tabs)/notifications';
     onResponse?.(route);
   });
