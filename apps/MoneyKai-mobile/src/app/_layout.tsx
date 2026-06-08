@@ -15,6 +15,7 @@ import { initializeNotificationChannel, installNotificationListeners } from '@/s
 import { AppLockGate } from '@/components/security/AppLockGate';
 import { AutoBackupCoordinator } from '@/components/backup/AutoBackupCoordinator';
 import { SyncCoordinator } from '@/components/sync/SyncCoordinator';
+import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordinator';
 
 // Suppress known web warnings from react-native-gifted-charts passing RN props to DOM elements
 LogBox.ignoreLogs([
@@ -183,6 +184,7 @@ export default function RootLayout() {
     <AppErrorBoundary colors={colors}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <AutoBackupCoordinator />
+      <AutoCaptureCoordinator />
       {Platform.OS !== 'web' ? <NativeNotificationResponseRouter /> : null}
       <SyncCoordinator />
       <AppLockGate>

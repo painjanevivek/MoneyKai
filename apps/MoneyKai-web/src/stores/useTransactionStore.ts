@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { endOfDay, endOfMonth, endOfWeek, isWithinInterval, startOfDay, startOfMonth, startOfWeek } from 'date-fns';
 import type { Transaction, TransactionFilter, CategoryTotal } from '../types/transaction';
 import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
@@ -34,6 +35,39 @@ interface TransactionState {
 const DEFAULT_FILTER: TransactionFilter = {
   dateRange: 'monthly',
   searchQuery: '',
+};
+
+const parseTransactionDate = (value: string) => new Date(`${value}T12:00:00`);
+
+const getFilterDateInterval = (filter: TransactionFilter) => {
+  const now = new Date();
+
+  switch (filter.dateRange) {
+    case 'daily':
+      return { start: startOfDay(now), end: endOfDay(now) };
+    case 'weekly':
+      return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) };
+    case 'custom': {
+      const start = filter.startDate ? parseTransactionDate(filter.startDate) : startOfMonth(now);
+      const end = filter.endDate ? parseTransactionDate(filter.endDate) : endOfMonth(now);
+
+      if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) {
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      }
+
+      return { start: startOfDay(start), end: endOfDay(end) };
+    }
+    case 'monthly':
+    default:
+      return { start: startOfMonth(now), end: endOfMonth(now) };
+  }
+};
+
+const applyDateFilter = (transactions: Transaction[], filter: TransactionFilter) => {
+  const interval = getFilterDateInterval(filter);
+  return transactions.filter((transaction) =>
+    isWithinInterval(parseTransactionDate(transaction.transaction_date), interval)
+  );
 };
 
 const syncTransactionCreate = (transaction: Transaction) => {
@@ -75,9 +109,11 @@ export const useTransactionStore = create<TransactionState>()(
 
       let cachedCategoryTotals: CategoryTotal[] = [];
       let lastTxnsForCategory: Transaction[] = [];
+      let lastFilterForCategory: any = null;
 
       let cachedRecent: Transaction[] = [];
       let lastTxnsForRecent: Transaction[] = [];
+      let lastFilterForRecent: any = null;
       let lastCountForRecent: number = 0;
 
       return {
@@ -93,7 +129,7 @@ export const useTransactionStore = create<TransactionState>()(
             return cachedFiltered;
           }
 
-          let filtered = [...transactions];
+          let filtered = applyDateFilter(transactions, filter);
           if (filter.type) {
             filtered = filtered.filter(t => t.type === filter.type);
           }
@@ -122,22 +158,24 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         getTotalSpent: () => {
-          return get().transactions
+          const { transactions, filter } = get();
+          return applyDateFilter(transactions, filter)
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + t.amount, 0);
         },
 
         getTotalIncome: () => {
-          return get().transactions
+          const { transactions, filter } = get();
+          return applyDateFilter(transactions, filter)
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
         },
 
         getCategoryTotals: () => {
-          const txns = get().transactions;
-          if (txns === lastTxnsForCategory) return cachedCategoryTotals;
+          const { transactions: txns, filter } = get();
+          if (txns === lastTxnsForCategory && filter === lastFilterForCategory) return cachedCategoryTotals;
 
-          const expenses = txns.filter(t => t.type === 'expense');
+          const expenses = applyDateFilter(txns, filter).filter(t => t.type === 'expense');
           const totalSpent = expenses.reduce((sum, t) => sum + t.amount, 0);
           const categoryMap = new Map<string, { total: number; count: number }>();
 
@@ -161,20 +199,22 @@ export const useTransactionStore = create<TransactionState>()(
 
           const result = totals.sort((a, b) => b.total - a.total);
           lastTxnsForCategory = txns;
+          lastFilterForCategory = filter;
           cachedCategoryTotals = result;
           return result;
         },
 
         getRecentTransactions: (count = 5) => {
-          const txns = get().transactions;
-          if (txns === lastTxnsForRecent && count === lastCountForRecent) {
+          const { transactions: txns, filter } = get();
+          if (txns === lastTxnsForRecent && filter === lastFilterForRecent && count === lastCountForRecent) {
             return cachedRecent;
           }
-          const result = [...txns]
+          const result = applyDateFilter(txns, filter)
             .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
             .slice(0, count);
             
           lastTxnsForRecent = txns;
+          lastFilterForRecent = filter;
           lastCountForRecent = count;
           cachedRecent = result;
           return result;
@@ -193,8 +233,11 @@ export const useTransactionStore = create<TransactionState>()(
 
           if (newTransaction.type === 'expense') {
             const allowance = useBudgetStore.getState().settings.monthly_allowance;
+            const transactionDate = parseTransactionDate(newTransaction.transaction_date);
+            const transactionMonth = { start: startOfMonth(transactionDate), end: endOfMonth(transactionDate) };
             const spent = nextTransactions
               .filter((item) => item.type === 'expense')
+              .filter((item) => isWithinInterval(parseTransactionDate(item.transaction_date), transactionMonth))
               .reduce((sum, item) => sum + item.amount, 0);
             const spendRate = allowance > 0 ? (spent / allowance) * 100 : 0;
 

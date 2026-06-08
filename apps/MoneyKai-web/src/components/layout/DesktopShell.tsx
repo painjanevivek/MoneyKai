@@ -1,10 +1,11 @@
-import React, { type PropsWithChildren, useMemo, useState } from 'react';
+import React, { type PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { Pressable, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useTransactionStore } from '@/stores/useTransactionStore';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Button } from '@/components/ui/Button';
@@ -53,14 +54,26 @@ export function DesktopShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
+  const setTransactionFilter = useTransactionStore((s) => s.setFilter);
   const months = useMemo(() => getLastSixMonths(), []);
   const [selectedMonthKey, setSelectedMonthKey] = useState(months[months.length - 1]?.key ?? '');
   const [showMonthMenu, setShowMonthMenu] = useState(false);
 
   const sidebarWidth = width >= 1440 ? 300 : 268;
   const activeMeta = ROUTE_META.find((item) => isRouteActive(pathname, item.href)) ?? ROUTE_META[0];
-  const selectedMonthDate = months.find((month) => month.key === selectedMonthKey)?.date ?? months[months.length - 1]?.date ?? new Date();
+  const selectedMonthDate = useMemo(
+    () => months.find((month) => month.key === selectedMonthKey)?.date ?? months[months.length - 1]?.date ?? new Date(),
+    [months, selectedMonthKey]
+  );
   const monthRangeLabel = `${formatDate(startOfMonth(selectedMonthDate), 'MMM d')} - ${formatDate(endOfMonth(selectedMonthDate), 'MMM d, yyyy')}`;
+
+  useEffect(() => {
+    setTransactionFilter({
+      dateRange: 'custom',
+      startDate: formatDate(startOfMonth(selectedMonthDate), 'yyyy-MM-dd'),
+      endDate: formatDate(endOfMonth(selectedMonthDate), 'yyyy-MM-dd'),
+    });
+  }, [selectedMonthDate, setTransactionFilter]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -211,7 +224,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 right: 0,
                 bottom: 0,
                 left: 0,
-                zIndex: 50,
+                zIndex: 30,
               }}
             />
           ) : null}
@@ -317,21 +330,13 @@ export function DesktopShell({ children }: PropsWithChildren) {
               >
                 <MaterialCommunityIcons name="help-circle-outline" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push('/settings' as any)}>
-                <UserAvatar
-                  name={user?.full_name}
-                  email={user?.email}
-                  avatarUrl={user?.avatar_url}
-                  size={42}
-                />
-              </TouchableOpacity>
 
               {showMonthMenu && (
                 <View
                   style={{
                     position: 'absolute',
                     top: 54,
-                    right: 160,
+                    right: 108,
                     width: 260,
                     backgroundColor: colors.surface,
                     borderRadius: BorderRadius.lg,

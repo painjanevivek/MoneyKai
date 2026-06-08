@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useSyncStore } from '@/stores/useSyncStore';
+import { useCaptureStore } from '@/stores/useCaptureStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -74,6 +75,12 @@ export default function SettingsScreen() {
   const { notificationsEnabled, hapticEnabled, toggleHaptic, currency, currencySymbol, appLockEnabled, setAppLockEnabled } = useSettingsStore();
   const { settings, updateSettings } = useBudgetStore();
   const transactions = useTransactionStore((s) => s.transactions);
+  const captureSettings = useCaptureStore((s) => s.settings);
+  const pendingCaptureDrafts = useCaptureStore((s) => s.drafts.filter((draft) => draft.status === 'pending').length);
+  const setAutoCaptureEnabled = useCaptureStore((s) => s.setAutoCaptureEnabled);
+  const setNotificationCaptureEnabled = useCaptureStore((s) => s.setNotificationCaptureEnabled);
+  const setReviewNotificationsEnabled = useCaptureStore((s) => s.setReviewNotificationsEnabled);
+  const setSmsResearchModeEnabled = useCaptureStore((s) => s.setSmsResearchModeEnabled);
   const syncStatus = useSyncStore((s) => s.status);
   const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt);
   const syncError = useSyncStore((s) => s.error);
@@ -185,6 +192,16 @@ export default function SettingsScreen() {
     const granted = await setNotificationEnabled(enabled);
     if (enabled && !granted) {
       Alert.alert('Permission denied', 'Turn on notifications from your device settings to receive alerts.');
+    }
+  };
+
+  const handleAutoCaptureToggle = (enabled: boolean) => {
+    setAutoCaptureEnabled(enabled);
+    if (enabled) {
+      Alert.alert(
+        'Auto capture enabled',
+        'MoneyKai will create reviewable drafts from supported transaction signals. Native Android notification access still needs to be granted in a development build.'
+      );
     }
   };
 
@@ -335,6 +352,84 @@ export default function SettingsScreen() {
                 ios_backgroundColor={colors.borderLight}
               />
             }
+          />
+        </Card>
+
+        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Auto Capture</Text>
+        <Card style={{ marginBottom: Spacing.lg }}>
+          <SettingItem
+            icon="radar"
+            iconColor="#111111"
+            iconBg="#F4F4F4"
+            title="Automatic Capture"
+            subtitle={captureSettings.autoCaptureEnabled ? `${pendingCaptureDrafts} drafts waiting for review` : 'Create drafts from supported transaction alerts'}
+            right={
+              <Switch
+                value={captureSettings.autoCaptureEnabled}
+                onValueChange={handleAutoCaptureToggle}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
+          />
+          <SettingItem
+            icon="bell-badge-outline"
+            iconColor="#444444"
+            iconBg="#ECECEC"
+            title="Bank Notifications"
+            subtitle="Use Android notification signals when native access is available"
+            right={
+              <Switch
+                value={captureSettings.notificationCaptureEnabled}
+                onValueChange={setNotificationCaptureEnabled}
+                disabled={!captureSettings.autoCaptureEnabled}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
+          />
+          <SettingItem
+            icon="message-processing-outline"
+            iconColor="#5A5A5A"
+            iconBg="#EFEFEF"
+            title="SMS Research Mode"
+            subtitle="Keeps SMS as a research-only source until native and policy work is complete"
+            right={
+              <Switch
+                value={captureSettings.smsResearchModeEnabled}
+                onValueChange={setSmsResearchModeEnabled}
+                disabled={!captureSettings.autoCaptureEnabled}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
+          />
+          <SettingItem
+            icon="clipboard-check-outline"
+            iconColor="#707070"
+            iconBg="#F1F1F1"
+            title="Review Alerts"
+            subtitle={captureSettings.reviewNotificationsEnabled ? 'MoneyKai will notify when drafts need review' : 'Drafts stay quiet in the review inbox'}
+            right={
+              <Switch
+                value={captureSettings.reviewNotificationsEnabled}
+                onValueChange={setReviewNotificationsEnabled}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
+          />
+          <SettingItem
+            icon="inbox-arrow-down-outline"
+            iconColor="#8A8A8A"
+            iconBg="#F2F2F2"
+            title="Review Captured Drafts"
+            subtitle={`${pendingCaptureDrafts} pending`}
+            onPress={() => router.push('/(tabs)/auto-capture' as any)}
           />
         </Card>
 
