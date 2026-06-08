@@ -3,16 +3,14 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Note, ChecklistItem } from '../types/note';
 import { recordAppNotification } from '@/services/notificationService';
-import { isFirebaseConfigured } from '@/services/firebase';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { useAuthStore } from './useAuthStore';
+import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
 
 const syncNoteCreate = (note: Note) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.createResource<Note>('notes', note).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('notes', userId, note).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note create:', error);
     }
@@ -20,10 +18,9 @@ const syncNoteCreate = (note: Note) => {
 };
 
 const syncNoteUpdate = (id: string, updates: Partial<Note>) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.updateResource<Note>('notes', id, updates).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('notes', userId, { id, ...updates } as Note).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note update:', error);
     }
@@ -31,10 +28,9 @@ const syncNoteUpdate = (id: string, updates: Partial<Note>) => {
 };
 
 const syncNoteDelete = (id: string) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.deleteResource('notes', id).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void deleteUserDoc('notes', userId, id).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note delete:', error);
     }
@@ -59,36 +55,6 @@ interface NotesState {
   /** Removes seeded sample notes and resets isSeeded. Call on sign-out. */
   clearSeedData: () => void;
 }
-
-const SAMPLE_NOTES: Note[] = [
-  {
-    id: 'note1',
-    user_id: 'sample',
-    title: 'Monthly Budget Plan',
-    content: 'Plan for the month of May. Focus on saving more and avoid unnecessary expenses.',
-    is_pinned: true,
-    type: 'note',
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: 'note2',
-    user_id: 'sample',
-    title: 'Grocery List',
-    content: 'Milk, Bread, Eggs, Rice, Dal',
-    is_pinned: false,
-    type: 'checklist',
-    checklist_items: [
-      { id: 'cl1', text: 'Milk', completed: true },
-      { id: 'cl2', text: 'Bread', completed: true },
-      { id: 'cl3', text: 'Eggs', completed: false },
-      { id: 'cl4', text: 'Rice', completed: false },
-      { id: 'cl5', text: 'Dal', completed: false },
-    ],
-    created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-  },
-];
 
 export const useNotesStore = create<NotesState>()(
   persist(
@@ -220,17 +186,6 @@ export const useNotesStore = create<NotesState>()(
     {
       name: 'moneykai-notes',
       storage: createJSONStorage(() => AsyncStorage),
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-        if (isFirebaseConfigured()) {
-          state.notes = state.notes.filter((note) => note.user_id !== 'sample');
-          return;
-        }
-        if (!state.isSeeded) {
-          state.notes = SAMPLE_NOTES;
-          state.isSeeded = true;
-        }
-      },
     }
   )
 );

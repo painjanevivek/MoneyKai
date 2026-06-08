@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ThemeMode } from '../constants/theme';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
-import { queueSyncOperation } from '@/services/syncQueue';
+import { saveUserAppSettings } from '@/services/firestoreData';
+import { useAuthStore } from './useAuthStore';
 import { requestAutomaticBackup } from '@/services/backupService';
 
 export type PersistedAppSettings = {
@@ -19,15 +19,15 @@ export type PersistedAppSettings = {
 type TourCompletionMap = Record<string, boolean>;
 
 const persistAppSettings = (settings: PersistedAppSettings) => {
-  if (!isBackendConfigured()) {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) {
     return;
   }
 
-  void backendApi.updateAppSettings(settings).catch((error) => {
+  void saveUserAppSettings(userId, settings).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync app settings:', error);
     }
-    void queueSyncOperation({ kind: 'appSettings', payload: settings });
   });
 };
 

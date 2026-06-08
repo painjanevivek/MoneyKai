@@ -5,24 +5,23 @@ import type { Challenge } from '../types/challenge';
 import { MOTIVATIONAL_MESSAGES } from '../types/challenge';
 import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
-import { isDemoModeEnabled } from '@/config/environment';
-import { queueSyncOperation } from '@/services/syncQueue';
+import { upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 const syncChallengeCreate = (challenge: Challenge) => {
-  if (!isBackendConfigured()) return;
-  void backendApi.createChallenge(challenge).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('savings', userId, challenge).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync challenge create:', error);
-    void queueSyncOperation({ kind: 'challenge', action: 'create', payload: challenge });
   });
 };
 
 const syncChallengeUpdate = (challengeId: string, payload: Partial<Challenge>) => {
-  if (!isBackendConfigured()) return;
-  void backendApi.updateChallenge(challengeId, payload).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('savings', userId, { id: challengeId, ...payload } as Challenge).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync challenge update:', error);
-    void queueSyncOperation({ kind: 'challenge', action: 'update', challengeId, payload });
   });
 };
 
@@ -73,8 +72,8 @@ export const useChallengeStore = create<ChallengeState>()(
       let lastTxnsForCompleted: Challenge[] = [];
 
       return {
-      challenges: isDemoModeEnabled() ? SAMPLE_CHALLENGES : [],
-      totalXP: isDemoModeEnabled() ? 250 : 0,
+      challenges: isFirebaseConfigured() ? [] : SAMPLE_CHALLENGES,
+      totalXP: isFirebaseConfigured() ? 0 : 250,
 
         getActiveChallenges: () => {
           const challenges = get().challenges;
@@ -161,10 +160,7 @@ export const useChallengeStore = create<ChallengeState>()(
             c.id === id ? { ...c, status: 'deactivated' as const } : c
           ),
         }));
-        void backendApi.deactivateChallenge(id).catch((error) => {
-          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge deactivate:', error);
-          void queueSyncOperation({ kind: 'challenge', action: 'deactivate', challengeId: id });
-        });
+        syncChallengeUpdate(id, { status: 'deactivated' });
         void requestAutomaticBackup('challenge deactivated');
       },
 
@@ -174,10 +170,7 @@ export const useChallengeStore = create<ChallengeState>()(
             c.id === id ? { ...c, status: 'active' as const } : c
           ),
         }));
-        void backendApi.reactivateChallenge(id).catch((error) => {
-          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge reactivate:', error);
-          void queueSyncOperation({ kind: 'challenge', action: 'reactivate', challengeId: id });
-        });
+        syncChallengeUpdate(id, { status: 'active' });
         void requestAutomaticBackup('challenge reactivated');
       },
 
@@ -188,15 +181,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
           totalXP: state.totalXP + xp,
         }));
-        void backendApi.completeChallenge(id, { xp_earned: xp, savings_earned: savings }).catch((error) => {
-          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge completion:', error);
-          void queueSyncOperation({
-            kind: 'challenge',
-            action: 'complete',
-            challengeId: id,
-            payload: { xp_earned: xp, savings_earned: savings },
-          });
-        });
+        syncChallengeUpdate(id, { status: 'completed', xp_earned: xp, savings_earned: savings });
         void requestAutomaticBackup('challenge completed');
       },
     };
@@ -206,7 +191,7 @@ export const useChallengeStore = create<ChallengeState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (!isDemoModeEnabled()) {
+        if (isFirebaseConfigured()) {
           state.challenges = state.challenges.filter((challenge) => challenge.user_id !== 'sample');
           state.totalXP = state.challenges.reduce((sum, challenge) => sum + challenge.xp_earned, 0);
         }

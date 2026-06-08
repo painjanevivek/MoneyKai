@@ -13,8 +13,7 @@ import {
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
 import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
-import { isBackendConfigured } from '@/services/backendApi';
-import { flushAutomaticBackup, requestAutomaticBackup } from '@/services/backupService';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 export interface User {
   id: string;
@@ -55,21 +54,6 @@ const toAppUser = (user: import('firebase/auth').User): User => {
   };
 };
 
-const hydrateBackendSnapshot = async () => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-
-  try {
-    const { syncRemoteState } = await import('@/services/remoteSync');
-    await syncRemoteState();
-  } catch (error) {
-    if (__DEV__) {
-      console.warn('[MoneyKai] backend sync failed:', error);
-    }
-  }
-};
-
 const getAuthErrorCode = (error: unknown): string => {
   if (typeof error === 'object' && error && 'code' in error) {
     return String((error as { code?: string }).code ?? '');
@@ -102,7 +86,8 @@ export const useAuthStore = create<AuthState>()(
             const redirectResult = await getRedirectResult(firebaseAuth).catch(() => null);
             if (redirectResult?.user) {
               set({ user: toAppUser(redirectResult.user), isAuthenticated: true });
-              await hydrateBackendSnapshot();
+              const { syncRemoteState } = await import('@/services/remoteSync');
+              await syncRemoteState();
               return;
             }
           }
@@ -110,7 +95,8 @@ export const useAuthStore = create<AuthState>()(
           const sessionUser = await waitForAuthState();
           if (sessionUser) {
             set({ user: toAppUser(sessionUser), isAuthenticated: true });
-            await hydrateBackendSnapshot();
+            const { syncRemoteState } = await import('@/services/remoteSync');
+            await syncRemoteState();
           } else {
             set({ user: null, isAuthenticated: false });
           }
@@ -145,7 +131,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
 
-          await hydrateBackendSnapshot();
+          const { syncRemoteState } = await import('@/services/remoteSync');
+          await syncRemoteState();
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Sign in failed');
@@ -186,7 +173,8 @@ export const useAuthStore = create<AuthState>()(
             isOnboarded: true,
           });
 
-          await hydrateBackendSnapshot();
+          const { syncRemoteState } = await import('@/services/remoteSync');
+          await syncRemoteState();
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Sign up failed');
@@ -228,7 +216,8 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
             });
 
-            await hydrateBackendSnapshot();
+            const { syncRemoteState } = await import('@/services/remoteSync');
+            await syncRemoteState();
           } catch (error) {
             const code = getAuthErrorCode(error);
             if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
@@ -251,21 +240,15 @@ export const useAuthStore = create<AuthState>()(
 
       signOut: async (options) => {
         const cleanup = async () => {
-          if (!options?.skipFinalBackup) {
-            await flushAutomaticBackup({ force: true }).catch(() => {
-              // Best effort: if the final backup fails, continue sign-out.
+          if (isFirebaseConfigured()) {
+            await firebaseSignOut(firebaseAuth).catch(() => {
+              // Local sign-out already happened; ignore network cleanup failures.
             });
           }
 
           const { clearTransientSessionState, resetLocalAppState } = await import('@/services/remoteSync');
           await clearTransientSessionState();
           resetLocalAppState();
-
-          if (isFirebaseConfigured()) {
-            await firebaseSignOut(firebaseAuth).catch(() => {
-              // Local sign-out already happened; ignore network cleanup failures.
-            });
-          }
         };
 
         await cleanup().catch(() => {

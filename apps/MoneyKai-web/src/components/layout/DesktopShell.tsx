@@ -1,7 +1,7 @@
 import React, { type PropsWithChildren, useMemo, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
-import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Pressable, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -202,6 +202,19 @@ export function DesktopShell({ children }: PropsWithChildren) {
         </View>
 
         <View style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+          {showMonthMenu ? (
+            <Pressable
+              onPress={() => setShowMonthMenu(false)}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                zIndex: 50,
+              }}
+            />
+          ) : null}
           <View
             pointerEvents="none"
             style={{
@@ -232,6 +245,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
               borderBottomWidth: 1,
               borderBottomColor: colors.borderLight,
               backgroundColor: colors.background,
+              position: 'relative',
+              zIndex: 40,
+              overflow: 'visible',
               paddingHorizontal: Spacing['2xl'],
               paddingVertical: Spacing.base,
               flexDirection: 'row',
@@ -249,7 +265,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </Text>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, position: 'relative' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, position: 'relative', zIndex: 60, overflow: 'visible' }}>
               <TouchableOpacity
                 onPress={() => setShowMonthMenu((current) => !current)}
                 style={{
@@ -358,6 +374,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
             style={{
               flex: 1,
               minWidth: 0,
+              position: 'relative',
+              zIndex: 1,
               paddingHorizontal: Spacing['2xl'],
               paddingTop: Spacing['2xl'],
               paddingBottom: insets.bottom + Spacing['2xl'],

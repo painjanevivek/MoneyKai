@@ -4,10 +4,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Transaction, TransactionFilter, CategoryTotal } from '../types/transaction';
 import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
-import { isDemoModeEnabled } from '@/config/environment';
-import { queueSyncOperation } from '@/services/syncQueue';
+import { useAuthStore } from './useAuthStore';
+import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 // Sample data used when Firebase is not configured locally.
 const today = new Date().toISOString().split('T')[0];
@@ -62,38 +62,32 @@ const DEFAULT_FILTER: TransactionFilter = {
 };
 
 const syncTransactionCreate = (transaction: Transaction) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.createResource<Transaction>('transactions', transaction).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('transactions', userId, transaction).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction create:', error);
     }
-    void queueSyncOperation({ kind: 'resource', action: 'create', resource: 'transactions', payload: transaction });
   });
 };
 
 const syncTransactionUpdate = (id: string, updates: Partial<Transaction>) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.updateResource<Transaction>('transactions', id, updates).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('transactions', userId, { id, ...updates } as Transaction).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction update:', error);
     }
-    void queueSyncOperation({ kind: 'resource', action: 'update', resource: 'transactions', itemId: id, payload: updates });
   });
 };
 
 const syncTransactionDelete = (id: string) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.deleteResource('transactions', id).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void deleteUserDoc('transactions', userId, id).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction delete:', error);
     }
-    void queueSyncOperation({ kind: 'resource', action: 'delete', resource: 'transactions', itemId: id });
   });
 };
 
@@ -290,9 +284,8 @@ export const useTransactionStore = create<TransactionState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (!isDemoModeEnabled()) {
+        if (isFirebaseConfigured()) {
           state.transactions = state.transactions.filter((transaction) => transaction.user_id !== 'sample');
-          state.isSeeded = false;
           return;
         }
         if (!state.isSeeded) {

@@ -6,9 +6,9 @@ import { useNotesStore } from '@/stores/useNotesStore';
 import { useGroupStore } from '@/stores/useGroupStore';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
-import { backendApi, isBackendConfigured } from './backendApi';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { clearAutomaticBackupQueue } from './backupService';
+import { loadUserFirestoreSnapshot } from './firestoreData';
 
 const EMPTY_BUDGET_SETTINGS = {
   monthly_allowance: 0,
@@ -67,22 +67,20 @@ export const resetLocalAppState = () => {
 };
 
 export const syncRemoteState = async () => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-
   const user = useAuthStore.getState().user;
   if (!user) {
     return;
   }
 
-  const localBudgetState = useBudgetStore.getState();
+  const snapshot = await loadUserFirestoreSnapshot(user.id, {
+    id: user.id,
+    email: user.email,
+    full_name: user.full_name,
+    avatar_url: user.avatar_url,
+    auth_provider: user.auth_provider,
+  });
+
   resetLocalAppState();
-  const snapshot = await backendApi.getBootstrap();
-  const snapshotBudget = snapshot.settings.budget;
-  const shouldRecoverLocalBudget =
-    snapshotBudget?.settings?.monthly_allowance === 0 &&
-    localBudgetState.settings.monthly_allowance > 0;
 
   useSettingsStore.setState({
     theme: snapshot.settings.app.theme,
@@ -95,24 +93,11 @@ export const syncRemoteState = async () => {
 
   useBudgetStore.setState({
     ...useBudgetStore.getState(),
-    settings: shouldRecoverLocalBudget ? localBudgetState.settings : snapshotBudget.settings,
-    adjustments: shouldRecoverLocalBudget ? localBudgetState.adjustments : snapshotBudget.adjustments,
-    isEmergencyMode: shouldRecoverLocalBudget ? localBudgetState.isEmergencyMode : snapshotBudget.isEmergencyMode,
-    resetHistory: shouldRecoverLocalBudget ? localBudgetState.resetHistory : snapshotBudget.resetHistory,
+    settings: snapshot.settings.budget.settings,
+    adjustments: snapshot.settings.budget.adjustments,
+    isEmergencyMode: snapshot.settings.budget.isEmergencyMode,
+    resetHistory: snapshot.settings.budget.resetHistory,
   });
-
-  if (shouldRecoverLocalBudget) {
-    void backendApi.updateBudgetSettings({
-      settings: localBudgetState.settings,
-      adjustments: localBudgetState.adjustments,
-      isEmergencyMode: localBudgetState.isEmergencyMode,
-      resetHistory: localBudgetState.resetHistory,
-    }).catch((error) => {
-      if (__DEV__) {
-        console.warn('[MoneyKai] failed to recover local budget settings:', error);
-      }
-    });
-  }
 
   useTransactionStore.setState({
     ...useTransactionStore.getState(),
@@ -134,8 +119,8 @@ export const syncRemoteState = async () => {
 
   useChallengeStore.setState({
     ...useChallengeStore.getState(),
-    challenges: snapshot.data.challenges,
-    totalXP: snapshot.data.totalXP,
+    challenges: snapshot.data.savings,
+    totalXP: snapshot.data.savings.reduce((sum, item) => sum + (item.xp_earned ?? 0), 0),
   });
 
   useBadgeStore.setState({
@@ -143,7 +128,7 @@ export const syncRemoteState = async () => {
     badges: snapshot.data.badges,
   });
 
-  useNotificationStore.getState().replaceNotifications(snapshot.data.notifications ?? []);
+  useNotificationStore.getState().replaceNotifications((snapshot.data.notifications ?? []) as never[]);
 };
 
 export const clearTransientSessionState = async () => {

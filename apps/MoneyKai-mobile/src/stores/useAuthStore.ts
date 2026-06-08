@@ -8,10 +8,9 @@ import {
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
 import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
-import { isBackendConfigured } from '@/services/backendApi';
 import { isDemoModeEnabled } from '@/config/environment';
 import { signInWithGoogleAsync } from '@/services/googleAuth';
-import { flushAutomaticBackup, requestAutomaticBackup } from '@/services/backupService';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 export interface User {
   id: string;
@@ -52,21 +51,6 @@ const toAppUser = (user: import('firebase/auth').User): User => {
   };
 };
 
-const hydrateBackendSnapshot = async () => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-
-  try {
-    const { syncRemoteState } = await import('@/services/remoteSync');
-    await syncRemoteState();
-  } catch (error) {
-    if (__DEV__) {
-      console.warn('[MoneyKai] backend sync failed:', error);
-    }
-  }
-};
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -90,7 +74,8 @@ export const useAuthStore = create<AuthState>()(
           const sessionUser = await waitForAuthState();
           if (sessionUser) {
             set({ user: toAppUser(sessionUser), isAuthenticated: true });
-            await hydrateBackendSnapshot();
+            const { syncRemoteState } = await import('@/services/remoteSync');
+            await syncRemoteState();
           } else {
             set({ user: null, isAuthenticated: false });
           }
@@ -129,7 +114,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
 
-          await hydrateBackendSnapshot();
+          const { syncRemoteState } = await import('@/services/remoteSync');
+          await syncRemoteState();
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Sign in failed');
@@ -174,7 +160,8 @@ export const useAuthStore = create<AuthState>()(
             isOnboarded: true,
           });
 
-          await hydrateBackendSnapshot();
+          const { syncRemoteState } = await import('@/services/remoteSync');
+          await syncRemoteState();
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Sign up failed');
@@ -212,7 +199,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
 
-          await hydrateBackendSnapshot();
+          const { syncRemoteState } = await import('@/services/remoteSync');
+          await syncRemoteState();
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Google sign-in failed');
@@ -221,17 +209,15 @@ export const useAuthStore = create<AuthState>()(
 
       signOut: async () => {
         const cleanup = async () => {
-          await flushAutomaticBackup({ force: true }).catch(() => {
-            // Best effort: if the final backup fails, continue sign-out.
-          });
-          const { clearTransientSessionState } = await import('@/services/remoteSync');
-          await clearTransientSessionState();
-
           if (isFirebaseConfigured()) {
             await firebaseSignOut(firebaseAuth).catch(() => {
               // Local sign-out already happened; ignore network cleanup failures.
             });
           }
+
+          const { clearTransientSessionState, resetLocalAppState } = await import('@/services/remoteSync');
+          await clearTransientSessionState();
+          resetLocalAppState();
         };
 
         await cleanup().catch(() => {

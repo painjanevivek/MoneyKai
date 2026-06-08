@@ -4,33 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Transaction, TransactionFilter, CategoryTotal } from '../types/transaction';
 import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
-import { isFirebaseConfigured } from '@/services/firebase';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { useAuthStore } from './useAuthStore';
+import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
-
-// Sample data used when Firebase is not configured locally.
-const today = new Date().toISOString().split('T')[0];
-const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().split('T')[0];
-const threeDaysAgo = new Date(Date.now() - 259200000).toISOString().split('T')[0];
-const fiveDaysAgo = new Date(Date.now() - 432000000).toISOString().split('T')[0];
-
-const SAMPLE_TRANSACTIONS: Transaction[] = [
-  { id: '1', user_id: 'sample', type: 'expense', amount: 350, category: 'food', description: 'Zomato', payment_method: 'upi', transaction_date: today, created_at: today },
-  { id: '2', user_id: 'sample', type: 'expense', amount: 120, category: 'transport', description: 'Metro Card Recharge', payment_method: 'upi', transaction_date: today, created_at: today },
-  { id: '3', user_id: 'sample', type: 'expense', amount: 1250, category: 'shopping', description: 'Amazon', payment_method: 'card', transaction_date: yesterday, created_at: yesterday },
-  { id: '4', user_id: 'sample', type: 'expense', amount: 480, category: 'entertainment', description: 'BookMyShow', payment_method: 'upi', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
-  { id: '5', user_id: 'sample', type: 'income', amount: 15000, category: 'income', description: 'Salary', payment_method: 'bank', transaction_date: fiveDaysAgo, created_at: fiveDaysAgo },
-  { id: '6', user_id: 'sample', type: 'expense', amount: 2500, category: 'rent', description: 'Room Rent Share', payment_method: 'bank', transaction_date: fiveDaysAgo, created_at: fiveDaysAgo },
-  { id: '7', user_id: 'sample', type: 'expense', amount: 650, category: 'food', description: 'Swiggy Groceries', payment_method: 'upi', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
-  { id: '8', user_id: 'sample', type: 'expense', amount: 200, category: 'transport', description: 'Uber', payment_method: 'upi', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
-  { id: '9', user_id: 'sample', type: 'expense', amount: 450, category: 'bills', description: 'Mobile Recharge', payment_method: 'upi', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
-  { id: '10', user_id: 'sample', type: 'expense', amount: 180, category: 'food', description: 'Cafe Coffee Day', payment_method: 'cash', transaction_date: yesterday, created_at: yesterday },
-  { id: '11', user_id: 'sample', type: 'expense', amount: 800, category: 'education', description: 'Udemy Course', payment_method: 'card', transaction_date: threeDaysAgo, created_at: threeDaysAgo },
-  { id: '12', user_id: 'sample', type: 'expense', amount: 320, category: 'healthcare', description: 'Pharmacy', payment_method: 'cash', transaction_date: yesterday, created_at: yesterday },
-  { id: '13', user_id: 'sample', type: 'expense', amount: 900, category: 'food', description: 'Dominos Pizza', payment_method: 'upi', transaction_date: today, created_at: today },
-  { id: '14', user_id: 'sample', type: 'expense', amount: 1050, category: 'shopping', description: 'Myntra', payment_method: 'card', transaction_date: twoDaysAgo, created_at: twoDaysAgo },
-];
 
 interface TransactionState {
   transactions: Transaction[];
@@ -61,10 +37,9 @@ const DEFAULT_FILTER: TransactionFilter = {
 };
 
 const syncTransactionCreate = (transaction: Transaction) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.createResource<Transaction>('transactions', transaction).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('transactions', userId, transaction).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction create:', error);
     }
@@ -72,10 +47,9 @@ const syncTransactionCreate = (transaction: Transaction) => {
 };
 
 const syncTransactionUpdate = (id: string, updates: Partial<Transaction>) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.updateResource<Transaction>('transactions', id, updates).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('transactions', userId, { id, ...updates } as Transaction).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction update:', error);
     }
@@ -83,10 +57,9 @@ const syncTransactionUpdate = (id: string, updates: Partial<Transaction>) => {
 };
 
 const syncTransactionDelete = (id: string) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.deleteResource('transactions', id).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void deleteUserDoc('transactions', userId, id).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync transaction delete:', error);
     }
@@ -283,18 +256,6 @@ export const useTransactionStore = create<TransactionState>()(
         transactions: state.transactions,
         isSeeded: state.isSeeded,
       }),
-      onRehydrateStorage: () => (state) => {
-        // Inject sample data only if this is the very first launch.
-        if (!state) return;
-        if (isFirebaseConfigured()) {
-          state.transactions = state.transactions.filter((transaction) => transaction.user_id !== 'sample');
-          return;
-        }
-        if (!state.isSeeded) {
-          state.transactions = SAMPLE_TRANSACTIONS;
-          state.isSeeded = true;
-        }
-      },
     }
   )
 );

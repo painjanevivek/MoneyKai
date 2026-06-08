@@ -5,20 +5,22 @@ import type { Challenge } from '../types/challenge';
 import { MOTIVATIONAL_MESSAGES } from '../types/challenge';
 import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
-import { isFirebaseConfigured } from '@/services/firebase';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 const syncChallengeCreate = (challenge: Challenge) => {
-  if (!isBackendConfigured()) return;
-  void backendApi.createChallenge(challenge).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('savings', userId, challenge).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync challenge create:', error);
   });
 };
 
 const syncChallengeUpdate = (challengeId: string, payload: Partial<Challenge>) => {
-  if (!isBackendConfigured()) return;
-  void backendApi.updateChallenge(challengeId, payload).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('savings', userId, { id: challengeId, ...payload } as Challenge).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync challenge update:', error);
   });
 };
@@ -158,9 +160,7 @@ export const useChallengeStore = create<ChallengeState>()(
             c.id === id ? { ...c, status: 'deactivated' as const } : c
           ),
         }));
-        void backendApi.deactivateChallenge(id).catch((error) => {
-          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge deactivate:', error);
-        });
+        syncChallengeUpdate(id, { status: 'deactivated' });
         void requestAutomaticBackup('challenge deactivated');
       },
 
@@ -170,9 +170,7 @@ export const useChallengeStore = create<ChallengeState>()(
             c.id === id ? { ...c, status: 'active' as const } : c
           ),
         }));
-        void backendApi.reactivateChallenge(id).catch((error) => {
-          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge reactivate:', error);
-        });
+        syncChallengeUpdate(id, { status: 'active' });
         void requestAutomaticBackup('challenge reactivated');
       },
 
@@ -183,9 +181,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
           totalXP: state.totalXP + xp,
         }));
-        void backendApi.completeChallenge(id, { xp_earned: xp, savings_earned: savings }).catch((error) => {
-          if (__DEV__) console.warn('[MoneyKai] failed to sync challenge completion:', error);
-        });
+        syncChallengeUpdate(id, { status: 'completed', xp_earned: xp, savings_earned: savings });
         void requestAutomaticBackup('challenge completed');
       },
     };

@@ -3,45 +3,38 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Note, ChecklistItem } from '../types/note';
 import { recordAppNotification } from '@/services/notificationService';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { useAuthStore } from './useAuthStore';
-import { isDemoModeEnabled } from '@/config/environment';
-import { queueSyncOperation } from '@/services/syncQueue';
+import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
+import { isFirebaseConfigured } from '@/services/firebase';
 
 const syncNoteCreate = (note: Note) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.createResource<Note>('notes', note).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('notes', userId, note).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note create:', error);
     }
-    void queueSyncOperation({ kind: 'resource', action: 'create', resource: 'notes', payload: note });
   });
 };
 
 const syncNoteUpdate = (id: string, updates: Partial<Note>) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.updateResource<Note>('notes', id, updates).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('notes', userId, { id, ...updates } as Note).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note update:', error);
     }
-    void queueSyncOperation({ kind: 'resource', action: 'update', resource: 'notes', itemId: id, payload: updates });
   });
 };
 
 const syncNoteDelete = (id: string) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-  void backendApi.deleteResource('notes', id).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void deleteUserDoc('notes', userId, id).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync note delete:', error);
     }
-    void queueSyncOperation({ kind: 'resource', action: 'delete', resource: 'notes', itemId: id });
   });
 };
 
@@ -105,7 +98,7 @@ export const useNotesStore = create<NotesState>()(
       let lastCountForRecent: number = 0;
 
       return {
-        notes: isDemoModeEnabled() ? SAMPLE_NOTES : [],
+        notes: isFirebaseConfigured() ? [] : SAMPLE_NOTES,
         isSeeded: false,
 
         getPinnedNotes: () => {
@@ -226,9 +219,8 @@ export const useNotesStore = create<NotesState>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (!isDemoModeEnabled()) {
+        if (isFirebaseConfigured()) {
           state.notes = state.notes.filter((note) => note.user_id !== 'sample');
-          state.isSeeded = false;
           return;
         }
         if (!state.isSeeded) {

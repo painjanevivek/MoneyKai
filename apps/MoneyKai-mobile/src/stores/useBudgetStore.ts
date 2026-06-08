@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { BudgetSettings, BudgetAdjustment } from '../types/budget';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
-import { queueSyncOperation } from '@/services/syncQueue';
+import { useAuthStore } from './useAuthStore';
+import { saveUserBudgetSettings } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
 
 const persistBudgetSettings = (state: {
@@ -12,15 +12,12 @@ const persistBudgetSettings = (state: {
   isEmergencyMode: boolean;
   resetHistory: { date: string; amount: number; carryForward: number }[];
 }) => {
-  if (!isBackendConfigured()) {
-    return;
-  }
-
-  void backendApi.updateBudgetSettings(state).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void saveUserBudgetSettings(userId, state).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync budget settings:', error);
     }
-    void queueSyncOperation({ kind: 'budgetSettings', payload: state });
   });
   void requestAutomaticBackup('budget updated');
 };

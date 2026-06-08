@@ -3,16 +3,16 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Badge } from '../types/badge';
 import { BADGE_DEFINITIONS } from '../constants/badges';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { isDemoModeEnabled } from '@/config/environment';
-import { queueSyncOperation } from '@/services/syncQueue';
+import { useAuthStore } from './useAuthStore';
+import { upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
 
 const syncBadgeUpdate = (badge: Badge) => {
-  if (!isBackendConfigured()) return;
-  void backendApi.updateResource<Badge>('badges', badge.id, badge).catch((error) => {
+  const userId = useAuthStore.getState().user?.id;
+  if (!userId) return;
+  void upsertUserDoc('badges', userId, badge).catch((error) => {
     if (__DEV__) console.warn('[MoneyKai] failed to sync badge update:', error);
-    void queueSyncOperation({ kind: 'resource', action: 'update', resource: 'badges', itemId: badge.id, payload: badge });
   });
 };
 
@@ -43,13 +43,10 @@ const createInitialBadges = (userId: string): Badge[] => {
 export const useBadgeStore = create<BadgeState>()(
   persist(
     (set, get) => ({
-      badges: isDemoModeEnabled() ? createInitialBadges('sample') : [],
+      badges: [],
       recentUnlock: null,
 
       initializeBadges: (userId) => {
-        if (isBackendConfigured()) {
-          return;
-        }
         if (get().badges.length === 0) {
           set({ badges: createInitialBadges(userId) });
         }
