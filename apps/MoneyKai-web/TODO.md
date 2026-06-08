@@ -3,7 +3,7 @@
 This file tracks the remaining setup and verification work after the cleanup pass.
 
 ## Phase 1: Critical Setup
-- [ ] Configure the `EXPO_PUBLIC_FIREBASE_*` keys in `.env`.
+- [x] Configure the `EXPO_PUBLIC_FIREBASE_*` keys in `.env`.
 - [ ] Enable Email/Password auth in Firebase Authentication.
 - [ ] Enable Google auth in Firebase if browser-based Google sign-in should be available.
 - [ ] Create a Firestore database and verify backup/restore works end to end.
@@ -17,6 +17,6 @@ This file tracks the remaining setup and verification work after the cleanup pas
 ## Phase 3: Polish
 - [ ] Replace the placeholder store/app identifiers in the project metadata with the final production values when they are available.
 - [ ] Add app-store-specific review links once the real App Store and Play Store IDs exist.
-- [ ] Document the production launch checklist in the repo README once the environment is finalized.
+- [x] Document the production launch checklist in the repo README once the environment is finalized.
 
 
