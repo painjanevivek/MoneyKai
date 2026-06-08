@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Pressable, Modal, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
@@ -412,9 +412,9 @@ export default function GroupsScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity
+      <Pressable
         onPress={() => setShowCreateModal(true)}
-        style={{
+        style={({ hovered, pressed }: any) => ({
           position: 'absolute',
           bottom: insets.bottom + 96,
           right: 16,
@@ -426,10 +426,13 @@ export default function GroupsScreen() {
           justifyContent: 'center',
           ...Shadows.lg,
           shadowColor: colors.primary,
-        }}
+          borderWidth: 1,
+          borderColor: hovered ? colors.primaryLight : colors.primary,
+          transform: hovered && !pressed ? [{ translateY: -2 }, { scale: 1.04 }] : [{ translateY: 0 }, { scale: 1 }],
+        })}
       >
         <MaterialCommunityIcons name="plus" size={28} color={colors.textInverse} />
-      </TouchableOpacity>
+      </Pressable>
 
       <Modal visible={showCreateModal} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>

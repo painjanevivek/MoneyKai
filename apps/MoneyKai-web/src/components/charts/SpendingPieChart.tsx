@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { PieChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
@@ -104,12 +105,17 @@ export const SpendingPieChart: React.FC = () => {
           })}
         </View>
       </View>
-      <TouchableOpacity style={{
+      <TouchableOpacity
+        onPress={() => router.push('/(tabs)/savings' as any)}
+        accessibilityRole="button"
+        accessibilityLabel="View spending analytics in Savings"
+        style={{
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: Spacing.md,
         gap: 4,
-      }}>
+      }}
+      >
         <Text style={{
           fontSize: Typography.fontSize.sm,
           fontFamily: Typography.fontFamily.medium,

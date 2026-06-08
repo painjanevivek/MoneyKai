@@ -6,8 +6,26 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { SeoHead } from '@/components/marketing/SeoHead';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const getFriendlySignupMessage = (error: unknown) => {
+  const message = error instanceof Error ? error.message : '';
+  const lower = message.toLowerCase();
+
+  if (lower.includes('not configured')) {
+    return 'Account creation is unavailable because authentication is not configured for this deployment.';
+  }
+  if (lower.includes('email-already-in-use')) {
+    return 'An account already exists for this email. Try signing in instead.';
+  }
+  if (lower.includes('weak-password')) {
+    return 'Use a stronger password with at least 8 characters.';
+  }
+
+  return 'Please check the form and try again.';
+};
 
 export default function SignupScreen() {
   const { colors } = useTheme();
@@ -39,14 +57,21 @@ export default function SignupScreen() {
     try {
       await signUp(email, password, fullName);
     } catch (err) {
-      Alert.alert('Sign Up Failed', err instanceof Error ? err.message : 'Please try again.');
+      Alert.alert('Sign Up Failed', getFriendlySignupMessage(err));
     } finally {
       submitting.current = false;
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <>
+      <SeoHead
+        title="Create a MoneyKai account | Budget and expense tracker"
+        description="Create a MoneyKai account to start tracking expenses, budgets, savings, and shared money in one workspace."
+        path="/signup"
+        robots="noindex,nofollow"
+      />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{
@@ -124,6 +149,7 @@ export default function SignupScreen() {
               title="Create Account"
               onPress={handleSignUp}
               loading={isLoading}
+              disabled={isLoading}
               fullWidth
               size="lg"
               icon="account-plus-outline"
@@ -147,6 +173,7 @@ export default function SignupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 import React, { type PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
-import { Pressable, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -97,10 +97,19 @@ export function DesktopShell({ children }: PropsWithChildren) {
           }}
         >
           <View style={{ flex: 1, paddingBottom: insets.bottom + 20 }}>
-            <TouchableOpacity
-              activeOpacity={0.9}
+            <Pressable
               onPress={() => router.push('/')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: Spacing['2xl'] }}
+              style={({ hovered, pressed }: any) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                marginBottom: Spacing['2xl'],
+                padding: 6,
+                marginHorizontal: -6,
+                borderRadius: BorderRadius.lg,
+                backgroundColor: hovered ? `${colors.primary}0D` : 'transparent',
+                transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+              })}
             >
               <View
                 style={{
@@ -126,27 +135,27 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   Desktop money workspace
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={{ gap: 6, marginBottom: Spacing['2xl'] }}>
               {NAV_ITEMS.map((item) => {
                 const active = isRouteActive(pathname, item.href);
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={item.href}
                     onPress={() => router.push(item.href as any)}
-                    activeOpacity={0.85}
-                    style={{
+                    style={({ hovered, pressed }: any) => ({
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: 12,
                       paddingHorizontal: 14,
                       paddingVertical: 12,
                       borderRadius: BorderRadius.md,
-                      backgroundColor: active ? colors.primaryBg : 'transparent',
+                      backgroundColor: active ? (hovered ? `${colors.primary}28` : colors.primaryBg) : hovered ? `${colors.primary}12` : 'transparent',
                       borderWidth: 1,
-                      borderColor: active ? `${colors.primary}25` : 'transparent',
-                    }}
+                      borderColor: active ? `${colors.primary}35` : hovered ? `${colors.primary}24` : 'transparent',
+                      transform: hovered && !pressed ? [{ translateX: 2 }] : [{ translateX: 0 }],
+                    })}
                   >
                     <MaterialCommunityIcons
                       name={item.icon}
@@ -162,7 +171,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     >
                       {item.label}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -282,57 +291,60 @@ export function DesktopShell({ children }: PropsWithChildren) {
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, position: 'relative', zIndex: 60, overflow: 'visible' }}>
-              <TouchableOpacity
+              <Pressable
                 onPress={() => setShowMonthMenu((current) => !current)}
-                style={{
+                style={({ hovered, pressed }: any) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 8,
-                  backgroundColor: colors.card,
+                  backgroundColor: hovered ? colors.surfaceElevated : colors.card,
                   borderWidth: 1,
-                  borderColor: colors.borderLight,
+                  borderColor: hovered ? `${colors.primary}38` : colors.borderLight,
                   borderRadius: BorderRadius.md,
                   paddingHorizontal: Spacing.md,
                   paddingVertical: 10,
-                }}
+                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                })}
               >
                 <MaterialCommunityIcons name="calendar-month-outline" size={18} color={colors.textPrimary} />
                 <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
                   {monthRangeLabel}
                 </Text>
                 <MaterialCommunityIcons name="chevron-down" size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={() => router.push('/notifications' as any)}
-                style={{
+                style={({ hovered, pressed }: any) => ({
                   width: 42,
                   height: 42,
                   borderRadius: 21,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: colors.card,
+                  backgroundColor: hovered ? colors.surfaceElevated : colors.card,
                   borderWidth: 1,
-                  borderColor: colors.borderLight,
-                }}
+                  borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                })}
               >
                 <MaterialCommunityIcons name="bell-outline" size={20} color={colors.textPrimary} />
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 onPress={() => router.push('/faq' as any)}
-                style={{
+                style={({ hovered, pressed }: any) => ({
                   width: 42,
                   height: 42,
                   borderRadius: 21,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: colors.card,
+                  backgroundColor: hovered ? colors.surfaceElevated : colors.card,
                   borderWidth: 1,
-                  borderColor: colors.borderLight,
-                }}
+                  borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                })}
               >
                 <MaterialCommunityIcons name="help-circle-outline" size={20} color={colors.textPrimary} />
-              </TouchableOpacity>
+              </Pressable>
 
               {showMonthMenu && (
                 <View
@@ -354,23 +366,23 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   {months.map((month) => {
                     const active = month.key === selectedMonthKey;
                     return (
-                      <TouchableOpacity
+                      <Pressable
                         key={month.key}
                         onPress={() => {
                           setSelectedMonthKey(month.key);
                           setShowMonthMenu(false);
                         }}
-                        style={{
+                        style={({ hovered }: any) => ({
                           paddingHorizontal: Spacing.md,
                           paddingVertical: 10,
                           borderRadius: BorderRadius.md,
-                          backgroundColor: active ? colors.primaryBg : 'transparent',
-                        }}
+                          backgroundColor: active ? colors.primaryBg : hovered ? `${colors.primary}10` : 'transparent',
+                        })}
                       >
                         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
                           {month.label}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     );
                   })}
                 </View>

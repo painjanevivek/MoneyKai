@@ -15,8 +15,26 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { SeoHead } from '@/components/marketing/SeoHead';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const getFriendlyAuthMessage = (error: unknown) => {
+  const message = error instanceof Error ? error.message : '';
+  const lower = message.toLowerCase();
+
+  if (lower.includes('not configured')) {
+    return 'Sign in is unavailable because authentication is not configured for this deployment.';
+  }
+  if (lower.includes('invalid') || lower.includes('wrong') || lower.includes('user-not-found')) {
+    return 'The email or password does not match a MoneyKai account. Check the details and try again.';
+  }
+  if (lower.includes('too-many-requests')) {
+    return 'Too many attempts. Please wait a moment before trying again.';
+  }
+
+  return 'Please check your details and try again.';
+};
 
 export default function LoginScreen() {
   const { colors } = useTheme();
@@ -47,7 +65,7 @@ export default function LoginScreen() {
     try {
       await signIn(email, password);
     } catch (err) {
-      Alert.alert('Login Failed', err instanceof Error ? err.message : 'Please check your credentials and try again.');
+      Alert.alert('Login Failed', getFriendlyAuthMessage(err));
     } finally {
       submitting.current = false;
     }
@@ -60,7 +78,7 @@ export default function LoginScreen() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      Alert.alert('Google Sign-In Failed', err instanceof Error ? err.message : 'Google Sign-In is not available. Please use email login.');
+      Alert.alert('Google Sign-In Failed', getFriendlyAuthMessage(err));
     } finally {
       setGoogleLoading(false);
       submitting.current = false;
@@ -75,7 +93,14 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <>
+      <SeoHead
+        title="Sign in to MoneyKai | Personal finance dashboard"
+        description="Sign in to your MoneyKai account to manage budgets, expenses, savings, notes, and shared spending."
+        path="/login"
+        robots="noindex,nofollow"
+      />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -108,6 +133,7 @@ export default function LoginScreen() {
                 source={require('../../../assets/images/moneykai-logo.png')}
                 style={{ width: 44, height: 44 }}
                 resizeMode="contain"
+                accessibilityLabel="MoneyKai logo"
               />
             </View>
             <Text style={{
@@ -174,6 +200,7 @@ export default function LoginScreen() {
               title="Sign In"
               onPress={handleLogin}
               loading={isLoading}
+              disabled={isLoading || googleLoading}
               fullWidth
               size="lg"
               icon="login"
@@ -263,7 +290,8 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </>
   );
 }
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Linking, Platform, Share } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, Alert, Linking, Platform, Share } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -35,16 +35,21 @@ interface SettingItemProps {
 const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, title, subtitle, right, onPress }) => {
   const { colors } = useTheme();
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
-      activeOpacity={onPress ? 0.6 : 1}
-      style={{
+      disabled={!onPress}
+      style={({ hovered, pressed }: any) => ({
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: Spacing.md,
+        paddingHorizontal: Spacing.sm,
+        marginHorizontal: -Spacing.sm,
+        borderRadius: BorderRadius.sm,
         borderBottomWidth: 1,
         borderBottomColor: colors.borderLight,
-      }}
+        backgroundColor: onPress && hovered ? `${colors.primary}0F` : 'transparent',
+        transform: onPress && hovered && !pressed ? [{ translateX: 2 }] : [{ translateX: 0 }],
+      })}
     >
       <View
         style={{
@@ -64,7 +69,7 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
         {!!subtitle && <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>{subtitle}</Text>}
       </View>
       {right || (onPress && <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textTertiary} />)}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
@@ -252,9 +257,20 @@ export default function SettingsScreen() {
               <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{user?.full_name || 'Your profile'}</Text>
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>{user?.email || 'No email available'}</Text>
             </View>
-            <TouchableOpacity onPress={() => router.push('/profile-edit' as any)}>
+            <Pressable
+              onPress={() => router.push('/profile-edit' as any)}
+              style={({ hovered, pressed }: any) => ({
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: hovered ? `${colors.primary}14` : 'transparent',
+                transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+              })}
+            >
               <MaterialCommunityIcons name="pencil-outline" size={20} color={colors.primary} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </Card>
 
@@ -406,23 +422,24 @@ export default function SettingsScreen() {
           />
         </Card>
 
-          <TouchableOpacity
+          <Pressable
           onPress={() => setShowSignOutSheet(true)}
-          style={{
+          style={({ hovered, pressed }: any) => ({
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
             paddingVertical: Spacing.base,
             borderRadius: BorderRadius.md,
-            backgroundColor: colors.emergencyBg,
+            backgroundColor: hovered ? `${colors.emergency}24` : colors.emergencyBg,
             borderWidth: 1,
-            borderColor: `${colors.emergency}30`,
-          }}
+            borderColor: hovered ? `${colors.emergency}70` : `${colors.emergency}30`,
+            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+          })}
         >
           <MaterialCommunityIcons name="logout" size={20} color={colors.emergency} />
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.emergency }}>Sign Out</Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
 
       <ModalSheet

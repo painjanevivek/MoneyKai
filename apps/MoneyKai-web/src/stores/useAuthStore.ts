@@ -109,20 +109,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (!isFirebaseConfigured()) {
-            await new Promise((resolve) => setTimeout(resolve, 600));
-          set({
-            user: {
-              id: 'sample-user-001',
-              email,
-              full_name: 'Sample User',
-              auth_provider: 'email',
-            },
-            isAuthenticated: true,
-            isLoading: false,
-            isOnboarded: false,
-          });
-          return;
-        }
+            throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
+          }
 
           const credentials = await signInWithEmailAndPassword(firebaseAuth, email, password);
           set({
@@ -143,20 +131,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (!isFirebaseConfigured()) {
-            await new Promise((resolve) => setTimeout(resolve, 800));
-          set({
-            user: {
-              id: 'sample-user-001',
-              email,
-              full_name: fullName,
-              auth_provider: 'email',
-            },
-            isAuthenticated: true,
-            isLoading: false,
-            isOnboarded: false,
-          });
-          return;
-        }
+            throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
+          }
 
           const credentials = await createUserWithEmailAndPassword(firebaseAuth, email, password);
           await updateFirebaseProfile(credentials.user, {
@@ -185,20 +161,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (!isFirebaseConfigured()) {
-            await new Promise((resolve) => setTimeout(resolve, 800));
-          set({
-            user: {
-              id: 'sample-google-001',
-              email: 'sample.google@example.com',
-              full_name: 'Google User',
-              auth_provider: 'google',
-            },
-            isAuthenticated: true,
-            isLoading: false,
-            isOnboarded: false,
-          });
-          return;
-        }
+            throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
+          }
 
           if (Platform.OS !== 'web') {
             throw new Error('Google sign-in is only enabled on web right now. Use email login on mobile until native Google auth is configured.');

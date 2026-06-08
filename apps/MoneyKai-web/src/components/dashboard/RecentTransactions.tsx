@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { formatRelativeDate } from '../../utils/dateUtils';
@@ -21,15 +22,24 @@ export const RecentTransactions: React.FC<{ onViewAll?: () => void }> = ({ onVie
           fontFamily: Typography.fontFamily.semiBold,
           color: colors.textPrimary,
         }}>Recent Transactions</Text>
-        <TouchableOpacity onPress={onViewAll}>
-          <Text style={{
-            fontSize: Typography.fontSize.sm,
-            fontFamily: Typography.fontFamily.medium,
-            color: colors.primary,
-          }}>View All</Text>
-        </TouchableOpacity>
+        {onViewAll ? (
+          <TouchableOpacity onPress={onViewAll} accessibilityRole="button" accessibilityLabel="View all transactions">
+            <Text style={{
+              fontSize: Typography.fontSize.sm,
+              fontFamily: Typography.fontFamily.medium,
+              color: colors.primary,
+            }}>View All</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
-      {recentTxns.map((txn, index) => {
+      {recentTxns.length === 0 ? (
+        <EmptyState
+          icon="receipt-outline"
+          title="No transactions yet"
+          message="Add income or expenses to see recent activity and dashboard totals."
+          style={{ paddingVertical: Spacing.xl }}
+        />
+      ) : recentTxns.map((txn, index) => {
         const category = getCategoryById(txn.category);
         const isExpense = txn.type === 'expense';
         return (

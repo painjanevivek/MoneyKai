@@ -467,9 +467,9 @@ export default function TransactionsScreen() {
         ListEmptyComponent={<EmptyState icon="receipt" title="No Transactions" message="Start tracking by adding your first transaction." />}
       />
 
-      <TouchableOpacity
+      <Pressable
         onPress={handleOpenAddModal}
-        style={{
+        style={({ hovered, pressed }: any) => ({
           position: 'absolute',
           bottom: insets.bottom + 96,
           right: 16,
@@ -481,10 +481,13 @@ export default function TransactionsScreen() {
           justifyContent: 'center',
           ...Shadows.lg,
           shadowColor: colors.primary,
-        }}
+          borderWidth: 1,
+          borderColor: hovered ? colors.primaryLight : colors.primary,
+          transform: hovered && !pressed ? [{ translateY: -2 }, { scale: 1.04 }] : [{ translateY: 0 }, { scale: 1 }],
+        })}
       >
         <MaterialCommunityIcons name="plus" size={28} color={colors.textInverse} />
-      </TouchableOpacity>
+      </Pressable>
 
       <Modal visible={showFilterModal} animationType="fade" transparent>
         <Pressable style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }} onPress={() => setShowFilterModal(false)}>

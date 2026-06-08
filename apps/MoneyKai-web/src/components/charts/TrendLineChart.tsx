@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Platform, View, Text, useWindowDimensions } from 'react-native';
 import { endOfWeek, format, isWithinInterval, startOfWeek, subWeeks } from 'date-fns';
 import { LineChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../hooks/useTheme';
@@ -106,7 +106,7 @@ export const TrendLineChart: React.FC = () => {
         >
           Spending Trend
         </Text>
-        <TouchableOpacity
+        <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -127,7 +127,7 @@ export const TrendLineChart: React.FC = () => {
           >
             Last 5 Weeks
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       {!weeklyTrend.hasData ? (

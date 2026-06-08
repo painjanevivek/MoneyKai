@@ -85,14 +85,14 @@ export default function LandingScreen() {
 
             <SectionCard style={{ flex: 0.9 }}>
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                WHY THE PUBLIC SITE MATTERS
+                BUILT FOR CLEAR MONEY DECISIONS
               </Text>
               <View style={{ marginTop: Spacing.md, gap: Spacing.md }}>
                 {[
-                  'A public homepage that explains the product clearly',
-                  'Feature pages that support discoverability',
-                  'Trust, privacy, and security context before signup',
-                  'Original Learn content instead of scraped SEO filler',
+                  'Track income, expenses, budgets, and savings from one workspace',
+                  'Review spending categories and charts before monthly habits drift',
+                  'Keep shared expenses, notes, and backups connected to your account',
+                  'Use clear privacy, security, and support pages before signing up',
                 ].map((point) => (
                   <View key={point} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                     <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
@@ -101,6 +101,23 @@ export default function LandingScreen() {
                     </Text>
                   </View>
                 ))}
+              </View>
+              <View
+                style={{
+                  marginTop: Spacing.lg,
+                  padding: Spacing.md,
+                  borderRadius: BorderRadius.lg,
+                  backgroundColor: colors.primaryBg,
+                  borderWidth: 1,
+                  borderColor: `${colors.primary}25`,
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  No fake bank-linking claims
+                </Text>
+                <Text style={{ marginTop: 4, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                  MoneyKai focuses on the finance records and sync flows already supported by the product.
+                </Text>
               </View>
             </SectionCard>
           </View>

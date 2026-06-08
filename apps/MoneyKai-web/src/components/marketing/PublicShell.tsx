@@ -1,7 +1,7 @@
 import React, { type PropsWithChildren } from 'react';
 import { Link, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image, ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
@@ -78,10 +78,21 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                   gap: isCompact ? Spacing.sm : Spacing.md,
                 }}
               >
-                <TouchableOpacity
-                  activeOpacity={0.85}
+                <Pressable
                   onPress={() => router.push('/')}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'flex-start' }}
+                  accessibilityRole="link"
+                  accessibilityLabel="Go to MoneyKai home"
+                  style={({ hovered, pressed }: any) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    alignSelf: 'flex-start',
+                    padding: 6,
+                    margin: -6,
+                    borderRadius: BorderRadius.lg,
+                    backgroundColor: hovered ? `${colors.primary}0D` : 'transparent',
+                    transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                  })}
                 >
                   <View
                     style={{
@@ -101,6 +112,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       source={require('../../../assets/images/moneykai-logo.png')}
                       style={{ width: 34, height: 34 }}
                       resizeMode="contain"
+                      accessibilityLabel="MoneyKai logo"
                     />
                   </View>
                   <View>
@@ -111,7 +123,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       Calm personal finance for real life
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
 
                 {!isAuthenticated ? (
                   <View
@@ -146,21 +158,23 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                 >
                   {PRIMARY_LINKS.map((item) => (
                     <Link key={item.href} href={item.href as any} asChild>
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        style={{
+                      <Pressable
+                        accessibilityRole="link"
+                        accessibilityLabel={`Open ${item.label}`}
+                        style={({ hovered, pressed }: any) => ({
                           paddingHorizontal: Spacing.md,
                           paddingVertical: 10,
                           borderRadius: BorderRadius.full,
-                          backgroundColor: colors.surface,
+                          backgroundColor: hovered ? `${colors.primary}12` : colors.surface,
                           borderWidth: 1,
-                          borderColor: colors.borderLight,
-                        }}
+                          borderColor: hovered ? `${colors.primary}35` : colors.borderLight,
+                          transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                        })}
                       >
                         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
                           {item.label}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     </Link>
                   ))}
                 </ScrollView>
@@ -168,21 +182,23 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs }}>
                   {PRIMARY_LINKS.map((item) => (
                     <Link key={item.href} href={item.href as any} asChild>
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        style={{
+                      <Pressable
+                        accessibilityRole="link"
+                        accessibilityLabel={`Open ${item.label}`}
+                        style={({ hovered, pressed }: any) => ({
                           paddingHorizontal: Spacing.md,
                           paddingVertical: 10,
                           borderRadius: BorderRadius.full,
-                          backgroundColor: colors.surface,
+                          backgroundColor: hovered ? `${colors.primary}12` : colors.surface,
                           borderWidth: 1,
-                          borderColor: colors.borderLight,
-                        }}
+                          borderColor: hovered ? `${colors.primary}35` : colors.borderLight,
+                          transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                        })}
                       >
                         <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
                           {item.label}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     </Link>
                   ))}
                 </View>
@@ -274,10 +290,21 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                   { href: '/terms', label: 'Terms' },
                 ].map((item) => (
                   <Link key={item.href} href={item.href as any} asChild>
-                    <TouchableOpacity activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel={`Open ${item.label}`}
+                      style={({ hovered }: any) => ({
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        paddingVertical: 4,
+                        paddingRight: 6,
+                        opacity: hovered ? 1 : 0.9,
+                      })}
+                    >
                       <MaterialCommunityIcons name="arrow-top-right" size={14} color={colors.textTertiary} />
                       <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>{item.label}</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </Link>
                 ))}
               </View>

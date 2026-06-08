@@ -1,8 +1,9 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   ActivityIndicator,
+  type StyleProp,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
@@ -20,7 +21,7 @@ interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
 }
 
@@ -45,34 +46,36 @@ export const Button: React.FC<ButtonProps> = ({
     lg: { paddingVertical: 16, paddingHorizontal: 28, fontSize: Typography.fontSize.md, iconSize: 20 },
   };
 
-  const variantStyles: Record<string, { bg: string; text: string; border?: string }> = {
-    primary: { bg: colors.primary, text: colors.textInverse },
-    secondary: { bg: colors.primaryBg, text: colors.primary },
-    outline: { bg: 'transparent', text: colors.primary, border: colors.primary },
-    ghost: { bg: 'transparent', text: colors.textSecondary },
-    danger: { bg: colors.emergency, text: colors.textInverse },
+  const variantStyles: Record<string, { bg: string; text: string; border?: string; hoverBg: string; hoverBorder?: string }> = {
+    primary: { bg: colors.primary, text: colors.textInverse, hoverBg: colors.primaryLight, hoverBorder: colors.primaryLight },
+    secondary: { bg: colors.primaryBg, text: colors.primary, hoverBg: `${colors.primary}18`, hoverBorder: `${colors.primary}28` },
+    outline: { bg: 'transparent', text: colors.primary, border: colors.primary, hoverBg: `${colors.primary}12`, hoverBorder: colors.primaryLight },
+    ghost: { bg: 'transparent', text: colors.textSecondary, hoverBg: `${colors.primary}10`, hoverBorder: `${colors.primary}20` },
+    danger: { bg: colors.emergency, text: colors.textInverse, hoverBg: `${colors.emergency}E6`, hoverBorder: colors.emergency },
   };
 
   const s = sizeStyles[size];
   const v = variantStyles[variant];
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.7}
-      style={[
+      accessibilityRole="button"
+      style={({ hovered, pressed }: any) => [
         {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: v.bg,
+          backgroundColor: !disabled && hovered ? v.hoverBg : v.bg,
           paddingVertical: s.paddingVertical,
           paddingHorizontal: s.paddingHorizontal,
           borderRadius: BorderRadius.md,
           opacity: disabled ? 0.5 : 1,
           gap: 8,
-          ...(v.border ? { borderWidth: 1.5, borderColor: v.border } : {}),
+          transform: !disabled && hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+          borderWidth: 1.5,
+          borderColor: !disabled && hovered ? (v.hoverBorder ?? 'transparent') : (v.border ?? 'transparent'),
           ...(fullWidth ? { width: '100%' } : {}),
         },
         style,
@@ -102,7 +105,7 @@ export const Button: React.FC<ButtonProps> = ({
           )}
         </>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

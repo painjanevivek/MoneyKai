@@ -111,6 +111,9 @@ export const Input: React.FC<InputProps> = ({
           </Text>
         )}
         <TextInput
+          accessibilityLabel={label ?? placeholder}
+          accessibilityHint={error ? error : undefined}
+          aria-invalid={Boolean(error)}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -149,7 +152,11 @@ export const Input: React.FC<InputProps> = ({
           </Text>
         )}
         {secureTextEntry && (
-          <TouchableOpacity onPress={() => setIsSecureVisible(!isSecureVisible)}>
+          <TouchableOpacity
+            onPress={() => setIsSecureVisible(!isSecureVisible)}
+            accessibilityRole="button"
+            accessibilityLabel={isSecureVisible ? 'Hide password' : 'Show password'}
+          >
             <MaterialCommunityIcons
               name={isSecureVisible ? 'eye-off-outline' : 'eye-outline'}
               size={20}

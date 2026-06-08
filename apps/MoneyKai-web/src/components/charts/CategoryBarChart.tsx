@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { getCategoryById } from '../../constants/categories';
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -21,15 +22,24 @@ export const CategoryBarChart: React.FC<{ onViewAll?: () => void }> = ({ onViewA
           fontFamily: Typography.fontFamily.semiBold,
           color: colors.textPrimary,
         }}>Top Categories</Text>
-        <TouchableOpacity onPress={onViewAll}>
-          <Text style={{
-            fontSize: Typography.fontSize.sm,
-            fontFamily: Typography.fontFamily.medium,
-            color: colors.primary,
-          }}>View All</Text>
-        </TouchableOpacity>
+        {onViewAll ? (
+          <TouchableOpacity onPress={onViewAll} accessibilityRole="button" accessibilityLabel="View all categories">
+            <Text style={{
+              fontSize: Typography.fontSize.sm,
+              fontFamily: Typography.fontFamily.medium,
+              color: colors.primary,
+            }}>View All</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
-      {categoryTotals.slice(0, 5).map((cat) => {
+      {categoryTotals.length === 0 ? (
+        <EmptyState
+          icon="shape-outline"
+          title="No category spending yet"
+          message="Expense categories appear after you add transactions."
+          style={{ paddingVertical: Spacing.xl }}
+        />
+      ) : categoryTotals.slice(0, 5).map((cat) => {
         const category = getCategoryById(cat.category);
         const barWidth = (cat.total / maxTotal) * 100;
         return (

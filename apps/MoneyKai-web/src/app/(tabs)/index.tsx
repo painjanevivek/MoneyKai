@@ -68,7 +68,7 @@ export default function DashboardScreen() {
   const tourCompleted = useSettingsStore((s) => s.tourCompleted);
   const tourCompletedByUserId = useSettingsStore((s) => s.tourCompletedByUserId);
   const setTourCompletedForUser = useSettingsStore((s) => s.setTourCompletedForUser);
-  const { settings, isEmergencyMode } = useBudgetStore();
+  const { settings } = useBudgetStore();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const totalIncome = useTransactionStore((s) => s.getTotalIncome());
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
@@ -90,15 +90,6 @@ export default function DashboardScreen() {
   const budgetUsage = allowance > 0 ? (totalSpent / allowance) * 100 : 0;
   const activeGroups = groups.filter((group) => !group.archived).length;
   const firstName = user?.full_name?.split(' ')?.[0] ?? 'there';
-  const budgetHealthLabel =
-    allowance <= 0
-      ? 'Set your monthly budget in Settings'
-      : remaining < 0
-        ? 'You are over budget'
-        : budgetUsage >= 80
-          ? 'Budget is getting tight'
-          : 'You are tracking well';
-
   const summaryCards = [
     {
       icon: 'wallet-outline' as const,
@@ -156,12 +147,6 @@ export default function DashboardScreen() {
           </View>
 
           <View style={{ minWidth: isWide ? 280 : '100%' as any, gap: Spacing.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: isWide ? 'flex-end' : 'flex-start' }}>
-              <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: isEmergencyMode ? colors.emergency : colors.primary }} />
-              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-                {budgetHealthLabel}
-              </Text>
-            </View>
             <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', justifyContent: isWide ? 'flex-end' : 'flex-start' }}>
               <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 10, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: colors.borderLight }}>
                 <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
