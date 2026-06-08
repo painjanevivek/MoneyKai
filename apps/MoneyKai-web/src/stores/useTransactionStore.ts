@@ -6,6 +6,7 @@ import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 // Sample data used when Firebase is not configured locally.
 const today = new Date().toISOString().split('T')[0];
@@ -215,6 +216,7 @@ export const useTransactionStore = create<TransactionState>()(
           const nextTransactions = [newTransaction, ...get().transactions];
           set({ transactions: nextTransactions });
           syncTransactionCreate(newTransaction);
+          void requestAutomaticBackup('transaction added');
 
           if (newTransaction.type === 'expense') {
             const allowance = useBudgetStore.getState().settings.monthly_allowance;
@@ -248,6 +250,7 @@ export const useTransactionStore = create<TransactionState>()(
             ),
           }));
           syncTransactionUpdate(id, updates);
+          void requestAutomaticBackup('transaction updated');
         },
 
         deleteTransaction: (id) => {
@@ -255,6 +258,7 @@ export const useTransactionStore = create<TransactionState>()(
             transactions: state.transactions.filter(t => t.id !== id),
           }));
           syncTransactionDelete(id);
+          void requestAutomaticBackup('transaction deleted');
         },
 
         setFilter: (filter) => {

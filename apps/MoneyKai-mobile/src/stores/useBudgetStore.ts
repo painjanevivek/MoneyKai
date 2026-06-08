@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { BudgetSettings, BudgetAdjustment } from '../types/budget';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { queueSyncOperation } from '@/services/syncQueue';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 const persistBudgetSettings = (state: {
   settings: BudgetSettings;
@@ -21,6 +22,7 @@ const persistBudgetSettings = (state: {
     }
     void queueSyncOperation({ kind: 'budgetSettings', payload: state });
   });
+  void requestAutomaticBackup('budget updated');
 };
 
 interface BudgetState {

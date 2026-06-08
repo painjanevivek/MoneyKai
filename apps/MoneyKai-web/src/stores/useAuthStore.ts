@@ -5,13 +5,16 @@ import { Platform } from 'react-native';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  getRedirectResult,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut as firebaseSignOut,
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
 import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 export interface User {
   id: string;
@@ -26,6 +29,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isOnboarded: boolean;
+  isHydratingSession: boolean;
   setUser: (user: User | null) => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
@@ -66,6 +70,14 @@ const hydrateBackendSnapshot = async () => {
   }
 };
 
+const getAuthErrorCode = (error: unknown): string => {
+  if (typeof error === 'object' && error && 'code' in error) {
+    return String((error as { code?: string }).code ?? '');
+  }
+
+  return '';
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -73,20 +85,37 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       isOnboarded: false,
+      isHydratingSession: true,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
 
       hydrateSession: async () => {
+        set({ isHydratingSession: true });
+
         if (!isFirebaseConfigured()) {
+          set({ isHydratingSession: false });
           return;
         }
 
-        const sessionUser = await waitForAuthState();
-        if (sessionUser) {
-          set({ user: toAppUser(sessionUser), isAuthenticated: true });
-          await hydrateBackendSnapshot();
-        } else {
-          set({ user: null, isAuthenticated: false });
+        try {
+          if (Platform.OS === 'web') {
+            const redirectResult = await getRedirectResult(firebaseAuth).catch(() => null);
+            if (redirectResult?.user) {
+              set({ user: toAppUser(redirectResult.user), isAuthenticated: true });
+              await hydrateBackendSnapshot();
+              return;
+            }
+          }
+
+          const sessionUser = await waitForAuthState();
+          if (sessionUser) {
+            set({ user: toAppUser(sessionUser), isAuthenticated: true });
+            await hydrateBackendSnapshot();
+          } else {
+            set({ user: null, isAuthenticated: false });
+          }
+        } finally {
+          set({ isHydratingSession: false });
         }
       },
 
@@ -188,15 +217,32 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const provider = new GoogleAuthProvider();
-          const credentials = await signInWithPopup(firebaseAuth, provider);
+          provider.setCustomParameters({ prompt: 'select_account' });
 
-          set({
-            user: toAppUser(credentials.user),
-            isAuthenticated: true,
-            isLoading: false,
-          });
+          try {
+            const credentials = await signInWithPopup(firebaseAuth, provider);
 
-          await hydrateBackendSnapshot();
+            set({
+              user: toAppUser(credentials.user),
+              isAuthenticated: true,
+              isLoading: false,
+            });
+
+            await hydrateBackendSnapshot();
+          } catch (error) {
+            const code = getAuthErrorCode(error);
+            if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+              await signInWithRedirect(firebaseAuth, provider);
+              set({ isLoading: false });
+              return;
+            }
+
+            if (code === 'auth/unauthorized-domain') {
+              throw new Error('Add localhost to Firebase Authentication > Authorized domains in Firebase Console, then retry Google sign-in.');
+            }
+
+            throw error;
+          }
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Google sign-in failed');
@@ -226,9 +272,13 @@ export const useAuthStore = create<AuthState>()(
       setOnboarded: (onboarded) => set({ isOnboarded: onboarded }),
 
       updateProfile: (updates) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...updates } : null,
-        })),
+        set((state) => {
+          const nextUser = state.user ? { ...state.user, ...updates } : null;
+          if (nextUser) {
+            void requestAutomaticBackup('profile updated');
+          }
+          return { user: nextUser };
+        }),
     }),
     {
       name: 'moneykai-auth',

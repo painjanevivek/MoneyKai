@@ -16,6 +16,7 @@ import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import type { Transaction } from '@/types/transaction';
 
 const FILTER_TABS = ['All', 'Expense', 'Income'] as const;
+const sanitizeAmount = (value: string) => value.replace(/[^0-9]/g, '');
 
 export default function TransactionsScreen() {
   const { colors, isDark } = useTheme();
@@ -55,8 +56,15 @@ export default function TransactionsScreen() {
     setFilter({ searchQuery: query });
   };
 
+  const handleAmountChange = (value: string) => {
+    setTxnAmount(sanitizeAmount(value));
+  };
+
   const handleAddTransaction = () => {
-    if (!txnAmount || !txnCategory || !txnDescription) {
+    const amount = Number(txnAmount);
+    const isValidAmount = /^\d+$/.test(txnAmount) && Number.isFinite(amount) && amount > 0;
+
+    if (!isValidAmount || !txnCategory || !txnDescription) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
@@ -64,7 +72,7 @@ export default function TransactionsScreen() {
     addTransaction({
       user_id: userId,
       type: txnType,
-      amount: Number(txnAmount),
+      amount,
       category: txnCategory,
       description: txnDescription,
       payment_method: txnPayment,
@@ -311,7 +319,16 @@ export default function TransactionsScreen() {
                 ))}
               </View>
 
-              <Input label="Amount" placeholder="0" value={txnAmount} onChangeText={setTxnAmount} prefix="₹" keyboardType="numeric" icon="currency-inr" />
+              <Input
+                label="Amount"
+                placeholder="0"
+                value={txnAmount}
+                onChangeText={handleAmountChange}
+                prefix="₹"
+                keyboardType="number-pad"
+                inputMode="numeric"
+                icon="currency-inr"
+              />
               <Input label="Description" placeholder="What was this for?" value={txnDescription} onChangeText={setTxnDescription} icon="text-short" />
 
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary, marginBottom: Spacing.sm }}>Category</Text>

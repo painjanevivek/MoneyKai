@@ -20,8 +20,10 @@ export const signupSchema = z.object({
 export const transactionSchema = z.object({
   type: z.enum(['income', 'expense']),
   amount: z.string()
+    .trim()
     .min(1, 'Amount is required')
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, 'Enter a valid amount'),
+    .regex(/^\d+$/, 'Enter a valid amount')
+    .refine((val) => Number(val) > 0, 'Enter a valid amount'),
   category: z.string().min(1, 'Please select a category'),
   description: z.string().min(1, 'Please add a description'),
   payment_method: z.string().min(1, 'Select a payment method'),
@@ -30,8 +32,10 @@ export const transactionSchema = z.object({
 
 export const budgetAdjustmentSchema = z.object({
   amount: z.string()
+    .trim()
     .min(1, 'Amount is required')
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, 'Enter a valid amount'),
+    .regex(/^\d+$/, 'Enter a valid amount')
+    .refine((val) => Number(val) > 0, 'Enter a valid amount'),
   type: z.enum(['add', 'subtract']),
   reason: z.string().optional(),
 });

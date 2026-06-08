@@ -8,6 +8,7 @@ import { useAuthStore } from './useAuthStore';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { isDemoModeEnabled } from '@/config/environment';
 import { queueSyncOperation } from '@/services/syncQueue';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 const syncChallengeCreate = (challenge: Challenge) => {
   if (!isBackendConfigured()) return;
@@ -128,6 +129,7 @@ export const useChallengeStore = create<ChallengeState>()(
           type: 'challenge',
           actionRoute: '/(tabs)/savings',
         });
+        void requestAutomaticBackup('challenge started');
       },
 
       updateStreak: (id) => {
@@ -140,6 +142,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
         }));
         syncChallengeUpdate(id, next);
+        void requestAutomaticBackup('challenge updated');
       },
 
       failChallenge: (id) => {
@@ -149,6 +152,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
         }));
         syncChallengeUpdate(id, { status: 'failed' });
+        void requestAutomaticBackup('challenge failed');
       },
 
       deactivateChallenge: (id) => {
@@ -161,6 +165,7 @@ export const useChallengeStore = create<ChallengeState>()(
           if (__DEV__) console.warn('[MoneyKai] failed to sync challenge deactivate:', error);
           void queueSyncOperation({ kind: 'challenge', action: 'deactivate', challengeId: id });
         });
+        void requestAutomaticBackup('challenge deactivated');
       },
 
       reactivateChallenge: (id) => {
@@ -173,6 +178,7 @@ export const useChallengeStore = create<ChallengeState>()(
           if (__DEV__) console.warn('[MoneyKai] failed to sync challenge reactivate:', error);
           void queueSyncOperation({ kind: 'challenge', action: 'reactivate', challengeId: id });
         });
+        void requestAutomaticBackup('challenge reactivated');
       },
 
       completeChallenge: (id, xp, savings) => {
@@ -191,6 +197,7 @@ export const useChallengeStore = create<ChallengeState>()(
             payload: { xp_earned: xp, savings_earned: savings },
           });
         });
+        void requestAutomaticBackup('challenge completed');
       },
     };
   },

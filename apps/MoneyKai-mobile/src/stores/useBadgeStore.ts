@@ -6,6 +6,7 @@ import { BADGE_DEFINITIONS } from '../constants/badges';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { isDemoModeEnabled } from '@/config/environment';
 import { queueSyncOperation } from '@/services/syncQueue';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 const syncBadgeUpdate = (badge: Badge) => {
   if (!isBackendConfigured()) return;
@@ -69,6 +70,7 @@ export const useBadgeStore = create<BadgeState>()(
           };
         });
         updated.forEach(syncBadgeUpdate);
+        void requestAutomaticBackup('badge updated');
       },
 
       updateProgress: (badgeType, progress) => {
@@ -86,6 +88,7 @@ export const useBadgeStore = create<BadgeState>()(
           return { badges };
         });
         updated.forEach(syncBadgeUpdate);
+        void requestAutomaticBackup('badge progress updated');
       },
 
       clearRecentUnlock: () => set({ recentUnlock: null }),

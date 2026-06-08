@@ -11,6 +11,7 @@ import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../service
 import { isBackendConfigured } from '@/services/backendApi';
 import { isDemoModeEnabled } from '@/config/environment';
 import { signInWithGoogleAsync } from '@/services/googleAuth';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 export interface User {
   id: string;
@@ -241,9 +242,13 @@ export const useAuthStore = create<AuthState>()(
       setOnboarded: (onboarded) => set({ isOnboarded: onboarded }),
 
       updateProfile: (updates) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...updates } : null,
-        })),
+        set((state) => {
+          const nextUser = state.user ? { ...state.user, ...updates } : null;
+          if (nextUser) {
+            void requestAutomaticBackup('profile updated');
+          }
+          return { user: nextUser };
+        }),
     }),
     {
       name: 'moneykai-auth',

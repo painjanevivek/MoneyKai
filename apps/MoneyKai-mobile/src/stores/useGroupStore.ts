@@ -6,6 +6,7 @@ import { recordAppNotification } from '@/services/notificationService';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { isDemoModeEnabled } from '@/config/environment';
 import { queueSyncOperation } from '@/services/syncQueue';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 const syncGroupCreate = (group: Group) => {
   if (!isBackendConfigured()) return;
@@ -152,6 +153,7 @@ export const useGroupStore = create<GroupState>()(
           type: 'system',
           actionRoute: '/(tabs)/groups',
         });
+        void requestAutomaticBackup('group added');
       },
 
       addGroupExpense: (expense) => {
@@ -162,6 +164,7 @@ export const useGroupStore = create<GroupState>()(
         };
         set((state) => ({ expenses: [newExpense, ...state.expenses] }));
         syncGroupExpenseCreate(newExpense);
+        void requestAutomaticBackup('group expense added');
       },
 
       settleExpense: (splitId) => {
@@ -186,6 +189,7 @@ export const useGroupStore = create<GroupState>()(
 
         if (updatedExpense) {
           syncGroupExpenseUpdate(updatedExpense);
+          void requestAutomaticBackup('group expense updated');
         }
       },
 
@@ -195,6 +199,7 @@ export const useGroupStore = create<GroupState>()(
           expenses: state.expenses.filter((expense) => expense.group_id !== id),
         }));
         syncGroupDelete(id);
+        void requestAutomaticBackup('group deleted');
       },
 
       archiveGroup: (id) => {
@@ -204,6 +209,7 @@ export const useGroupStore = create<GroupState>()(
           ),
         }));
         syncGroupUpdate(id, { archived: true });
+        void requestAutomaticBackup('group archived');
       },
 
       restoreGroup: (id) => {
@@ -213,6 +219,7 @@ export const useGroupStore = create<GroupState>()(
           ),
         }));
         syncGroupUpdate(id, { archived: false });
+        void requestAutomaticBackup('group restored');
       },
 
       getGroupExpenses: (groupId) => get().expenses.filter((expense) => expense.group_id === groupId),

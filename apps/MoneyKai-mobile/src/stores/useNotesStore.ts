@@ -7,6 +7,7 @@ import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { useAuthStore } from './useAuthStore';
 import { isDemoModeEnabled } from '@/config/environment';
 import { queueSyncOperation } from '@/services/syncQueue';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 const syncNoteCreate = (note: Note) => {
   if (!isBackendConfigured()) {
@@ -146,6 +147,7 @@ export const useNotesStore = create<NotesState>()(
             type: 'system',
             actionRoute: '/(tabs)/notes',
           });
+          void requestAutomaticBackup('note added');
         },
 
         updateNote: (id, updates) => {
@@ -156,6 +158,7 @@ export const useNotesStore = create<NotesState>()(
             ),
           }));
           syncNoteUpdate(id, next);
+          void requestAutomaticBackup('note updated');
         },
 
         deleteNote: (id) => {
@@ -163,6 +166,7 @@ export const useNotesStore = create<NotesState>()(
             notes: state.notes.filter(n => n.id !== id),
           }));
           syncNoteDelete(id);
+          void requestAutomaticBackup('note deleted');
         },
 
         togglePin: (id) => {
@@ -175,6 +179,7 @@ export const useNotesStore = create<NotesState>()(
             ),
           }));
           syncNoteUpdate(id, next);
+          void requestAutomaticBackup('note updated');
         },
 
         toggleChecklistItem: (noteId, itemId) => {
@@ -190,6 +195,7 @@ export const useNotesStore = create<NotesState>()(
             ),
           }));
           syncNoteUpdate(noteId, next);
+          void requestAutomaticBackup('note updated');
         },
 
         addChecklistItem: (noteId, text) => {

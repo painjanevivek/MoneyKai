@@ -4,6 +4,7 @@ import {
   TextInput,
   Text,
   TouchableOpacity,
+  type TextInputProps,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
@@ -19,7 +20,8 @@ interface InputProps {
   error?: string;
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
   secureTextEntry?: boolean;
-  keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
+  keyboardType?: 'default' | 'numeric' | 'number-pad' | 'decimal-pad' | 'email-address' | 'phone-pad';
+  inputMode?: TextInputProps['inputMode'];
   multiline?: boolean;
   numberOfLines?: number;
   editable?: boolean;
@@ -40,6 +42,7 @@ export const Input: React.FC<InputProps> = ({
   icon,
   secureTextEntry = false,
   keyboardType = 'default',
+  inputMode,
   multiline = false,
   numberOfLines = 1,
   editable = true,
@@ -114,6 +117,7 @@ export const Input: React.FC<InputProps> = ({
           placeholderTextColor={colors.textTertiary}
           secureTextEntry={!isSecureVisible}
           keyboardType={keyboardType}
+          inputMode={inputMode}
           multiline={multiline}
           numberOfLines={numberOfLines}
           editable={editable}

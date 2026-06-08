@@ -37,13 +37,15 @@ const TabIcon = ({ name, color, focused }: { name: IconName; color: string | Col
   <View style={{ alignItems: 'center', justifyContent: 'center' }}>
     <MaterialCommunityIcons name={name} size={24} color={color} />
     {focused && (
-      <View style={{
-        width: 4,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: color,
-        marginTop: 4,
-      }} />
+      <View
+        style={{
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: color,
+          marginTop: 4,
+        }}
+      />
     )}
   </View>
 );
@@ -129,12 +131,21 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => <TabIcon name="cog-outline" color={color} focused={focused} />,
         }}
       />
-      {/* ── Screens navigated to programmatically; hidden from tab bar ── */}
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          title: 'Analytics',
+          href: null,
+          tabBarLabel: ({ color, focused }) => <TabLabel label="Analytics" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="chart-bar" color={color} focused={focused} />,
+        }}
+      />
+      {/* Screens navigated to programmatically; hidden from tab bar */}
       <Tabs.Screen
         name="notes"
         options={{
           title: 'Notes',
-          href: null, // hidden from tab bar
+          href: null,
           tabBarLabel: ({ color, focused }) => <TabLabel label="Notes" color={color} focused={focused} />,
           tabBarIcon: ({ color, focused }) => <TabIcon name="note-text-outline" color={color} focused={focused} />,
         }}
@@ -143,7 +154,7 @@ export default function TabLayout() {
         name="notifications"
         options={{
           title: 'Notifications',
-          href: null, // hidden from tab bar
+          href: null,
           tabBarLabel: ({ color, focused }) => <TabLabel label="Notifications" color={color} focused={focused} />,
           tabBarIcon: ({ color, focused }) => <TabIcon name="bell-outline" color={color} focused={focused} />,
         }}

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,13 +11,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignupScreen() {
   const { colors } = useTheme();
-  const { signUp, isLoading } = useAuthStore();
+  const { signUp, isLoading, isAuthenticated } = useAuthStore();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const submitting = useRef(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated]);
 
   const handleSignUp = async () => {
     if (submitting.current) return;
@@ -32,7 +38,6 @@ export default function SignupScreen() {
     submitting.current = true;
     try {
       await signUp(email, password, fullName);
-      router.replace('/(tabs)');
     } catch (err) {
       Alert.alert('Sign Up Failed', err instanceof Error ? err.message : 'Please try again.');
     } finally {

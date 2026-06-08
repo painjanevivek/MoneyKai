@@ -7,6 +7,7 @@ import {
   query,
   serverTimestamp,
 } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -28,6 +29,10 @@ import type { ThemeMode } from '@/constants/theme';
 import { firebaseDb, isFirebaseConfigured } from './firebase';
 import { backendApi, isBackendConfigured } from './backendApi';
 
+const AUTO_BACKUP_STATE_KEY = 'moneykai-auto-backup-state';
+const AUTO_BACKUP_DEBOUNCE_MS = 10_000;
+const AUTO_BACKUP_MIN_INTERVAL_MS = 60_000;
+
 interface BackupAppSettings {
   theme: ThemeMode;
   currency: string;
@@ -35,6 +40,63 @@ interface BackupAppSettings {
   notificationsEnabled: boolean;
   hapticEnabled: boolean;
 }
+
+interface AutomaticBackupState {
+  pending: boolean;
+  sequence: number;
+  queuedAt: number | null;
+  lastBackupAt: number | null;
+  reason: string | null;
+}
+
+const DEFAULT_AUTOMATIC_BACKUP_STATE: AutomaticBackupState = {
+  pending: false,
+  sequence: 0,
+  queuedAt: null,
+  lastBackupAt: null,
+  reason: null,
+};
+
+let automaticBackupState: AutomaticBackupState | null = null;
+let automaticBackupTimer: ReturnType<typeof setTimeout> | null = null;
+let automaticBackupInFlight = false;
+
+const loadAutomaticBackupState = async (): Promise<AutomaticBackupState> => {
+  if (automaticBackupState) {
+    return automaticBackupState;
+  }
+
+  try {
+    const raw = await AsyncStorage.getItem(AUTO_BACKUP_STATE_KEY);
+    automaticBackupState = raw ? { ...DEFAULT_AUTOMATIC_BACKUP_STATE, ...(JSON.parse(raw) as Partial<AutomaticBackupState>) } : { ...DEFAULT_AUTOMATIC_BACKUP_STATE };
+  } catch {
+    automaticBackupState = { ...DEFAULT_AUTOMATIC_BACKUP_STATE };
+  }
+
+  return automaticBackupState;
+};
+
+const persistAutomaticBackupState = async () => {
+  if (!automaticBackupState) {
+    return;
+  }
+
+  await AsyncStorage.setItem(AUTO_BACKUP_STATE_KEY, JSON.stringify(automaticBackupState));
+};
+
+const clearAutomaticBackupTimer = () => {
+  if (automaticBackupTimer) {
+    clearTimeout(automaticBackupTimer);
+    automaticBackupTimer = null;
+  }
+};
+
+const scheduleAutomaticBackup = () => {
+  clearAutomaticBackupTimer();
+  automaticBackupTimer = setTimeout(() => {
+    void flushAutomaticBackup({ force: false });
+  }, AUTO_BACKUP_DEBOUNCE_MS);
+};
 
 export interface MoneyKaiBackupSnapshot {
   version: 1;
@@ -101,6 +163,97 @@ const formatBackupError = (error: unknown, action: 'save' | 'restore'): Error =>
   }
 };
 
+export const clearAutomaticBackupQueue = async () => {
+  const state = await loadAutomaticBackupState();
+  automaticBackupState = {
+    ...state,
+    pending: false,
+    queuedAt: null,
+    reason: null,
+    sequence: state.sequence + 1,
+  };
+  await persistAutomaticBackupState();
+  clearAutomaticBackupTimer();
+};
+
+export const requestAutomaticBackup = async (reason: string) => {
+  const user = useAuthStore.getState().user;
+  if (!user) {
+    return;
+  }
+
+  if (!isFirebaseConfigured() && !isBackendConfigured()) {
+    return;
+  }
+
+  const state = await loadAutomaticBackupState();
+  automaticBackupState = {
+    ...state,
+    pending: true,
+    queuedAt: Date.now(),
+    reason,
+    sequence: state.sequence + 1,
+  };
+  await persistAutomaticBackupState();
+  scheduleAutomaticBackup();
+};
+
+export const flushAutomaticBackup = async ({ force = false }: { force?: boolean } = {}) => {
+  if (automaticBackupInFlight) {
+    return false;
+  }
+
+  const user = useAuthStore.getState().user;
+  if (!user) {
+    return false;
+  }
+
+  if (!isFirebaseConfigured() && !isBackendConfigured()) {
+    return false;
+  }
+
+  const state = await loadAutomaticBackupState();
+  if (!state.pending) {
+    return false;
+  }
+
+  if (!force && state.lastBackupAt && Date.now() - state.lastBackupAt < AUTO_BACKUP_MIN_INTERVAL_MS) {
+    scheduleAutomaticBackup();
+    return false;
+  }
+
+  const sequenceAtStart = state.sequence;
+  automaticBackupInFlight = true;
+
+  try {
+    await saveCloudBackup({ silent: true, preserveAutomaticBackupState: true });
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[MoneyKai] automatic backup failed:', error);
+    }
+    return false;
+  } finally {
+    automaticBackupInFlight = false;
+  }
+
+  const latestState = await loadAutomaticBackupState();
+  if (latestState.sequence === sequenceAtStart) {
+    automaticBackupState = {
+      ...latestState,
+      pending: false,
+      queuedAt: null,
+      reason: null,
+      lastBackupAt: Date.now(),
+      sequence: latestState.sequence + 1,
+    };
+    await persistAutomaticBackupState();
+  } else if (latestState.pending) {
+    scheduleAutomaticBackup();
+  }
+
+  return true;
+};
+
 export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
   const user = normalizeUser();
   const budget = useBudgetStore.getState();
@@ -151,16 +304,35 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
   };
 };
 
-export const saveCloudBackup = async () => {
+export const saveCloudBackup = async (options: { silent?: boolean; preserveAutomaticBackupState?: boolean } = {}) => {
+  const sequenceAtStart = (await loadAutomaticBackupState()).sequence;
+
   if (isBackendConfigured()) {
     const response = await backendApi.createBackup();
     const snapshot = response.item.snapshot;
-    await recordAppNotification({
-      title: 'Backup saved',
-      body: 'Your MoneyKai data was backed up to the cloud.',
-      type: 'backup',
-      schedule: false,
-    });
+    if (!options.silent) {
+      await recordAppNotification({
+        title: 'Backup saved',
+        body: 'Your MoneyKai data was backed up to the cloud.',
+        type: 'backup',
+        schedule: false,
+      });
+    }
+    if (!options.preserveAutomaticBackupState) {
+      const latestState = await loadAutomaticBackupState();
+      if (latestState.sequence === sequenceAtStart) {
+        automaticBackupState = {
+          ...latestState,
+          pending: false,
+          queuedAt: null,
+          reason: null,
+          lastBackupAt: Date.now(),
+          sequence: latestState.sequence + 1,
+        };
+        await persistAutomaticBackupState();
+        clearAutomaticBackupTimer();
+      }
+    }
     return snapshot;
   }
 
@@ -180,12 +352,30 @@ export const saveCloudBackup = async () => {
     throw formatBackupError(error, 'save');
   }
 
-  await recordAppNotification({
-    title: 'Backup saved',
-    body: 'Your MoneyKai data was backed up to the cloud.',
-    type: 'backup',
-    schedule: false,
-  });
+  if (!options.silent) {
+    await recordAppNotification({
+      title: 'Backup saved',
+      body: 'Your MoneyKai data was backed up to the cloud.',
+      type: 'backup',
+      schedule: false,
+    });
+  }
+
+  if (!options.preserveAutomaticBackupState) {
+    const latestState = await loadAutomaticBackupState();
+    if (latestState.sequence === sequenceAtStart) {
+      automaticBackupState = {
+        ...latestState,
+        pending: false,
+        queuedAt: null,
+        reason: null,
+        lastBackupAt: Date.now(),
+        sequence: latestState.sequence + 1,
+      };
+      await persistAutomaticBackupState();
+      clearAutomaticBackupTimer();
+    }
+  }
 
   return snapshot;
 };
@@ -227,6 +417,8 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
   if (snapshot.profile.id !== user.id) {
     throw new Error('This backup belongs to a different account.');
   }
+
+  void clearAutomaticBackupQueue().catch(() => undefined);
 
   useSettingsStore.setState({
     theme: snapshot.settings.app.theme,

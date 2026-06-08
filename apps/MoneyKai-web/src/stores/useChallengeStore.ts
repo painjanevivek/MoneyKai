@@ -7,6 +7,7 @@ import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 const syncChallengeCreate = (challenge: Challenge) => {
   if (!isBackendConfigured()) return;
@@ -119,6 +120,7 @@ export const useChallengeStore = create<ChallengeState>()(
         };
         set((state) => ({ challenges: [newChallenge, ...state.challenges] }));
         syncChallengeCreate(newChallenge);
+        void requestAutomaticBackup('challenge started');
         void recordAppNotification({
           title: 'Challenge started',
           body: newChallenge.name,
@@ -137,6 +139,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
         }));
         syncChallengeUpdate(id, next);
+        void requestAutomaticBackup('challenge updated');
       },
 
       failChallenge: (id) => {
@@ -146,6 +149,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
         }));
         syncChallengeUpdate(id, { status: 'failed' });
+        void requestAutomaticBackup('challenge failed');
       },
 
       deactivateChallenge: (id) => {
@@ -157,6 +161,7 @@ export const useChallengeStore = create<ChallengeState>()(
         void backendApi.deactivateChallenge(id).catch((error) => {
           if (__DEV__) console.warn('[MoneyKai] failed to sync challenge deactivate:', error);
         });
+        void requestAutomaticBackup('challenge deactivated');
       },
 
       reactivateChallenge: (id) => {
@@ -168,6 +173,7 @@ export const useChallengeStore = create<ChallengeState>()(
         void backendApi.reactivateChallenge(id).catch((error) => {
           if (__DEV__) console.warn('[MoneyKai] failed to sync challenge reactivate:', error);
         });
+        void requestAutomaticBackup('challenge reactivated');
       },
 
       completeChallenge: (id, xp, savings) => {
@@ -180,6 +186,7 @@ export const useChallengeStore = create<ChallengeState>()(
         void backendApi.completeChallenge(id, { xp_earned: xp, savings_earned: savings }).catch((error) => {
           if (__DEV__) console.warn('[MoneyKai] failed to sync challenge completion:', error);
         });
+        void requestAutomaticBackup('challenge completed');
       },
     };
   },

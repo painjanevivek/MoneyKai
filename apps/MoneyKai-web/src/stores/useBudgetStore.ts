@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { BudgetSettings, BudgetAdjustment } from '../types/budget';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 const persistBudgetSettings = (state: {
   settings: BudgetSettings;
@@ -58,6 +59,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory: state.resetHistory,
           };
           persistBudgetSettings(next);
+          void requestAutomaticBackup('budget updated');
           return { settings: next.settings };
         }),
 
@@ -77,6 +79,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory: state.resetHistory,
           };
           persistBudgetSettings(next);
+          void requestAutomaticBackup('budget updated');
           return { adjustments, settings };
         }),
 
@@ -89,6 +92,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory: state.resetHistory,
           };
           persistBudgetSettings(next);
+          void requestAutomaticBackup('budget updated');
           return { isEmergencyMode: next.isEmergencyMode };
         }),
 
@@ -101,6 +105,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory: state.resetHistory,
           };
           persistBudgetSettings(next);
+          void requestAutomaticBackup('budget updated');
           return { isEmergencyMode: active };
         }),
 
@@ -117,6 +122,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory,
           };
           persistBudgetSettings(next);
+          void requestAutomaticBackup('budget updated');
           return { resetHistory };
         }),
     }),

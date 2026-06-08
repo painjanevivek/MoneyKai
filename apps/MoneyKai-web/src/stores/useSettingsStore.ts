@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ThemeMode } from '../constants/theme';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 type PersistedAppSettings = {
   theme: ThemeMode;
@@ -12,6 +13,8 @@ type PersistedAppSettings = {
   hapticEnabled: boolean;
   tourCompleted: boolean;
 };
+
+type TourCompletionMap = Record<string, boolean>;
 
 const persistAppSettings = (settings: PersistedAppSettings) => {
   if (!isBackendConfigured()) {
@@ -32,6 +35,7 @@ interface SettingsState {
   notificationsEnabled: boolean;
   hapticEnabled: boolean;
   tourCompleted: boolean;
+  tourCompletedByUserId: TourCompletionMap;
 
   // Actions
   toggleTheme: () => void;
@@ -41,6 +45,7 @@ interface SettingsState {
   setNotificationsEnabled: (enabled: boolean) => void;
   toggleHaptic: () => void;
   setTourCompleted: (completed: boolean) => void;
+  setTourCompletedForUser: (userId: string, completed: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -52,6 +57,7 @@ export const useSettingsStore = create<SettingsState>()(
       notificationsEnabled: true,
       hapticEnabled: true,
       tourCompleted: false,
+      tourCompletedByUserId: {},
 
       toggleTheme: () =>
         set((state) => {
@@ -65,6 +71,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { theme };
         }),
 
@@ -79,6 +86,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { theme };
         }),
 
@@ -93,6 +101,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { currency, currencySymbol: symbol };
         }),
 
@@ -107,6 +116,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { notificationsEnabled: next.notificationsEnabled };
         }),
 
@@ -121,6 +131,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { notificationsEnabled: enabled };
         }),
 
@@ -135,6 +146,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { hapticEnabled: next.hapticEnabled };
         }),
 
@@ -149,12 +161,43 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: completed,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { tourCompleted: completed };
+        }),
+
+      setTourCompletedForUser: (userId, completed) =>
+        set((state) => {
+          const next: PersistedAppSettings = {
+            theme: state.theme,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+            tourCompleted: completed,
+          };
+          persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
+          return {
+            tourCompleted: completed,
+            tourCompletedByUserId: {
+              ...state.tourCompletedByUserId,
+              [userId]: completed,
+            },
+          };
         }),
     }),
     {
       name: 'moneykai-settings',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        theme: state.theme,
+        currency: state.currency,
+        currencySymbol: state.currencySymbol,
+        notificationsEnabled: state.notificationsEnabled,
+        hapticEnabled: state.hapticEnabled,
+        tourCompleted: state.tourCompleted,
+        tourCompletedByUserId: state.tourCompletedByUserId,
+      }),
     }
   )
 );

@@ -8,6 +8,7 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { backendApi, isBackendConfigured } from './backendApi';
 import { useNotificationStore } from '@/stores/useNotificationStore';
+import { clearAutomaticBackupQueue } from './backupService';
 
 const EMPTY_BUDGET_SETTINGS = {
   monthly_allowance: 0,
@@ -62,6 +63,7 @@ export const resetLocalAppState = () => {
   });
 
   useNotificationStore.getState().clearNotifications();
+  void clearAutomaticBackupQueue();
 };
 
 export const syncRemoteState = async () => {

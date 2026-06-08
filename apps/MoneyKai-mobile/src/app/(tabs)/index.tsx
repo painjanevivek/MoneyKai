@@ -22,9 +22,11 @@ import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const user = useAuthStore((s) => s.user);
+  const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
   const signOut = useAuthStore((s) => s.signOut);
   const tourCompleted = useSettingsStore((s) => s.tourCompleted);
-  const setTourCompleted = useSettingsStore((s) => s.setTourCompleted);
+  const tourCompletedByUserId = useSettingsStore((s) => s.tourCompletedByUserId);
+  const setTourCompletedForUser = useSettingsStore((s) => s.setTourCompletedForUser);
   const activeChallenges = useChallengeStore((s) => s.getActiveChallenges());
   const { badges } = useBadgeStore();
   const unlockedBadges = badges.filter((b) => b.is_unlocked).slice(0, 4);
@@ -33,8 +35,8 @@ export default function DashboardScreen() {
   const [showMonthMenu, setShowMonthMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
-  const [tourDismissedFor, setTourDismissedFor] = useState<string | null>(null);
-  const showTour = Boolean(user?.id && !tourCompleted && tourDismissedFor !== user.id);
+  const tourCompletedForUser = user?.id ? (tourCompletedByUserId[user.id] ?? tourCompleted) : false;
+  const showTour = Boolean(user?.id && !isHydratingSession && !tourCompletedForUser);
 
   const selectedMonthLabel = months.find((month) => month.key === selectedMonthKey)?.label ?? months[months.length - 1]?.label ?? '';
 
@@ -50,8 +52,9 @@ export default function DashboardScreen() {
   };
 
   const completeTour = () => {
-    setTourCompleted(true);
-    setTourDismissedFor(user?.id ?? null);
+    if (user?.id) {
+      setTourCompletedForUser(user.id, true);
+    }
   };
 
   const monthTiles = (

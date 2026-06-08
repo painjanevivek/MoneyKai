@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,12 +20,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const { colors } = useTheme();
-  const { signIn, signInWithGoogle, isLoading } = useAuthStore();
+  const { signIn, signInWithGoogle, isLoading, isAuthenticated } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [googleLoading, setGoogleLoading] = useState(false);
   const submitting = useRef(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated]);
 
   const handleLogin = async () => {
     if (submitting.current) return;
@@ -40,7 +46,6 @@ export default function LoginScreen() {
     submitting.current = true;
     try {
       await signIn(email, password);
-      router.replace('/(tabs)');
     } catch (err) {
       Alert.alert('Login Failed', err instanceof Error ? err.message : 'Please check your credentials and try again.');
     } finally {
@@ -54,7 +59,6 @@ export default function LoginScreen() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      router.replace('/(tabs)');
     } catch (err) {
       Alert.alert('Google Sign-In Failed', err instanceof Error ? err.message : 'Google Sign-In is not available. Please use email login.');
     } finally {

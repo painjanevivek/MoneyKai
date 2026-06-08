@@ -10,6 +10,7 @@ import { backendApi, isBackendConfigured } from './backendApi';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useSyncStore } from '@/stores/useSyncStore';
 import { clearSyncQueue } from './syncQueue';
+import { clearAutomaticBackupQueue } from './backupService';
 
 const EMPTY_BUDGET_SETTINGS = {
   monthly_allowance: 0,
@@ -65,6 +66,7 @@ export const resetLocalAppState = () => {
 
   useNotificationStore.getState().clearNotifications();
   useSyncStore.getState().setPendingCount(0);
+  void clearAutomaticBackupQueue();
 };
 
 export const syncRemoteState = async () => {

@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ThemeMode } from '../constants/theme';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { queueSyncOperation } from '@/services/syncQueue';
+import { requestAutomaticBackup } from '@/services/backupService';
 
 export type PersistedAppSettings = {
   theme: ThemeMode;
@@ -14,6 +15,8 @@ export type PersistedAppSettings = {
   tourCompleted: boolean;
   appLockEnabled: boolean;
 };
+
+type TourCompletionMap = Record<string, boolean>;
 
 const persistAppSettings = (settings: PersistedAppSettings) => {
   if (!isBackendConfigured()) {
@@ -36,6 +39,7 @@ interface SettingsState {
   hapticEnabled: boolean;
   tourCompleted: boolean;
   appLockEnabled: boolean;
+  tourCompletedByUserId: TourCompletionMap;
 
   // Actions
   toggleTheme: () => void;
@@ -45,6 +49,7 @@ interface SettingsState {
   setNotificationsEnabled: (enabled: boolean) => void;
   toggleHaptic: () => void;
   setTourCompleted: (completed: boolean) => void;
+  setTourCompletedForUser: (userId: string, completed: boolean) => void;
   setAppLockEnabled: (enabled: boolean) => void;
 }
 
@@ -58,6 +63,7 @@ export const useSettingsStore = create<SettingsState>()(
       hapticEnabled: true,
       tourCompleted: false,
       appLockEnabled: false,
+      tourCompletedByUserId: {},
 
       toggleTheme: () =>
         set((state) => {
@@ -72,6 +78,7 @@ export const useSettingsStore = create<SettingsState>()(
             appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { theme };
         }),
 
@@ -87,6 +94,7 @@ export const useSettingsStore = create<SettingsState>()(
             appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { theme };
         }),
 
@@ -102,6 +110,7 @@ export const useSettingsStore = create<SettingsState>()(
             appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { currency, currencySymbol: symbol };
         }),
 
@@ -117,6 +126,7 @@ export const useSettingsStore = create<SettingsState>()(
             appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { notificationsEnabled: next.notificationsEnabled };
         }),
 
@@ -132,6 +142,7 @@ export const useSettingsStore = create<SettingsState>()(
             appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { notificationsEnabled: enabled };
         }),
 
@@ -147,6 +158,7 @@ export const useSettingsStore = create<SettingsState>()(
             appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { hapticEnabled: next.hapticEnabled };
         }),
 
@@ -162,7 +174,29 @@ export const useSettingsStore = create<SettingsState>()(
             appLockEnabled: state.appLockEnabled,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { tourCompleted: completed };
+        }),
+
+      setTourCompletedForUser: (userId, completed) =>
+        set((state) => {
+          const next: PersistedAppSettings = {
+            theme: state.theme,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+            tourCompleted: completed,
+            appLockEnabled: state.appLockEnabled,
+          };
+          persistAppSettings(next);
+          return {
+            tourCompleted: completed,
+            tourCompletedByUserId: {
+              ...state.tourCompletedByUserId,
+              [userId]: completed,
+            },
+          };
         }),
 
       setAppLockEnabled: (enabled) =>
@@ -177,12 +211,23 @@ export const useSettingsStore = create<SettingsState>()(
             appLockEnabled: enabled,
           };
           persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
           return { appLockEnabled: enabled };
         }),
     }),
     {
       name: 'moneykai-settings',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        theme: state.theme,
+        currency: state.currency,
+        currencySymbol: state.currencySymbol,
+        notificationsEnabled: state.notificationsEnabled,
+        hapticEnabled: state.hapticEnabled,
+        tourCompleted: state.tourCompleted,
+        appLockEnabled: state.appLockEnabled,
+        tourCompletedByUserId: state.tourCompletedByUserId,
+      }),
     }
   )
 );
