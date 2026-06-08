@@ -145,3 +145,7 @@ export const syncRemoteState = async () => {
 
   useNotificationStore.getState().replaceNotifications(snapshot.data.notifications ?? []);
 };
+
+export const clearTransientSessionState = async () => {
+  await clearAutomaticBackupQueue();
+};

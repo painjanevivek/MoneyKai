@@ -254,8 +254,8 @@ export const useAuthStore = create<AuthState>()(
           await flushAutomaticBackup({ force: true }).catch(() => {
             // Best effort: if the final backup fails, continue sign-out.
           });
-          const { resetLocalAppState } = await import('@/services/remoteSync');
-          resetLocalAppState();
+          const { clearTransientSessionState } = await import('@/services/remoteSync');
+          await clearTransientSessionState();
 
           if (isFirebaseConfigured()) {
             await firebaseSignOut(firebaseAuth).catch(() => {

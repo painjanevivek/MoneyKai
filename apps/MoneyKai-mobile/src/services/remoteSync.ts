@@ -159,7 +159,8 @@ export const syncRemoteState = async () => {
   }
 };
 
-export const resetAllRemoteState = async () => {
+export const clearTransientSessionState = async () => {
   await clearSyncQueue();
-  resetLocalAppState();
+  useSyncStore.getState().setPendingCount(0);
+  await clearAutomaticBackupQueue();
 };
