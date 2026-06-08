@@ -79,11 +79,16 @@ export const syncRemoteState = async () => {
     return;
   }
 
+  const localBudgetState = useBudgetStore.getState();
   const syncStore = useSyncStore.getState();
   syncStore.startSync();
 
   try {
     const snapshot = await backendApi.getBootstrap();
+    const snapshotBudget = snapshot.settings.budget;
+    const shouldRecoverLocalBudget =
+      snapshotBudget?.settings?.monthly_allowance === 0 &&
+      localBudgetState.settings.monthly_allowance > 0;
 
     resetLocalAppState();
 
@@ -98,11 +103,24 @@ export const syncRemoteState = async () => {
 
     useBudgetStore.setState({
       ...useBudgetStore.getState(),
-      settings: snapshot.settings.budget.settings,
-      adjustments: snapshot.settings.budget.adjustments,
-      isEmergencyMode: snapshot.settings.budget.isEmergencyMode,
-      resetHistory: snapshot.settings.budget.resetHistory,
+      settings: shouldRecoverLocalBudget ? localBudgetState.settings : snapshotBudget.settings,
+      adjustments: shouldRecoverLocalBudget ? localBudgetState.adjustments : snapshotBudget.adjustments,
+      isEmergencyMode: shouldRecoverLocalBudget ? localBudgetState.isEmergencyMode : snapshotBudget.isEmergencyMode,
+      resetHistory: shouldRecoverLocalBudget ? localBudgetState.resetHistory : snapshotBudget.resetHistory,
     });
+
+    if (shouldRecoverLocalBudget) {
+      void backendApi.updateBudgetSettings({
+        settings: localBudgetState.settings,
+        adjustments: localBudgetState.adjustments,
+        isEmergencyMode: localBudgetState.isEmergencyMode,
+        resetHistory: localBudgetState.resetHistory,
+      }).catch((error) => {
+        if (__DEV__) {
+          console.warn('[MoneyKai] failed to recover local budget settings:', error);
+        }
+      });
+    }
 
     useTransactionStore.setState({
       ...useTransactionStore.getState(),

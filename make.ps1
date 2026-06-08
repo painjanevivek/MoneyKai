@@ -12,6 +12,8 @@ switch ($Target.ToLowerInvariant()) {
   'lint' { npm.cmd run lint }
   'typecheck' { npm.cmd run typecheck }
   'install' { npm.cmd run install }
+  'backend' { npm.cmd run backend:dev }
+  'server' { npm.cmd run backend:dev }
   'clean' {
     if (Test-Path .expo) { Remove-Item .expo -Recurse -Force }
     if (Test-Path .expo-shared) { Remove-Item .expo-shared -Recurse -Force }
@@ -25,7 +27,7 @@ switch ($Target.ToLowerInvariant()) {
     if (Test-Path .eslintcache) { Remove-Item .eslintcache -Force }
   }
   default {
-    Write-Host 'Usage: .\make.ps1 [start|web|mobile|android|ios|install|lint|typecheck|clean]'
+    Write-Host 'Usage: .\make.ps1 [start|web|mobile|android|ios|install|backend|server|lint|typecheck|clean]'
     exit 1
   }
 }

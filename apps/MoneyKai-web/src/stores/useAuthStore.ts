@@ -14,7 +14,7 @@ import {
 } from 'firebase/auth';
 import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { flushAutomaticBackup, requestAutomaticBackup } from '@/services/backupService';
 
 export interface User {
   id: string;
@@ -250,9 +250,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
-        set({ user: null, isAuthenticated: false, isLoading: false, isOnboarded: false });
-
         const cleanup = async () => {
+          await flushAutomaticBackup({ force: true }).catch(() => {
+            // Best effort: if the final backup fails, continue sign-out.
+          });
           const { resetLocalAppState } = await import('@/services/remoteSync');
           resetLocalAppState();
 
@@ -266,6 +267,7 @@ export const useAuthStore = create<AuthState>()(
         await cleanup().catch(() => {
           // Best effort cleanup only.
         });
+        set({ user: null, isAuthenticated: false, isLoading: false, isOnboarded: false });
       },
 
       setLoading: (loading) => set({ isLoading: loading }),
