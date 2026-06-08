@@ -34,7 +34,7 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (options?: { skipFinalBackup?: boolean }) => Promise<void>;
   setLoading: (loading: boolean) => void;
   setOnboarded: (onboarded: boolean) => void;
   updateProfile: (updates: Partial<User>) => void;
@@ -249,13 +249,17 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      signOut: async () => {
+      signOut: async (options) => {
         const cleanup = async () => {
-          await flushAutomaticBackup({ force: true }).catch(() => {
-            // Best effort: if the final backup fails, continue sign-out.
-          });
-          const { clearTransientSessionState } = await import('@/services/remoteSync');
+          if (!options?.skipFinalBackup) {
+            await flushAutomaticBackup({ force: true }).catch(() => {
+              // Best effort: if the final backup fails, continue sign-out.
+            });
+          }
+
+          const { clearTransientSessionState, resetLocalAppState } = await import('@/services/remoteSync');
           await clearTransientSessionState();
+          resetLocalAppState();
 
           if (isFirebaseConfigured()) {
             await firebaseSignOut(firebaseAuth).catch(() => {

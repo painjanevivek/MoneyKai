@@ -8,10 +8,11 @@ import { useBudgetStore } from '../../stores/useBudgetStore';
 import { calculateBudgetHealth } from '../../utils/savingsEngine';
 import { Typography, Spacing } from '../../constants/theme';
 
-export const BudgetHealth: React.FC = () => {
+export const BudgetHealth: React.FC<{ totalSpent?: number }> = ({ totalSpent: totalSpentProp }) => {
   const { colors } = useTheme();
-  const totalSpent = useTransactionStore((s) => s.getTotalSpent());
+  const storeTotalSpent = useTransactionStore((s) => s.getTotalSpent());
   const { settings } = useBudgetStore();
+  const totalSpent = totalSpentProp ?? storeTotalSpent;
   const health = calculateBudgetHealth(settings.monthly_allowance, totalSpent);
 
   return (

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
+from firebase_admin import auth as firebase_auth
 
 from backend.app.core.firebase import get_firestore_client
 from backend.app.core.security import CurrentUser
@@ -12,7 +13,7 @@ from backend.app.core.security import CurrentUser
 USER_RESOURCE_SORT_KEYS: dict[str, str] = {
     "transactions": "transaction_date",
     "notes": "updated_at",
-    "challenges": "created_at",
+    "savings": "created_at",
     "badges": "id",
     "notifications": "created_at",
 }
@@ -44,12 +45,43 @@ def db():
     return get_firestore_client()
 
 
+def _delete_documents(document_refs: Iterable[Any]) -> None:
+    batch = db().batch()
+    operations = 0
+    for document_ref in document_refs:
+        batch.delete(document_ref)
+        operations += 1
+        if operations >= 450:
+            batch.commit()
+            batch = db().batch()
+            operations = 0
+
+    if operations > 0:
+        batch.commit()
+
+
+def _delete_collection_documents(collection_ref) -> None:
+    _delete_documents(doc.reference for doc in collection_ref.stream())
+
+
 def user_doc(user_id: str):
     return db().collection("users").document(user_id)
 
 
 def user_resource_collection(user_id: str, resource: str):
     return user_doc(user_id).collection(resource)
+
+
+def user_group_collection(user_id: str):
+    return user_doc(user_id).collection("groups")
+
+
+def user_group_doc(user_id: str, group_id: str):
+    return user_group_collection(user_id).document(group_id)
+
+
+def user_group_expense_collection(user_id: str, group_id: str):
+    return user_group_doc(user_id, group_id).collection("expenses")
 
 
 def ensure_user_profile(user: CurrentUser) -> dict[str, Any]:
@@ -133,13 +165,13 @@ def set_app_settings(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def get_budget_settings(user_id: str) -> dict[str, Any]:
-    ref = user_doc(user_id).collection("settings").document("budget")
+    ref = user_doc(user_id).collection("budgets").document("current")
     snapshot = ref.get()
     if snapshot.exists:
         return normalize_document(snapshot)
     return {
         "settings": {
-            "monthly_allowance": 15000,
+            "monthly_allowance": 0,
             "reset_day": 1,
             "auto_reset": True,
             "carry_forward": False,
@@ -152,54 +184,25 @@ def get_budget_settings(user_id: str) -> dict[str, Any]:
 
 
 def set_budget_settings(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    ref = user_doc(user_id).collection("settings").document("budget")
+    ref = user_doc(user_id).collection("budgets").document("current")
     data = {**get_budget_settings(user_id), **payload, "updated_at": now_iso()}
     ref.set(data, merge=True)
     return to_jsonable(data)
 
 
 def list_groups_for_user(user_id: str) -> list[dict[str, Any]]:
-    group_refs = []
-    try:
-        group_refs.extend(
-            doc
-            for doc in db().collection("groups")
-            .where("created_by", "==", user_id)
-            .stream()
-        )
-    except Exception:
-        group_refs.extend([])
-    try:
-        group_refs.extend(
-            doc
-            for doc in db().collection("groups")
-            .where("member_ids", "array_contains", user_id)
-            .stream()
-        )
-    except Exception:
-        group_refs.extend([])
-
-    seen: set[str] = set()
-    groups = []
-    for doc in group_refs:
-        if doc.id in seen:
-            continue
-        seen.add(doc.id)
-        groups.append(normalize_document(doc))
+    groups = [normalize_document(doc) for doc in user_group_collection(user_id).stream()]
     groups.sort(key=lambda item: str(item.get("created_at", "")), reverse=True)
     return groups
 
 
-def upsert_group(payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]:
+def upsert_group(user_id: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]:
     group_id = item_id or str(payload.get("id") or uuid4().hex)
-    ref = db().collection("groups").document(group_id)
+    ref = user_group_doc(user_id, group_id)
     existing_snapshot = ref.get()
     existing = normalize_document(existing_snapshot) if existing_snapshot.exists else {}
-    member_ids = payload.get("member_ids")
-    if not member_ids:
-        creator_id = existing.get("created_by") or payload.get("created_by")
-        member_ids = [creator_id] if creator_id else []
-    created_by = existing.get("created_by") or payload.get("created_by")
+    member_ids = payload.get("member_ids") or existing.get("member_ids") or [user_id]
+    created_by = existing.get("created_by") or payload.get("created_by") or user_id
     data = {
         **existing,
         **payload,
@@ -214,9 +217,9 @@ def upsert_group(payload: dict[str, Any], item_id: str | None = None) -> dict[st
     return to_jsonable(data)
 
 
-def delete_group(group_id: str) -> None:
-    group_ref = db().collection("groups").document(group_id)
-    expenses_ref = group_ref.collection("expenses")
+def delete_group_for_user(user_id: str, group_id: str) -> None:
+    group_ref = user_group_doc(user_id, group_id)
+    expenses_ref = user_group_expense_collection(user_id, group_id)
     batch = db().batch()
     for expense in expenses_ref.stream():
         batch.delete(expense.reference)
@@ -224,15 +227,38 @@ def delete_group(group_id: str) -> None:
     batch.commit()
 
 
-def list_group_expenses(group_id: str) -> list[dict[str, Any]]:
-    expenses = [normalize_document(doc) for doc in db().collection("groups").document(group_id).collection("expenses").stream()]
+def delete_user_account(user_id: str) -> None:
+    group_ids = [group["id"] for group in list_groups_for_user(user_id)]
+
+    for group_id in group_ids:
+        _delete_collection_documents(user_group_expense_collection(user_id, group_id))
+
+    _delete_collection_documents(user_doc(user_id).collection("transactions"))
+    _delete_collection_documents(user_doc(user_id).collection("notes"))
+    _delete_collection_documents(user_doc(user_id).collection("savings"))
+    _delete_collection_documents(user_doc(user_id).collection("badges"))
+    _delete_collection_documents(user_doc(user_id).collection("notifications"))
+    _delete_collection_documents(user_doc(user_id).collection("backups"))
+    _delete_collection_documents(user_doc(user_id).collection("settings"))
+    _delete_collection_documents(user_doc(user_id).collection("budgets"))
+    _delete_collection_documents(user_group_collection(user_id))
+    user_doc(user_id).delete()
+
+    try:
+        firebase_auth.delete_user(user_id)
+    except firebase_auth.UserNotFoundError:
+        pass
+
+
+def list_group_expenses_for_user(user_id: str, group_id: str) -> list[dict[str, Any]]:
+    expenses = [normalize_document(doc) for doc in user_group_expense_collection(user_id, group_id).stream()]
     expenses.sort(key=lambda item: str(item.get("created_at", "")), reverse=True)
     return expenses
 
 
-def upsert_group_expense(group_id: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]:
+def upsert_group_expense_for_user(user_id: str, group_id: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]:
     expense_id = item_id or str(payload.get("id") or uuid4().hex)
-    ref = db().collection("groups").document(group_id).collection("expenses").document(expense_id)
+    ref = user_group_expense_collection(user_id, group_id).document(expense_id)
     existing_snapshot = ref.get()
     existing = normalize_document(existing_snapshot) if existing_snapshot.exists else {}
     data = {
@@ -274,7 +300,7 @@ def get_latest_backup(user_id: str) -> dict[str, Any] | None:
 def restore_snapshot_for_user(user_id: str, snapshot: dict[str, Any]) -> None:
     replace_user_resource(user_id, "transactions", snapshot.get("data", {}).get("transactions", []))
     replace_user_resource(user_id, "notes", snapshot.get("data", {}).get("notes", []))
-    replace_user_resource(user_id, "challenges", snapshot.get("data", {}).get("challenges", []))
+    replace_user_resource(user_id, "savings", snapshot.get("data", {}).get("savings", snapshot.get("data", {}).get("challenges", [])))
     replace_user_resource(user_id, "badges", snapshot.get("data", {}).get("badges", []))
     replace_user_resource(user_id, "notifications", snapshot.get("data", {}).get("notifications", []))
     set_app_settings(user_id, snapshot.get("settings", {}).get("app", {}))
@@ -282,24 +308,25 @@ def restore_snapshot_for_user(user_id: str, snapshot: dict[str, Any]) -> None:
 
     existing_groups = list_groups_for_user(user_id)
     for group in existing_groups:
-        delete_group(group["id"])
+        delete_group_for_user(user_id, group["id"])
     for group in snapshot.get("data", {}).get("groups", []):
-        upsert_group(group, group.get("id"))
+        upsert_group(user_id, group, group.get("id"))
     for group_expense in snapshot.get("data", {}).get("groupExpenses", []):
-        upsert_group_expense(group_expense.get("group_id", ""), group_expense, group_expense.get("id"))
+        group_id = group_expense.get("group_id", "")
+        upsert_group_expense_for_user(user_id, group_id, group_expense, group_expense.get("id"))
 
 
 def build_bootstrap_snapshot(user: CurrentUser) -> dict[str, Any]:
     profile = ensure_user_profile(user)
     transactions = list_user_resources(user.uid, "transactions")
     notes = list_user_resources(user.uid, "notes")
-    challenges = list_user_resources(user.uid, "challenges")
+    savings = list_user_resources(user.uid, "savings")
     badges = list_user_resources(user.uid, "badges")
     notifications = list_user_resources(user.uid, "notifications")
     groups = list_groups_for_user(user.uid)
     group_expenses: list[dict[str, Any]] = []
     for group in groups:
-        group_expenses.extend(list_group_expenses(group["id"]))
+        group_expenses.extend(list_group_expenses_for_user(user.uid, group["id"]))
 
     app_settings = get_app_settings(user.uid)
     budget_settings = get_budget_settings(user.uid)
@@ -307,7 +334,7 @@ def build_bootstrap_snapshot(user: CurrentUser) -> dict[str, Any]:
 
     total_spent = sum(item.get("amount", 0) for item in transactions if item.get("type") == "expense")
     total_income = sum(item.get("amount", 0) for item in transactions if item.get("type") == "income")
-    total_xp = sum(item.get("xp_earned", 0) for item in challenges)
+    total_xp = sum(item.get("xp_earned", 0) for item in savings)
 
     return {
         "version": 1,
@@ -322,7 +349,8 @@ def build_bootstrap_snapshot(user: CurrentUser) -> dict[str, Any]:
             "notes": notes,
             "groups": groups,
             "groupExpenses": group_expenses,
-            "challenges": challenges,
+            "challenges": savings,
+            "savings": savings,
             "totalXP": total_xp,
             "badges": badges,
             "notifications": notifications,
@@ -332,7 +360,7 @@ def build_bootstrap_snapshot(user: CurrentUser) -> dict[str, Any]:
             "totalSpent": total_spent,
             "totalIncome": total_income,
             "transactionCount": len(transactions),
-            "challengeCount": len(challenges),
+            "challengeCount": len(savings),
             "groupCount": len(groups),
         },
     }

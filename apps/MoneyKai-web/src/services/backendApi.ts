@@ -74,6 +74,10 @@ export const backendApi = {
       method: 'PUT',
       body: JSON.stringify(payload),
     }),
+  deleteAccount: async () =>
+    request<{ deleted: boolean }>('/v1/settings/account', {
+      method: 'DELETE',
+    }),
   listResource: async <T>(resource: 'transactions' | 'notes' | 'badges' | 'notifications') =>
     request<{ items: T[] }>(`/v1/resources/${resource}`),
   createResource: async <T>(resource: 'transactions' | 'notes' | 'badges' | 'notifications', payload: object) =>

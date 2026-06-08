@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View, Text, TouchableOpacity } from 'react-native';
+import { Platform, View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { endOfWeek, format, isWithinInterval, startOfWeek, subWeeks } from 'date-fns';
 import { LineChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../hooks/useTheme';
@@ -35,8 +35,11 @@ const makeDataPoints = (transactions: { amount: number; transaction_date: string
 
 export const TrendLineChart: React.FC = () => {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const transactions = useTransactionStore((s) => s.transactions);
   const isWeb = Platform.OS === 'web';
+  const chartWidth = Math.max(320, Math.min(width - 120, 760));
+  const chartSpacing = Math.max(48, Math.min(78, Math.floor(chartWidth / 9)));
 
   const weeklyTrend = React.useMemo(() => {
     const now = new Date();
@@ -178,8 +181,8 @@ export const TrendLineChart: React.FC = () => {
             data={currentData}
             data2={previousData}
             height={150}
-            width={280}
-            spacing={65}
+            width={chartWidth}
+            spacing={chartSpacing}
             initialSpacing={10}
             color1={colors.primary}
             color2={colors.textTertiary}

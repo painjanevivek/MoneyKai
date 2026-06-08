@@ -7,15 +7,33 @@ import { Card } from '../ui/Card';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { useBudgetStore } from '../../stores/useBudgetStore';
 import { generateInsights } from '../../utils/insightEngine';
+import type { CategoryTotal } from '../../types/transaction';
 import { Typography, Spacing } from '../../constants/theme';
 
-export const AIInsights: React.FC = () => {
-  const { colors } = useTheme();
-  const totalSpent = useTransactionStore((s) => s.getTotalSpent());
-  const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
-  const { settings } = useBudgetStore();
+interface AIInsightsProps {
+  title?: string;
+  totalSpent?: number;
+  categoryTotals?: CategoryTotal[];
+  monthlyAllowance?: number;
+  onPress?: () => void;
+}
 
-  const insights = generateInsights(settings.monthly_allowance, totalSpent, categoryTotals);
+export const AIInsights: React.FC<AIInsightsProps> = ({
+  title = 'Budget Insight',
+  totalSpent: totalSpentProp,
+  categoryTotals: categoryTotalsProp,
+  monthlyAllowance: monthlyAllowanceProp,
+  onPress,
+}) => {
+  const { colors } = useTheme();
+  const storeTotalSpent = useTransactionStore((s) => s.getTotalSpent());
+  const storeCategoryTotals = useTransactionStore((s) => s.getCategoryTotals());
+  const { settings } = useBudgetStore();
+  const totalSpent = totalSpentProp ?? storeTotalSpent;
+  const categoryTotals = categoryTotalsProp ?? storeCategoryTotals;
+  const monthlyAllowance = monthlyAllowanceProp ?? settings.monthly_allowance;
+
+  const insights = generateInsights(monthlyAllowance, totalSpent, categoryTotals);
 
   const iconColors: Record<string, string> = {
     tip: colors.primary,
@@ -27,31 +45,41 @@ export const AIInsights: React.FC = () => {
   return (
     <Card>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-        <Text style={{
-          fontSize: Typography.fontSize.md,
-          fontFamily: Typography.fontFamily.semiBold,
-          color: colors.textPrimary,
-        }}>AI Insights</Text>
+        <Text
+          style={{
+            fontSize: Typography.fontSize.md,
+            fontFamily: Typography.fontFamily.semiBold,
+            color: colors.textPrimary,
+          }}
+        >
+          {title}
+        </Text>
       </View>
+
       {insights.length > 0 ? (
         insights.slice(0, 3).map((insight, index) => (
-          <View key={insight.id} style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            paddingVertical: Spacing.sm,
-            borderTopWidth: index > 0 ? 1 : 0,
-            borderTopColor: colors.borderLight,
-            gap: Spacing.sm,
-          }}>
-            <View style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              backgroundColor: `${iconColors[insight.type]}15`,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: 2,
-            }}>
+          <View
+            key={insight.id}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              paddingVertical: Spacing.sm,
+              borderTopWidth: index > 0 ? 1 : 0,
+              borderTopColor: colors.borderLight,
+              gap: Spacing.sm,
+            }}
+          >
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: `${iconColors[insight.type]}15`,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 2,
+              }}
+            >
               <MaterialCommunityIcons
                 name={(insight.icon || 'lightbulb-on-outline') as any}
                 size={16}
@@ -59,47 +87,60 @@ export const AIInsights: React.FC = () => {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{
-                fontSize: Typography.fontSize.sm,
-                fontFamily: Typography.fontFamily.regular,
-                color: colors.textPrimary,
-                lineHeight: 20,
-              }}>{insight.message}</Text>
+              <Text
+                style={{
+                  fontSize: Typography.fontSize.sm,
+                  fontFamily: Typography.fontFamily.regular,
+                  color: colors.textPrimary,
+                  lineHeight: 20,
+                }}
+              >
+                {insight.message}
+              </Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={16} color={colors.textTertiary} />
           </View>
         ))
       ) : (
-        <View style={{
-          paddingVertical: Spacing.sm,
-          borderTopWidth: 1,
-          borderTopColor: colors.borderLight,
-        }}>
-          <Text style={{
-            fontSize: Typography.fontSize.sm,
-            fontFamily: Typography.fontFamily.regular,
-            color: colors.textSecondary,
-            lineHeight: 20,
-          }}>
-            Add a few transactions and we’ll surface personalized insights here.
+        <View
+          style={{
+            paddingVertical: Spacing.sm,
+            borderTopWidth: 1,
+            borderTopColor: colors.borderLight,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: Typography.fontSize.sm,
+              fontFamily: Typography.fontFamily.regular,
+              color: colors.textSecondary,
+              lineHeight: 20,
+            }}
+          >
+            Add a few transactions and we&apos;ll surface personalized insights here.
           </Text>
         </View>
       )}
-      <TouchableOpacity
-        onPress={() => router.push('/(tabs)/savings')}
-        style={{
 
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: Spacing.sm,
-        gap: 4,
-      }}>
-        <Text style={{
-          fontSize: Typography.fontSize.sm,
-          fontFamily: Typography.fontFamily.medium,
-          color: colors.primary,
-        }}>View More Insights</Text>
+      <TouchableOpacity
+        onPress={onPress ?? (() => router.push('/(tabs)/savings'))}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: Spacing.sm,
+          gap: 4,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: Typography.fontSize.sm,
+            fontFamily: Typography.fontFamily.medium,
+            color: colors.primary,
+          }}
+        >
+          View more insights
+        </Text>
         <MaterialCommunityIcons name="arrow-right" size={14} color={colors.primary} />
       </TouchableOpacity>
     </Card>

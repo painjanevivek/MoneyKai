@@ -16,9 +16,10 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
-import { isBackendConfigured } from '@/services/backendApi';
+import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
+import { resetLocalAppState } from '@/services/remoteSync';
 import { getStoreReviewUrl } from '@/config/environment';
 
 interface SettingItemProps {
@@ -77,10 +78,12 @@ export default function SettingsScreen() {
   const [showAllowanceEditor, setShowAllowanceEditor] = useState(false);
   const [showBackupSheet, setShowBackupSheet] = useState(false);
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
+  const [showDeleteAccountSheet, setShowDeleteAccountSheet] = useState(false);
   const [allowanceValue, setAllowanceValue] = useState(String(settings.monthly_allowance));
   const [savingAllowance, setSavingAllowance] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const switchTrack = {
     false: colors.border,
@@ -207,6 +210,30 @@ export default function SettingsScreen() {
       Alert.alert('Restore failed', err instanceof Error ? err.message : 'Could not restore a cloud backup.');
     } finally {
       setBackupBusy(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!isBackendConfigured()) {
+      Alert.alert('Delete unavailable', 'Account deletion requires the MoneyKai backend to be configured.');
+      return;
+    }
+
+    if (!user?.id || deleteBusy) {
+      return;
+    }
+
+    setDeleteBusy(true);
+    setShowDeleteAccountSheet(false);
+    try {
+      await backendApi.deleteAccount();
+      resetLocalAppState();
+      await signOut({ skipFinalBackup: true });
+      router.replace('/login');
+    } catch (err) {
+      Alert.alert('Delete failed', err instanceof Error ? err.message : 'Could not delete your account right now.');
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -360,6 +387,14 @@ export default function SettingsScreen() {
             subtitle="Open the privacy policy"
             onPress={handlePrivacy}
           />
+          <SettingItem
+            icon="delete-outline"
+            iconColor={colors.emergency}
+            iconBg={colors.emergencyBg}
+            title="Delete Account"
+            subtitle="Permanently remove your account and stored data"
+            onPress={() => setShowDeleteAccountSheet(true)}
+          />
         </Card>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>About</Text>
@@ -506,6 +541,52 @@ export default function SettingsScreen() {
         <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
           This will clear your local session and take you back to the login screen.
         </Text>
+      </ModalSheet>
+
+      <ModalSheet
+        visible={showDeleteAccountSheet}
+        title="Delete account"
+        subtitle="This permanently removes your MoneyKai account, stored data, and backups."
+        onClose={() => (deleteBusy ? undefined : setShowDeleteAccountSheet(false))}
+        footer={
+          <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
+            <Button
+              title="Cancel"
+              onPress={() => setShowDeleteAccountSheet(false)}
+              variant="outline"
+              style={{ flex: 1 }}
+              disabled={deleteBusy}
+            />
+            <Button
+              title="Delete"
+              onPress={handleDeleteAccount}
+              variant="danger"
+              loading={deleteBusy}
+              style={{ flex: 1 }}
+              disabled={!isBackendConfigured()}
+            />
+          </View>
+        }
+      >
+        <View style={{ gap: Spacing.md }}>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
+            Deleting your account removes transactions, notes, budgets, groups, savings goals, notifications, backups, and your profile from MoneyKai.
+          </Text>
+          <View style={{
+            padding: Spacing.md,
+            borderRadius: BorderRadius.md,
+            backgroundColor: colors.emergencyBg,
+            borderWidth: 1,
+            borderColor: `${colors.emergency}22`,
+          }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.emergency, marginBottom: 4 }}>
+              This cannot be undone
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+              Make sure you have exported anything you want to keep before continuing.
+            </Text>
+          </View>
+        </View>
       </ModalSheet>
     </SafeAreaView>
   );

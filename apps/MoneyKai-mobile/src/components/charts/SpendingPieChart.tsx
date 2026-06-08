@@ -6,53 +6,80 @@ import { Card } from '../ui/Card';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { getCategoryById } from '../../constants/categories';
 import { formatCurrency } from '../../utils/formatCurrency';
+import type { CategoryTotal } from '../../types/transaction';
 import { Typography, Spacing } from '../../constants/theme';
 
-export const SpendingPieChart: React.FC = () => {
+interface SpendingPieChartProps {
+  categoryTotals?: CategoryTotal[];
+  totalSpent?: number;
+  onPressViewMore?: () => void;
+}
+
+export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
+  categoryTotals: categoryTotalsProp,
+  totalSpent: totalSpentProp,
+  onPressViewMore,
+}) => {
   const { colors } = useTheme();
-  const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
-  const totalSpent = useTransactionStore((s) => s.getTotalSpent());
+  const storeCategoryTotals = useTransactionStore((s) => s.getCategoryTotals());
+  const storeTotalSpent = useTransactionStore((s) => s.getTotalSpent());
+  const categoryTotals = categoryTotalsProp ?? storeCategoryTotals;
+  const totalSpent = totalSpentProp ?? storeTotalSpent;
 
-  const chartColors = React.useMemo(() => [
-    colors.chart1, colors.chart2, colors.chart3,
-    colors.chart4, colors.chart5, colors.chart6,
-    colors.chart7, colors.chart8,
-  ], [colors]);
+  const chartColors = React.useMemo(
+    () => [colors.chart1, colors.chart2, colors.chart3, colors.chart4, colors.chart5, colors.chart6, colors.chart7, colors.chart8],
+    [colors]
+  );
 
-  const pieData = React.useMemo(() => {
-    return categoryTotals.slice(0, 6).map((cat, index) => ({
-      value: cat.total,
-      color: getCategoryById(cat.category)?.color || chartColors[index % chartColors.length],
-      text: `${Math.round(cat.percentage)}%`,
-      focused: index === 0,
-    }));
-  }, [categoryTotals, chartColors]);
+  const pieData = React.useMemo(
+    () =>
+      categoryTotals.slice(0, 6).map((cat, index) => ({
+        value: cat.total,
+        color: getCategoryById(cat.category)?.color || chartColors[index % chartColors.length],
+        text: `${Math.round(cat.percentage)}%`,
+        focused: index === 0,
+      })),
+    [categoryTotals, chartColors]
+  );
 
-  const renderCenterLabel = React.useCallback(() => {
-    return (
+  const renderCenterLabel = React.useCallback(
+    () => (
       <View style={{ alignItems: 'center' }}>
-        <Text style={{
-          fontSize: Typography.fontSize.xs,
-          fontFamily: Typography.fontFamily.regular,
-          color: colors.textTertiary,
-        }}>Total Spent</Text>
-        <Text style={{
-          fontSize: Typography.fontSize.md,
-          fontFamily: Typography.fontFamily.bold,
-          color: colors.textPrimary,
-        }}>{formatCurrency(totalSpent)}</Text>
+        <Text
+          style={{
+            fontSize: Typography.fontSize.xs,
+            fontFamily: Typography.fontFamily.regular,
+            color: colors.textTertiary,
+          }}
+        >
+          Total Spent
+        </Text>
+        <Text
+          style={{
+            fontSize: Typography.fontSize.md,
+            fontFamily: Typography.fontFamily.bold,
+            color: colors.textPrimary,
+          }}
+        >
+          {formatCurrency(totalSpent)}
+        </Text>
       </View>
-    );
-  }, [colors, totalSpent]);
+    ),
+    [colors, totalSpent]
+  );
 
   return (
     <Card>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-        <Text style={{
-          fontSize: Typography.fontSize.md,
-          fontFamily: Typography.fontFamily.semiBold,
-          color: colors.textPrimary,
-        }}>Spending Overview</Text>
+        <Text
+          style={{
+            fontSize: Typography.fontSize.md,
+            fontFamily: Typography.fontFamily.semiBold,
+            color: colors.textPrimary,
+          }}
+        >
+          Spending Overview
+        </Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={{ alignItems: 'center' }}>
@@ -67,54 +94,74 @@ export const SpendingPieChart: React.FC = () => {
             />
           ) : (
             <View style={{ width: 140, height: 140, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: colors.textTertiary }}>No data</Text>
+              <Text style={{ color: colors.textTertiary }}>No spending data</Text>
             </View>
           )}
         </View>
-        {/* Legend */}
+
         <View style={{ flex: 1, marginLeft: Spacing.base }}>
           {categoryTotals.slice(0, 6).map((cat, index) => {
             const category = getCategoryById(cat.category);
             return (
-              <View key={cat.category} style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}>
-                <View style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: category?.color || chartColors[index],
-                  marginRight: 8,
-                }} />
-                <Text style={{
-                  flex: 1,
-                  fontSize: Typography.fontSize.xs,
-                  fontFamily: Typography.fontFamily.medium,
-                  color: colors.textPrimary,
-                }}>{category?.name?.split(' ')[0] || cat.category}</Text>
-                <Text style={{
-                  fontSize: Typography.fontSize.xs,
-                  fontFamily: Typography.fontFamily.semiBold,
-                  color: colors.textSecondary,
-                }}>{Math.round(cat.percentage)}%</Text>
+              <View
+                key={cat.category}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 6,
+                }}
+              >
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: category?.color || chartColors[index],
+                    marginRight: 8,
+                  }}
+                />
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: Typography.fontSize.xs,
+                    fontFamily: Typography.fontFamily.medium,
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {category?.name?.split(' ')[0] || cat.category}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: Typography.fontSize.xs,
+                    fontFamily: Typography.fontFamily.semiBold,
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {Math.round(cat.percentage)}%
+                </Text>
               </View>
             );
           })}
         </View>
       </View>
-      <TouchableOpacity style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: Spacing.md,
-        gap: 4,
-      }}>
-        <Text style={{
-          fontSize: Typography.fontSize.sm,
-          fontFamily: Typography.fontFamily.medium,
-          color: colors.primary,
-        }}>View in Savings</Text>
+      <TouchableOpacity
+        onPress={onPressViewMore}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginTop: Spacing.md,
+          gap: 4,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: Typography.fontSize.sm,
+            fontFamily: Typography.fontFamily.medium,
+            color: colors.primary,
+          }}
+        >
+          View budget details
+        </Text>
         <Text style={{ color: colors.primary }}>→</Text>
       </TouchableOpacity>
     </Card>

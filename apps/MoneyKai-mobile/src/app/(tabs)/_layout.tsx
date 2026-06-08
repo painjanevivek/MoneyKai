@@ -1,6 +1,6 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
-import { View, Platform, Text, type ColorValue } from 'react-native';
+import { Tabs, router } from 'expo-router';
+import { View, Platform, Text, TouchableOpacity, type ColorValue } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { Typography, Shadows } from '@/constants/theme';
@@ -18,7 +18,7 @@ const TabLabel = ({
   focused: boolean;
 }) => (
   <Text
-    numberOfLines={2}
+    numberOfLines={1}
     style={{
       fontSize: 10,
       lineHeight: 12,
@@ -48,6 +48,30 @@ const TabIcon = ({ name, color, focused }: { name: IconName; color: string | Col
       />
     )}
   </View>
+);
+
+const AddTabButton = ({ color }: { color: string }) => (
+  <TouchableOpacity
+    activeOpacity={0.9}
+    onPress={() => router.push({ pathname: '/(tabs)/transactions', params: { compose: '1' } })}
+    accessibilityRole="button"
+    accessibilityLabel="Add transaction"
+    style={{
+      marginTop: -18,
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: color,
+      borderWidth: 4,
+      borderColor: '#FFFFFF',
+      ...Shadows.lg,
+      shadowColor: color,
+    }}
+  >
+    <MaterialCommunityIcons name="plus" size={30} color="#FFFFFF" />
+  </TouchableOpacity>
 );
 
 export default function TabLayout() {
@@ -86,8 +110,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Dashboard" color={color} focused={focused} />,
+          title: 'Home',
+          tabBarLabel: ({ color, focused }) => <TabLabel label="Home" color={color} focused={focused} />,
           tabBarIcon: ({ color, focused }) => <TabIcon name="view-dashboard-outline" color={color} focused={focused} />,
         }}
       />
@@ -100,11 +124,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="groups"
+        name="add"
         options={{
-          title: 'Groups',
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Groups" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon name="account-group-outline" color={color} focused={focused} />,
+          title: 'Add',
+          tabBarButton: () => <AddTabButton color={colors.primary} />,
+        }}
+      />
+      <Tabs.Screen
+        name="budget"
+        options={{
+          title: 'Budget',
+          tabBarLabel: ({ color, focused }) => <TabLabel label="Budget" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="wallet-outline" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -115,50 +146,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => <TabIcon name="piggy-bank-outline" color={color} focused={focused} />,
         }}
       />
-      <Tabs.Screen
-        name="learn-center"
-        options={{
-          title: 'Learn',
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Learn" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon name="book-open-outline" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Settings" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon name="cog-outline" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="analytics"
-        options={{
-          title: 'Analytics',
-          href: null,
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Analytics" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon name="chart-bar" color={color} focused={focused} />,
-        }}
-      />
-      {/* Screens navigated to programmatically; hidden from tab bar */}
-      <Tabs.Screen
-        name="notes"
-        options={{
-          title: 'Notes',
-          href: null,
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Notes" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon name="note-text-outline" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          title: 'Notifications',
-          href: null,
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Notifications" color={color} focused={focused} />,
-          tabBarIcon: ({ color, focused }) => <TabIcon name="bell-outline" color={color} focused={focused} />,
-        }}
-      />
+
+      <Tabs.Screen name="groups" options={{ href: null }} />
+      <Tabs.Screen name="learn-center" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="analytics" options={{ href: null }} />
+      <Tabs.Screen name="notes" options={{ href: null }} />
+      <Tabs.Screen name="notifications" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList, Modal, Alert, TextInput } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
@@ -27,7 +28,9 @@ export default function TransactionsScreen() {
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const totalIncome = useTransactionStore((s) => s.getTotalIncome());
   const [activeTab, setActiveTab] = useState<typeof FILTER_TABS[number]>('All');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const composeParam = useLocalSearchParams<{ compose?: string }>().compose;
+  const shouldOpenComposer = composeParam === '1' || composeParam === 'true';
+  const [showAddModal, setShowAddModal] = useState(shouldOpenComposer);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [txnType, setTxnType] = useState<'expense' | 'income'>('expense');
@@ -56,6 +59,14 @@ export default function TransactionsScreen() {
     setFilter({ searchQuery: query });
   };
 
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    resetForm();
+    if (shouldOpenComposer) {
+      router.back();
+    }
+  };
+
   const handleAmountChange = (value: string) => {
     setTxnAmount(sanitizeAmount(value));
   };
@@ -80,6 +91,9 @@ export default function TransactionsScreen() {
     });
     setShowAddModal(false);
     resetForm();
+    if (shouldOpenComposer) {
+      router.back();
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -271,10 +285,7 @@ export default function TransactionsScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg }}>
               <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Add Transaction</Text>
               <TouchableOpacity
-                onPress={() => {
-                  setShowAddModal(false);
-                  resetForm();
-                }}
+                onPress={handleCloseAddModal}
               >
                 <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
