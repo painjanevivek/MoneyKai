@@ -445,13 +445,15 @@ Status: partially validated and documented in `docs/sms-research-validation.md`.
 
 Goal: decide whether SMS should remain research-only, be removed, or move toward production.
 
-- [ ] Review policy risk, user value, parser accuracy, privacy impact, and maintenance cost.
-- [ ] If policy risk remains high, keep SMS out of production.
-- [ ] If production is considered, prepare Play Console permission declaration and legal/privacy review.
-- [ ] If rejected, remove native SMS code and keep safer alternatives.
-- [ ] Document final decision in `implementation.md`.
+- [x] Review policy risk, user value, parser accuracy, privacy impact, and maintenance cost.
+- [x] If policy risk remains high, keep SMS out of production.
+- [x] Defer Play Console permission declaration and legal/privacy review until production is reconsidered.
+- [x] Keep dev-only native SMS code excluded from production and continue safer alternatives.
+- [x] Document final decision in `implementation.md`.
 
 Completion criteria: SMS has a clear final path: abandoned, research-only, or production candidate with approval requirements.
+
+Status: completed with final path `Research-only`. SMS capture remains excluded from preview and production builds because policy risk is high, physical-device validation is incomplete, and Play Console/legal/privacy/Data Safety review has not been completed. The dev-only native prototype can remain available for internal research behind `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`, while production continues to rely on safer alternatives such as notification capture and manual/import workflows. The production decision is documented in `docs/sms-production-decision.md`.
 
 ## Phase 5: Release Readiness
 
