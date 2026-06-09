@@ -295,18 +295,18 @@ Status: implemented. Settings stores notification explainer acceptance and nativ
 
 Goal: verify Phase 3 protections before wider release.
 
-- [ ] Test first-time permission explainer flow.
-- [ ] Test denied, granted, and revoked Android notification access.
-- [ ] Test disable Auto Capture stops new drafts.
-- [ ] Test clear capture history removes pending/ignored capture data but keeps confirmed transactions.
-- [ ] Test source badges for notification drafts and placeholder future SMS/manual states.
-- [ ] Test privacy copy renders correctly.
+- [x] Test first-time permission explainer flow.
+- [x] Test denied, granted, and revoked Android notification access.
+- [x] Test disable Auto Capture stops new drafts.
+- [x] Test clear capture history removes pending/ignored capture data but keeps confirmed transactions.
+- [x] Test source badges for notification drafts and placeholder future SMS/manual states.
+- [x] Test privacy copy renders correctly.
 - [x] Test backups do not include raw capture payloads.
 - [x] Run `npm.cmd run mobile:typecheck` and `npm.cmd run mobile:lint`.
 
 Completion criteria: privacy, consent, controls, source labeling, and data minimization pass manual and automated validation.
 
-Status: implementation baseline is complete and automated checks pass locally. Manual Android validation of the explainer, permission revoked/granted states, disable behavior, clear behavior, and UI rendering remains pending on the emulator or a physical Android device.
+Status: complete on the `MoneyKai_API_36` Android emulator. A clean dev-client session validated `Home -> menu -> Settings`, the Auto Capture privacy copy, first-time Android notification-access explainer, source readiness labels, SMS research-only placeholder state, disabled Notification Access behavior, and Disable Auto Capture confirmation copy. Android secure listener state was tested through denied, granted, and revoked values for `com.moneykai.mobile/com.moneykai.nativecapture.MoneyKaiNotificationListenerService`; MoneyKai reflected revoked access as needing Android access. Disabling Auto Capture set native `capture_enabled=false`, and a synthetic HDFC-style notification posted while disabled did not create new pending native capture data. Repeatable Vitest coverage now verifies disabled capture ignores new signals and `clearCaptureInbox()` removes pending/ignored capture data while preserving confirmed drafts and transaction-history writes. Final checks passed with `npm.cmd run mobile:test:capture`, `npm.cmd run mobile:typecheck`, and `npm.cmd run mobile:lint`.
 
 ## Phase 4: SMS Research Mode
 
