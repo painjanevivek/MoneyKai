@@ -51,6 +51,21 @@ describe('parse explanation privacy', () => {
     expect(parsed.explanation.safeSnippet).not.toContain('412345678901');
     expect(parsed.explanation.dedupeReference).toBe('ref-8901');
   });
+
+  it('redacts sensitive SMS identifiers even when the SMS is ignored', () => {
+    const parsed = parseCapturedSignal({
+      source: 'sms',
+      sender: 'HDFCBK',
+      body: 'OTP 123456 for A/c XX4321 UPI payment of Rs 999.00 to TEST SHOP from user@upi. UPI Ref 412345678901.',
+      receivedAt: '2026-06-09T09:00:00.000Z',
+    });
+
+    expect(parsed.parseStatus).toBe('ignore');
+    expect(parsed.explanation.safeSnippet).not.toContain('123456');
+    expect(parsed.explanation.safeSnippet).not.toContain('XX4321');
+    expect(parsed.explanation.safeSnippet).not.toContain('user@upi');
+    expect(parsed.explanation.safeSnippet).not.toContain('412345678901');
+  });
 });
 
 describe('normalizeMerchantKey', () => {

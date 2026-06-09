@@ -44,8 +44,8 @@ const EXPENSE_KEYWORDS: KeywordRule[] = [
   { category: 'shopping', terms: ['amazon', 'flipkart', 'myntra', 'store', 'mart', 'basket', 'pantry', 'mall', 'shopping', 'retail', 'reliance fresh'] },
   { category: 'transport', terms: ['uber', 'ola', 'metro', 'fuel', 'petrol', 'diesel', 'taxi', 'bus', 'train', 'rail'] },
   { category: 'rent', terms: ['rent', 'housing', 'landlord', 'room'] },
-  { category: 'education', terms: ['course', 'school', 'college', 'udemy', 'book', 'tuition'] },
   { category: 'entertainment', terms: ['netflix', 'spotify', 'bookmyshow', 'movie', 'game', 'entertainment'] },
+  { category: 'education', terms: ['course', 'school', 'college', 'udemy', 'book', 'tuition'] },
   { category: 'bills', terms: ['recharge', 'electricity', 'bill', 'bescom', 'broadband', 'mobile', 'utility', 'gas'] },
   { category: 'healthcare', terms: ['pharmacy', 'hospital', 'clinic', 'doctor', 'medical', 'medicine'] },
 ];

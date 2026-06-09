@@ -401,11 +401,11 @@ Completion criteria: SMS can create reviewable research drafts in dev builds wit
 
 Goal: make SMS parsing conservative and privacy-safe.
 
-- [ ] Reuse Phase 2 fixture-driven parser approach.
-- [ ] Add sanitized SMS fixtures for bank debit, bank credit, card spend, UPI, refund, cashback, OTP, and promotional messages.
-- [ ] Prefer `ignored` or `needsReview` over aggressive drafting when uncertain.
-- [ ] Redact account numbers, card masks, UPI IDs, OTPs, and transaction references.
-- [ ] Track why each SMS was drafted or ignored.
+- [x] Reuse Phase 2 fixture-driven parser approach.
+- [x] Add sanitized SMS fixtures for bank debit, bank credit, card spend, UPI, refund, cashback, OTP, and promotional messages.
+- [x] Prefer `ignored` or `needsReview` over aggressive drafting when uncertain.
+- [x] Redact account numbers, card masks, UPI IDs, OTPs, and transaction references.
+- [x] Track why each SMS was drafted or ignored.
 
 Completion criteria: SMS parser behavior is covered by fixtures and avoids noisy or sensitive drafts.
 
