@@ -316,13 +316,22 @@ SMS is not implemented yet. Start this only after notification capture is stable
 
 Goal: decide whether SMS capture is worth pursuing before writing native SMS code.
 
-- [ ] Review current Google Play SMS and Call Log permission policy.
-- [ ] Confirm whether MoneyKai qualifies for SMS permissions as a budgeting app.
-- [ ] Document risks of `READ_SMS`, `RECEIVE_SMS`, and inbox-read approaches.
-- [ ] Compare safer alternatives: notification capture, manual paste/import, email statement parsing, or bank export import.
-- [ ] Decide one of three outcomes: `Do not pursue`, `Research-only`, or `Production candidate after policy approval`.
+- [x] Review current Google Play SMS and Call Log permission policy.
+- [x] Confirm whether MoneyKai qualifies for SMS permissions as a budgeting app.
+- [x] Document risks of `READ_SMS`, `RECEIVE_SMS`, and inbox-read approaches.
+- [x] Compare safer alternatives: notification capture, manual paste/import, email statement parsing, or bank export import.
+- [x] Decide one of three outcomes: `Do not pursue`, `Research-only`, or `Production candidate after policy approval`.
 
 Completion criteria: Phase 4 has a written go/no-go decision before SMS permissions are added.
+
+Status: completed as a policy/product gate. Current Google Play policy treats SMS and Call Log permissions as high-risk sensitive access. Apps normally must be the active default SMS, Phone, or Assistant handler, and exceptions require Play Console declaration and review. Google lists `SMS-based money management` as a possible exception category for apps that track or manage budgets with `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, and `RECEIVE_WAP_PUSH`, but approval is not automatic and the app must limit access to critical core functionality, disclose use clearly, avoid non-financial SMS exfiltration, and remove permissions if it does not qualify. MoneyKai's decision for Phase 4 is `Research-only`: do not add SMS permissions to production builds, do not ship inbox-read or receiver code in production, and continue relying on notification capture plus manual/import alternatives unless Play policy approval, legal/privacy review, and real-device validation later support a production candidate.
+
+Risk notes:
+- `READ_SMS` is the highest-risk approach because it can expose historical inbox content, OTPs, personal conversations, and non-financial messages; it should not be used outside an explicitly approved research/internal build.
+- `RECEIVE_SMS` is narrower than inbox read because it only receives new messages, but it still requests restricted SMS access and can ingest unrelated personal messages if filtering fails.
+- Inbox-read strategies create the largest privacy and backup risk because they invite bulk processing; if ever prototyped, they must store only sanitized parsed fields, never raw message history.
+- SMS Retriever/User Consent APIs are suitable for OTP-style verification flows, not bank transaction scraping or budgeting ingestion.
+- Safer alternatives stay preferred: Android notification capture, manual paste/import of sanitized messages, email statement parsing, bank export import, and future account-aggregator/bank-sync style integrations.
 
 ### Phase 4B: Research-Only Architecture
 
