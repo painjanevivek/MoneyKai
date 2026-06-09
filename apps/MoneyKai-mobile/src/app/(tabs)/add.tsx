@@ -8,7 +8,7 @@ export default function AddScreen() {
   const { colors } = useTheme();
 
   useEffect(() => {
-    router.replace({ pathname: '/(tabs)/transactions', params: { compose: '1' } });
+    router.replace('/(tabs)/transactions');
   }, []);
 
   return (

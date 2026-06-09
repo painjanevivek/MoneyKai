@@ -154,7 +154,6 @@ class MoneyKaiNativeCaptureModule : Module() {
           putString(key, json.optString(key))
         }
       }
-    }
 
     fun isNotificationListenerEnabled(context: Context): Boolean {
       val enabledListeners = Settings.Secure.getString(

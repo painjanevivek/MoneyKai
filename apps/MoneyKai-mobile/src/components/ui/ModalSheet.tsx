@@ -78,7 +78,11 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
       }
     };
 
-    if (typeof window !== 'undefined') {
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.addEventListener === 'function' &&
+      typeof window.removeEventListener === 'function'
+    ) {
       window.addEventListener('keydown', onKeyDown);
       return () => window.removeEventListener('keydown', onKeyDown);
     }
@@ -87,8 +91,12 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   }, [visible, onClose]);
 
   const panResponder = useMemo(
-    () =>
-      PanResponder.create({
+    () => {
+      if (typeof PanResponder?.create !== 'function') {
+        return null;
+      }
+
+      return PanResponder.create({
         onMoveShouldSetPanResponder: (_, gestureState) =>
           gestureState.dy > 8 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
         onPanResponderMove: (_, gestureState) => {
@@ -103,7 +111,8 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
           }
           animateIn();
         },
-      }),
+      });
+    },
     [animateIn, onClose, translateY]
   );
 
@@ -142,7 +151,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
             },
             contentStyle,
           ]}
-          {...panResponder.panHandlers}
+          {...(panResponder?.panHandlers ?? {})}
           accessibilityLabel={title}
           accessibilityViewIsModal
         >

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -44,7 +44,6 @@ const MENU_ACTIONS = [
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
   const signOut = useAuthStore((s) => s.signOut);
@@ -122,10 +121,6 @@ export default function DashboardScreen() {
     setShowMenuSheet(false);
     await signOut();
     router.replace('/login');
-  };
-
-  const openComposer = () => {
-    router.push('/(tabs)/transactions?compose=1' as never);
   };
 
   const monthTiles = (
@@ -350,26 +345,6 @@ export default function DashboardScreen() {
           />
         </View>
       </ScrollView>
-
-      <TouchableOpacity
-        onPress={openComposer}
-        activeOpacity={0.9}
-        style={{
-          position: 'absolute',
-          right: 16,
-          bottom: insets.bottom + 96,
-          width: 60,
-          height: 60,
-          borderRadius: 30,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          ...Shadows.lg,
-          shadowColor: colors.primary,
-        }}
-      >
-        <MaterialCommunityIcons name="plus" size={28} color={colors.textInverse} />
-      </TouchableOpacity>
 
       <ModalSheet
         visible={showMonthMenu}

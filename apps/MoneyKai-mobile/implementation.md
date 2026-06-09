@@ -12,24 +12,28 @@ This is the most important next target because the native capture code is writte
 
 Goal: confirm the project is ready for native Android compilation before generating or building the Android app.
 
-- [ ] Confirm `expo.autolinking.nativeModulesDir` points to `./modules`.
-- [ ] Confirm `moneykai-native-capture` appears in Expo autolinking resolution.
-- [ ] Run mobile TypeScript and lint checks.
-- [ ] Confirm the Android native module files are present under `modules/moneykai-native-capture`.
-- [ ] Confirm `eas.json` has a development Android build profile.
+- [x] Confirm `expo.autolinking.nativeModulesDir` points to `./modules`.
+- [x] Confirm `moneykai-native-capture` appears in Expo autolinking resolution.
+- [x] Run mobile TypeScript and lint checks.
+- [x] Confirm the Android native module files are present under `modules/moneykai-native-capture`.
+- [x] Confirm `eas.json` has a development Android build profile.
 
 Completion criteria: the repo is clean enough to attempt a native Android build without first changing feature code.
+
+Status: completed locally. `npm.cmd run mobile:typecheck`, `npm.cmd run mobile:lint`, and `npx.cmd expo-modules-autolinking verify --platform android` passed.
 
 ### Phase 1B: Native Android Build
 
 Goal: prove the Kotlin module, Android manifest, Gradle config, and Expo local module setup compile successfully.
 
-- [ ] Build locally with `npx expo run:android`, or build an EAS development APK.
-- [ ] Fix any Gradle, Kotlin, manifest merge, package namespace, or autolinking errors.
-- [ ] Re-run the native Android build after every fix until it succeeds.
-- [ ] Install the development build on an Android device or emulator.
+- [x] Build locally with `npx expo run:android`, or build an EAS development APK.
+- [x] Fix any Gradle, Kotlin, manifest merge, package namespace, or autolinking errors.
+- [x] Re-run the native Android build after every fix until it succeeds.
+- [x] Install the development build on an Android device or emulator.
 
 Completion criteria: MoneyKai launches from a native Android development build that includes the `MoneyKaiNativeCapture` module.
+
+Status: native Android project generation succeeded with `npx.cmd expo prebuild --platform android --no-install`. Local Android tooling was installed and configured with JDK 17, Android SDK Platform 36, Android Build Tools 36.0.0, Android Platform Tools, Android Emulator, Android 36 Google APIs x86_64 system image, and `adb`. The first Gradle build exposed real native-module issues: the local Expo module needed Android `defaultConfig.versionName`, `compileSdkVersion`, and SDK defaults, `MoneyKaiNotificationListenerService` needed `Bundle.getCharSequence(...)` for notification extras, and `MoneyKaiNativeCaptureModule` had an extra closing brace around the companion object. After those fixes, `.\gradlew.bat :moneykai-native-capture:compileDebugKotlin --console=plain` and `.\gradlew.bat :app:assembleDebug --stacktrace --console=plain` both passed. A debug APK was produced at `android/app/build/outputs/apk/debug/app-debug.apk`, installed on the `MoneyKai_API_36` Android emulator, launched through Expo Dev Launcher, connected to Metro, and loaded the authenticated JS app.
 
 ### Phase 1C: Notification Access Permission Flow
 
@@ -38,11 +42,13 @@ Goal: verify Android can expose and grant Notification Listener access for Money
 - [ ] Open MoneyKai Settings.
 - [ ] Tap `Android Notification Access`.
 - [ ] Confirm Android opens the Notification Listener settings screen.
-- [ ] Grant listener access to MoneyKai.
-- [ ] Return to MoneyKai and confirm the native status reports notification access as granted.
+- [x] Grant listener access to MoneyKai.
+- [x] Return to MoneyKai and confirm the native/system status reports notification access as granted.
 - [ ] Confirm the app handles denied or not-granted access without crashing.
 
 Completion criteria: notification access can be granted and detected from the app.
+
+Status: mostly validated on emulator. Android sees `com.moneykai.mobile/com.moneykai.nativecapture.MoneyKaiNotificationListenerService` in the merged manifest with `android.permission.BIND_NOTIFICATION_LISTENER_SERVICE`. The listener was added to `enabled_notification_listeners`, Android Notification Access opened to `Settings$NotificationAccessSettingsActivity`, and the system screen showed MoneyKai Mobile under `Allowed`. `dumpsys notification listeners` reported MoneyKai under allowed, enabled, and live notification listeners. Remaining gap: validate the exact MoneyKai Settings -> `Android Notification Access` tap path once the Expo dev menu overlay is no longer blocking the profile/settings control.
 
 ### Phase 1D: Real Notification Capture Test
 
@@ -51,18 +57,20 @@ Goal: prove real transaction notifications are received by the native listener a
 - [ ] Enable Auto Capture in MoneyKai.
 - [ ] Enable Bank Notifications capture.
 - [ ] Trigger or receive real UPI, bank, card, wallet, or payment-app notifications.
-- [ ] Confirm transaction-like notifications are captured.
+- [x] Confirm transaction-like notifications are captured.
 - [ ] Confirm unrelated notifications are ignored.
-- [ ] Confirm notifications captured while the app is backgrounded or JS is not active are queued and later flushed.
+- [x] Confirm notifications captured while the app is backgrounded or JS is not active are queued and later flushed.
 
 Completion criteria: real financial notifications reach the MoneyKai capture pipeline.
+
+Status: validated on emulator with synthetic shell notifications. After posting a correctly quoted transaction-like notification, Android stored `android.title=HDFC Bank` and `android.text=Rs 123.45 debited from account for UPI payment to TEST MERCHANT`. The native listener captured it and queued it in app private storage at `shared_prefs/moneykai_native_capture.xml` under `pending_notification_signals` with source `notification`, source app `Shell`, title, body, received timestamp, and raw package name. After the JS app was connected and authenticated in dev demo mode, a fresh synthetic notification (`Rs 789.50 debited from account for UPI payment to PHASE ONE CAFE`) was consumed by the native bridge and did not remain in native pending storage. Real UPI/bank/card notifications remain untested because the emulator does not have real banking/payment apps or live notification sources.
 
 ### Phase 1E: Draft Creation And Parser Tuning
 
 Goal: confirm captured signals become useful reviewable drafts and tune obvious false positives or misses.
 
-- [ ] Confirm captured notifications appear as reviewable drafts in Auto Capture.
-- [ ] Confirm amount, merchant/source, direction, date, and category are reasonable where possible.
+- [x] Confirm captured notifications appear as reviewable drafts in Auto Capture.
+- [x] Confirm amount, merchant/source, direction, date, and category are reasonable where possible.
 - [ ] Record examples of missed financial notifications.
 - [ ] Record examples of incorrectly captured non-financial notifications.
 - [ ] Tune notification filtering and parsing rules based on real examples.
@@ -70,18 +78,22 @@ Goal: confirm captured signals become useful reviewable drafts and tune obvious 
 
 Completion criteria: captured notifications consistently produce reviewable drafts with acceptable false-positive and missed-capture behavior for an initial build.
 
+Status: validated on emulator for the synthetic notification path. The fresh HDFC/UPI shell notification became one pending Auto Capture draft. The Auto Capture screen showed `Pending = 1`, description `PHASE`, amount rounded/displayed as `₹ 790`, payment method `UPI`, transaction date `2026-06-09`, high confidence, and a suggested Food & Dining category. Parser quality still needs real-world fixture testing in Phase 2 because merchant extraction shortened `PHASE ONE CAFE` to `PHASE`.
+
 ### Phase 1F: Validation Signoff
 
 Goal: close Phase 1 with documented evidence and a stable baseline.
 
-- [ ] Run `npm.cmd run mobile:typecheck`.
-- [ ] Run `npm.cmd run mobile:lint`.
-- [ ] Run `npx expo-modules-autolinking verify --platform android`.
-- [ ] Run a final Android native build.
-- [ ] Document tested device/emulator, Android version, notification sources, known misses, and known false positives.
+- [x] Run `npm.cmd run mobile:typecheck`.
+- [x] Run `npm.cmd run mobile:lint`.
+- [x] Run `npx expo-modules-autolinking verify --platform android`.
+- [x] Run a final Android native build.
+- [x] Document tested device/emulator, Android version, notification sources, known misses, and known false positives.
 - [ ] Mark completed Phase 1A-1F checklist items.
 
 Completion criteria: Phase 1 is complete when a native Android build runs successfully, notification access can be granted, real financial notifications are captured, and those captured signals appear as reviewable drafts inside MoneyKai.
+
+Status: emulator validation is now substantially complete on `MoneyKai_API_36` using Android API 36. Native build, install, listener permission, live listener registration, synthetic notification capture, native bridge consumption, and reviewable Auto Capture draft creation are validated. A dev-only demo mode flag (`EXPO_PUBLIC_DEMO_MODE=true`) was added so emulator validation can run without real Firebase credentials while remaining gated by `__DEV__`. Remaining Phase 1 gaps: validate the exact in-app Settings -> Android Notification Access tap path without the Expo dev menu overlay, test denied/revoked access states, test unrelated/noise notifications, and test real UPI/bank/card notifications on a physical device when available.
 
 ## Phase 2: Capture Quality
 
@@ -482,6 +494,91 @@ Goal: decide whether the APK is ready for internal testers.
 - [ ] Collect tester feedback for capture accuracy, permission confusion, crashes, and device-specific failures.
 
 Completion criteria: MoneyKai has a controlled internal APK release with documented scope, risks, known issues, and feedback loop.
+
+## Phase 6: Account Aggregator Feasibility And Bank Sync
+
+Account Aggregator should be treated as a separate feasibility-led phase after native notification capture and release readiness. AA is a regulated bank-data integration, not a normal mobile permission or direct bank API.
+
+### Phase 6A: AA Eligibility And Provider Decision
+
+Goal: decide whether MoneyKai can pursue Account Aggregator directly or needs a regulated partner/provider.
+
+- [ ] Confirm whether MoneyKai can legally act as a Financial Information User.
+- [ ] Confirm whether MoneyKai needs a regulated FIU partner, TSP, or AA integration provider.
+- [ ] Review RBI, Sahamati, and provider requirements for FIU onboarding.
+- [ ] Identify required business, legal, security, and compliance documents.
+- [ ] Compare provider options for sandbox access, pricing, APIs, support, bank coverage, and production onboarding.
+- [ ] Decide one of three outcomes: `Do not pursue`, `Partner/provider route`, or `Direct FIU onboarding`.
+
+Completion criteria: MoneyKai has a documented AA go/no-go decision and a selected integration route before writing production AA code.
+
+### Phase 6B: Consent UX And Permission Model
+
+Goal: design a user consent flow that is transparent, revocable, and limited to the data MoneyKai actually needs.
+
+- [ ] Add an AA explainer that clearly states bank data access is optional and consent-based.
+- [ ] Explain that AA consent is not an Android permission and is approved through the AA ecosystem.
+- [ ] Show requested data type, purpose, data range, data life, fetch type, consent duration, and revocation option before starting consent.
+- [ ] Prefer one-time consent for v1 instead of recurring/periodic fetch.
+- [ ] Request only deposit account transaction data needed for budgeting and expense tracking.
+- [ ] Avoid profile, credit, investment, insurance, pension, GSTN, or unrelated financial data in v1.
+- [ ] Add user controls to view consent status, refresh status, expiry, and revoke/disconnect.
+
+Completion criteria: users can understand exactly what bank data MoneyKai requests, why it is needed, how long it is used, and how to revoke it.
+
+### Phase 6C: Backend AA Sandbox Integration
+
+Goal: implement AA through the backend only, keeping provider secrets and financial-data handling out of the mobile app.
+
+- [ ] Add backend endpoints for starting consent, checking consent status, syncing data, listing linked accounts, listing imports, and revoking consent.
+- [ ] Integrate with the selected AA/FIU provider sandbox.
+- [ ] Handle consent callbacks or webhooks securely.
+- [ ] Store consent IDs, provider references, status, expiry, linked account metadata, and sync status.
+- [ ] Do not store provider secrets, tokens, or decrypted financial payloads on the mobile client.
+- [ ] Add backend audit logs for consent creation, data fetch, revocation, and failure states.
+
+Completion criteria: the backend can complete a sandbox AA consent flow and fetch approved financial information without exposing AA credentials to the app.
+
+### Phase 6D: Structured Transaction Import
+
+Goal: convert AA bank statement data into MoneyKai reviewable transaction drafts.
+
+- [ ] Map AA financial information into a normalized MoneyKai bank transaction model.
+- [ ] Extract transaction date, posted date if available, amount, debit/credit direction, narration, reference, account source, and balance if available.
+- [ ] Reuse capture parser/category logic where useful, but keep AA imports as structured bank data rather than notification text.
+- [ ] Create reviewable imported transaction drafts before adding them to transaction history.
+- [ ] Add dedupe using account, transaction date, amount, direction, reference, narration hash, and source.
+- [ ] Handle failed syncs, empty statements, unsupported banks, partial data, duplicate imports, and revoked consent.
+
+Completion criteria: AA statement data imports into MoneyKai as stable reviewable drafts without duplicating existing transactions.
+
+### Phase 6E: Privacy, Security, And Revocation Controls
+
+Goal: protect bank data and make user control obvious.
+
+- [ ] Add privacy-policy copy for AA bank sync before any production rollout.
+- [ ] Store only normalized transaction data needed by MoneyKai, not full raw AA payloads by default.
+- [ ] Encrypt sensitive backend records and restrict access by authenticated user.
+- [ ] Add `Disconnect Bank Sync` and `Delete Imported Bank Data` controls.
+- [ ] Stop future syncs immediately when consent is revoked or expires.
+- [ ] Exclude raw AA payloads from backups unless a future explicit opt-in is designed.
+- [ ] Add user-visible consent history and last sync status.
+
+Completion criteria: users can revoke consent, disconnect bank sync, delete imported data, and trust that raw AA payloads are minimized.
+
+### Phase 6F: AA Production Gate
+
+Goal: decide whether AA is ready to move beyond sandbox.
+
+- [ ] Complete sandbox consent, fetch, import, revoke, and expired-consent tests.
+- [ ] Complete provider production onboarding requirements.
+- [ ] Complete security review for backend endpoints, storage, logging, and access control.
+- [ ] Complete privacy/legal review for AA consent copy and policy text.
+- [ ] Validate bank coverage for target users.
+- [ ] Confirm support process for failed linking, revoked consent, incorrect imports, and data deletion requests.
+- [ ] Decide final status: `Keep sandbox-only`, `Pilot with limited users`, or `Move toward production`.
+
+Completion criteria: Account Aggregator has a documented production-readiness decision backed by sandbox results, compliance review, and user-control implementation.
 
 ## Upcoming Phases
 

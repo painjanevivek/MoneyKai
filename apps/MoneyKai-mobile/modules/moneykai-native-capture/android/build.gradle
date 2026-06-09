@@ -8,4 +8,13 @@ version = '0.1.0'
 
 android {
   namespace "com.moneykai.nativecapture"
+
+  compileSdkVersion rootProject.ext.has("compileSdkVersion") ? rootProject.ext.compileSdkVersion : 36
+
+  defaultConfig {
+    minSdkVersion rootProject.ext.has("minSdkVersion") ? rootProject.ext.minSdkVersion : 24
+    targetSdkVersion rootProject.ext.has("targetSdkVersion") ? rootProject.ext.targetSdkVersion : 36
+    versionCode 1
+    versionName "0.1.0"
+  }
 }

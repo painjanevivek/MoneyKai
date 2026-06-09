@@ -20,7 +20,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
   totalSpent: totalSpentProp,
   onPressViewMore,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const storeCategoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const storeTotalSpent = useTransactionStore((s) => s.getTotalSpent());
   const categoryTotals = categoryTotalsProp ?? storeCategoryTotals;
@@ -35,7 +35,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
     () =>
       categoryTotals.slice(0, 6).map((cat, index) => ({
         value: cat.total,
-        color: getCategoryById(cat.category)?.color || chartColors[index % chartColors.length],
+        color: chartColors[index % chartColors.length],
         text: `${Math.round(cat.percentage)}%`,
         focused: index === 0,
       })),
@@ -89,7 +89,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
               donut
               radius={70}
               innerRadius={45}
-              innerCircleColor={colors.card}
+              innerCircleColor={isDark ? colors.surface : colors.card}
               centerLabelComponent={renderCenterLabel}
             />
           ) : (
@@ -116,7 +116,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
                     width: 8,
                     height: 8,
                     borderRadius: 4,
-                    backgroundColor: category?.color || chartColors[index],
+                    backgroundColor: chartColors[index % chartColors.length],
                     marginRight: 8,
                   }}
                 />

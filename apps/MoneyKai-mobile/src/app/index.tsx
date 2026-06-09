@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, Redirect, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Platform, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
@@ -31,10 +31,15 @@ export default function LandingScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isNativeApp = Platform.OS !== 'web';
   const isWide = width >= 960;
 
   if (isAuthenticated) {
     return <Redirect href="/(tabs)" />;
+  }
+
+  if (isNativeApp) {
+    return <Redirect href="/(auth)/login" />;
   }
 
   return (

@@ -65,6 +65,14 @@ export const useAuthStore = create<AuthState>()(
       hydrateSession: async () => {
         set({ isHydratingSession: true });
 
+        if (isDemoModeEnabled()) {
+          set((state) => ({
+            isAuthenticated: !!state.user,
+            isHydratingSession: false,
+          }));
+          return;
+        }
+
         if (!isFirebaseConfigured()) {
           set({ isHydratingSession: false });
           return;

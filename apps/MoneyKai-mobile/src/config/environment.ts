@@ -33,6 +33,7 @@ export const appEnvironment = {
   storeReview: storeReviewEnv,
   backendBaseUrl,
   debug: readEnv('EXPO_PUBLIC_DEBUG') === 'true',
+  demoMode: readEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
 };
 
 export const hasFirebaseEnvironment = (): boolean =>
@@ -43,7 +44,8 @@ export const hasFirebaseEnvironment = (): boolean =>
   isRealValue(firebaseEnv.messagingSenderId) &&
   isRealValue(firebaseEnv.appId);
 
-export const isDemoModeEnabled = (): boolean => __DEV__ && !hasFirebaseEnvironment();
+export const isDemoModeEnabled = (): boolean =>
+  __DEV__ && (appEnvironment.demoMode || !hasFirebaseEnvironment());
 
 export const getBackendBaseUrl = (): string => {
   if (appEnvironment.backendBaseUrl.length > 0) {

@@ -23,9 +23,9 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   label,
   style,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const barColor = color || colors.primary;
-  const bgColor = backgroundColor || colors.borderLight;
+  const bgColor = backgroundColor || (isDark ? colors.border : colors.borderLight);
   const clampedProgress = Math.max(0, Math.min(100, progress));
 
   return (

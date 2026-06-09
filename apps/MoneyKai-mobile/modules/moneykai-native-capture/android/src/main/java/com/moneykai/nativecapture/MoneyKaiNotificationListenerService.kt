@@ -15,10 +15,10 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
     val sourcePackage = sbn.packageName ?: return
     if (sourcePackage == packageName) return
 
-    val title = notification.extras.getText(Notification.EXTRA_TITLE)?.toString().orEmpty()
-    val text = notification.extras.getText(Notification.EXTRA_TEXT)?.toString().orEmpty()
-    val bigText = notification.extras.getText(Notification.EXTRA_BIG_TEXT)?.toString().orEmpty()
-    val subText = notification.extras.getText(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
+    val title = notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
+    val text = notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
+    val bigText = notification.extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString().orEmpty()
+    val subText = notification.extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
     val textLines = notification.extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
       ?.joinToString(" ") { it.toString() }
       .orEmpty()
