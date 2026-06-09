@@ -26,6 +26,7 @@ import {
   getNativeCaptureStatus,
   openNativeCaptureSettings,
   setNativeCaptureEnabled,
+  setNativeCaptureSourcesEnabled,
   type NativeCaptureStatus,
 } from '@/services/nativeCaptureBridge';
 import { getStoreReviewUrl, isSmsResearchBuildEnabled } from '@/config/environment';
@@ -105,9 +106,11 @@ export default function SettingsScreen() {
   const setReviewNotificationsEnabled = useCaptureStore((s) => s.setReviewNotificationsEnabled);
   const setSmsResearchModeEnabled = useCaptureStore((s) => s.setSmsResearchModeEnabled);
   const acceptNotificationExplainer = useCaptureStore((s) => s.acceptNotificationExplainer);
+  const acceptSmsResearchExplainer = useCaptureStore((s) => s.acceptSmsResearchExplainer);
   const setNotificationAccessStatus = useCaptureStore((s) => s.setNotificationAccessStatus);
   const disableAutoCapture = useCaptureStore((s) => s.disableAutoCapture);
   const clearCaptureInbox = useCaptureStore((s) => s.clearCaptureInbox);
+  const clearSmsResearchData = useCaptureStore((s) => s.clearSmsResearchData);
   const syncStatus = useSyncStore((s) => s.status);
   const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt);
   const syncError = useSyncStore((s) => s.error);
@@ -116,6 +119,7 @@ export default function SettingsScreen() {
   const [showBackupSheet, setShowBackupSheet] = useState(false);
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
   const [showNotificationExplainer, setShowNotificationExplainer] = useState(false);
+  const [showSmsResearchExplainer, setShowSmsResearchExplainer] = useState(false);
   const [nativeCaptureStatus, setNativeCaptureStatus] = useState<NativeCaptureStatus | null>(null);
   const [allowanceValue, setAllowanceValue] = useState(String(settings.monthly_allowance));
   const [savingAllowance, setSavingAllowance] = useState(false);
@@ -314,6 +318,83 @@ export default function SettingsScreen() {
       return;
     }
     setTimeout(() => void refreshNativeCaptureStatus(), 750);
+  };
+
+  const disableNativeSmsCapture = () => {
+    void setNativeCaptureSourcesEnabled({
+      notificationEnabled: captureSettings.autoCaptureEnabled && captureSettings.notificationCaptureEnabled,
+      smsEnabled: false,
+    });
+  };
+
+  const handleSmsResearchToggle = (enabled: boolean) => {
+    if (!enabled) {
+      setSmsResearchModeEnabled(false);
+      disableNativeSmsCapture();
+      return;
+    }
+
+    if (!smsResearchBuildEnabled) {
+      Alert.alert('Research build required', 'SMS Research Mode is not available in preview or production controls.');
+      return;
+    }
+
+    if (!captureSettings.smsResearchExplainerAcceptedAt) {
+      setShowSmsResearchExplainer(true);
+      return;
+    }
+
+    if (!captureSettings.autoCaptureEnabled) {
+      setAutoCaptureEnabled(true);
+    }
+    setSmsResearchModeEnabled(true);
+  };
+
+  const handleAcceptSmsResearchExplainer = () => {
+    acceptSmsResearchExplainer();
+    if (!captureSettings.autoCaptureEnabled) {
+      setAutoCaptureEnabled(true);
+    }
+    setSmsResearchModeEnabled(true);
+    setShowSmsResearchExplainer(false);
+  };
+
+  const handleDisableSmsResearch = () => {
+    if (!captureSettings.smsResearchModeEnabled) {
+      Alert.alert('SMS Research Mode is already off', 'No new SMS research signals can be ingested.');
+      return;
+    }
+
+    Alert.alert(
+      'Disable SMS Research Mode?',
+      'MoneyKai will stop accepting new SMS research signals. Existing confirmed transactions stay in your history.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disable',
+          style: 'destructive',
+          onPress: () => {
+            setSmsResearchModeEnabled(false);
+            disableNativeSmsCapture();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearSmsResearchData = () => {
+    Alert.alert(
+      'Clear SMS research data?',
+      'This removes pending and ignored SMS research drafts and signals. Notification drafts and confirmed transactions stay in place.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear SMS data',
+          style: 'destructive',
+          onPress: clearSmsResearchData,
+        },
+      ]
+    );
   };
 
   const handleDisableAutoCapture = () => {
@@ -568,18 +649,18 @@ export default function SettingsScreen() {
           ) : null}
           <SettingItem
             icon="message-processing-outline"
-            iconColor="#5A5A5A"
-            iconBg="#EFEFEF"
+            iconColor={smsResearchBuildEnabled ? colors.primary : '#5A5A5A'}
+            iconBg={smsResearchBuildEnabled ? colors.primaryBg : '#EFEFEF'}
             title="SMS Research Mode"
             subtitle={
               smsResearchBuildEnabled
-                ? `${sourceStatusLabel[smsSourceStatus]} | Internal paste/import only`
+                ? `${sourceStatusLabel[smsSourceStatus]} | Experimental, disabled by default`
                 : `${sourceStatusLabel[smsSourceStatus]} | Not available in production controls`
             }
             right={
               <Switch
                 value={captureSettings.smsResearchModeEnabled}
-                onValueChange={setSmsResearchModeEnabled}
+                onValueChange={handleSmsResearchToggle}
                 disabled={!smsResearchBuildEnabled}
                 trackColor={switchTrack}
                 thumbColor={switchThumb}
@@ -587,6 +668,27 @@ export default function SettingsScreen() {
               />
             }
           />
+          {smsResearchBuildEnabled ? (
+            <>
+              <SettingItem
+                icon="message-off-outline"
+                iconColor={colors.emergency}
+                iconBg={colors.emergencyBg}
+                title="Disable SMS Research"
+                subtitle="Stop SMS research ingestion immediately"
+                onPress={handleDisableSmsResearch}
+                disabled={!captureSettings.smsResearchModeEnabled}
+              />
+              <SettingItem
+                icon="delete-clock-outline"
+                iconColor="#5A5A5A"
+                iconBg="#EFEFEF"
+                title="Clear SMS Research Data"
+                subtitle="Remove pending and ignored SMS research drafts"
+                onPress={handleClearSmsResearchData}
+              />
+            </>
+          ) : null}
           <SettingItem
             icon="clipboard-check-outline"
             iconColor="#707070"
@@ -834,7 +936,7 @@ export default function SettingsScreen() {
       >
         <View style={{ gap: Spacing.sm }}>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            Cloud backups store your current transactions, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device.
+            Cloud backups store your current transactions, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device. Capture inbox data, raw notifications, and raw SMS bodies are excluded by default.
           </Text>
           <View style={{
             padding: Spacing.md,
@@ -853,6 +955,56 @@ export default function SettingsScreen() {
               4. Firestore permissions allow the backend service account to store backups.
             </Text>
           </View>
+        </View>
+      </ModalSheet>
+
+      <ModalSheet
+        visible={showSmsResearchExplainer}
+        title="SMS Research Mode"
+        subtitle="Experimental internal research. Use only if you understand the privacy and policy limits."
+        onClose={() => setShowSmsResearchExplainer(false)}
+        footer={
+          <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
+            <Button
+              title="Enable Research Mode"
+              icon="shield-check-outline"
+              onPress={handleAcceptSmsResearchExplainer}
+            />
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <Button
+                title="Not Now"
+                onPress={() => setShowSmsResearchExplainer(false)}
+                variant="outline"
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Privacy"
+                onPress={() => {
+                  setShowSmsResearchExplainer(false);
+                  router.push('/privacy-policy' as any);
+                }}
+                variant="ghost"
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        }
+      >
+        <View style={{ gap: Spacing.md }}>
+          {[
+            'SMS access is experimental and disabled by default.',
+            'Production and preview builds do not expose SMS capture controls or request SMS permissions.',
+            'SMS drafts are review-only and never become transactions until you confirm them.',
+            'MoneyKai stores sanitized parsed fields, not raw SMS bodies, and cloud backups exclude capture inbox data by default.',
+            'You can disable SMS Research Mode or clear SMS research data from Settings at any time.',
+          ].map((item) => (
+            <View key={item} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+              <MaterialCommunityIcons name="shield-check-outline" size={18} color={colors.primary} />
+              <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+                {item}
+              </Text>
+            </View>
+          ))}
         </View>
       </ModalSheet>
 

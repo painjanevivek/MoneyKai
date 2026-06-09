@@ -61,4 +61,12 @@ describe('SMS research build policy config', () => {
       delete requireConfig.cache[configModulePath];
     }
   });
+
+  it('keeps capture inbox and raw SMS bodies out of the cloud backup snapshot contract', () => {
+    const backupService = readFileSync(join(process.cwd(), 'src/services/backupService.ts'), 'utf8');
+
+    expect(backupService).not.toContain('useCaptureStore');
+    expect(backupService).not.toContain('CapturedSignal');
+    expect(backupService).not.toContain('DraftTransaction');
+  });
 });

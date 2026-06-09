@@ -120,6 +120,7 @@ export interface CaptureSettings {
   reviewNotificationsEnabled: boolean;
   smsResearchModeEnabled: boolean;
   notificationExplainerAcceptedAt?: string;
+  smsResearchExplainerAcceptedAt?: string;
   notificationAccessStatus: CapturePermissionState;
   notificationAccessLastCheckedAt?: string;
 }

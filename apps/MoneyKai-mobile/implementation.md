@@ -415,14 +415,16 @@ Completion criteria: SMS parser behavior is covered by fixtures and avoids noisy
 
 Goal: make SMS research transparent and reversible.
 
-- [ ] Add a strong SMS Research Mode explainer before enabling.
-- [ ] Explain that SMS access is experimental and disabled by default.
-- [ ] Add quick disable and clear SMS research data controls.
-- [ ] Prevent SMS raw message bodies from cloud backup by default.
-- [ ] Show `SMS` source badges on drafts.
-- [ ] Add privacy-policy copy only if SMS research is actually implemented.
+- [x] Add a strong SMS Research Mode explainer before enabling.
+- [x] Explain that SMS access is experimental and disabled by default.
+- [x] Add quick disable and clear SMS research data controls.
+- [x] Prevent SMS raw message bodies from cloud backup by default.
+- [x] Show `SMS` source badges on drafts.
+- [x] Add privacy-policy copy only if SMS research is actually implemented.
 
 Completion criteria: users can understand, disable, and clear SMS research data safely.
+
+Status: implemented. Settings now requires an SMS-specific explainer before enabling `SMS Research Mode`, records the acceptance timestamp, and keeps SMS research disabled by default outside internal builds. Internal builds expose quick `Disable SMS Research` and `Clear SMS Research Data` controls that stop new SMS ingestion and remove pending or ignored SMS research drafts without touching notification drafts or confirmed transactions. Cloud backup copy now states that capture inbox data and raw SMS bodies are excluded by default, the Privacy Policy includes SMS Research Mode, and automated tests cover consent tracking, SMS-only clearing, config gating, and backup exclusion.
 
 ### Phase 4G: Device And Policy Validation
 

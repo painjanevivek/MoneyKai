@@ -36,8 +36,10 @@ interface CaptureState {
   setReviewNotificationsEnabled: (enabled: boolean) => void;
   setSmsResearchModeEnabled: (enabled: boolean) => void;
   acceptNotificationExplainer: () => void;
+  acceptSmsResearchExplainer: () => void;
   setNotificationAccessStatus: (status: CaptureSettings['notificationAccessStatus']) => void;
   disableAutoCapture: () => void;
+  clearSmsResearchData: () => void;
   ingestSignal: (input: CaptureSignalInput) => CaptureIngestionResult;
   confirmDraft: (draftId: string, category: string) => boolean;
   ignoreDraft: (draftId: string) => void;
@@ -116,6 +118,14 @@ export const useCaptureStore = create<CaptureState>()(
           },
         })),
 
+      acceptSmsResearchExplainer: () =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            smsResearchExplainerAcceptedAt: new Date().toISOString(),
+          },
+        })),
+
       setNotificationAccessStatus: (status) =>
         set((state) => ({
           settings: {
@@ -131,6 +141,16 @@ export const useCaptureStore = create<CaptureState>()(
             ...state.settings,
             autoCaptureEnabled: false,
           },
+        })),
+
+      clearSmsResearchData: () =>
+        set((state) => ({
+          signals: state.signals.filter(
+            (signal) => signal.source !== 'sms' || signal.processingStatus === 'confirmed'
+          ),
+          drafts: state.drafts.filter(
+            (draft) => draft.captureSource !== 'sms' || draft.status === 'confirmed'
+          ),
         })),
 
       ingestSignal: (input) => {

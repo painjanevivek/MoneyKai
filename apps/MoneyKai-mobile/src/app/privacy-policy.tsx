@@ -49,6 +49,10 @@ export default function PrivacyPolicyScreen() {
               body: 'You can disable Auto Capture, turn notification capture off, revoke Android notification access in system settings, ignore drafts, or clear pending capture history without deleting confirmed transactions.',
             },
             {
+              title: 'SMS Research Mode',
+              body: 'SMS Research Mode is experimental, disabled by default, and intended for internal research builds only. When available, MoneyKai may create reviewable drafts from supported transaction SMS signals, stores only sanitized parsed fields, and excludes raw SMS bodies and capture inbox data from cloud backups by default.',
+            },
+            {
               title: 'Sharing and selling',
               body: 'MoneyKai does not sell your personal finance data. Backup data is intended to remain accessible only to the authenticated account connected to that environment.',
             },

@@ -167,4 +167,49 @@ describe('useCaptureStore production safety controls', () => {
       }),
     ]);
   });
+
+  it('records SMS research consent before enabling and clears only unconfirmed SMS research data', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+        smsResearchModeEnabled: true,
+      },
+    }));
+
+    useCaptureStore.getState().acceptSmsResearchExplainer();
+    expect(useCaptureStore.getState().settings.smsResearchExplainerAcceptedAt).toBeDefined();
+
+    const smsDraft = useCaptureStore.getState().ingestSignal({
+      source: 'sms',
+      sender: 'HDFCBK',
+      body: 'Rs 321.00 debited from account for UPI payment to SMS CLEAR TEST. UPI Ref 555566667777.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+    });
+    const notificationDraft = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'HDFC Bank',
+      title: 'Debit alert',
+      body: 'Rs 654.00 debited from account for UPI payment to NOTIFICATION KEEP TEST. UPI Ref 555566667778.',
+      receivedAt: '2026-06-09T10:05:00.000Z',
+    });
+
+    expect(smsDraft.status).toBe('drafted');
+    expect(notificationDraft.status).toBe('drafted');
+
+    useCaptureStore.getState().clearSmsResearchData();
+
+    expect(useCaptureStore.getState().drafts).toEqual([
+      expect.objectContaining({
+        id: notificationDraft.draftId,
+        captureSource: 'notification',
+      }),
+    ]);
+    expect(useCaptureStore.getState().signals).toEqual([
+      expect.objectContaining({
+        id: notificationDraft.signalId,
+        source: 'notification',
+      }),
+    ]);
+  });
 });
