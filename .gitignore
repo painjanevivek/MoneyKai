@@ -17,6 +17,8 @@ apps/*/expo-env.d.ts
 
 # Native
 .kotlin/
+.gradle/
+**/.gradle/
 *.orig.*
 *.jks
 *.p8
