@@ -123,6 +123,8 @@ export interface CaptureSettings {
   smsResearchExplainerAcceptedAt?: string;
   notificationAccessStatus: CapturePermissionState;
   notificationAccessLastCheckedAt?: string;
+  smsAccessStatus: CapturePermissionState;
+  smsAccessLastCheckedAt?: string;
 }
 
 export interface CaptureIngestionResult {

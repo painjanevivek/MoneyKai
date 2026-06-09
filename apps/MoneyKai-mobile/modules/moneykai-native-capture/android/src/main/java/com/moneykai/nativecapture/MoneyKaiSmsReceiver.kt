@@ -32,8 +32,18 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
         putString("sender", sanitizeSmsText(sender))
         putString("body", sanitizeSmsText(body))
         putString("receivedAt", toIsoUtc(receivedAt))
+        putString("captureOrigin", "android_sms_receiver")
+        putString("rawBodyStored", "false")
+        putString("smsSubscriptionId", readIntentExtra(intent, "subscription"))
+        putString("smsSlot", readIntentExtra(intent, "slot"))
+        putString("smsPhoneId", readIntentExtra(intent, "phone"))
       }
     )
+  }
+
+  private fun readIntentExtra(intent: Intent, key: String): String? {
+    val value = intent.extras?.get(key) ?: return null
+    return value.toString().take(MAX_SMS_META_LENGTH)
   }
 
   private fun looksLikeFinancialSms(value: String): Boolean {
@@ -64,6 +74,7 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
 
   companion object {
     private const val MAX_SMS_FIELD_LENGTH = 500
+    private const val MAX_SMS_META_LENGTH = 32
     private val amountPattern = Regex("""(?:rs\.?|inr|\u20B9)\s*\d""")
     private val moneyTerms = listOf("rs", "inr", "\u20B9", "upi", "card", "account", "a/c", "wallet", "bank")
     private val transactionTerms = listOf(

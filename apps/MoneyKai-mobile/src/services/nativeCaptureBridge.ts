@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
 import type { CaptureSignalInput } from '@/types/capture';
 
@@ -24,6 +24,11 @@ type NativeCaptureSignal = {
   receivedAt?: string;
   rawPackageName?: string;
   privacyStatus?: string;
+  captureOrigin?: string;
+  rawBodyStored?: string;
+  smsSubscriptionId?: string;
+  smsSlot?: string;
+  smsPhoneId?: string;
 };
 
 type MoneyKaiNativeCaptureEvents = {
@@ -59,6 +64,33 @@ export const getNativeCaptureStatus = async (): Promise<NativeCaptureStatus> => 
   }
 
   return nativeCaptureModule.getStatus();
+};
+
+export const requestNativeSmsPermission = async (): Promise<NativeCapturePermissionStatus> => {
+  if (Platform.OS !== 'android' || !nativeCaptureModule?.getStatus) {
+    return 'unsupported';
+  }
+
+  const currentStatus = nativeCaptureModule.getStatus();
+  if (currentStatus.smsAccess === 'unsupported' || currentStatus.smsAccess === 'granted') {
+    return currentStatus.smsAccess;
+  }
+
+  const permission = PermissionsAndroid.PERMISSIONS.RECEIVE_SMS;
+  const alreadyGranted = await PermissionsAndroid.check(permission);
+  if (alreadyGranted) {
+    return 'granted';
+  }
+
+  const result = await PermissionsAndroid.request(permission, {
+    title: 'Allow SMS Research Mode',
+    message:
+      'MoneyKai needs SMS access only in this internal research build to create reviewable transaction drafts from real bank SMS messages.',
+    buttonPositive: 'Allow',
+    buttonNegative: 'Not now',
+  });
+
+  return result === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied';
 };
 
 export const openNativeCaptureSettings = async () => {
@@ -123,6 +155,11 @@ export const subscribeToNativeCaptureSignals = (
       rawPayload: {
         rawPackageName: event.rawPackageName,
         privacyStatus: event.privacyStatus,
+        captureOrigin: event.captureOrigin,
+        rawBodyStored: event.rawBodyStored,
+        smsSubscriptionId: event.smsSubscriptionId,
+        smsSlot: event.smsSlot,
+        smsPhoneId: event.smsPhoneId,
       },
     });
   });

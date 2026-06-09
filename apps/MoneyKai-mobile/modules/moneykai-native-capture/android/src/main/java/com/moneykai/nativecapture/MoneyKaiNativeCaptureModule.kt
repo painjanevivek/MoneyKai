@@ -1,9 +1,11 @@
 package com.moneykai.nativecapture
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -66,7 +68,7 @@ class MoneyKaiNativeCaptureModule : Module() {
       )
       status.putString(
         "smsAccess",
-        if (isSmsReceiverDeclared(requireContext())) "not_requested" else "unsupported"
+        getSmsAccessStatus(requireContext())
       )
       status
     }
@@ -248,6 +250,18 @@ class MoneyKaiNativeCaptureModule : Module() {
       val intent = Intent(Telephony.Sms.Intents.SMS_RECEIVED_ACTION).setPackage(context.packageName)
       return context.packageManager.queryBroadcastReceivers(intent, 0).any { receiver ->
         receiver.activityInfo?.name == MoneyKaiSmsReceiver::class.java.name
+      }
+    }
+
+    private fun getSmsAccessStatus(context: Context): String {
+      if (!isSmsReceiverDeclared(context)) {
+        return "unsupported"
+      }
+
+      return if (context.checkSelfPermission(Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED) {
+        "granted"
+      } else {
+        "denied"
       }
     }
   }

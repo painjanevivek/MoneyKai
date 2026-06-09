@@ -23,9 +23,33 @@ const DEFAULT_CAPTURE_SETTINGS: CaptureSettings = {
   reviewNotificationsEnabled: true,
   smsResearchModeEnabled: false,
   notificationAccessStatus: 'unknown',
+  smsAccessStatus: 'unknown',
 };
 
 const buildId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+const SAFE_RAW_PAYLOAD_KEYS = new Set([
+  'rawPackageName',
+  'privacyStatus',
+  'captureOrigin',
+  'rawBodyStored',
+  'smsSubscriptionId',
+  'smsSlot',
+  'smsPhoneId',
+]);
+
+const sanitizeCaptureRawPayload = (rawPayload?: Record<string, unknown>): Record<string, unknown> | undefined => {
+  if (!rawPayload) return undefined;
+
+  const safePayload = Object.entries(rawPayload).reduce<Record<string, unknown>>((acc, [key, value]) => {
+    if (SAFE_RAW_PAYLOAD_KEYS.has(key) && ['string', 'number', 'boolean'].includes(typeof value)) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
+
+  return Object.keys(safePayload).length > 0 ? safePayload : undefined;
+};
 
 interface CaptureState {
   settings: CaptureSettings;
@@ -39,6 +63,7 @@ interface CaptureState {
   acceptNotificationExplainer: () => void;
   acceptSmsResearchExplainer: () => void;
   setNotificationAccessStatus: (status: CaptureSettings['notificationAccessStatus']) => void;
+  setSmsAccessStatus: (status: CaptureSettings['smsAccessStatus']) => void;
   disableAutoCapture: () => void;
   clearSmsResearchData: () => void;
   ingestSignal: (input: CaptureSignalInput) => CaptureIngestionResult;
@@ -136,6 +161,15 @@ export const useCaptureStore = create<CaptureState>()(
           },
         })),
 
+      setSmsAccessStatus: (status) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            smsAccessStatus: status,
+            smsAccessLastCheckedAt: new Date().toISOString(),
+          },
+        })),
+
       disableAutoCapture: () =>
         set((state) => ({
           settings: {
@@ -202,6 +236,7 @@ export const useCaptureStore = create<CaptureState>()(
           ignoreReason: parsed.ignoreReason,
           confidence: parsed.confidence,
           body: parsed.explanation.safeSnippet,
+          rawPayload: sanitizeCaptureRawPayload(input.rawPayload),
         };
 
         if (parsed.parseStatus === 'ignore' || !parsed.amount) {

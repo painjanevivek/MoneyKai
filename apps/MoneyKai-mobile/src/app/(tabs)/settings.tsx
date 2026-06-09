@@ -25,6 +25,7 @@ import {
   clearNativeCaptureQueue,
   getNativeCaptureStatus,
   openNativeCaptureSettings,
+  requestNativeSmsPermission,
   setNativeCaptureEnabled,
   setNativeCaptureSourcesEnabled,
   type NativeCaptureStatus,
@@ -108,6 +109,7 @@ export default function SettingsScreen() {
   const acceptNotificationExplainer = useCaptureStore((s) => s.acceptNotificationExplainer);
   const acceptSmsResearchExplainer = useCaptureStore((s) => s.acceptSmsResearchExplainer);
   const setNotificationAccessStatus = useCaptureStore((s) => s.setNotificationAccessStatus);
+  const setSmsAccessStatus = useCaptureStore((s) => s.setSmsAccessStatus);
   const disableAutoCapture = useCaptureStore((s) => s.disableAutoCapture);
   const clearCaptureInbox = useCaptureStore((s) => s.clearCaptureInbox);
   const clearSmsResearchData = useCaptureStore((s) => s.clearSmsResearchData);
@@ -156,8 +158,17 @@ export default function SettingsScreen() {
   const smsSourceStatus = useMemo<CaptureSourceStatus>(() => {
     if (!smsResearchBuildEnabled) return 'unsupported';
     if (!captureSettings.autoCaptureEnabled || !captureSettings.smsResearchModeEnabled) return 'disabled';
-    return 'research_only';
-  }, [captureSettings.autoCaptureEnabled, captureSettings.smsResearchModeEnabled, smsResearchBuildEnabled]);
+    if ((nativeCaptureStatus?.smsAccess ?? captureSettings.smsAccessStatus ?? 'unknown') !== 'granted') {
+      return 'needs_android_access';
+    }
+    return 'enabled';
+  }, [
+    captureSettings.autoCaptureEnabled,
+    captureSettings.smsAccessStatus,
+    captureSettings.smsResearchModeEnabled,
+    nativeCaptureStatus?.smsAccess,
+    smsResearchBuildEnabled,
+  ]);
 
   const refreshNativeCaptureStatus = useCallback(async (showBusy = true) => {
     if (showBusy) {
@@ -167,12 +178,13 @@ export default function SettingsScreen() {
       const status = await getNativeCaptureStatus();
       setNativeCaptureStatus(status);
       setNotificationAccessStatus(status.notificationAccess);
+      setSmsAccessStatus(status.smsAccess);
     } finally {
       if (showBusy) {
         setNativeStatusBusy(false);
       }
     }
-  }, [setNotificationAccessStatus]);
+  }, [setNotificationAccessStatus, setSmsAccessStatus]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -327,6 +339,43 @@ export default function SettingsScreen() {
     });
   };
 
+  const requestSmsAccessForResearch = async () => {
+    const status = await requestNativeSmsPermission();
+    setSmsAccessStatus(status);
+    setNativeCaptureStatus((current) => current ? { ...current, smsAccess: status } : current);
+
+    if (status !== 'granted') {
+      Alert.alert(
+        'SMS permission needed',
+        'MoneyKai cannot validate real incoming SMS delivery until Android SMS permission is granted for this research build.'
+      );
+      return false;
+    }
+
+    return true;
+  };
+
+  const enableSmsResearchMode = async () => {
+    const hasSmsAccess =
+      (nativeCaptureStatus?.smsAccess ?? captureSettings.smsAccessStatus ?? 'unknown') === 'granted' ||
+      await requestSmsAccessForResearch();
+
+    if (!hasSmsAccess) {
+      setSmsResearchModeEnabled(false);
+      disableNativeSmsCapture();
+      return;
+    }
+
+    if (!captureSettings.autoCaptureEnabled) {
+      setAutoCaptureEnabled(true);
+    }
+    setSmsResearchModeEnabled(true);
+    void setNativeCaptureSourcesEnabled({
+      notificationEnabled: captureSettings.notificationCaptureEnabled,
+      smsEnabled: true,
+    });
+  };
+
   const handleSmsResearchToggle = (enabled: boolean) => {
     if (!enabled) {
       setSmsResearchModeEnabled(false);
@@ -344,19 +393,13 @@ export default function SettingsScreen() {
       return;
     }
 
-    if (!captureSettings.autoCaptureEnabled) {
-      setAutoCaptureEnabled(true);
-    }
-    setSmsResearchModeEnabled(true);
+    void enableSmsResearchMode();
   };
 
   const handleAcceptSmsResearchExplainer = () => {
     acceptSmsResearchExplainer();
-    if (!captureSettings.autoCaptureEnabled) {
-      setAutoCaptureEnabled(true);
-    }
-    setSmsResearchModeEnabled(true);
     setShowSmsResearchExplainer(false);
+    void enableSmsResearchMode();
   };
 
   const handleDisableSmsResearch = () => {
@@ -654,7 +697,7 @@ export default function SettingsScreen() {
             title="SMS Research Mode"
             subtitle={
               smsResearchBuildEnabled
-                ? `${sourceStatusLabel[smsSourceStatus]} | Experimental, disabled by default`
+                ? `${sourceStatusLabel[smsSourceStatus]} | Research-only real SMS validation`
                 : `${sourceStatusLabel[smsSourceStatus]} | Not available in production controls`
             }
             right={
@@ -994,6 +1037,7 @@ export default function SettingsScreen() {
           {[
             'SMS access is experimental and disabled by default.',
             'Production and preview builds do not expose SMS capture controls or request SMS permissions.',
+            'Android will ask for SMS permission before real incoming SMS delivery can be validated.',
             'SMS drafts are review-only and never become transactions until you confirm them.',
             'MoneyKai stores sanitized parsed fields, not raw SMS bodies, and cloud backups exclude capture inbox data by default.',
             'You can disable SMS Research Mode or clear SMS research data from Settings at any time.',

@@ -59,6 +59,7 @@ const resetCaptureStore = () => {
       reviewNotificationsEnabled: false,
       smsResearchModeEnabled: false,
       notificationAccessStatus: 'unknown',
+      smsAccessStatus: 'unknown',
     },
     signals: [],
     drafts: [],
@@ -179,6 +180,49 @@ describe('useCaptureStore production safety controls', () => {
         body: expect.not.stringContaining('555566667777'),
       }),
     ]);
+  });
+
+  it('persists only safe SMS capture metadata and never raw SMS payload fields', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+        smsResearchModeEnabled: true,
+      },
+    }));
+
+    const rawBody = 'Rs 321.00 debited from account for UPI payment to RAW PAYLOAD TEST. UPI Ref 555566667777.';
+    const result = useCaptureStore.getState().ingestSignal({
+      source: 'sms',
+      sender: 'AXISBK',
+      body: rawBody,
+      receivedAt: '2026-06-09T10:00:00.000Z',
+      rawPayload: {
+        body: rawBody,
+        sender: 'AXISBK',
+        captureOrigin: 'android_sms_receiver',
+        rawBodyStored: 'false',
+        smsSubscriptionId: '2',
+        smsSlot: '1',
+        smsPhoneId: '1',
+      },
+    });
+
+    expect(result.status).toBe('drafted');
+    expect(useCaptureStore.getState().signals[0]).toEqual(
+      expect.objectContaining({
+        body: expect.not.stringContaining('555566667777'),
+        rawPayload: {
+          captureOrigin: 'android_sms_receiver',
+          rawBodyStored: 'false',
+          smsSubscriptionId: '2',
+          smsSlot: '1',
+          smsPhoneId: '1',
+        },
+      })
+    );
+    expect(useCaptureStore.getState().signals[0].rawPayload).not.toHaveProperty('body');
+    expect(useCaptureStore.getState().signals[0].rawPayload).not.toHaveProperty('sender');
   });
 
   it('blocks captured transactions until a monthly budget exists', () => {

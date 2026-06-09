@@ -73,6 +73,19 @@ Remaining steps that still require a real incoming SMS event:
 - Revoke SMS permission from Settings, repeat a real SMS attempt, then re-enable permission and retest.
 - If the device has two active SIMs, repeat the real incoming SMS test for SIM 1 and SIM 2 and record sender/timestamp behavior.
 
+## Implementation Added For Real SMS Validation
+
+The app now has the required runtime and data-flow pieces for real-device SMS validation:
+
+- Settings requests Android `RECEIVE_SMS` runtime permission before enabling SMS Research Mode.
+- Native status reports SMS access as `granted`, `denied`, or `unsupported` so the UI can show whether real SMS delivery can work.
+- SMS Research Mode still requires explicit research consent and remains unavailable outside research builds.
+- Real incoming SMS events are queued through the native pending-signal queue when the JS bridge is inactive.
+- SMS receiver metadata includes `captureOrigin`, `rawBodyStored=false`, and optional Android SIM metadata: `smsSubscriptionId`, `smsSlot`, and `smsPhoneId`.
+- Persisted capture records keep only safe parser snippets and an allowlisted metadata payload. Raw SMS body and sender fields are not persisted in `rawPayload`.
+
+This does not bypass Android's protected `SMS_RECEIVED` broadcast. Final proof still requires a real incoming carrier/bank SMS, because ADB shell cannot legally send that protected system broadcast.
+
 ## Release Gate
 
 SMS Research Mode cannot move beyond internal research until:

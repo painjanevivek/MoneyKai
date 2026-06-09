@@ -104,9 +104,11 @@ Device testing is mandatory for mobile finance workflows because emulators do no
 
 - SMS capture is disabled in production unless policy approval is complete.
 - Fresh install does not grant SMS permission automatically.
+- The app must request Android `RECEIVE_SMS` runtime permission only after clear in-app consent.
 - Permission grant, deny, revoke, and re-enable are tested manually on device.
 - Real carrier SMS is tested because Android blocks fake `SMS_RECEIVED` broadcasts from ADB.
 - Dual-SIM SMS behavior is tested for SIM 1 and SIM 2.
+- Native capture stores only sanitized parsed snippets and allowlisted metadata such as SIM slot/subscription. Raw SMS bodies must not be persisted in capture history or backups.
 - OTP, promotional, failed, reversed, and non-financial messages are ignored.
 - Raw SMS body is discarded after parsing unless explicit research logging is enabled for internal builds.
 
