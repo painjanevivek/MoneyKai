@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.provider.Telephony
 import android.text.TextUtils
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -46,6 +47,14 @@ class MoneyKaiNativeCaptureModule : Module() {
       true
     }
 
+    Function("setCaptureSourcesEnabled") { notificationEnabled: Boolean, smsEnabled: Boolean ->
+      setCaptureSourcesEnabled(requireContext(), notificationEnabled, smsEnabled)
+      if (!notificationEnabled && !smsEnabled) {
+        clearPendingSignals(requireContext())
+      }
+      true
+    }
+
     Function("getStatus") {
       activeModule = this@MoneyKaiNativeCaptureModule
       val status = Bundle()
@@ -55,7 +64,10 @@ class MoneyKaiNativeCaptureModule : Module() {
         "notificationAccess",
         if (isNotificationListenerEnabled(requireContext())) "granted" else "not_requested"
       )
-      status.putString("smsAccess", "unsupported")
+      status.putString(
+        "smsAccess",
+        if (isSmsReceiverDeclared(requireContext())) "not_requested" else "unsupported"
+      )
       status
     }
 
@@ -79,11 +91,21 @@ class MoneyKaiNativeCaptureModule : Module() {
     private const val PREFS_NAME = "moneykai_native_capture"
     private const val PREFS_PENDING_SIGNALS = "pending_notification_signals"
     private const val PREFS_CAPTURE_ENABLED = "capture_enabled"
+    private const val PREFS_NOTIFICATION_CAPTURE_ENABLED = "notification_capture_enabled"
+    private const val PREFS_SMS_CAPTURE_ENABLED = "sms_capture_enabled"
 
     private var activeModule: MoneyKaiNativeCaptureModule? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
     fun handleNotificationSignal(context: Context, event: Bundle) {
+      if (!isCaptureEnabled(context) || !isNotificationCaptureEnabled(context)) {
+        return
+      }
+
+      handleNativeSignal(context, event)
+    }
+
+    fun handleNativeSignal(context: Context, event: Bundle) {
       if (!isCaptureEnabled(context)) {
         return
       }
@@ -162,12 +184,31 @@ class MoneyKaiNativeCaptureModule : Module() {
       context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .edit()
         .putBoolean(PREFS_CAPTURE_ENABLED, enabled)
+        .putBoolean(PREFS_NOTIFICATION_CAPTURE_ENABLED, enabled)
+        .putBoolean(PREFS_SMS_CAPTURE_ENABLED, false)
+        .apply()
+    }
+
+    private fun setCaptureSourcesEnabled(context: Context, notificationEnabled: Boolean, smsEnabled: Boolean) {
+      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putBoolean(PREFS_CAPTURE_ENABLED, notificationEnabled || smsEnabled)
+        .putBoolean(PREFS_NOTIFICATION_CAPTURE_ENABLED, notificationEnabled)
+        .putBoolean(PREFS_SMS_CAPTURE_ENABLED, smsEnabled)
         .apply()
     }
 
     fun isCaptureEnabled(context: Context): Boolean =
       context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .getBoolean(PREFS_CAPTURE_ENABLED, false)
+
+    private fun isNotificationCaptureEnabled(context: Context): Boolean =
+      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getBoolean(PREFS_NOTIFICATION_CAPTURE_ENABLED, isCaptureEnabled(context))
+
+    fun isSmsCaptureEnabled(context: Context): Boolean =
+      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getBoolean(PREFS_SMS_CAPTURE_ENABLED, false)
 
     private fun bundleToJson(bundle: Bundle): JSONObject {
       val json = JSONObject()
@@ -200,6 +241,13 @@ class MoneyKaiNativeCaptureModule : Module() {
 
       return TextUtils.split(enabledListeners, ":").any { listener ->
         listener.equals(expected, ignoreCase = true)
+      }
+    }
+
+    private fun isSmsReceiverDeclared(context: Context): Boolean {
+      val intent = Intent(Telephony.Sms.Intents.SMS_RECEIVED_ACTION).setPackage(context.packageName)
+      return context.packageManager.queryBroadcastReceivers(intent, 0).any { receiver ->
+        receiver.activityInfo?.name == MoneyKaiSmsReceiver::class.java.name
       }
     }
   }

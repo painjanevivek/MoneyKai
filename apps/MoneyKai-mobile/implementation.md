@@ -388,14 +388,16 @@ Status: implemented. The Auto Capture review screen now exposes a dev/research-o
 
 Goal: build a contained prototype only if Phase 4A and 4C allow it.
 
-- [ ] Add SMS native code only behind dev/internal build controls.
-- [ ] Route SMS signals through the existing capture pipeline as `source: 'sms'`.
-- [ ] Do not auto-confirm SMS transactions.
-- [ ] Store only sanitized parsed fields.
-- [ ] Ignore OTP, promotional, failed, and non-financial SMS messages.
-- [ ] Ensure disabling SMS Research Mode stops ingestion.
+- [x] Add SMS native code only behind dev/internal build controls.
+- [x] Route SMS signals through the existing capture pipeline as `source: 'sms'`.
+- [x] Do not auto-confirm SMS transactions.
+- [x] Store only sanitized parsed fields.
+- [x] Ignore OTP, promotional, failed, and non-financial SMS messages.
+- [x] Ensure disabling SMS Research Mode stops ingestion.
 
 Completion criteria: SMS can create reviewable research drafts in dev builds without affecting production builds.
+
+Status: implemented as a dev-only native prototype. `app.config.js` preserves the existing Expo config but loads `withMoneyKaiSmsResearch` only when `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`; production and preview builds therefore keep `app.json` free of restricted SMS permissions and do not register the SMS receiver. The Android receiver handles only new `SMS_RECEIVED` events in research builds, requires the native capture master switch plus the SMS source switch, performs conservative native filtering for financial wording while dropping OTP/promotional/failed/noise messages, sanitizes SMS sender/body fields before queuing, and emits through the existing capture event path as `source: 'sms'`. The JS coordinator now sets notification and SMS native source switches independently, while the store still requires `SMS Research Mode` before creating reviewable SMS drafts.
 
 ### Phase 4E: SMS Parser And Noise Handling
 

@@ -15,17 +15,18 @@ type NativeCaptureSubscription = {
   remove: () => void;
 };
 
-type NativeNotificationSignal = {
-  source?: 'notification';
+type NativeCaptureSignal = {
+  source?: 'notification' | 'sms';
   title?: string;
   body?: string;
   sourceApp?: string;
+  sender?: string;
   receivedAt?: string;
   rawPackageName?: string;
 };
 
 type MoneyKaiNativeCaptureEvents = {
-  onNotificationSignal: (event: NativeNotificationSignal) => void;
+  onNotificationSignal: (event: NativeCaptureSignal) => void;
 };
 
 type MoneyKaiNativeCaptureModule = {
@@ -33,6 +34,7 @@ type MoneyKaiNativeCaptureModule = {
   stopListening?: () => boolean;
   clearPendingSignals?: () => boolean;
   setCaptureEnabled?: (enabled: boolean) => boolean;
+  setCaptureSourcesEnabled?: (notificationEnabled: boolean, smsEnabled: boolean) => boolean;
   getStatus?: () => NativeCaptureStatus;
   openNotificationListenerSettings?: () => boolean;
   addListener?: (
@@ -82,6 +84,17 @@ export const setNativeCaptureEnabled = async (enabled: boolean) => {
   return nativeCaptureModule.setCaptureEnabled(enabled);
 };
 
+export const setNativeCaptureSourcesEnabled = async (params: {
+  notificationEnabled: boolean;
+  smsEnabled: boolean;
+}) => {
+  if (nativeCaptureModule?.setCaptureSourcesEnabled) {
+    return nativeCaptureModule.setCaptureSourcesEnabled(params.notificationEnabled, params.smsEnabled);
+  }
+
+  return setNativeCaptureEnabled(params.notificationEnabled);
+};
+
 export const subscribeToNativeCaptureSignals = (
   handler: (signal: CaptureSignalInput) => void
 ): NativeCaptureSubscription => {
@@ -92,10 +105,11 @@ export const subscribeToNativeCaptureSignals = (
   const subscription = nativeCaptureModule.addListener('onNotificationSignal', (event) => {
     if (!event.body) return;
     handler({
-      source: 'notification',
+      source: event.source === 'sms' ? 'sms' : 'notification',
       title: event.title,
       body: event.body,
       sourceApp: event.sourceApp,
+      sender: event.sender,
       receivedAt: event.receivedAt,
     });
   });
