@@ -50,6 +50,20 @@ yarn-error.*
 
 # test output
 coverage/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# local virtual environments
+.venv/
+venv/
+
+# local validation artifacts
+apps/*/artifacts/**
+!apps/*/artifacts/
+!apps/*/artifacts/README.md
+!apps/*/artifacts/*/
+!apps/*/artifacts/*/.gitkeep
 
 # editors
 .idea/
