@@ -337,14 +337,16 @@ Risk notes:
 
 Goal: design SMS capture so it cannot accidentally ship in production.
 
-- [ ] Keep SMS disabled by default.
-- [ ] Keep `smsResearchModeEnabled` separate from normal Auto Capture.
-- [ ] Ensure production builds do not include SMS permissions unless explicitly approved.
-- [ ] Use a dev/internal build profile for SMS experiments.
-- [ ] Add clear in-app labeling: `SMS Research Mode`.
-- [ ] Add a kill switch that disables SMS ingestion immediately.
+- [x] Keep SMS disabled by default.
+- [x] Keep `smsResearchModeEnabled` separate from normal Auto Capture.
+- [x] Ensure production builds do not include SMS permissions unless explicitly approved.
+- [x] Use a dev/internal build profile for SMS experiments.
+- [x] Add clear in-app labeling: `SMS Research Mode`.
+- [x] Add a kill switch that disables SMS ingestion immediately.
 
 Completion criteria: SMS research can be tested without creating Play Store production risk.
+
+Status: implemented as a research-only architecture guard. `smsResearchModeEnabled` remains disabled by default and separate from the Auto Capture master and notification source toggles. `ingestSmsCapture()` now refuses SMS signals unless `isSmsResearchBuildEnabled()` returns true, and the environment guard only allows that when `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true` in a dev runtime. `eas.json` explicitly enables the research flag only for the internal development profile and disables it for preview and production. Production app config still declares no restricted SMS permissions. Repeatable tests cover the SMS research ingestion gate, EAS profile flag split, and absence of restricted SMS permissions in `app.json`.
 
 ### Phase 4C: SMS Ingestion Strategy Spike
 

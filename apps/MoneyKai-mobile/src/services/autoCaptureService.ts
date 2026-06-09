@@ -1,3 +1,4 @@
+import { isSmsResearchBuildEnabled } from '@/config/environment';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import type { CaptureIngestionResult, CaptureSignalInput } from '@/types/capture';
 
@@ -25,11 +26,16 @@ export const ingestSmsCapture = (params: {
   body: string;
   receivedAt?: string;
   rawPayload?: Record<string, unknown>;
-}): CaptureIngestionResult =>
-  ingestCapturedTransactionSignal({
+}): CaptureIngestionResult => {
+  if (!isSmsResearchBuildEnabled()) {
+    return { status: 'ignored', reason: 'sms research build is disabled' };
+  }
+
+  return ingestCapturedTransactionSignal({
     source: 'sms',
     sender: params.sender,
     body: params.body,
     receivedAt: params.receivedAt,
     rawPayload: params.rawPayload,
   });
+};

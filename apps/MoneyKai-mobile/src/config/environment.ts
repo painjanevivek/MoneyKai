@@ -26,6 +26,7 @@ const storeReviewEnv = {
 };
 
 const backendBaseUrl = readEnv('EXPO_PUBLIC_BACKEND_BASE_URL').replace(/\/$/, '');
+const isDevRuntime = (): boolean => typeof __DEV__ !== 'undefined' && __DEV__;
 
 export const appEnvironment = {
   firebase: firebaseEnv,
@@ -34,6 +35,7 @@ export const appEnvironment = {
   backendBaseUrl,
   debug: readEnv('EXPO_PUBLIC_DEBUG') === 'true',
   demoMode: readEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
+  smsResearchBuild: readEnv('EXPO_PUBLIC_SMS_RESEARCH_BUILD') === 'true',
 };
 
 export const hasFirebaseEnvironment = (): boolean =>
@@ -45,14 +47,17 @@ export const hasFirebaseEnvironment = (): boolean =>
   isRealValue(firebaseEnv.appId);
 
 export const isDemoModeEnabled = (): boolean =>
-  __DEV__ && (appEnvironment.demoMode || !hasFirebaseEnvironment());
+  isDevRuntime() && (appEnvironment.demoMode || !hasFirebaseEnvironment());
+
+export const isSmsResearchBuildEnabled = (): boolean =>
+  isDevRuntime() && appEnvironment.smsResearchBuild;
 
 export const getBackendBaseUrl = (): string => {
   if (appEnvironment.backendBaseUrl.length > 0) {
     return appEnvironment.backendBaseUrl;
   }
 
-  return __DEV__ ? 'http://localhost:8000' : '';
+  return isDevRuntime() ? 'http://localhost:8000' : '';
 };
 
 export const hasGoogleClientIds = (): boolean =>
