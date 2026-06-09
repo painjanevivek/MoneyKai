@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,8 +7,12 @@ import { useCaptureStore } from '@/stores/useCaptureStore';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Input } from '@/components/ui/Input';
+import { ModalSheet } from '@/components/ui/ModalSheet';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, getCategoryById } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { isSmsResearchBuildEnabled } from '@/config/environment';
+import { ingestSmsCapture } from '@/services/autoCaptureService';
 import { formatCurrency } from '@/utils/formatCurrency';
 import type { CaptureSource, DraftTransaction } from '@/types/capture';
 
@@ -194,18 +198,99 @@ export default function AutoCaptureScreen() {
   const drafts = useCaptureStore((state) => state.drafts);
   const signals = useCaptureStore((state) => state.signals);
   const merchantRules = useCaptureStore((state) => state.merchantRules);
+  const smsResearchModeEnabled = useCaptureStore((state) => state.settings.smsResearchModeEnabled);
+  const smsResearchBuildEnabled = isSmsResearchBuildEnabled();
+  const [showSmsImport, setShowSmsImport] = useState(false);
+  const [smsSender, setSmsSender] = useState('');
+  const [smsBody, setSmsBody] = useState('');
+  const [smsImportError, setSmsImportError] = useState<string | undefined>();
   const pendingDrafts = useMemo(() => drafts.filter((draft) => draft.status === 'pending'), [drafts]);
   const recentSignals = useMemo(() => signals.slice(0, 5), [signals]);
+  const canPasteSms = smsResearchBuildEnabled && smsResearchModeEnabled;
+
+  const resetSmsImport = () => {
+    setSmsSender('');
+    setSmsBody('');
+    setSmsImportError(undefined);
+  };
+
+  const handleOpenSmsImport = () => {
+    if (!canPasteSms) {
+      Alert.alert('SMS Research Mode is off', 'Enable SMS Research Mode in Settings before importing pasted SMS text.');
+      return;
+    }
+
+    resetSmsImport();
+    setShowSmsImport(true);
+  };
+
+  const handleSubmitSmsImport = () => {
+    const body = smsBody.trim();
+    if (body.length < 12) {
+      setSmsImportError('Paste a complete transaction SMS.');
+      return;
+    }
+
+    const result = ingestSmsCapture({
+      sender: smsSender.trim() || undefined,
+      body,
+      receivedAt: new Date().toISOString(),
+    });
+
+    resetSmsImport();
+    setShowSmsImport(false);
+
+    if (result.status === 'drafted') {
+      Alert.alert('Draft ready', 'MoneyKai created a reviewable SMS draft.');
+      return;
+    }
+
+    if (result.status === 'duplicate') {
+      Alert.alert('Already captured', 'MoneyKai found an existing capture for this transaction.');
+      return;
+    }
+
+    Alert.alert('Not imported', result.reason);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-          Auto Capture
-        </Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-          Review transaction drafts before they affect your budget.
-        </Text>
+      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md, gap: Spacing.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Auto Capture
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
+              Review transaction drafts before they affect your budget.
+            </Text>
+          </View>
+          {smsResearchBuildEnabled ? (
+            <TouchableOpacity
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="Paste SMS"
+              activeOpacity={0.78}
+              onPress={handleOpenSmsImport}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: BorderRadius.md,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: canPasteSms ? colors.primary : colors.surface,
+                borderWidth: 1,
+                borderColor: canPasteSms ? colors.primary : colors.border,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="message-text-outline"
+                size={20}
+                color={canPasteSms ? colors.textInverse : colors.textSecondary}
+              />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
@@ -262,6 +347,68 @@ export default function AutoCaptureScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      {smsResearchBuildEnabled ? (
+        <ModalSheet
+          visible={showSmsImport}
+          title="Paste SMS"
+          subtitle="Internal research import. MoneyKai creates reviewable drafts from pasted text and stores only sanitized capture fields."
+          onClose={() => {
+            resetSmsImport();
+            setShowSmsImport(false);
+          }}
+          footer={
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm }}>
+              <Button
+                title="Cancel"
+                variant="outline"
+                onPress={() => {
+                  resetSmsImport();
+                  setShowSmsImport(false);
+                }}
+                style={{ flex: 1 }}
+              />
+              <Button title="Create Draft" icon="text-box-plus-outline" onPress={handleSubmitSmsImport} style={{ flex: 1 }} />
+            </View>
+          }
+        >
+          <View style={{ gap: Spacing.sm }}>
+            <Input
+              label="Sender"
+              placeholder="HDFCBK"
+              value={smsSender}
+              onChangeText={setSmsSender}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={32}
+            />
+            <Input
+              label="Message"
+              placeholder="Paste the transaction SMS"
+              value={smsBody}
+              onChangeText={(value) => {
+                setSmsBody(value);
+                if (smsImportError) setSmsImportError(undefined);
+              }}
+              multiline
+              numberOfLines={5}
+              autoCapitalize="sentences"
+              autoCorrect={false}
+              maxLength={500}
+              error={smsImportError}
+              inputStyle={{ minHeight: 120 }}
+            />
+            <Card variant="outlined" borderRadius="md" padding="md" style={{ backgroundColor: colors.surface }}>
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+                <MaterialCommunityIcons name="shield-check-outline" size={18} color={colors.textSecondary} />
+                <Text style={{ flex: 1, fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                  Raw pasted text is discarded after parsing. Confirmed transactions are added only after review.
+                </Text>
+              </View>
+            </Card>
+          </View>
+        </ModalSheet>
+      ) : null}
     </SafeAreaView>
   );
 }

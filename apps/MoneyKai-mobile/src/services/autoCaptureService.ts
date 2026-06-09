@@ -25,7 +25,6 @@ export const ingestSmsCapture = (params: {
   sender?: string;
   body: string;
   receivedAt?: string;
-  rawPayload?: Record<string, unknown>;
 }): CaptureIngestionResult => {
   if (!isSmsResearchBuildEnabled()) {
     return { status: 'ignored', reason: 'sms research build is disabled' };
@@ -36,6 +35,5 @@ export const ingestSmsCapture = (params: {
     sender: params.sender,
     body: params.body,
     receivedAt: params.receivedAt,
-    rawPayload: params.rawPayload,
   });
 };

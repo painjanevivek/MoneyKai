@@ -368,6 +368,22 @@ Strategy notes:
 - `READ_SMS` should remain blocked unless MoneyKai has explicit Play Console approval, legal/privacy sign-off, and a narrow user-initiated import design that avoids bulk raw storage.
 - All SMS paths must route through `source: 'sms'`, never auto-confirm transactions, and preserve the existing sanitized parse-explanation model.
 
+### Phase 4C.1: No-Permission Manual SMS Import Prototype
+
+Goal: validate SMS parsing value without requesting restricted Android SMS permissions.
+
+- [x] Add an internal research-only paste/import entry point.
+- [x] Keep production and preview builds free of SMS import UI and SMS permissions.
+- [x] Require `SMS Research Mode` as a kill switch before pasted SMS can be imported.
+- [x] Route pasted SMS through the existing capture pipeline as `source: 'sms'`.
+- [x] Do not auto-confirm imported SMS transactions.
+- [x] Store only sanitized capture fields and discard raw pasted text after parsing.
+- [x] Cover the manual SMS import path with repeatable tests.
+
+Completion criteria: internal builds can create reviewable SMS drafts from pasted messages without adding Android SMS permissions or storing raw SMS payloads.
+
+Status: implemented. The Auto Capture review screen now exposes a dev/research-only `Paste SMS` action when `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`. The action remains blocked unless `SMS Research Mode` is enabled in Settings, preserving a clear kill switch. Pasted SMS text is passed through `ingestSmsCapture()` without raw payload forwarding, creates only reviewable drafts, and uses the existing `SMS` source badge and sanitized parse-explanation model. Production and preview builds keep the SMS research flag off and still request no restricted SMS permissions.
+
 ### Phase 4D: Dev-Only Native SMS Prototype
 
 Goal: build a contained prototype only if Phase 4A and 4C allow it.

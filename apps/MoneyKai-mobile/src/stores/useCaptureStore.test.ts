@@ -134,4 +134,37 @@ describe('useCaptureStore production safety controls', () => {
       }),
     ]);
   });
+
+  it('creates reviewable SMS drafts only when SMS Research Mode is enabled', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+        smsResearchModeEnabled: true,
+      },
+    }));
+
+    const result = useCaptureStore.getState().ingestSignal({
+      source: 'sms',
+      sender: 'HDFCBK',
+      body: 'Rs 321.00 debited from account for UPI payment to SMS TEST CAFE. UPI Ref 555566667777.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+      rawPayload: { body: 'should not be used by the manual import path' },
+    });
+
+    expect(result.status).toBe('drafted');
+    expect(useCaptureStore.getState().drafts).toEqual([
+      expect.objectContaining({
+        captureSource: 'sms',
+        sourceApp: 'HDFCBK',
+        status: 'pending',
+      }),
+    ]);
+    expect(useCaptureStore.getState().signals).toEqual([
+      expect.objectContaining({
+        source: 'sms',
+        body: expect.not.stringContaining('555566667777'),
+      }),
+    ]);
+  });
 });

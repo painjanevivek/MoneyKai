@@ -28,7 +28,7 @@ import {
   setNativeCaptureEnabled,
   type NativeCaptureStatus,
 } from '@/services/nativeCaptureBridge';
-import { getStoreReviewUrl } from '@/config/environment';
+import { getStoreReviewUrl, isSmsResearchBuildEnabled } from '@/config/environment';
 import type { CaptureSourceStatus } from '@/types/capture';
 
 interface SettingItemProps {
@@ -122,6 +122,7 @@ export default function SettingsScreen() {
   const [backupBusy, setBackupBusy] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [nativeStatusBusy, setNativeStatusBusy] = useState(false);
+  const smsResearchBuildEnabled = isSmsResearchBuildEnabled();
 
   const switchTrack = {
     false: colors.border,
@@ -149,9 +150,10 @@ export default function SettingsScreen() {
   ]);
 
   const smsSourceStatus = useMemo<CaptureSourceStatus>(() => {
+    if (!smsResearchBuildEnabled) return 'unsupported';
     if (!captureSettings.autoCaptureEnabled || !captureSettings.smsResearchModeEnabled) return 'disabled';
     return 'research_only';
-  }, [captureSettings.autoCaptureEnabled, captureSettings.smsResearchModeEnabled]);
+  }, [captureSettings.autoCaptureEnabled, captureSettings.smsResearchModeEnabled, smsResearchBuildEnabled]);
 
   const refreshNativeCaptureStatus = useCallback(async (showBusy = true) => {
     if (showBusy) {
@@ -569,12 +571,16 @@ export default function SettingsScreen() {
             iconColor="#5A5A5A"
             iconBg="#EFEFEF"
             title="SMS Research Mode"
-            subtitle={`${sourceStatusLabel[smsSourceStatus]} | Not available in production controls`}
+            subtitle={
+              smsResearchBuildEnabled
+                ? `${sourceStatusLabel[smsSourceStatus]} | Internal paste/import only`
+                : `${sourceStatusLabel[smsSourceStatus]} | Not available in production controls`
+            }
             right={
               <Switch
                 value={captureSettings.smsResearchModeEnabled}
                 onValueChange={setSmsResearchModeEnabled}
-                disabled={!captureSettings.smsResearchModeEnabled}
+                disabled={!smsResearchBuildEnabled}
                 trackColor={switchTrack}
                 thumbColor={switchThumb}
                 ios_backgroundColor={colors.borderLight}

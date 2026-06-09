@@ -52,7 +52,6 @@ describe('autoCaptureService SMS research gate', () => {
       sender: 'HDFCBK',
       body: 'Rs 321.00 debited from account for UPI payment to TEST SHOP.',
       receivedAt: '2026-06-09T10:00:00.000Z',
-      rawPayload: undefined,
     });
   });
 });
