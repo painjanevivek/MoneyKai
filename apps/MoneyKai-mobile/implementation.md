@@ -352,13 +352,21 @@ Status: implemented as a research-only architecture guard. `smsResearchModeEnabl
 
 Goal: evaluate possible SMS ingestion approaches and choose the safest one.
 
-- [ ] Evaluate native `RECEIVE_SMS` receiver for new incoming SMS.
-- [ ] Evaluate inbox-read strategy with `READ_SMS`.
-- [ ] Evaluate manual paste/import as a no-permission fallback.
-- [ ] Evaluate SMS Retriever/User Consent APIs only for OTP-style messages, not bank transaction scraping.
-- [ ] Choose a research strategy based on privacy, reliability, Play policy risk, and implementation cost.
+- [x] Evaluate native `RECEIVE_SMS` receiver for new incoming SMS.
+- [x] Evaluate inbox-read strategy with `READ_SMS`.
+- [x] Evaluate manual paste/import as a no-permission fallback.
+- [x] Evaluate SMS Retriever/User Consent APIs only for OTP-style messages, not bank transaction scraping.
+- [x] Choose a research strategy based on privacy, reliability, Play policy risk, and implementation cost.
 
 Completion criteria: one SMS ingestion strategy is selected for research, with rejected alternatives documented.
+
+Status: completed as a strategy spike. Chosen next research strategy is `manual paste/import first`, with native `RECEIVE_SMS` kept as a later dev-only prototype candidate only if manual/import validation proves enough user value and policy review remains favorable. `READ_SMS` inbox-read is rejected for now because broad historical inbox access has the highest privacy, policy, and data-minimization risk. SMS Retriever/User Consent APIs are rejected for transaction ingestion because they are intended for OTP-style verification and do not provide a compliant path for broad bank-message parsing. Manual paste/import has the best production safety profile because it needs no restricted permissions, can reuse the existing fixture-driven parser, can show strong consent/disclosure before parsing, and can discard raw input immediately after sanitized draft creation.
+
+Strategy notes:
+- Manual paste/import should become the first implementation target if Phase 4 proceeds because it validates SMS parsing value without adding Play Store SMS permissions.
+- Native `RECEIVE_SMS` can be reconsidered only for internal research builds guarded by `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`, with no production manifest permissions.
+- `READ_SMS` should remain blocked unless MoneyKai has explicit Play Console approval, legal/privacy sign-off, and a narrow user-initiated import design that avoids bulk raw storage.
+- All SMS paths must route through `source: 'sms'`, never auto-confirm transactions, and preserve the existing sanitized parse-explanation model.
 
 ### Phase 4D: Dev-Only Native SMS Prototype
 
