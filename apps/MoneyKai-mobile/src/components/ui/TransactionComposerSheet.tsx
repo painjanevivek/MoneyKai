@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { Alert, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { router } from 'expo-router';
+import { Alert, Animated, Dimensions, Easing, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Button } from '@/components/ui/Button';
+import { BudgetRequiredDialog } from '@/components/ui/BudgetRequiredDialog';
 import { Input } from '@/components/ui/Input';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
@@ -22,6 +25,7 @@ type TransactionComposerSheetProps = {
 const sanitizeAmount = (value: string) => value.replace(/[^0-9]/g, '');
 const getTodayDate = () => formatDate(new Date(), 'yyyy-MM-dd');
 const parseTransactionDate = (value: string) => new Date(`${value}T12:00:00`);
+const SHEET_INITIAL_OFFSET = Dimensions.get('window').height;
 
 export function TransactionComposerSheet({
   visible,
@@ -30,6 +34,7 @@ export function TransactionComposerSheet({
 }: TransactionComposerSheetProps) {
   const { colors } = useTheme();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
+  const monthlyAllowance = useBudgetStore((s) => s.settings.monthly_allowance);
   const { addTransaction, updateTransaction, deleteTransaction } = useTransactionStore();
   const isEditing = editingTransaction !== null;
 
@@ -40,6 +45,32 @@ export function TransactionComposerSheet({
   const [txnPayment, setTxnPayment] = useState(editingTransaction?.payment_method ?? 'upi');
   const [txnDate, setTxnDate] = useState(editingTransaction?.transaction_date ?? getTodayDate());
   const [showMobileDatePicker, setShowMobileDatePicker] = useState(false);
+  const [showBudgetDialog, setShowBudgetDialog] = useState(false);
+  const [sheetTranslateY] = useState(() => new Animated.Value(SHEET_INITIAL_OFFSET));
+  const [backdropOpacity] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    if (!visible) {
+      sheetTranslateY.setValue(SHEET_INITIAL_OFFSET);
+      backdropOpacity.setValue(0);
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(sheetTranslateY, {
+        toValue: 0,
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [backdropOpacity, sheetTranslateY, visible]);
 
   const handleClose = () => {
     setShowMobileDatePicker(false);
@@ -54,7 +85,22 @@ export function TransactionComposerSheet({
     setTxnDate(value);
   };
 
+  const showBudgetRequiredAlert = () => {
+    setShowBudgetDialog(true);
+  };
+
+  const handleSetBudgetFromDialog = () => {
+    setShowBudgetDialog(false);
+    handleClose();
+    router.push('/(tabs)/budget');
+  };
+
   const handleSubmitTransaction = () => {
+    if (!isEditing && monthlyAllowance <= 0) {
+      showBudgetRequiredAlert();
+      return;
+    }
+
     const amount = Number(txnAmount);
     const isValidAmount = /^\d+$/.test(txnAmount) && Number.isFinite(amount) && amount > 0;
     const parsedDate = parseTransactionDate(txnDate);
@@ -81,7 +127,11 @@ export function TransactionComposerSheet({
     if (editingTransaction) {
       updateTransaction(editingTransaction.id, transactionPayload);
     } else {
-      addTransaction(transactionPayload);
+      const didAddTransaction = addTransaction(transactionPayload);
+      if (!didAddTransaction) {
+        showBudgetRequiredAlert();
+        return;
+      }
     }
 
     handleClose();
@@ -105,28 +155,56 @@ export function TransactionComposerSheet({
   const categories = txnType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
-      <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
-        <View
-          style={{
-            backgroundColor: colors.card,
-            borderTopLeftRadius: BorderRadius.xl,
-            borderTopRightRadius: BorderRadius.xl,
-            padding: Spacing.xl,
-            maxHeight: '85%',
-          }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.lg }}>
+    <>
+      <Modal visible={visible} animationType="none" transparent statusBarTranslucent onRequestClose={handleClose}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+              backgroundColor: colors.overlay,
+              opacity: backdropOpacity,
+            }}
+          />
+          <Pressable style={{ flex: 1 }} onPress={handleClose} />
+          <Animated.View
+            style={{
+              backgroundColor: colors.card,
+              borderTopLeftRadius: BorderRadius.xl,
+              borderTopRightRadius: BorderRadius.xl,
+              paddingHorizontal: Spacing.xl,
+              paddingTop: Spacing.lg,
+              paddingBottom: Spacing.xl,
+              maxHeight: '85%',
+              transform: [{ translateY: sheetTranslateY }],
+            }}
+          >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
             <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
               {isEditing ? 'Edit Transaction' : 'Add Transaction'}
             </Text>
-            <TouchableOpacity onPress={handleClose}>
+            <TouchableOpacity
+              onPress={handleClose}
+              accessibilityRole="button"
+              accessibilityLabel="Close add transaction"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: Spacing.sm }}>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg }}>
               {(['expense', 'income'] as const).map((type) => (
                 <TouchableOpacity
                   key={type}
@@ -136,9 +214,11 @@ export function TransactionComposerSheet({
                   }}
                   style={{
                     flex: 1,
-                    paddingVertical: Spacing.sm,
+                    minHeight: 76,
+                    paddingVertical: Spacing.md,
                     borderRadius: BorderRadius.md,
                     alignItems: 'center',
+                    justifyContent: 'center',
                     backgroundColor: txnType === type ? (type === 'expense' ? colors.emergencyBg : colors.primaryBg) : colors.surface,
                     borderWidth: txnType === type ? 2 : 1,
                     borderColor: txnType === type ? (type === 'expense' ? colors.emergency : colors.primary) : colors.border,
@@ -169,12 +249,18 @@ export function TransactionComposerSheet({
               placeholder="0"
               value={txnAmount}
               onChangeText={handleAmountChange}
-              prefix="₹"
               keyboardType="number-pad"
               inputMode="numeric"
               icon="currency-inr"
             />
-            <Input label="Description" placeholder="What was this for?" value={txnDescription} onChangeText={setTxnDescription} icon="text-short" />
+            <Input
+              label="Description"
+              placeholder="What was this for?"
+              value={txnDescription}
+              onChangeText={setTxnDescription}
+              icon="text-short"
+              returnKeyType="done"
+            />
 
             <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary, marginBottom: Spacing.xs }}>
               Transaction Date
@@ -299,9 +385,10 @@ export function TransactionComposerSheet({
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 6,
+                    justifyContent: 'center',
+                    gap: Spacing.xs,
+                    minHeight: 44,
                     paddingHorizontal: Spacing.md,
-                    paddingVertical: Spacing.sm,
                     borderRadius: BorderRadius.full,
                     backgroundColor: txnCategory === cat.id ? `${cat.color}15` : colors.surface,
                     borderWidth: 1.5,
@@ -310,6 +397,7 @@ export function TransactionComposerSheet({
                 >
                   <MaterialCommunityIcons name={cat.icon as any} size={16} color={txnCategory === cat.id ? cat.color : colors.textTertiary} />
                   <Text
+                    numberOfLines={1}
                     style={{
                       fontSize: Typography.fontSize.xs,
                       fontFamily: Typography.fontFamily.medium,
@@ -353,8 +441,11 @@ export function TransactionComposerSheet({
                   onPress={() => setTxnPayment(pm.id)}
                   style={{
                     flex: 1,
+                    minHeight: 72,
                     alignItems: 'center',
+                    justifyContent: 'center',
                     paddingVertical: Spacing.sm,
+                    paddingHorizontal: Spacing.xs,
                     borderRadius: BorderRadius.md,
                     backgroundColor: txnPayment === pm.id ? colors.primaryBg : colors.surface,
                     borderWidth: 1.5,
@@ -363,11 +454,17 @@ export function TransactionComposerSheet({
                 >
                   <MaterialCommunityIcons name={pm.icon as any} size={18} color={txnPayment === pm.id ? colors.primary : colors.textTertiary} />
                   <Text
+                    numberOfLines={2}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.82}
                     style={{
                       fontSize: 10,
                       fontFamily: Typography.fontFamily.medium,
                       marginTop: 2,
                       color: txnPayment === pm.id ? colors.primary : colors.textSecondary,
+                      lineHeight: 13,
+                      minHeight: 26,
+                      textAlign: 'center',
                     }}
                   >
                     {pm.name}
@@ -399,8 +496,15 @@ export function TransactionComposerSheet({
               <Button title="Add Transaction" onPress={handleSubmitTransaction} fullWidth size="lg" icon="check" />
             )}
           </ScrollView>
+          </Animated.View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+      <BudgetRequiredDialog
+        visible={showBudgetDialog}
+        message="Set a monthly budget before adding transactions."
+        onCancel={() => setShowBudgetDialog(false)}
+        onSetBudget={handleSetBudgetFromDialog}
+      />
+    </>
   );
 }

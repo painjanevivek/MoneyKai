@@ -47,7 +47,7 @@ export default function BudgetScreen() {
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }} showsVerticalScrollIndicator={false}>
         <MonthlyBudgetSummaryCard
           monthLabel={monthLabel}
           monthlyAllowance={settings.monthly_allowance}

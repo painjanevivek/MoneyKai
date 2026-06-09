@@ -106,6 +106,7 @@ export default function DashboardScreen() {
     () => buildDashboardInsight(monthExpenseTotal, previousMonthExpenseTotal, monthlyAllowance),
     [monthExpenseTotal, previousMonthExpenseTotal, monthlyAllowance]
   );
+  const showDashboardInsight = dashboardInsight.title !== 'Set your monthly budget';
   const savingsSnapshot = useMemo(
     () => buildSavingsGoalSnapshot(activeChallenges[0], monthlyAllowance, remaining),
     [activeChallenges, monthlyAllowance, remaining]
@@ -163,7 +164,7 @@ export default function DashboardScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 150 }}
+        contentContainerStyle={{ paddingBottom: Spacing['2xl'] }}
       >
         <View
           style={{
@@ -295,48 +296,50 @@ export default function DashboardScreen() {
           />
         </View>
 
-        <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
-          <View
-            style={{
-              marginTop: 0,
-              padding: Spacing.md,
-              borderRadius: BorderRadius.lg,
-              backgroundColor: dashboardInsight.tone === 'warning' ? colors.emergencyBg : colors.surface,
-              borderWidth: 1,
-              borderColor: dashboardInsight.tone === 'warning' ? `${colors.emergency}20` : colors.borderLight,
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              gap: Spacing.sm,
-            }}
-          >
-            <MaterialCommunityIcons
-              name={dashboardInsight.icon as any}
-              size={18}
-              color={dashboardInsight.tone === 'warning' ? colors.emergency : colors.primary}
-            />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: Typography.fontSize.sm,
-                  fontFamily: Typography.fontFamily.semiBold,
-                  color: colors.textPrimary,
-                }}
-              >
-                {dashboardInsight.title}
-              </Text>
-              <Text
-                style={{
-                  marginTop: 2,
-                  fontSize: Typography.fontSize.xs,
-                  color: colors.textSecondary,
-                  lineHeight: 18,
-                }}
-              >
-                {dashboardInsight.body}
-              </Text>
+        {showDashboardInsight ? (
+          <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
+            <View
+              style={{
+                marginTop: 0,
+                padding: Spacing.md,
+                borderRadius: BorderRadius.lg,
+                backgroundColor: dashboardInsight.tone === 'warning' ? colors.emergencyBg : colors.surface,
+                borderWidth: 1,
+                borderColor: dashboardInsight.tone === 'warning' ? `${colors.emergency}20` : colors.borderLight,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: Spacing.sm,
+              }}
+            >
+              <MaterialCommunityIcons
+                name={dashboardInsight.icon as any}
+                size={18}
+                color={dashboardInsight.tone === 'warning' ? colors.emergency : colors.primary}
+              />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: Typography.fontSize.sm,
+                    fontFamily: Typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {dashboardInsight.title}
+                </Text>
+                <Text
+                  style={{
+                    marginTop: 2,
+                    fontSize: Typography.fontSize.xs,
+                    color: colors.textSecondary,
+                    lineHeight: 18,
+                  }}
+                >
+                  {dashboardInsight.body}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+        ) : null}
 
         <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
           <RecentTransactions
@@ -360,6 +363,7 @@ export default function DashboardScreen() {
         title="MoneyKai Menu"
         subtitle={user?.email || 'Account and quick actions'}
         onClose={() => setShowMenuSheet(false)}
+        presentation="side"
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
             <Button title="Sign Out" onPress={handleSignOut} variant="danger" fullWidth />

@@ -52,7 +52,7 @@ export default function NotificationsScreen() {
         />
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}
+          contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }}
           showsVerticalScrollIndicator={false}
         >
           {notifications.map((notification, index) => (

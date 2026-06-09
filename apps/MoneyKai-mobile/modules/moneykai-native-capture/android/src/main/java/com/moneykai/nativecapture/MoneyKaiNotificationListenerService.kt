@@ -29,6 +29,22 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
       .joinToString(" ")
       .trim()
 
+    if (isNotificationContentHidden(body, notification) && looksLikeFinancialNotificationSource(title, sourcePackage)) {
+      MoneyKaiNativeCaptureModule.handleNotificationSignal(
+        applicationContext,
+        Bundle().apply {
+          putString("source", "notification")
+          putString("title", sanitizeNotificationText(title))
+          putString("body", "Notification content hidden by Android privacy settings")
+          putString("sourceApp", resolveAppLabel(sourcePackage))
+          putString("receivedAt", toIsoUtc(sbn.postTime))
+          putString("rawPackageName", sourcePackage)
+          putString("privacyStatus", "content_hidden")
+        }
+      )
+      return
+    }
+
     if (body.isBlank() || !looksLikeFinancialNotification("$title $body")) {
       return
     }
@@ -53,6 +69,20 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
     val hasMoneySignal = moneyTerms.any { text.contains(it) } || amountPattern.containsMatchIn(text)
     val hasTransactionSignal = transactionTerms.any { text.contains(it) }
     return hasMoneySignal && hasTransactionSignal
+  }
+
+  private fun isNotificationContentHidden(body: String, notification: Notification): Boolean {
+    if (notification.visibility == Notification.VISIBILITY_SECRET) {
+      return true
+    }
+
+    val text = body.lowercase(Locale.US)
+    return body.isBlank() || hiddenContentTerms.any { text.contains(it) }
+  }
+
+  private fun looksLikeFinancialNotificationSource(title: String, packageName: String): Boolean {
+    val text = "$title $packageName".lowercase(Locale.US)
+    return financialSourceTerms.any { text.contains(it) }
   }
 
   private fun toIsoUtc(timestamp: Long): String {
@@ -80,6 +110,35 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
   companion object {
     private val amountPattern = Regex("""(?:rs\.?|inr|usd|eur|gbp|aed|\u20B9|\$)\s*\d""")
     private val moneyTerms = listOf("rs", "inr", "\u20B9", "upi", "card", "account", "wallet", "bank")
+    private val hiddenContentTerms = listOf(
+      "content hidden",
+      "hidden content",
+      "message hidden",
+      "sensitive content hidden",
+      "unlock to view"
+    )
+    private val financialSourceTerms = listOf(
+      "axis",
+      "hdfc",
+      "icici",
+      "sbi",
+      "kotak",
+      "yes bank",
+      "idfc",
+      "indusind",
+      "canara",
+      "pnb",
+      "bank",
+      "upi",
+      "gpay",
+      "google pay",
+      "phonepe",
+      "paytm",
+      "bhim",
+      "cred",
+      "fi money",
+      "jupiter"
+    )
     private val transactionTerms = listOf(
       "debited",
       "credited",

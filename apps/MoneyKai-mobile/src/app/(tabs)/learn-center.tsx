@@ -38,7 +38,7 @@ export default function LearnCenterScreen() {
         contentContainerStyle={{
           paddingHorizontal: Spacing.base,
           paddingTop: Spacing.md,
-          paddingBottom: 160,
+          paddingBottom: Spacing['2xl'],
         }}
       >
         <View style={{ gap: Spacing.sm, marginBottom: Spacing.lg }}>

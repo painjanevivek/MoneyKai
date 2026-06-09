@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { recordAppNotification } from '@/services/notificationService';
 import { buildCaptureDedupeKey, normalizeMerchantKey, parseCapturedSignal } from '@/services/captureParser';
 import { useAuthStore } from './useAuthStore';
+import { useBudgetStore } from './useBudgetStore';
 import { useTransactionStore } from './useTransactionStore';
 import type {
   CapturedSignal,
@@ -168,6 +169,10 @@ export const useCaptureStore = create<CaptureState>()(
           return { status: 'ignored', reason: 'sms capture is research-only' };
         }
 
+        if (useBudgetStore.getState().settings.monthly_allowance <= 0) {
+          return { status: 'ignored', reason: 'set a monthly budget before fetching transactions' };
+        }
+
         const now = new Date().toISOString();
         const parsed = parseCapturedSignal(input, merchantRules);
         const dedupeKey = buildCaptureDedupeKey(input, parsed);
@@ -249,9 +254,10 @@ export const useCaptureStore = create<CaptureState>()(
       confirmDraft: (draftId, category) => {
         const draft = get().drafts.find((item) => item.id === draftId);
         if (!draft || draft.status !== 'pending') return false;
+        if (useBudgetStore.getState().settings.monthly_allowance <= 0) return false;
 
         const confirmedAt = new Date().toISOString();
-        useTransactionStore.getState().addTransaction({
+        const didAddTransaction = useTransactionStore.getState().addTransaction({
           user_id: draft.user_id,
           type: draft.type,
           amount: draft.amount,
@@ -260,6 +266,7 @@ export const useCaptureStore = create<CaptureState>()(
           payment_method: draft.payment_method,
           transaction_date: draft.transaction_date,
         });
+        if (!didAddTransaction) return false;
 
         set((state) => ({
           drafts: state.drafts.map((item) =>

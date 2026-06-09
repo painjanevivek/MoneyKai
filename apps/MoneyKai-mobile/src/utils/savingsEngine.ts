@@ -140,19 +140,25 @@ export const calculateEmergencyBudget = (
   const suggestions: string[] = [];
 
   if (dailyLimit < 200) {
-    suggestions.push('Cook at home instead of ordering food.');
-    suggestions.push('Use public transport instead of cabs.');
-    suggestions.push('Pause any non-essential purchases for now.');
+    suggestions.push('Write down only unavoidable expenses for the next 48 hours: food, commute, medicine, rent, and bills due immediately.');
+    suggestions.push('Use groceries already at home and choose the lowest-cost meal option before buying outside food.');
+    suggestions.push('Avoid cabs unless there is a safety or time-critical reason; use public transport, walking, or shared rides when practical.');
+    suggestions.push('Postpone shopping, subscriptions, upgrades, and entertainment until the daily limit is stable again.');
+    suggestions.push('If a bill is due, check whether a partial payment, grace period, or due-date extension is available before paying late fees.');
   } else if (dailyLimit < 500) {
-    suggestions.push('Cut food delivery back to once or twice a week.');
-    suggestions.push('Walk or cycle for short distances.');
-    suggestions.push('Hold off on shopping until next month.');
+    suggestions.push('Set a fixed daily cash or UPI cap and stop spending once it is reached.');
+    suggestions.push('Keep one planned outside-food spend at most; use simple home meals for the rest of the week.');
+    suggestions.push('Batch errands into one trip to reduce transport costs.');
+    suggestions.push('Pause non-essential subscriptions and delay shopping carts for at least 72 hours.');
+    suggestions.push('Review upcoming bills and pay the ones with penalties first.');
   } else {
-    suggestions.push('You have a comfortable daily budget. Stick to it.');
-    suggestions.push('Avoid impulsive spending on weekends.');
+    suggestions.push('Keep the daily limit visible before each purchase and leave a small buffer unused each day.');
+    suggestions.push('Separate essentials from wants before spending: food, commute, medicine, rent, and due bills come first.');
+    suggestions.push('Move any unused daily balance into savings at night so it does not get absorbed by impulse spending.');
+    suggestions.push('Plan weekend spending in advance instead of deciding in the moment.');
   }
 
-  suggestions.push('Track every expense, even the small ones.');
+  suggestions.push('Track every expense the same day so the emergency limit stays honest.');
 
   return { dailyLimit, essentialBudget, suggestions };
 };

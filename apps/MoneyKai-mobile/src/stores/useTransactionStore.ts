@@ -47,7 +47,7 @@ interface TransactionState {
   getRecentTransactions: (count?: number) => Transaction[];
 
   // Actions
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at'>) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at'>) => boolean;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   setFilter: (filter: Partial<TransactionFilter>) => void;
@@ -206,6 +206,11 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         addTransaction: (transaction) => {
+          const allowance = useBudgetStore.getState().settings.monthly_allowance;
+          if (allowance <= 0) {
+            return false;
+          }
+
           const newTransaction: Transaction = {
             ...transaction,
             id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -216,7 +221,6 @@ export const useTransactionStore = create<TransactionState>()(
           syncTransactionCreate(newTransaction);
 
           if (newTransaction.type === 'expense') {
-            const allowance = useBudgetStore.getState().settings.monthly_allowance;
             const spent = nextTransactions
               .filter((item) => item.type === 'expense')
               .reduce((sum, item) => sum + item.amount, 0);
@@ -240,6 +244,7 @@ export const useTransactionStore = create<TransactionState>()(
           }
 
           void requestAutomaticBackup('transaction added');
+          return true;
         },
 
         updateTransaction: (id, updates) => {

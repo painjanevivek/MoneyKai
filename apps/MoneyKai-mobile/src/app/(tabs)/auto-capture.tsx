@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
+import { router } from 'expo-router';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
+import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import { Button } from '@/components/ui/Button';
+import { BudgetRequiredDialog } from '@/components/ui/BudgetRequiredDialog';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
@@ -75,7 +78,7 @@ const buildExplanationText = (draft: DraftTransaction) => {
     .join('\n');
 };
 
-const DraftCard = ({ draft }: { draft: DraftTransaction }) => {
+const DraftCard = ({ draft, onBudgetRequired }: { draft: DraftTransaction; onBudgetRequired: () => void }) => {
   const { colors } = useTheme();
   const confirmDraft = useCaptureStore((state) => state.confirmDraft);
   const ignoreDraft = useCaptureStore((state) => state.ignoreDraft);
@@ -86,7 +89,10 @@ const DraftCard = ({ draft }: { draft: DraftTransaction }) => {
     const confirmed = confirmDraft(draft.id, category);
     if (confirmed) {
       Alert.alert('Transaction added', 'MoneyKai added this draft to your transaction history.');
+      return;
     }
+
+    onBudgetRequired();
   };
 
   const handleWhyCaptured = () => {
@@ -199,14 +205,26 @@ export default function AutoCaptureScreen() {
   const signals = useCaptureStore((state) => state.signals);
   const merchantRules = useCaptureStore((state) => state.merchantRules);
   const smsResearchModeEnabled = useCaptureStore((state) => state.settings.smsResearchModeEnabled);
+  const monthlyAllowance = useBudgetStore((state) => state.settings.monthly_allowance);
   const smsResearchBuildEnabled = isSmsResearchBuildEnabled();
   const [showSmsImport, setShowSmsImport] = useState(false);
   const [smsSender, setSmsSender] = useState('');
   const [smsBody, setSmsBody] = useState('');
   const [smsImportError, setSmsImportError] = useState<string | undefined>();
+  const [showBudgetDialog, setShowBudgetDialog] = useState(false);
   const pendingDrafts = useMemo(() => drafts.filter((draft) => draft.status === 'pending'), [drafts]);
   const recentSignals = useMemo(() => signals.slice(0, 5), [signals]);
-  const canPasteSms = smsResearchBuildEnabled && smsResearchModeEnabled;
+  const hiddenNotificationSignals = useMemo(
+    () =>
+      signals.filter(
+        (signal) =>
+          signal.source === 'notification' &&
+          signal.ignoreReason === 'notification content hidden by Android privacy settings'
+      ),
+    [signals]
+  );
+  const hasMonthlyBudget = monthlyAllowance > 0;
+  const canPasteSms = smsResearchBuildEnabled && smsResearchModeEnabled && hasMonthlyBudget;
 
   const resetSmsImport = () => {
     setSmsSender('');
@@ -214,7 +232,21 @@ export default function AutoCaptureScreen() {
     setSmsImportError(undefined);
   };
 
+  const showBudgetRequired = () => {
+    setShowBudgetDialog(true);
+  };
+
+  const handleSetBudget = () => {
+    setShowBudgetDialog(false);
+    router.push('/(tabs)/budget');
+  };
+
   const handleOpenSmsImport = () => {
+    if (!hasMonthlyBudget) {
+      showBudgetRequired();
+      return;
+    }
+
     if (!canPasteSms) {
       Alert.alert('SMS Research Mode is off', 'Enable SMS Research Mode in Settings before importing pasted SMS text.');
       return;
@@ -225,6 +257,12 @@ export default function AutoCaptureScreen() {
   };
 
   const handleSubmitSmsImport = () => {
+    if (!hasMonthlyBudget) {
+      setShowSmsImport(false);
+      showBudgetRequired();
+      return;
+    }
+
     const body = smsBody.trim();
     if (body.length < 12) {
       setSmsImportError('Paste a complete transaction SMS.');
@@ -293,7 +331,7 @@ export default function AutoCaptureScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md }}>
           <Card variant="outlined" borderRadius="md" style={{ flex: 1 }}>
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Pending</Text>
@@ -309,6 +347,22 @@ export default function AutoCaptureScreen() {
           </Card>
         </View>
 
+        {hiddenNotificationSignals.length > 0 ? (
+          <Card variant="outlined" borderRadius="md" padding="md" style={{ marginBottom: Spacing.md, backgroundColor: colors.surface }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm }}>
+              <MaterialCommunityIcons name="lock-alert-outline" size={20} color={colors.warning} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  Notification content is hidden
+                </Text>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18, marginTop: 3 }}>
+                  MoneyKai saw a likely bank or payment notification, but Android did not expose the transaction text. Enable notification previews for that app or paste the SMS here for review.
+                </Text>
+              </View>
+            </View>
+          </Card>
+        ) : null}
+
         {pendingDrafts.length === 0 ? (
           <EmptyState
             icon="check-circle-outline"
@@ -316,7 +370,7 @@ export default function AutoCaptureScreen() {
             message="Captured transactions will appear here as reviewable drafts."
           />
         ) : (
-          pendingDrafts.map((draft) => <DraftCard key={draft.id} draft={draft} />)
+          pendingDrafts.map((draft) => <DraftCard key={draft.id} draft={draft} onBudgetRequired={showBudgetRequired} />)
         )}
 
         {recentSignals.length > 0 ? (
@@ -409,6 +463,12 @@ export default function AutoCaptureScreen() {
           </View>
         </ModalSheet>
       ) : null}
+      <BudgetRequiredDialog
+        visible={showBudgetDialog}
+        message="Set a monthly budget before confirming captured transactions or importing SMS drafts."
+        onCancel={() => setShowBudgetDialog(false)}
+        onSetBudget={handleSetBudget}
+      />
     </SafeAreaView>
   );
 }

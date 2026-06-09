@@ -73,3 +73,9 @@ example
 # generated native folders
 apps/*/ios/
 apps/*/android/
+apps/*/modules/*/android/build/
+
+# local device/debug artifacts
+RKStorage.device
+device-screen.png
+window.xml

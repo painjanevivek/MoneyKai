@@ -1,11 +1,13 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { View, Platform, Text, TouchableOpacity, type ColorValue } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { Typography, Shadows } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TransactionComposerSheet } from '@/components/ui/TransactionComposerSheet';
+import { BudgetRequiredDialog } from '@/components/ui/BudgetRequiredDialog';
+import { useBudgetStore } from '@/stores/useBudgetStore';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -20,14 +22,18 @@ const TabLabel = ({
 }) => (
   <Text
     numberOfLines={1}
+    adjustsFontSizeToFit
+    minimumFontScale={0.82}
     style={{
-      fontSize: 10,
-      lineHeight: 12,
+      fontSize: 11,
+      lineHeight: 14,
       textAlign: 'center',
-      fontFamily: Typography.fontFamily.medium,
+      fontFamily: focused ? Typography.fontFamily.semiBold : Typography.fontFamily.medium,
       color,
-      opacity: focused ? 1 : 0.88,
-      maxWidth: 72,
+      width: 104,
+      textShadowColor: focused ? 'rgba(255, 255, 255, 0.32)' : 'transparent',
+      textShadowOffset: { width: 0, height: 0 },
+      textShadowRadius: focused ? 8 : 0,
     }}
   >
     {label}
@@ -35,19 +41,20 @@ const TabLabel = ({
 );
 
 const TabIcon = ({ name, color, focused }: { name: IconName; color: string | ColorValue; focused: boolean }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-    <MaterialCommunityIcons name={name} size={24} color={color} />
-    {focused && (
-      <View
-        style={{
-          width: 4,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: color,
-          marginTop: 4,
-        }}
-      />
-    )}
+  <View style={{ alignItems: 'center', justifyContent: 'center', height: 30 }}>
+    <View
+      style={{
+        width: 46,
+        height: 30,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: focused ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+        ...(focused ? Shadows.glow(String(color)) : null),
+      }}
+    >
+      <MaterialCommunityIcons name={name} size={24} color={color} />
+    </View>
   </View>
 );
 
@@ -89,8 +96,23 @@ export default function TabLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [isComposerVisible, setIsComposerVisible] = React.useState(false);
+  const [isBudgetDialogVisible, setIsBudgetDialogVisible] = React.useState(false);
+  const monthlyAllowance = useBudgetStore((state) => state.settings.monthly_allowance);
   const addButtonBackground = colors.textPrimary;
   const addButtonForeground = colors.background;
+  const requireMonthlyBudget = React.useCallback(() => {
+    if (monthlyAllowance > 0) {
+      return true;
+    }
+
+    setIsBudgetDialogVisible(true);
+    return false;
+  }, [monthlyAllowance]);
+
+  const handleSetBudget = React.useCallback(() => {
+    setIsBudgetDialogVisible(false);
+    router.push('/(tabs)/budget');
+  }, []);
 
   return (
     <>
@@ -111,13 +133,15 @@ export default function TabLayout() {
           },
           tabBarItemStyle: {
             minWidth: 0,
-            paddingTop: 2,
-            paddingBottom: 2,
+            height: 58,
+            paddingTop: 4,
+            paddingBottom: 4,
+            justifyContent: 'center',
           },
           tabBarLabelStyle: {
-            fontSize: 10,
+            fontSize: 11,
             fontFamily: Typography.fontFamily.medium,
-            lineHeight: 12,
+            lineHeight: 14,
             marginTop: 0,
           },
         }}
@@ -147,7 +171,11 @@ export default function TabLayout() {
                 backgroundColor={addButtonBackground}
                 foregroundColor={addButtonForeground}
                 borderColor={colors.background}
-                onPress={() => setIsComposerVisible(true)}
+                onPress={() => {
+                  if (requireMonthlyBudget()) {
+                    setIsComposerVisible(true);
+                  }
+                }}
               />
             ),
           }}
@@ -180,6 +208,11 @@ export default function TabLayout() {
       {isComposerVisible ? (
         <TransactionComposerSheet visible onClose={() => setIsComposerVisible(false)} />
       ) : null}
+      <BudgetRequiredDialog
+        visible={isBudgetDialogVisible}
+        onCancel={() => setIsBudgetDialogVisible(false)}
+        onSetBudget={handleSetBudget}
+      />
     </>
   );
 }

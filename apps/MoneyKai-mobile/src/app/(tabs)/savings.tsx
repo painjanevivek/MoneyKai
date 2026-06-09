@@ -33,6 +33,7 @@ export default function SavingsScreen() {
   const deactivatedChallenges = getDeactivatedChallenges();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Savings Predictor');
   const [reductions, setReductions] = useState<Record<string, number>>({});
+  const [showEmergencySuggestions, setShowEmergencySuggestions] = useState(false);
 
   const updateReduction = (category: string, percent: number) => {
     setReductions((prev) => ({ ...prev, [category]: percent }));
@@ -51,6 +52,24 @@ export default function SavingsScreen() {
   );
 
   const emergencyBudget = calculateEmergencyBudget(settings.monthly_allowance - totalSpent, getDaysLeftInMonth());
+
+  const handleToggleEmergencyMode = () => {
+    if (isEmergencyMode) {
+      setShowEmergencySuggestions(false);
+      toggleEmergencyMode();
+      return;
+    }
+
+    toggleEmergencyMode();
+    Alert.alert(
+      'Emergency mode activated',
+      'Do you want practical survival suggestions for the rest of the month?',
+      [
+        { text: 'Not now', style: 'cancel', onPress: () => setShowEmergencySuggestions(false) },
+        { text: 'Show suggestions', onPress: () => setShowEmergencySuggestions(true) },
+      ]
+    );
+  };
 
   const comparisonData = React.useMemo(
     () => [
@@ -353,7 +372,22 @@ export default function SavingsScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{template.name}</Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>{template.description}</Text>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>{template.defaultDuration} days • Est. savings {formatCurrency(template.estimatedSavings)}</Text>
+            </View>
+            <View
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: BorderRadius.full,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}
+            >
+              <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
+                {template.difficulty}
+              </Text>
             </View>
             <TouchableOpacity
               onPress={() =>
@@ -381,7 +415,7 @@ export default function SavingsScreen() {
       <Card style={{ marginBottom: Spacing.md, borderWidth: isEmergencyMode ? 2 : 0, borderColor: colors.emergency }}>
         <View style={{ alignItems: 'center', paddingVertical: Spacing.lg }}>
           <TouchableOpacity
-            onPress={toggleEmergencyMode}
+            onPress={handleToggleEmergencyMode}
             style={{
               width: 100,
               height: 100,
@@ -417,20 +451,59 @@ export default function SavingsScreen() {
             </Card>
           </View>
 
-          <Card style={{ marginBottom: Spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.md }}>
-              <MaterialCommunityIcons name="shield-check-outline" size={20} color={colors.primary} />
-              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>Survival Suggestions</Text>
-            </View>
-            {emergencyBudget.suggestions.map((s, i) => (
-              <View key={i} style={{ flexDirection: 'row', gap: 8, paddingVertical: 6, borderTopWidth: i > 0 ? 1 : 0, borderTopColor: colors.borderLight }}>
-                <MaterialCommunityIcons name="check-circle" size={16} color={colors.primary} style={{ marginTop: 2 }} />
-                <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>{s}</Text>
+          {showEmergencySuggestions ? (
+            <Card style={{ marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.md }}>
+                <MaterialCommunityIcons name="shield-check-outline" size={20} color={colors.primary} />
+                <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>Survival Suggestions</Text>
               </View>
-            ))}
-          </Card>
+              {emergencyBudget.suggestions.map((s, i) => (
+                <View key={i} style={{ flexDirection: 'row', gap: 8, paddingVertical: 6, borderTopWidth: i > 0 ? 1 : 0, borderTopColor: colors.borderLight }}>
+                  <MaterialCommunityIcons name="check-circle" size={16} color={colors.primary} style={{ marginTop: 2 }} />
+                  <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>{s}</Text>
+                </View>
+              ))}
+              <TouchableOpacity
+                onPress={() => setShowEmergencySuggestions(false)}
+                style={{ alignSelf: 'flex-start', marginTop: Spacing.sm, paddingVertical: Spacing.xs }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
+                  Hide suggestions
+                </Text>
+              </TouchableOpacity>
+            </Card>
+          ) : (
+            <Card style={{ marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    Need survival suggestions?
+                  </Text>
+                  <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18, marginTop: 2 }}>
+                    Show practical steps only when you want guidance.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShowEmergencySuggestions(true)}
+                  style={{
+                    paddingHorizontal: Spacing.md,
+                    paddingVertical: Spacing.sm,
+                    borderRadius: BorderRadius.full,
+                    backgroundColor: colors.primaryBg,
+                    borderWidth: 1,
+                    borderColor: `${colors.primary}30`,
+                  }}
+                >
+                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
+                    Show
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+          )}
 
-          <Button title="Deactivate Emergency Mode" onPress={toggleEmergencyMode} variant="outline" fullWidth icon="shield-off-outline" />
+          <Button title="Deactivate Emergency Mode" onPress={handleToggleEmergencyMode} variant="outline" fullWidth icon="shield-off-outline" />
         </>
       )}
     </>
@@ -490,7 +563,7 @@ export default function SavingsScreen() {
         })}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }} showsVerticalScrollIndicator={false}>
         {activeTab === 'Savings Predictor' && renderSavingsPredictor()}
         {activeTab === 'Challenges' && renderChallenges()}
         {activeTab === 'Emergency' && renderEmergency()}

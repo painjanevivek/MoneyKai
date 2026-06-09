@@ -1,9 +1,15 @@
 import { isSmsResearchBuildEnabled } from '@/config/environment';
+import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import type { CaptureIngestionResult, CaptureSignalInput } from '@/types/capture';
 
-export const ingestCapturedTransactionSignal = (input: CaptureSignalInput): CaptureIngestionResult =>
-  useCaptureStore.getState().ingestSignal(input);
+export const ingestCapturedTransactionSignal = (input: CaptureSignalInput): CaptureIngestionResult => {
+  if (useBudgetStore.getState().settings.monthly_allowance <= 0) {
+    return { status: 'ignored', reason: 'set a monthly budget before fetching transactions' };
+  }
+
+  return useCaptureStore.getState().ingestSignal(input);
+};
 
 export const ingestNotificationCapture = (params: {
   title?: string;

@@ -135,7 +135,7 @@ export default function GroupsScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }}>
           {selectedGroupData.archived && (
             <Card style={{ marginBottom: Spacing.md, borderColor: `${colors.accent}40`, backgroundColor: colors.primaryBg }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -336,7 +336,7 @@ export default function GroupsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }}>
         {filteredGroups.map((group) => {
           const color = GROUP_TYPE_COLORS[group.type] || colors.primary;
           const icon = GROUP_TYPE_ICONS[group.type] || 'account-group';

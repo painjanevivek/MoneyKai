@@ -66,6 +66,20 @@ describe('parse explanation privacy', () => {
     expect(parsed.explanation.safeSnippet).not.toContain('user@upi');
     expect(parsed.explanation.safeSnippet).not.toContain('412345678901');
   });
+
+  it('marks hidden notification content as privacy-blocked instead of parsing it', () => {
+    const parsed = parseCapturedSignal({
+      source: 'notification',
+      sourceApp: 'Messages',
+      title: 'Axis Bank',
+      body: 'Notification content hidden by Android privacy settings',
+      receivedAt: '2026-06-09T09:00:00.000Z',
+    });
+
+    expect(parsed.parseStatus).toBe('ignore');
+    expect(parsed.ignoreReason).toContain('hidden');
+    expect(parsed.amount).toBeUndefined();
+  });
 });
 
 describe('normalizeMerchantKey', () => {

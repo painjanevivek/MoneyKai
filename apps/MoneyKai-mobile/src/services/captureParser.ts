@@ -89,6 +89,7 @@ const AMOUNT_PATTERNS: { name: string; regex: RegExp }[] = [
 ];
 
 const MERCHANT_PATTERNS: { name: string; regex: RegExp }[] = [
+  { name: 'upi slash merchant', regex: /\bupi\/p2[am]\/(?:[a-z0-9/-]{6,}|\[(?:number|ref)\])\/([a-z0-9][a-z0-9 &.'-]{2,80}?)(?=\s+(?:not you\?|sms blockupi\b|axis bank\b)|$)/i },
   { name: 'upi payment to', regex: /\b(?:upi\s+)?payment(?:\s+of\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+(?:to|at)\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
   { name: 'paid to', regex: /\bpaid(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+(?:from\s+[a-z ]+\s+)?to\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
   { name: 'sent to', regex: /\b(?:sent|transferred)(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+to\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
@@ -111,6 +112,17 @@ const normalizeWhitespace = (value: string) => value.replace(/\s+/g, ' ').trim()
 const normalizeText = (value: string) =>
   normalizeWhitespace(value.replace(/â‚¹/g, 'Rs').replace(/Â·/g, '|'));
 
+const HIDDEN_NOTIFICATION_CONTENT_REASON = 'notification content hidden by Android privacy settings';
+
+const hiddenNotificationContentPatterns = [
+  /\bnotification content hidden\b/i,
+  /\bcontent hidden\b/i,
+  /\bhidden content\b/i,
+  /\bmessage hidden\b/i,
+  /\bsensitive content hidden\b/i,
+  /\bunlock(?: your phone)? to view\b/i,
+];
+
 const sanitizeSnippet = (value: string) =>
   normalizeText(value)
     .replace(/\b\d{6}\b/g, '[code]')
@@ -122,6 +134,9 @@ const sanitizeSnippet = (value: string) =>
 
 const summarizeReference = (reference?: string) =>
   reference ? `ref-${reference.slice(-4)}` : undefined;
+
+const isHiddenNotificationContent = (input: CaptureSignalInput, text: string) =>
+  input.source === 'notification' && hiddenNotificationContentPatterns.some((pattern) => pattern.test(text));
 
 export const normalizeMerchantKey = (value: string) =>
   normalizeWhitespace(value)
@@ -251,7 +266,9 @@ const detectPaymentMethod = (text: string, input: CaptureSignalInput): PaymentMe
 };
 
 const extractTransactionReference = (text: string) => {
-  const match = text.match(/\b(?:upi\s*)?(?:ref(?:erence)?|rrn|utr|transaction id|txn id|order id|imps)\s*(?:no\.?|number|id)?\s*[:#-]?\s*([a-z0-9/-]{6,})/i);
+  const match =
+    text.match(/\b(?:upi\s*)?(?:ref(?:erence)?|rrn|utr|transaction id|txn id|order id|imps)\s*(?:no\.?|number|id)?\s*[:#-]?\s*([a-z0-9/-]{6,})/i) ??
+    text.match(/\bupi\/p2[am]\/([a-z0-9/-]{6,})\//i);
   return match?.[1]?.toLowerCase();
 };
 
@@ -366,6 +383,22 @@ export const parseCapturedSignal = (
   const title = input.title ?? '';
   const body = input.body ?? '';
   const text = normalizeText(`${title} ${body}`);
+
+  if (isHiddenNotificationContent(input, text)) {
+    return {
+      parseStatus: 'ignore',
+      ignoreReason: HIDDEN_NOTIFICATION_CONTENT_REASON,
+      explanation: {
+        matchedDirectionTerms: [],
+        confidenceFactors: ['notification privacy blocked content'],
+        ignoreReason: HIDDEN_NOTIFICATION_CONTENT_REASON,
+        safeSnippet: sanitizeSnippet(text || input.sourceApp || 'Notification content hidden'),
+      },
+      confidence: 0.05,
+      reason: HIDDEN_NOTIFICATION_CONTENT_REASON,
+    };
+  }
+
   const lowered = text.toLowerCase();
   const amount = extractAmount(text);
   const ignoreReason = detectIgnoreReason(lowered, amount.value);

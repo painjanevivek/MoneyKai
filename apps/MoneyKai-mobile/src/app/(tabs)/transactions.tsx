@@ -299,16 +299,20 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md, alignItems: 'center' }}>
-        <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', flex: 1 }}>
+      <View style={{ paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}>
+        <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
           {FILTER_TABS.map((tab) => (
             <TouchableOpacity
               key={tab}
               onPress={() => handleTabChange(tab)}
               style={{
+                minWidth: tab === 'All' ? 72 : 104,
+                minHeight: 44,
                 paddingHorizontal: Spacing.base,
                 paddingVertical: Spacing.sm,
                 borderRadius: BorderRadius.full,
+                alignItems: 'center',
+                justifyContent: 'center',
                 backgroundColor: activeTab === tab ? colors.primary : colors.card,
                 borderWidth: activeTab === tab ? 0 : 1,
                 borderColor: colors.border,
@@ -326,12 +330,13 @@ export default function TransactionsScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: Spacing.sm }}>
           <TouchableOpacity
             onPress={() => setShowFilterModal(true)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
+              minHeight: 44,
               gap: 6,
               paddingHorizontal: Spacing.md,
               paddingVertical: Spacing.sm,
@@ -351,6 +356,7 @@ export default function TransactionsScreen() {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
+              minHeight: 44,
               gap: 6,
               paddingHorizontal: Spacing.md,
               paddingVertical: Spacing.sm,
@@ -361,7 +367,12 @@ export default function TransactionsScreen() {
             }}
           >
             <MaterialCommunityIcons name="sort" size={16} color={colors.textSecondary} />
-            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.84}
+              style={{ maxWidth: 168, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}
+            >
               {sortLabel}
             </Text>
           </TouchableOpacity>
@@ -372,7 +383,7 @@ export default function TransactionsScreen() {
         data={displayTransactions}
         renderItem={renderTransaction}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }}
         ListEmptyComponent={<EmptyState icon="receipt" title="No Transactions" message="Start tracking by adding your first transaction." />}
       />
 

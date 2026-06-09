@@ -70,7 +70,7 @@ export default function NotesScreen() {
       {sorted.length === 0 ? (
         <EmptyState icon="note-text-outline" title="No notes yet" message="Tap + New Note to jot something down." />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: Spacing['2xl'] }} showsVerticalScrollIndicator={false}>
           {sorted.map((note) => (
             <View
               key={note.id}

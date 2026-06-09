@@ -4,6 +4,7 @@ import { useCaptureStore } from './useCaptureStore';
 
 const mocks = vi.hoisted(() => ({
   addTransaction: vi.fn(),
+  monthlyAllowance: 10000,
   recordAppNotification: vi.fn(),
 }));
 
@@ -40,6 +41,16 @@ vi.mock('./useTransactionStore', () => ({
   },
 }));
 
+vi.mock('./useBudgetStore', () => ({
+  useBudgetStore: {
+    getState: () => ({
+      settings: {
+        monthly_allowance: mocks.monthlyAllowance,
+      },
+    }),
+  },
+}));
+
 const resetCaptureStore = () => {
   useCaptureStore.setState({
     settings: {
@@ -58,6 +69,8 @@ const resetCaptureStore = () => {
 describe('useCaptureStore production safety controls', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.monthlyAllowance = 10000;
+    mocks.addTransaction.mockReturnValue(true);
     resetCaptureStore();
   });
 
@@ -164,6 +177,87 @@ describe('useCaptureStore production safety controls', () => {
       expect.objectContaining({
         source: 'sms',
         body: expect.not.stringContaining('555566667777'),
+      }),
+    ]);
+  });
+
+  it('blocks captured transactions until a monthly budget exists', () => {
+    mocks.monthlyAllowance = 0;
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+      },
+    }));
+
+    const result = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'Axis Bank',
+      title: 'Debit alert',
+      body: 'INR 293.00 debited for UPI payment to SWIGGY INSTAMART. UPI Ref 652670076603.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+    });
+
+    expect(result).toEqual({ status: 'ignored', reason: 'set a monthly budget before fetching transactions' });
+    expect(useCaptureStore.getState().drafts).toHaveLength(0);
+    expect(useCaptureStore.getState().signals).toHaveLength(0);
+    expect(mocks.addTransaction).not.toHaveBeenCalled();
+  });
+
+  it('does not confirm old drafts after the monthly budget is removed', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+      },
+    }));
+
+    const result = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'Axis Bank',
+      title: 'Debit alert',
+      body: 'INR 315.00 debited for UPI payment to SWIGGY. UPI Ref 652604639717.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+    });
+
+    mocks.monthlyAllowance = 0;
+
+    expect(result.status).toBe('drafted');
+    expect(useCaptureStore.getState().confirmDraft(result.draftId as string, 'food')).toBe(false);
+    expect(mocks.addTransaction).not.toHaveBeenCalled();
+    expect(useCaptureStore.getState().drafts[0]).toEqual(
+      expect.objectContaining({
+        id: result.draftId,
+        status: 'pending',
+      })
+    );
+  });
+
+  it('keeps a visible ignored signal when Android hides notification content', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+      },
+    }));
+
+    const result = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'Messages',
+      title: 'Axis Bank',
+      body: 'Notification content hidden by Android privacy settings',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+      rawPayload: { privacyStatus: 'content_hidden' },
+    });
+
+    expect(result.status).toBe('ignored');
+    expect(result.reason).toContain('hidden');
+    expect(useCaptureStore.getState().drafts).toHaveLength(0);
+    expect(useCaptureStore.getState().signals).toEqual([
+      expect.objectContaining({
+        processingStatus: 'ignored',
+        ignoreReason: expect.stringContaining('hidden'),
+        sourceApp: 'Messages',
       }),
     ]);
   });

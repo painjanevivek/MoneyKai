@@ -7,6 +7,7 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
   type ViewStyle,
 } from 'react-native';
@@ -23,6 +24,7 @@ interface ModalSheetProps {
   footer?: React.ReactNode;
   maxHeight?: number;
   contentStyle?: ViewStyle;
+  presentation?: 'bottom' | 'side';
 }
 
 /**
@@ -41,23 +43,33 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   footer,
   maxHeight = 720,
   contentStyle,
+  presentation = 'bottom',
 }) => {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isSideSheet = presentation === 'side';
+  const sideSheetWidth = Math.min(width * 0.86, 380);
+  const sideSheetHiddenOffset = -sideSheetWidth - 24;
   const [translateY] = useState(() => new Animated.Value(24));
+  const [translateX] = useState(() => new Animated.Value(-400));
   const closeButtonRef = useRef<any>(null);
 
   const animateIn = useCallback(() => {
-    Animated.spring(translateY, {
+    Animated.spring(isSideSheet ? translateX : translateY, {
       toValue: 0,
       useNativeDriver: true,
       tension: 70,
       friction: 10,
     }).start();
-  }, [translateY]);
+  }, [isSideSheet, translateX, translateY]);
 
   useEffect(() => {
     if (visible) {
-      translateY.setValue(24);
+      if (isSideSheet) {
+        translateX.setValue(sideSheetHiddenOffset);
+      } else {
+        translateY.setValue(24);
+      }
       requestAnimationFrame(() => {
         animateIn();
         if (closeButtonRef.current?.focus) {
@@ -65,7 +77,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
         }
       });
     }
-  }, [visible, translateY, animateIn]);
+  }, [visible, isSideSheet, sideSheetHiddenOffset, translateX, translateY, animateIn]);
 
   useEffect(() => {
     if (!visible) return;
@@ -96,14 +108,35 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
       }
 
       return PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gestureState) =>
-          gestureState.dy > 8 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          if (isSideSheet) {
+            return gestureState.dx < -8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+          }
+
+          return gestureState.dy > 8 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        },
         onPanResponderMove: (_, gestureState) => {
+          if (isSideSheet) {
+            if (gestureState.dx < 0) {
+              translateX.setValue(gestureState.dx);
+            }
+            return;
+          }
+
           if (gestureState.dy > 0) {
             translateY.setValue(gestureState.dy);
           }
         },
         onPanResponderRelease: (_, gestureState) => {
+          if (isSideSheet) {
+            if (gestureState.dx < -80) {
+              onClose();
+              return;
+            }
+            animateIn();
+            return;
+          }
+
           if (gestureState.dy > 90) {
             onClose();
             return;
@@ -112,7 +145,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
         },
       });
     },
-    [animateIn, onClose, translateY]
+    [animateIn, isSideSheet, onClose, translateX, translateY]
   );
 
   return (
@@ -126,7 +159,8 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
       <View
         style={{
           flex: 1,
-          justifyContent: 'flex-end',
+          justifyContent: isSideSheet ? 'flex-start' : 'flex-end',
+          alignItems: isSideSheet ? 'flex-start' : 'stretch',
         }}
       >
         <Pressable
@@ -149,18 +183,21 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
           onStartShouldSetResponder={() => true}
           style={[
             {
-              maxHeight,
+              width: isSideSheet ? sideSheetWidth : undefined,
+              height: isSideSheet ? '100%' : undefined,
+              maxHeight: isSideSheet ? '100%' : maxHeight,
               backgroundColor: colors.card,
-              borderTopLeftRadius: BorderRadius.xl,
+              borderTopLeftRadius: isSideSheet ? 0 : BorderRadius.xl,
               borderTopRightRadius: BorderRadius.xl,
+              borderBottomRightRadius: isSideSheet ? BorderRadius.xl : 0,
               paddingHorizontal: Spacing.xl,
-              paddingTop: Spacing.sm,
+              paddingTop: isSideSheet ? Spacing.xl : Spacing.sm,
               paddingBottom: Spacing.xl,
               ...Shadows.lg,
               shadowColor: colors.shadowColor,
               zIndex: 1,
               elevation: 12,
-              transform: [{ translateY }],
+              transform: isSideSheet ? [{ translateX }] : [{ translateY }],
             },
             contentStyle,
           ]}
@@ -168,18 +205,26 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
           accessibilityLabel={title}
           accessibilityViewIsModal
         >
+          {!isSideSheet && (
+            <View
+              style={{
+                alignSelf: 'center',
+                width: 44,
+                height: 5,
+                borderRadius: 999,
+                backgroundColor: colors.border,
+                marginBottom: Spacing.md,
+              }}
+            />
+          )}
+
           <View
             style={{
-              alignSelf: 'center',
-              width: 44,
-              height: 5,
-              borderRadius: 999,
-              backgroundColor: colors.border,
-              marginBottom: Spacing.md,
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              marginBottom: subtitle ? Spacing.sm : Spacing.md,
             }}
-          />
-
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: subtitle ? Spacing.sm : Spacing.md }}>
+          >
             <View style={{ flex: 1 }}>
               <Text
                 style={{

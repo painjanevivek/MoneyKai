@@ -23,6 +23,7 @@ type NativeCaptureSignal = {
   sender?: string;
   receivedAt?: string;
   rawPackageName?: string;
+  privacyStatus?: string;
 };
 
 type MoneyKaiNativeCaptureEvents = {
@@ -103,14 +104,26 @@ export const subscribeToNativeCaptureSignals = (
   }
 
   const subscription = nativeCaptureModule.addListener('onNotificationSignal', (event) => {
-    if (!event.body) return;
+    const source = event.source === 'sms' ? 'sms' : 'notification';
+    const body =
+      event.body?.trim() ||
+      (source === 'notification' && event.privacyStatus === 'content_hidden'
+        ? 'Notification content hidden by Android privacy settings'
+        : '');
+
+    if (!body) return;
+
     handler({
-      source: event.source === 'sms' ? 'sms' : 'notification',
+      source,
       title: event.title,
-      body: event.body,
+      body,
       sourceApp: event.sourceApp,
       sender: event.sender,
       receivedAt: event.receivedAt,
+      rawPayload: {
+        rawPackageName: event.rawPackageName,
+        privacyStatus: event.privacyStatus,
+      },
     });
   });
   nativeCaptureModule.startListening?.();
