@@ -12,6 +12,21 @@ export type CaptureProcessingStatus =
 
 export type DraftTransactionStatus = 'pending' | 'confirmed' | 'ignored';
 
+export type CaptureParseStatus = 'draft' | 'ignore' | 'review';
+
+export interface CaptureParseExplanation {
+  matchedAmount?: string;
+  matchedAmountPattern?: string;
+  matchedDirectionTerms: string[];
+  matchedMerchantPattern?: string;
+  matchedPaymentMethod?: string;
+  matchedCategoryRule?: string;
+  confidenceFactors: string[];
+  ignoreReason?: string;
+  safeSnippet: string;
+  dedupeReference?: string;
+}
+
 export interface CaptureSignalInput {
   source: Exclude<CaptureSource, 'manual'>;
   title?: string;
@@ -37,6 +52,10 @@ export interface CapturedSignal {
   parsedType?: TransactionType;
   parsedMerchant?: string;
   parsedPaymentMethod?: string;
+  parseStatus?: CaptureParseStatus;
+  parseReason?: string;
+  parseExplanation?: CaptureParseExplanation;
+  ignoreReason?: string;
   confidence: number;
   rawPayload?: Record<string, unknown>;
 }
@@ -53,6 +72,10 @@ export interface DraftTransaction {
   payment_method: string;
   transaction_date: string;
   confidence: number;
+  captureSource: Exclude<CaptureSource, 'manual'>;
+  sourceApp?: string;
+  parseReason?: string;
+  parseExplanation?: CaptureParseExplanation;
   status: DraftTransactionStatus;
   createdAt: string;
   confirmedAt?: string;
@@ -79,6 +102,10 @@ export interface CaptureParseResult {
   merchantKey?: string;
   category?: string;
   paymentMethod?: string;
+  parseStatus: CaptureParseStatus;
+  ignoreReason?: string;
+  transactionReference?: string;
+  explanation: CaptureParseExplanation;
   confidence: number;
   reason: string;
 }

@@ -18,6 +18,25 @@ const confidenceLabel = (confidence: number) => {
   return 'Needs category';
 };
 
+const buildExplanationText = (draft: DraftTransaction) => {
+  const explanation = draft.parseExplanation;
+  if (!explanation) return 'MoneyKai found a transaction amount and created a review draft.';
+
+  return [
+    draft.sourceApp ? `Source: ${draft.sourceApp}` : `Source: ${draft.captureSource}`,
+    explanation.matchedAmount ? `Amount: ${explanation.matchedAmount}` : undefined,
+    `Merchant: ${draft.description}`,
+    explanation.matchedPaymentMethod ? `Method: ${explanation.matchedPaymentMethod}` : undefined,
+    explanation.matchedDirectionTerms.length > 0 ? `Direction: ${explanation.matchedDirectionTerms.join(', ')}` : undefined,
+    explanation.matchedCategoryRule ? `Category: ${explanation.matchedCategoryRule}` : undefined,
+    `Confidence: ${Math.round(draft.confidence * 100)}%`,
+    explanation.dedupeReference ? `Reference: ${explanation.dedupeReference}` : undefined,
+    draft.parseReason ? `Reason: ${draft.parseReason}` : undefined,
+  ]
+    .filter(Boolean)
+    .join('\n');
+};
+
 const DraftCard = ({ draft }: { draft: DraftTransaction }) => {
   const { colors } = useTheme();
   const confirmDraft = useCaptureStore((state) => state.confirmDraft);
@@ -30,6 +49,10 @@ const DraftCard = ({ draft }: { draft: DraftTransaction }) => {
     if (confirmed) {
       Alert.alert('Transaction added', 'MoneyKai added this draft to your transaction history.');
     }
+  };
+
+  const handleWhyCaptured = () => {
+    Alert.alert('Why captured?', buildExplanationText(draft));
   };
 
   return (
@@ -59,10 +82,11 @@ const DraftCard = ({ draft }: { draft: DraftTransaction }) => {
           </Text>
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>
             {draft.type === 'expense' ? '-' : '+'}
-            {formatCurrency(draft.amount)} · {draft.payment_method.toUpperCase()} · {draft.transaction_date}
+            {formatCurrency(draft.amount)} | {draft.payment_method.toUpperCase()} | {draft.transaction_date}
           </Text>
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, marginTop: 4 }}>
             {confidenceLabel(draft.confidence)}
+            {draft.sourceApp ? ` | ${draft.sourceApp}` : ''}
           </Text>
         </View>
       </View>
@@ -110,6 +134,23 @@ const DraftCard = ({ draft }: { draft: DraftTransaction }) => {
           style={{ flex: 1 }}
         />
       </View>
+
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={handleWhyCaptured}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          marginTop: Spacing.sm,
+          alignSelf: 'flex-start',
+        }}
+      >
+        <MaterialCommunityIcons name="information-outline" size={16} color={colors.textSecondary} />
+        <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
+          Why captured?
+        </Text>
+      </TouchableOpacity>
     </Card>
   );
 };
@@ -177,7 +218,7 @@ export default function AutoCaptureScreen() {
                   {signal.parsedMerchant ?? signal.sender ?? signal.sourceApp ?? signal.source}
                 </Text>
                 <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, marginTop: 2 }}>
-                  {signal.processingStatus} · {signal.receivedAt}
+                  {signal.processingStatus} | {signal.parseReason ?? signal.ignoreReason ?? signal.receivedAt}
                 </Text>
               </View>
             ))}

@@ -138,21 +138,24 @@ export const useCaptureStore = create<CaptureState>()(
           receivedAt: input.receivedAt ?? now,
           createdAt: now,
           dedupeKey,
-          processingStatus: parsed.amount ? 'drafted' : 'parsed',
+          processingStatus: parsed.parseStatus === 'ignore' ? 'ignored' : 'drafted',
           parsedAmount: parsed.amount,
           parsedType: parsed.type,
           parsedMerchant: parsed.merchantLabel,
           parsedPaymentMethod: parsed.paymentMethod,
+          parseStatus: parsed.parseStatus,
+          parseReason: parsed.reason,
+          parseExplanation: parsed.explanation,
+          ignoreReason: parsed.ignoreReason,
           confidence: parsed.confidence,
           rawPayload: input.rawPayload,
         };
 
-        if (!parsed.amount) {
-          const ignoredSignal: CapturedSignal = { ...signal, processingStatus: 'ignored' };
+        if (parsed.parseStatus === 'ignore' || !parsed.amount) {
           set((state) => ({
-            signals: [ignoredSignal, ...state.signals].slice(0, MAX_CAPTURED_SIGNALS),
+            signals: [signal, ...state.signals].slice(0, MAX_CAPTURED_SIGNALS),
           }));
-          return { signalId: signal.id, status: 'ignored', reason: 'no transaction amount found' };
+          return { signalId: signal.id, status: 'ignored', reason: parsed.ignoreReason ?? parsed.reason };
         }
 
         const userId = useAuthStore.getState().user?.id ?? 'local';
@@ -168,6 +171,10 @@ export const useCaptureStore = create<CaptureState>()(
           payment_method: parsed.paymentMethod ?? 'bank',
           transaction_date: new Date(input.receivedAt ?? now).toISOString().split('T')[0],
           confidence: parsed.confidence,
+          captureSource: input.source,
+          sourceApp: input.sourceApp ?? input.sender,
+          parseReason: parsed.reason,
+          parseExplanation: parsed.explanation,
           status: 'pending',
           createdAt: now,
         };
