@@ -31,6 +31,18 @@
       "expo-secure-store",
       "expo-sqlite",
       [
+        "expo-dev-client",
+        {
+          "launchMode": "most-recent",
+          "defaultLaunchURL": "http://localhost:8081",
+          "android": {
+            "defaultLaunchURL": "http://10.0.2.2:8081"
+          },
+          "skipOnboarding": true,
+          "showMenuAtLaunch": false
+        }
+      ],
+      [
         "expo-local-authentication",
         {
           "faceIDPermission": "MoneyKai uses Face ID or device authentication to protect your account."

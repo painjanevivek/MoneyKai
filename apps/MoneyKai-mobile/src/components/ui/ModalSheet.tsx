@@ -4,7 +4,6 @@ import {
   Modal,
   PanResponder,
   Pressable,
-  StyleSheet,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -124,18 +123,30 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'flex-end',
+        }}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close modal"
           onPress={onClose}
           style={{
-            ...StyleSheet.absoluteFill,
+            ...{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            },
             backgroundColor: 'rgba(15, 23, 42, 0.5)',
           }}
         />
 
         <Animated.View
+          onStartShouldSetResponder={() => true}
           style={[
             {
               maxHeight,
@@ -147,6 +158,8 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
               paddingBottom: Spacing.xl,
               ...Shadows.lg,
               shadowColor: colors.shadowColor,
+              zIndex: 1,
+              elevation: 12,
               transform: [{ translateY }],
             },
             contentStyle,

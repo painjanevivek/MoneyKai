@@ -35,10 +35,10 @@ const MENU_ACTIONS = [
   { label: 'Transactions', icon: 'swap-horizontal', route: '/(tabs)/transactions' as const },
   { label: 'Budget', icon: 'wallet-outline', route: '/(tabs)/budget' as const },
   { label: 'Savings', icon: 'piggy-bank-outline', route: '/(tabs)/savings' as const },
-  { label: 'Notifications', icon: 'bell-outline', route: '/(tabs)/notifications' as const },
-  { label: 'Notes', icon: 'note-text-outline', route: '/(tabs)/notes' as const },
-  { label: 'Groups', icon: 'account-group-outline', route: '/(tabs)/groups' as const },
-  { label: 'Settings', icon: 'cog-outline', route: '/(tabs)/settings' as const },
+  { label: 'Notifications', icon: 'bell-outline', route: '/notifications' as const },
+  { label: 'Notes', icon: 'note-text-outline', route: '/notes' as const },
+  { label: 'Groups', icon: 'account-group-outline', route: '/groups' as const },
+  { label: 'Settings', icon: 'cog-outline', route: '/settings' as const },
   { label: 'Support', icon: 'help-circle-outline', route: '/contact' as const },
 ];
 
@@ -213,7 +213,7 @@ export default function DashboardScreen() {
             </View>
 
             <TouchableOpacity
-              onPress={() => router.push('/(tabs)/notifications' as never)}
+              onPress={() => router.push('/notifications' as never)}
               style={{
                 width: 42,
                 height: 42,

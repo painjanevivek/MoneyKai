@@ -2,11 +2,11 @@
 
 This file tracks the implementation phases for the MoneyKai mobile app going forward.
 
-Current focus: **Phase 1: Android Native Validation**
+Current focus: **Phase 1 emulator validation complete; physical Android real-notification follow-up pending**
 
 ## Phase 1: Android Native Validation
 
-This is the most important next target because the native capture code is written and Expo autolinking passes, but Kotlin compilation and real notification-listener behavior have not yet been proven on-device.
+This is the most important next target because the native capture code is written and Expo autolinking passes, but Kotlin compilation and real notification-listener behavior need to be proven through a native Android build before capture quality work begins.
 
 ### Phase 1A: Build Readiness Check
 
@@ -39,31 +39,31 @@ Status: native Android project generation succeeded with `npx.cmd expo prebuild 
 
 Goal: verify Android can expose and grant Notification Listener access for MoneyKai.
 
-- [ ] Open MoneyKai Settings.
-- [ ] Tap `Android Notification Access`.
-- [ ] Confirm Android opens the Notification Listener settings screen.
+- [x] Open MoneyKai Settings.
+- [x] Tap `Android Notification Access`.
+- [x] Confirm Android opens the Notification Listener settings screen.
 - [x] Grant listener access to MoneyKai.
 - [x] Return to MoneyKai and confirm the native/system status reports notification access as granted.
-- [ ] Confirm the app handles denied or not-granted access without crashing.
+- [x] Confirm the app handles denied or not-granted access without crashing.
 
 Completion criteria: notification access can be granted and detected from the app.
 
-Status: mostly validated on emulator. Android sees `com.moneykai.mobile/com.moneykai.nativecapture.MoneyKaiNotificationListenerService` in the merged manifest with `android.permission.BIND_NOTIFICATION_LISTENER_SERVICE`. The listener was added to `enabled_notification_listeners`, Android Notification Access opened to `Settings$NotificationAccessSettingsActivity`, and the system screen showed MoneyKai Mobile under `Allowed`. `dumpsys notification listeners` reported MoneyKai under allowed, enabled, and live notification listeners. Remaining gap: validate the exact MoneyKai Settings -> `Android Notification Access` tap path once the Expo dev menu overlay is no longer blocking the profile/settings control.
+Status: completed on emulator. Android sees `com.moneykai.mobile/com.moneykai.nativecapture.MoneyKaiNotificationListenerService` in the merged manifest with `android.permission.BIND_NOTIFICATION_LISTENER_SERVICE`. The hidden-route navigation fix lets `Home -> menu -> Settings` resolve to the real Settings screen instead of an Expo Router unmatched route. In a clean native dev-client session, MoneyKai Settings exposed the Auto Capture section, tapping `Android Notification Access` opened Android's notification access settings, and the system screen showed MoneyKai Mobile under `Allowed`. `settings get secure enabled_notification_listeners` and `dumpsys notification listeners` confirmed MoneyKai under allowed, enabled, and live notification listeners. Denied/revoked access was validated by removing the MoneyKai listener component from `enabled_notification_listeners`, force-stopping and relaunching the app, confirming the app remained stable, then restoring the original listener setting.
 
 ### Phase 1D: Real Notification Capture Test
 
 Goal: prove real transaction notifications are received by the native listener and passed into the JS capture flow.
 
-- [ ] Enable Auto Capture in MoneyKai.
-- [ ] Enable Bank Notifications capture.
+- [x] Enable Auto Capture in MoneyKai.
+- [x] Enable Bank Notifications capture.
 - [ ] Trigger or receive real UPI, bank, card, wallet, or payment-app notifications.
 - [x] Confirm transaction-like notifications are captured.
-- [ ] Confirm unrelated notifications are ignored.
+- [x] Confirm unrelated notifications are ignored.
 - [x] Confirm notifications captured while the app is backgrounded or JS is not active are queued and later flushed.
 
-Completion criteria: real financial notifications reach the MoneyKai capture pipeline.
+Completion criteria: real financial notifications reach the MoneyKai capture pipeline. On an emulator, this can only be signed off for synthetic transaction-like notifications because live bank, UPI, card, and wallet apps are not available.
 
-Status: validated on emulator with synthetic shell notifications. After posting a correctly quoted transaction-like notification, Android stored `android.title=HDFC Bank` and `android.text=Rs 123.45 debited from account for UPI payment to TEST MERCHANT`. The native listener captured it and queued it in app private storage at `shared_prefs/moneykai_native_capture.xml` under `pending_notification_signals` with source `notification`, source app `Shell`, title, body, received timestamp, and raw package name. After the JS app was connected and authenticated in dev demo mode, a fresh synthetic notification (`Rs 789.50 debited from account for UPI payment to PHASE ONE CAFE`) was consumed by the native bridge and did not remain in native pending storage. Real UPI/bank/card notifications remain untested because the emulator does not have real banking/payment apps or live notification sources.
+Status: emulator capture validation is complete. Auto Capture and Bank Notifications were enabled, then synthetic shell notifications were used to model transaction and noise behavior. After posting a correctly quoted transaction-like notification, Android stored `android.title=HDFC Bank` and `android.text=Rs 123.45 debited from account for UPI payment to TEST MERCHANT`. The native listener captured it and queued it in app private storage at `shared_prefs/moneykai_native_capture.xml` under `pending_notification_signals` with source `notification`, source app `Shell`, title, body, received timestamp, and raw package name. After the JS app was connected and authenticated in dev demo mode, a fresh synthetic notification (`Rs 789.50 debited from account for UPI payment to PHASE ONE CAFE`) was consumed by the native bridge and did not remain in native pending storage. A non-financial noise notification (`Calendar`, `Team standup starts in 10 minutes`) did not create `moneykai_native_capture.xml` and did not queue a pending capture. Real UPI/bank/card notifications remain untested because the emulator does not have real banking/payment apps or live notification sources.
 
 ### Phase 1E: Draft Creation And Parser Tuning
 
@@ -89,11 +89,11 @@ Goal: close Phase 1 with documented evidence and a stable baseline.
 - [x] Run `npx expo-modules-autolinking verify --platform android`.
 - [x] Run a final Android native build.
 - [x] Document tested device/emulator, Android version, notification sources, known misses, and known false positives.
-- [ ] Mark completed Phase 1A-1F checklist items.
+- [x] Mark completed Phase 1A-1F checklist items.
 
-Completion criteria: Phase 1 is complete when a native Android build runs successfully, notification access can be granted, real financial notifications are captured, and those captured signals appear as reviewable drafts inside MoneyKai.
+Completion criteria: Phase 1 is complete when a native Android build runs successfully, notification access can be granted, real financial notifications are captured, and those captured signals appear as reviewable drafts inside MoneyKai. With only an emulator available, Phase 1 can be marked emulator-complete; the physical-device real-notification check remains a separate hardware-dependent follow-up.
 
-Status: emulator validation is now substantially complete on `MoneyKai_API_36` using Android API 36. Native build, install, listener permission, live listener registration, synthetic notification capture, native bridge consumption, and reviewable Auto Capture draft creation are validated. A dev-only demo mode flag (`EXPO_PUBLIC_DEMO_MODE=true`) was added so emulator validation can run without real Firebase credentials while remaining gated by `__DEV__`. Remaining Phase 1 gaps: validate the exact in-app Settings -> Android Notification Access tap path without the Expo dev menu overlay, test denied/revoked access states, test unrelated/noise notifications, and test real UPI/bank/card notifications on a physical device when available.
+Status: emulator-complete on `MoneyKai_API_36` using Android API 36. Native build, install, listener permission, live listener registration, synthetic transaction notification capture, native bridge consumption, reviewable Auto Capture draft creation, in-app Settings -> Android Notification Access navigation, denied/revoked permission stability, and unrelated/noise notification filtering are validated. `adb`/emulator access has been restored locally, JDK 17 and the Android SDK path are configured for the generated Android project, and the Expo dev client now uses a configured Android launcher URL (`http://10.0.2.2:8081`) instead of unstable raw localhost deep links. While doing that recovery work, a runtime regression in `ModalSheet` surfaced from the sheet touch-propagation workaround; it has now been replaced with a safer layered backdrop plus `Animated.View` sheet implementation. Final clean verification passed with `npm.cmd run typecheck`, `npm.cmd run lint`, `npx.cmd expo-modules-autolinking verify --platform android`, and `.\gradlew.bat :app:assembleDebug --console=plain`. Remaining Phase 1 follow-up: test real UPI/bank/card notifications on a physical Android device or a real installed banking/payment app source. That follow-up is hardware/source-dependent and cannot be completed on the current emulator.
 
 ## Phase 2: Capture Quality
 
