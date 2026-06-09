@@ -21,6 +21,7 @@ const DEFAULT_CAPTURE_SETTINGS: CaptureSettings = {
   notificationCaptureEnabled: true,
   reviewNotificationsEnabled: true,
   smsResearchModeEnabled: false,
+  notificationAccessStatus: 'unknown',
 };
 
 const buildId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -34,6 +35,9 @@ interface CaptureState {
   setNotificationCaptureEnabled: (enabled: boolean) => void;
   setReviewNotificationsEnabled: (enabled: boolean) => void;
   setSmsResearchModeEnabled: (enabled: boolean) => void;
+  acceptNotificationExplainer: () => void;
+  setNotificationAccessStatus: (status: CaptureSettings['notificationAccessStatus']) => void;
+  disableAutoCapture: () => void;
   ingestSignal: (input: CaptureSignalInput) => CaptureIngestionResult;
   confirmDraft: (draftId: string, category: string) => boolean;
   ignoreDraft: (draftId: string) => void;
@@ -104,6 +108,31 @@ export const useCaptureStore = create<CaptureState>()(
       setSmsResearchModeEnabled: (enabled) =>
         set((state) => ({ settings: { ...state.settings, smsResearchModeEnabled: enabled } })),
 
+      acceptNotificationExplainer: () =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            notificationExplainerAcceptedAt: new Date().toISOString(),
+          },
+        })),
+
+      setNotificationAccessStatus: (status) =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            notificationAccessStatus: status,
+            notificationAccessLastCheckedAt: new Date().toISOString(),
+          },
+        })),
+
+      disableAutoCapture: () =>
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            autoCaptureEnabled: false,
+          },
+        })),
+
       ingestSignal: (input) => {
         const { settings, signals, merchantRules } = get();
 
@@ -132,7 +161,6 @@ export const useCaptureStore = create<CaptureState>()(
           id: buildId('signal'),
           source: input.source,
           title: input.title,
-          body: input.body,
           sender: input.sender,
           sourceApp: input.sourceApp,
           receivedAt: input.receivedAt ?? now,
@@ -148,7 +176,7 @@ export const useCaptureStore = create<CaptureState>()(
           parseExplanation: parsed.explanation,
           ignoreReason: parsed.ignoreReason,
           confidence: parsed.confidence,
-          rawPayload: input.rawPayload,
+          body: parsed.explanation.safeSnippet,
         };
 
         if (parsed.parseStatus === 'ignore' || !parsed.amount) {

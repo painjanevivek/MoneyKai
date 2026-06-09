@@ -37,6 +37,18 @@ export default function PrivacyPolicyScreen() {
               body: 'MoneyKai uses this information to power budgeting, analytics, shared expense coordination, notes, reminders, and backup and restore experiences.',
             },
             {
+              title: 'Auto Capture',
+              body: 'Auto Capture is optional. When enabled with Android notification access, MoneyKai uses supported bank and payment notifications to create reviewable transaction drafts on your device. Drafts do not affect budgets or transaction history until you confirm them.',
+            },
+            {
+              title: 'Capture data minimization',
+              body: 'MoneyKai stores parsed capture details such as source, amount, merchant, confidence, safe explanation metadata, and review status. Full raw notification payloads and unrelated notification content are not shown by default and should not be kept in normal capture history.',
+            },
+            {
+              title: 'Capture controls',
+              body: 'You can disable Auto Capture, turn notification capture off, revoke Android notification access in system settings, ignore drafts, or clear pending capture history without deleting confirmed transactions.',
+            },
+            {
               title: 'Sharing and selling',
               body: 'MoneyKai does not sell your personal finance data. Backup data is intended to remain accessible only to the authenticated account connected to that environment.',
             },

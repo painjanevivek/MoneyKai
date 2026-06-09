@@ -10,12 +10,46 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, getCategoryById } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
-import type { DraftTransaction } from '@/types/capture';
+import type { CaptureSource, DraftTransaction } from '@/types/capture';
 
 const confidenceLabel = (confidence: number) => {
   if (confidence >= 0.8) return 'High confidence';
   if (confidence >= 0.55) return 'Needs a quick check';
   return 'Needs category';
+};
+
+const sourceBadgeConfig: Record<CaptureSource, { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }> = {
+  notification: { label: 'Notification', icon: 'bell-badge-outline' },
+  sms: { label: 'SMS', icon: 'message-processing-outline' },
+  aa: { label: 'Bank Sync', icon: 'bank-transfer' },
+  manual: { label: 'Manual', icon: 'pencil-outline' },
+};
+
+const SourceBadge = ({ source, sourceApp }: { source: CaptureSource; sourceApp?: string }) => {
+  const { colors } = useTheme();
+  const config = sourceBadgeConfig[source];
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        gap: 5,
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: 5,
+        borderRadius: BorderRadius.full,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+      }}
+    >
+      <MaterialCommunityIcons name={config.icon} size={13} color={colors.textSecondary} />
+      <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
+        {sourceApp ? `${config.label} | ${sourceApp}` : config.label}
+      </Text>
+    </View>
+  );
 };
 
 const buildExplanationText = (draft: DraftTransaction) => {
@@ -77,6 +111,7 @@ const DraftCard = ({ draft }: { draft: DraftTransaction }) => {
           />
         </View>
         <View style={{ flex: 1 }}>
+          <SourceBadge source={draft.captureSource} sourceApp={draft.sourceApp} />
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
             {draft.description}
           </Text>
@@ -86,7 +121,6 @@ const DraftCard = ({ draft }: { draft: DraftTransaction }) => {
           </Text>
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, marginTop: 4 }}>
             {confidenceLabel(draft.confidence)}
-            {draft.sourceApp ? ` | ${draft.sourceApp}` : ''}
           </Text>
         </View>
       </View>
@@ -217,6 +251,9 @@ export default function AutoCaptureScreen() {
                 <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
                   {signal.parsedMerchant ?? signal.sender ?? signal.sourceApp ?? signal.source}
                 </Text>
+                <View style={{ marginTop: 6 }}>
+                  <SourceBadge source={signal.source} sourceApp={signal.sourceApp} />
+                </View>
                 <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, marginTop: 2 }}>
                   {signal.processingStatus} | {signal.parseReason ?? signal.ignoreReason ?? signal.receivedAt}
                 </Text>

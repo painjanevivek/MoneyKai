@@ -14,6 +14,10 @@ export type DraftTransactionStatus = 'pending' | 'confirmed' | 'ignored';
 
 export type CaptureParseStatus = 'draft' | 'ignore' | 'review';
 
+export type CaptureSourceStatus = 'enabled' | 'disabled' | 'needs_android_access' | 'research_only' | 'unsupported';
+
+export type CapturePermissionState = 'unknown' | 'unsupported' | 'not_requested' | 'granted' | 'denied';
+
 export interface CaptureParseExplanation {
   matchedAmount?: string;
   matchedAmountPattern?: string;
@@ -115,6 +119,9 @@ export interface CaptureSettings {
   notificationCaptureEnabled: boolean;
   reviewNotificationsEnabled: boolean;
   smsResearchModeEnabled: boolean;
+  notificationExplainerAcceptedAt?: string;
+  notificationAccessStatus: CapturePermissionState;
+  notificationAccessLastCheckedAt?: string;
 }
 
 export interface CaptureIngestionResult {

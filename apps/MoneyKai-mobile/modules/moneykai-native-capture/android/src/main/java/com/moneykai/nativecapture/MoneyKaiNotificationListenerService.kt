@@ -14,6 +14,7 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
     val notification = sbn?.notification ?: return
     val sourcePackage = sbn.packageName ?: return
     if (sourcePackage == packageName) return
+    if (!MoneyKaiNativeCaptureModule.isCaptureEnabled(applicationContext)) return
 
     val title = notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
     val text = notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()

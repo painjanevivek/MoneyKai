@@ -116,7 +116,12 @@ const sanitizeSnippet = (value: string) =>
     .replace(/\b\d{6}\b/g, '[code]')
     .replace(/\b(?:xx|x{2,})\d+\b/gi, '[masked]')
     .replace(/[a-z0-9._%+-]+@[a-z0-9.-]+\b/gi, '[vpa]')
+    .replace(/\b((?:upi\s*)?(?:ref(?:erence)?|rrn|utr|transaction id|txn id|order id|imps)\s*(?:no\.?|number|id)?\s*[:#-]?)\s*[a-z0-9/-]{6,}/gi, '$1 [ref]')
+    .replace(/\b\d{8,}\b/g, '[number]')
     .slice(0, 180);
+
+const summarizeReference = (reference?: string) =>
+  reference ? `ref-${reference.slice(-4)}` : undefined;
 
 export const normalizeMerchantKey = (value: string) =>
   normalizeWhitespace(value)
@@ -275,7 +280,7 @@ const createExplanation = (params: {
   confidenceFactors: params.confidenceFactors,
   ignoreReason: params.ignoreReason,
   safeSnippet: sanitizeSnippet(params.text),
-  dedupeReference: params.reference,
+  dedupeReference: summarizeReference(params.reference),
 });
 
 const calculateConfidence = (params: {

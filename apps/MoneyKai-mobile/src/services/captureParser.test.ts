@@ -37,6 +37,22 @@ describe('parseCapturedSignal', () => {
   });
 });
 
+describe('parse explanation privacy', () => {
+  it('redacts sensitive identifiers from safe snippets and summarizes references', () => {
+    const parsed = parseCapturedSignal({
+      source: 'notification',
+      sourceApp: 'Bank App',
+      title: 'Debit Alert',
+      body: 'A/c XX4321 debited by Rs 999.00 for UPI payment to TEST SHOP. UPI Ref 412345678901.',
+      receivedAt: '2026-06-09T09:00:00.000Z',
+    });
+
+    expect(parsed.explanation.safeSnippet).not.toContain('XX4321');
+    expect(parsed.explanation.safeSnippet).not.toContain('412345678901');
+    expect(parsed.explanation.dedupeReference).toBe('ref-8901');
+  });
+});
+
 describe('normalizeMerchantKey', () => {
   it('strips noisy suffixes while keeping useful merchant words', () => {
     expect(normalizeMerchantKey('PHASE ONE CAFE UPI Ref 123456')).toBe('phase one cafe');

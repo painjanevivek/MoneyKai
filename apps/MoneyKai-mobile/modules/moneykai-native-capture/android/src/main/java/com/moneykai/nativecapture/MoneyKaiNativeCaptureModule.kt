@@ -33,6 +33,19 @@ class MoneyKaiNativeCaptureModule : Module() {
       true
     }
 
+    Function("clearPendingSignals") {
+      clearPendingSignals(requireContext())
+      true
+    }
+
+    Function("setCaptureEnabled") { enabled: Boolean ->
+      setCaptureEnabled(requireContext(), enabled)
+      if (!enabled) {
+        clearPendingSignals(requireContext())
+      }
+      true
+    }
+
     Function("getStatus") {
       activeModule = this@MoneyKaiNativeCaptureModule
       val status = Bundle()
@@ -65,11 +78,16 @@ class MoneyKaiNativeCaptureModule : Module() {
     private const val MAX_PENDING_SIGNALS = 50
     private const val PREFS_NAME = "moneykai_native_capture"
     private const val PREFS_PENDING_SIGNALS = "pending_notification_signals"
+    private const val PREFS_CAPTURE_ENABLED = "capture_enabled"
 
     private var activeModule: MoneyKaiNativeCaptureModule? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
     fun handleNotificationSignal(context: Context, event: Bundle) {
+      if (!isCaptureEnabled(context)) {
+        return
+      }
+
       if (activeModule == null) {
         enqueuePendingSignal(context, event)
         return
@@ -139,6 +157,17 @@ class MoneyKaiNativeCaptureModule : Module() {
         .remove(PREFS_PENDING_SIGNALS)
         .apply()
     }
+
+    private fun setCaptureEnabled(context: Context, enabled: Boolean) {
+      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putBoolean(PREFS_CAPTURE_ENABLED, enabled)
+        .apply()
+    }
+
+    fun isCaptureEnabled(context: Context): Boolean =
+      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getBoolean(PREFS_CAPTURE_ENABLED, false)
 
     private fun bundleToJson(bundle: Bundle): JSONObject {
       val json = JSONObject()

@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Linking, Platform, Share } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, Linking, Platform, Share, AppState } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -21,8 +21,15 @@ import { isFirebaseConfigured } from '@/services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
-import { openNativeCaptureSettings } from '@/services/nativeCaptureBridge';
+import {
+  clearNativeCaptureQueue,
+  getNativeCaptureStatus,
+  openNativeCaptureSettings,
+  setNativeCaptureEnabled,
+  type NativeCaptureStatus,
+} from '@/services/nativeCaptureBridge';
 import { getStoreReviewUrl } from '@/config/environment';
+import type { CaptureSourceStatus } from '@/types/capture';
 
 interface SettingItemProps {
   icon: string;
@@ -32,20 +39,23 @@ interface SettingItemProps {
   subtitle?: string;
   right?: React.ReactNode;
   onPress?: () => void;
+  disabled?: boolean;
 }
 
-const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, title, subtitle, right, onPress }) => {
+const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, title, subtitle, right, onPress, disabled }) => {
   const { colors } = useTheme();
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={onPress ? 0.6 : 1}
+      activeOpacity={onPress && !disabled ? 0.6 : 1}
+      disabled={disabled}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: Spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.borderLight,
+        opacity: disabled ? 0.55 : 1,
       }}
     >
       <View
@@ -65,9 +75,17 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
         <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>{title}</Text>
         {!!subtitle && <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>{subtitle}</Text>}
       </View>
-      {right || (onPress && <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textTertiary} />)}
+      {right || (onPress && !disabled && <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textTertiary} />)}
     </TouchableOpacity>
   );
+};
+
+const sourceStatusLabel: Record<CaptureSourceStatus, string> = {
+  enabled: 'Enabled',
+  disabled: 'Disabled',
+  needs_android_access: 'Needs Android access',
+  research_only: 'Research only',
+  unsupported: 'Unsupported',
 };
 
 export default function SettingsScreen() {
@@ -78,10 +96,18 @@ export default function SettingsScreen() {
   const transactions = useTransactionStore((s) => s.transactions);
   const captureSettings = useCaptureStore((s) => s.settings);
   const pendingCaptureDrafts = useCaptureStore((s) => s.drafts.filter((draft) => draft.status === 'pending').length);
+  const captureInboxCount = useCaptureStore((s) =>
+    s.signals.filter((signal) => signal.processingStatus !== 'confirmed').length +
+    s.drafts.filter((draft) => draft.status !== 'confirmed').length
+  );
   const setAutoCaptureEnabled = useCaptureStore((s) => s.setAutoCaptureEnabled);
   const setNotificationCaptureEnabled = useCaptureStore((s) => s.setNotificationCaptureEnabled);
   const setReviewNotificationsEnabled = useCaptureStore((s) => s.setReviewNotificationsEnabled);
   const setSmsResearchModeEnabled = useCaptureStore((s) => s.setSmsResearchModeEnabled);
+  const acceptNotificationExplainer = useCaptureStore((s) => s.acceptNotificationExplainer);
+  const setNotificationAccessStatus = useCaptureStore((s) => s.setNotificationAccessStatus);
+  const disableAutoCapture = useCaptureStore((s) => s.disableAutoCapture);
+  const clearCaptureInbox = useCaptureStore((s) => s.clearCaptureInbox);
   const syncStatus = useSyncStore((s) => s.status);
   const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt);
   const syncError = useSyncStore((s) => s.error);
@@ -89,10 +115,13 @@ export default function SettingsScreen() {
   const [showAllowanceEditor, setShowAllowanceEditor] = useState(false);
   const [showBackupSheet, setShowBackupSheet] = useState(false);
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
+  const [showNotificationExplainer, setShowNotificationExplainer] = useState(false);
+  const [nativeCaptureStatus, setNativeCaptureStatus] = useState<NativeCaptureStatus | null>(null);
   const [allowanceValue, setAllowanceValue] = useState(String(settings.monthly_allowance));
   const [savingAllowance, setSavingAllowance] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
+  const [nativeStatusBusy, setNativeStatusBusy] = useState(false);
 
   const switchTrack = {
     false: colors.border,
@@ -104,6 +133,57 @@ export default function SettingsScreen() {
     () => `${currencySymbol} ${settings.monthly_allowance.toLocaleString('en-IN')}`,
     [currencySymbol, settings.monthly_allowance]
   );
+
+  const notificationSourceStatus = useMemo<CaptureSourceStatus>(() => {
+    if (Platform.OS !== 'android') return 'unsupported';
+    if (!captureSettings.autoCaptureEnabled || !captureSettings.notificationCaptureEnabled) return 'disabled';
+    if ((nativeCaptureStatus?.notificationAccess ?? captureSettings.notificationAccessStatus) !== 'granted') {
+      return 'needs_android_access';
+    }
+    return 'enabled';
+  }, [
+    captureSettings.autoCaptureEnabled,
+    captureSettings.notificationAccessStatus,
+    captureSettings.notificationCaptureEnabled,
+    nativeCaptureStatus?.notificationAccess,
+  ]);
+
+  const smsSourceStatus = useMemo<CaptureSourceStatus>(() => {
+    if (!captureSettings.autoCaptureEnabled || !captureSettings.smsResearchModeEnabled) return 'disabled';
+    return 'research_only';
+  }, [captureSettings.autoCaptureEnabled, captureSettings.smsResearchModeEnabled]);
+
+  const refreshNativeCaptureStatus = useCallback(async (showBusy = true) => {
+    if (showBusy) {
+      setNativeStatusBusy(true);
+    }
+    try {
+      const status = await getNativeCaptureStatus();
+      setNativeCaptureStatus(status);
+      setNotificationAccessStatus(status.notificationAccess);
+    } finally {
+      if (showBusy) {
+        setNativeStatusBusy(false);
+      }
+    }
+  }, [setNotificationAccessStatus]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      void refreshNativeCaptureStatus(false);
+    }, 0);
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void refreshNativeCaptureStatus(false);
+      }
+    });
+
+    return () => {
+      clearTimeout(timeout);
+      subscription.remove();
+    };
+  }, [refreshNativeCaptureStatus]);
 
   const handleSignOut = async () => {
     if (signOutBusy) return;
@@ -201,16 +281,79 @@ export default function SettingsScreen() {
     if (enabled) {
       Alert.alert(
         'Auto capture enabled',
-        'MoneyKai will create reviewable drafts from supported transaction signals. Native Android notification access still needs to be granted in a development build.'
+        'MoneyKai will create reviewable drafts from supported transaction signals. Grant Android notification access only if you want bank and payment notifications to be used.'
       );
+    } else {
+      void setNativeCaptureEnabled(false);
+      void clearNativeCaptureQueue();
     }
   };
 
   const handleOpenNativeCaptureSettings = async () => {
+    if (!captureSettings.notificationExplainerAcceptedAt) {
+      setShowNotificationExplainer(true);
+      return;
+    }
+
     const opened = await openNativeCaptureSettings();
     if (!opened) {
       Alert.alert('Android build required', 'Install a MoneyKai Android development build to grant notification access for automatic capture.');
+      return;
     }
+    setTimeout(() => void refreshNativeCaptureStatus(), 750);
+  };
+
+  const handleAcceptNotificationExplainer = async () => {
+    acceptNotificationExplainer();
+    setShowNotificationExplainer(false);
+    const opened = await openNativeCaptureSettings();
+    if (!opened) {
+      Alert.alert('Android build required', 'Install a MoneyKai Android development build to grant notification access for automatic capture.');
+      return;
+    }
+    setTimeout(() => void refreshNativeCaptureStatus(), 750);
+  };
+
+  const handleDisableAutoCapture = () => {
+    Alert.alert(
+      'Disable auto capture?',
+      'MoneyKai will stop listening for new capture signals. Existing confirmed transactions will stay in your history.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disable',
+          style: 'destructive',
+          onPress: () => {
+            disableAutoCapture();
+            void setNativeCaptureEnabled(false);
+            void clearNativeCaptureQueue();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearCaptureHistory = () => {
+    if (captureInboxCount === 0) {
+      Alert.alert('Nothing to clear', 'There are no pending or ignored capture items to remove.');
+      return;
+    }
+
+    Alert.alert(
+      'Clear capture history?',
+      'This removes pending and ignored capture drafts and signals. Confirmed transactions stay in your transaction history.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            clearCaptureInbox();
+            void clearNativeCaptureQueue();
+          },
+        },
+      ]
+    );
   };
 
   const handleCloudBackup = async () => {
@@ -360,6 +503,17 @@ export default function SettingsScreen() {
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Auto Capture</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
+          <View
+            style={{
+              paddingBottom: Spacing.md,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderLight,
+            }}
+          >
+            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+              Auto Capture creates reviewable drafts only. Supported notification text is parsed into safe fields on this device, and unrelated alerts are ignored.
+            </Text>
+          </View>
           <SettingItem
             icon="radar"
             iconColor="#111111"
@@ -381,12 +535,12 @@ export default function SettingsScreen() {
             iconColor="#444444"
             iconBg="#ECECEC"
             title="Bank Notifications"
-            subtitle="Use Android notification signals when native access is available"
+            subtitle={`${sourceStatusLabel[notificationSourceStatus]} | Optional Android notification source`}
             right={
               <Switch
                 value={captureSettings.notificationCaptureEnabled}
                 onValueChange={setNotificationCaptureEnabled}
-                disabled={!captureSettings.autoCaptureEnabled}
+                disabled={!captureSettings.autoCaptureEnabled || Platform.OS !== 'android'}
                 trackColor={switchTrack}
                 thumbColor={switchThumb}
                 ios_backgroundColor={colors.borderLight}
@@ -399,8 +553,15 @@ export default function SettingsScreen() {
               iconColor="#444444"
               iconBg="#ECECEC"
               title="Android Notification Access"
-              subtitle="Open system access settings for the MoneyKai capture listener"
+              subtitle={
+                nativeStatusBusy
+                  ? 'Checking access status'
+                  : notificationSourceStatus === 'enabled'
+                    ? 'Granted for MoneyKai'
+                    : 'Required before notification drafts can be created'
+              }
               onPress={handleOpenNativeCaptureSettings}
+              disabled={!captureSettings.autoCaptureEnabled}
             />
           ) : null}
           <SettingItem
@@ -408,12 +569,12 @@ export default function SettingsScreen() {
             iconColor="#5A5A5A"
             iconBg="#EFEFEF"
             title="SMS Research Mode"
-            subtitle="Keeps SMS as a research-only source until native and policy work is complete"
+            subtitle={`${sourceStatusLabel[smsSourceStatus]} | Not available in production controls`}
             right={
               <Switch
                 value={captureSettings.smsResearchModeEnabled}
                 onValueChange={setSmsResearchModeEnabled}
-                disabled={!captureSettings.autoCaptureEnabled}
+                disabled={!captureSettings.smsResearchModeEnabled}
                 trackColor={switchTrack}
                 thumbColor={switchThumb}
                 ios_backgroundColor={colors.borderLight}
@@ -443,6 +604,23 @@ export default function SettingsScreen() {
             title="Review Captured Drafts"
             subtitle={`${pendingCaptureDrafts} pending`}
             onPress={() => router.push('/(tabs)/auto-capture' as any)}
+          />
+          <SettingItem
+            icon="capture"
+            iconColor="#8A8A8A"
+            iconBg="#F2F2F2"
+            title="Disable Auto Capture"
+            subtitle="Stop new capture signals immediately"
+            onPress={handleDisableAutoCapture}
+            disabled={!captureSettings.autoCaptureEnabled}
+          />
+          <SettingItem
+            icon="trash-can-outline"
+            iconColor={colors.emergency}
+            iconBg={colors.emergencyBg}
+            title="Clear Capture History"
+            subtitle={`${captureInboxCount} pending or ignored items`}
+            onPress={handleClearCaptureHistory}
           />
         </Card>
 
@@ -568,6 +746,55 @@ export default function SettingsScreen() {
           keyboardType="numeric"
           prefix="₹"
         />
+      </ModalSheet>
+
+      <ModalSheet
+        visible={showNotificationExplainer}
+        title="Android notification access"
+        subtitle="MoneyKai needs Android notification access only if you want supported bank and payment alerts turned into reviewable drafts."
+        onClose={() => setShowNotificationExplainer(false)}
+        footer={
+          <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
+            <Button
+              title="Open Android Settings"
+              icon="cellphone-cog"
+              onPress={handleAcceptNotificationExplainer}
+            />
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <Button
+                title="Not Now"
+                onPress={() => setShowNotificationExplainer(false)}
+                variant="outline"
+                style={{ flex: 1 }}
+              />
+              <Button
+                title="Learn More"
+                onPress={() => {
+                  setShowNotificationExplainer(false);
+                  router.push('/privacy-policy' as any);
+                }}
+                variant="ghost"
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        }
+      >
+        <View style={{ gap: Spacing.md }}>
+          {[
+            'MoneyKai only uses supported transaction-like alerts to create drafts for your review.',
+            'Drafts do not change budgets or transaction history until you confirm them.',
+            'Full raw notification payloads are not shown by default; MoneyKai stores parsed fields and safe explanation details.',
+            'You can disable Auto Capture or clear pending capture history from this screen.',
+          ].map((item) => (
+            <View key={item} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+              <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
+              <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+                {item}
+              </Text>
+            </View>
+          ))}
+        </View>
       </ModalSheet>
 
       <ModalSheet

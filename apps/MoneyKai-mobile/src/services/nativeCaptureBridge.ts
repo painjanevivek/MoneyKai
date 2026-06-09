@@ -31,6 +31,8 @@ type MoneyKaiNativeCaptureEvents = {
 type MoneyKaiNativeCaptureModule = {
   startListening?: () => boolean;
   stopListening?: () => boolean;
+  clearPendingSignals?: () => boolean;
+  setCaptureEnabled?: (enabled: boolean) => boolean;
   getStatus?: () => NativeCaptureStatus;
   openNotificationListenerSettings?: () => boolean;
   addListener?: (
@@ -64,6 +66,22 @@ export const openNativeCaptureSettings = async () => {
   return nativeCaptureModule.openNotificationListenerSettings();
 };
 
+export const clearNativeCaptureQueue = async () => {
+  if (!nativeCaptureModule?.clearPendingSignals) {
+    return false;
+  }
+
+  return nativeCaptureModule.clearPendingSignals();
+};
+
+export const setNativeCaptureEnabled = async (enabled: boolean) => {
+  if (!nativeCaptureModule?.setCaptureEnabled) {
+    return false;
+  }
+
+  return nativeCaptureModule.setCaptureEnabled(enabled);
+};
+
 export const subscribeToNativeCaptureSignals = (
   handler: (signal: CaptureSignalInput) => void
 ): NativeCaptureSubscription => {
@@ -79,9 +97,6 @@ export const subscribeToNativeCaptureSignals = (
       body: event.body,
       sourceApp: event.sourceApp,
       receivedAt: event.receivedAt,
-      rawPayload: {
-        packageName: event.rawPackageName ?? event.sourceApp,
-      },
     });
   });
   nativeCaptureModule.startListening?.();
