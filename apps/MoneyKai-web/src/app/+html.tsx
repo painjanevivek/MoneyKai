@@ -10,7 +10,7 @@ export default function RootHtml({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="theme-color" content="#111111" />
+        <meta name="theme-color" content="#0A0D10" />
         {headNodes}
         <style>{`
           html, body, #root {
@@ -23,7 +23,9 @@ export default function RootHtml({ children }: PropsWithChildren) {
           body {
             overflow-y: auto;
             overflow-x: hidden;
-            background: #fafafa;
+            background: #EEF2F7;
+            color: #0F172A;
+            color-scheme: light dark;
           }
         `}</style>
         <ScrollViewStyleReset />
