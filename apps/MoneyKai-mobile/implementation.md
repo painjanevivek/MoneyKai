@@ -2,7 +2,7 @@
 
 This file tracks the implementation phases for the MoneyKai mobile app going forward.
 
-Current focus: **Phase 2 capture-quality baseline implemented; physical Android real-notification follow-up pending**
+Current focus: **Phase 3 production-safety baseline implemented; Android manual validation pending**
 
 ## Phase 1: Android Native Validation
 
@@ -206,78 +206,90 @@ Before shipping Auto Capture widely, focus on privacy, consent, and user control
 
 Goal: explain notification access clearly before sending the user to Android system settings.
 
-- [ ] Replace direct `Android Notification Access` behavior with a MoneyKai explainer modal or screen first.
-- [ ] Explain that Android notification access may allow MoneyKai to read notifications, but MoneyKai only uses supported transaction alerts for reviewable drafts.
-- [ ] Add clear actions: `Open Android Settings`, `Not Now`, and `Learn More`.
-- [ ] Track whether the user has seen or accepted the explainer.
-- [ ] Keep notification access hidden or disabled on unsupported platforms.
-- [ ] Re-check native permission status after the user returns from Android settings.
+- [x] Replace direct `Android Notification Access` behavior with a MoneyKai explainer modal or screen first.
+- [x] Explain that Android notification access may allow MoneyKai to read notifications, but MoneyKai only uses supported transaction alerts for reviewable drafts.
+- [x] Add clear actions: `Open Android Settings`, `Not Now`, and `Learn More`.
+- [x] Track whether the user has seen or accepted the explainer.
+- [x] Keep notification access hidden or disabled on unsupported platforms.
+- [x] Re-check native permission status after the user returns from Android settings.
 
 Completion criteria: users see a clear explanation before opening Android notification-listener settings.
+
+Status: implemented in Settings. Android notification access is gated by an explainer modal, consent timestamp, source status labels, and native permission re-checks on return/AppState active.
 
 ### Phase 3B: Privacy Copy And User Trust
 
 Goal: make the privacy model visible inside the app and privacy policy.
 
-- [ ] Update the Privacy Policy with a dedicated Auto Capture section.
-- [ ] Explain that supported notification signals are processed on-device for transaction draft creation.
-- [ ] Explain that captured drafts require review before affecting budgets or transaction history.
-- [ ] Explain what is stored locally: source, parsed amount, merchant, confidence, and safe metadata.
-- [ ] Explain what should not be stored or shown by default: full raw notification payloads and unrelated notification content.
-- [ ] Add short privacy copy near Auto Capture settings.
+- [x] Update the Privacy Policy with a dedicated Auto Capture section.
+- [x] Explain that supported notification signals are processed on-device for transaction draft creation.
+- [x] Explain that captured drafts require review before affecting budgets or transaction history.
+- [x] Explain what is stored locally: source, parsed amount, merchant, confidence, and safe metadata.
+- [x] Explain what should not be stored or shown by default: full raw notification payloads and unrelated notification content.
+- [x] Add short privacy copy near Auto Capture settings.
 
 Completion criteria: users can understand what Auto Capture reads, stores, ignores, and controls before enabling it.
+
+Status: implemented in the Privacy Policy and the Auto Capture Settings section.
 
 ### Phase 3C: Quick Disable And Clear Capture Controls
 
 Goal: give users immediate control over Auto Capture and captured history.
 
-- [ ] Add a prominent `Disable Auto Capture` control in Auto Capture or Settings.
-- [ ] Add `Clear Capture History` to remove pending/ignored captured signals and drafts.
-- [ ] Add confirmation before clearing data.
-- [ ] Preserve confirmed transactions when clearing capture history.
-- [ ] Stop native listening when Auto Capture or notification capture is disabled.
-- [ ] Add native cleanup support if queued native pending signals need to be cleared too.
+- [x] Add a prominent `Disable Auto Capture` control in Auto Capture or Settings.
+- [x] Add `Clear Capture History` to remove pending/ignored captured signals and drafts.
+- [x] Add confirmation before clearing data.
+- [x] Preserve confirmed transactions when clearing capture history.
+- [x] Stop native listening when Auto Capture or notification capture is disabled.
+- [x] Add native cleanup support if queued native pending signals need to be cleared too.
 
 Completion criteria: users can quickly stop capture and clear unconfirmed capture data without deleting confirmed transactions.
+
+Status: implemented. Settings provides Disable Auto Capture and Clear Capture History. The native module supports `setCaptureEnabled(false)` and `clearPendingSignals()` so disabled capture cannot continue queuing native notification signals.
 
 ### Phase 3D: Capture Source Badges
 
 Goal: make every draft and signal source obvious.
 
-- [ ] Add source badges for `Notification`, `SMS`, and `Manual`.
-- [ ] Show source badges on Auto Capture draft cards.
-- [ ] Show source app where safe, such as bank app, UPI app, or wallet app.
-- [ ] Use consistent colors, icons, and labels for each source.
-- [ ] Keep SMS visually marked as future or research-only until it is production-ready.
-- [ ] Ensure source badges are accessible and readable in light and dark themes.
+- [x] Add source badges for `Notification`, `SMS`, and `Manual`.
+- [x] Show source badges on Auto Capture draft cards.
+- [x] Show source app where safe, such as bank app, UPI app, or wallet app.
+- [x] Use consistent colors, icons, and labels for each source.
+- [x] Keep SMS visually marked as future or research-only until it is production-ready.
+- [x] Ensure source badges are accessible and readable in light and dark themes.
 
 Completion criteria: users can immediately tell where every captured draft came from.
+
+Status: implemented on pending draft cards and recent signals, with Settings marking SMS as research-only and unavailable through production controls.
 
 ### Phase 3E: Raw Payload Minimization
 
 Goal: prevent sensitive notification payloads from being overexposed, persisted unnecessarily, or backed up accidentally.
 
-- [ ] Stop storing full raw notification payloads by default.
-- [ ] Store only safe parsed fields and sanitized explainability metadata.
-- [ ] Redact account numbers, UPI IDs, card masks, transaction references, OTPs, and long raw message text where possible.
-- [ ] Keep raw payload access behind dev-only diagnostics if needed.
-- [ ] Confirm cloud backups do not include raw notification payloads or capture inbox data unless a future explicit opt-in is designed.
-- [ ] Add a safety review for AsyncStorage persistence of captured signals and drafts.
+- [x] Stop storing full raw notification payloads by default.
+- [x] Store only safe parsed fields and sanitized explainability metadata.
+- [x] Redact account numbers, UPI IDs, card masks, transaction references, OTPs, and long raw message text where possible.
+- [x] Keep raw payload access behind dev-only diagnostics if needed.
+- [x] Confirm cloud backups do not include raw notification payloads or capture inbox data unless a future explicit opt-in is designed.
+- [x] Add a safety review for AsyncStorage persistence of captured signals and drafts.
 
 Completion criteria: captured notification data is minimized, sanitized, and not exposed through normal UI or backup flows.
+
+Status: implemented for normal capture storage. JS capture storage persists sanitized snippets and safe parse explanation metadata instead of raw payloads. Native pending signals are sanitized before being emitted or queued. Existing cloud backup snapshots do not include capture inbox state.
 
 ### Phase 3F: Consent State And Settings Robustness
 
 Goal: make Auto Capture state predictable and scalable as more sources are added.
 
-- [ ] Extend capture settings with consent fields such as notification explainer accepted status and timestamp.
-- [ ] Keep source-level toggles independent: Auto Capture master switch, Notification source, SMS research source, and future Manual source.
-- [ ] Show status labels for each source: `Enabled`, `Disabled`, `Needs Android access`, `Research only`, or `Unsupported`.
-- [ ] Handle revoked Android notification access gracefully.
-- [ ] Avoid enabling source toggles when the platform or permission state makes them unusable.
+- [x] Extend capture settings with consent fields such as notification explainer accepted status and timestamp.
+- [x] Keep source-level toggles independent: Auto Capture master switch, Notification source, SMS research source, and future Manual source.
+- [x] Show status labels for each source: `Enabled`, `Disabled`, `Needs Android access`, `Research only`, or `Unsupported`.
+- [x] Handle revoked Android notification access gracefully.
+- [x] Avoid enabling source toggles when the platform or permission state makes them unusable.
 
 Completion criteria: settings accurately reflect consent, platform support, and permission state.
+
+Status: implemented. Settings stores notification explainer acceptance and native access status, refreshes access state on app activation, disables unsupported source controls, and labels notification/SMS source readiness.
 
 ### Phase 3G: Production Safety Test Pass
 
@@ -289,10 +301,12 @@ Goal: verify Phase 3 protections before wider release.
 - [ ] Test clear capture history removes pending/ignored capture data but keeps confirmed transactions.
 - [ ] Test source badges for notification drafts and placeholder future SMS/manual states.
 - [ ] Test privacy copy renders correctly.
-- [ ] Test backups do not include raw capture payloads.
-- [ ] Run `npm.cmd run mobile:typecheck` and `npm.cmd run mobile:lint`.
+- [x] Test backups do not include raw capture payloads.
+- [x] Run `npm.cmd run mobile:typecheck` and `npm.cmd run mobile:lint`.
 
 Completion criteria: privacy, consent, controls, source labeling, and data minimization pass manual and automated validation.
+
+Status: implementation baseline is complete and automated checks pass locally. Manual Android validation of the explainer, permission revoked/granted states, disable behavior, clear behavior, and UI rendering remains pending on the emulator or a physical Android device.
 
 ## Phase 4: SMS Research Mode
 

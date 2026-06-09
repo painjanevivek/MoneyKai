@@ -32,13 +32,15 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
     if (body.isBlank() || !looksLikeFinancialNotification("$title $body")) {
       return
     }
+    val safeTitle = sanitizeNotificationText(title)
+    val safeBody = sanitizeNotificationText(body)
 
     MoneyKaiNativeCaptureModule.handleNotificationSignal(
       applicationContext,
       Bundle().apply {
         putString("source", "notification")
-        putString("title", title)
-        putString("body", body)
+        putString("title", safeTitle)
+        putString("body", safeBody)
         putString("sourceApp", resolveAppLabel(sourcePackage))
         putString("receivedAt", toIsoUtc(sbn.postTime))
         putString("rawPackageName", sourcePackage)
@@ -64,6 +66,16 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
       val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
       packageManager.getApplicationLabel(applicationInfo).toString()
     }.getOrElse { packageName }
+
+  private fun sanitizeNotificationText(value: String): String =
+    value
+      .replace(Regex("""\b(?:xx|x{2,})\d+\b""", RegexOption.IGNORE_CASE), "[masked]")
+      .replace(Regex("""[a-z0-9._%+-]+@[a-z0-9.-]+\b""", RegexOption.IGNORE_CASE), "[vpa]")
+      .replace(
+        Regex("""\b((?:upi\s*)?(?:ref(?:erence)?|rrn|utr|transaction id|txn id|order id|imps)\s*(?:no\.?|number|id)?\s*[:#-]?)\s*[a-z0-9/-]{6,}""", RegexOption.IGNORE_CASE),
+        "$1 [ref]"
+      )
+      .replace(Regex("""\b\d{8,}\b"""), "[number]")
 
   companion object {
     private val amountPattern = Regex("""(?:rs\.?|inr|usd|eur|gbp|aed|\u20B9|\$)\s*\d""")
