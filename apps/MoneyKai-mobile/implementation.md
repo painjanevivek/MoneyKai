@@ -434,10 +434,12 @@ Goal: test SMS research on real Android environments before any production decis
 - [ ] Test dual-SIM behavior where possible.
 - [ ] Test permission denied, revoked, and re-enabled states.
 - [ ] Test background delivery behavior.
-- [ ] Verify production builds do not request SMS permissions.
-- [ ] Re-check Google Play policy before any release decision.
+- [x] Verify production builds do not request SMS permissions.
+- [x] Re-check Google Play policy before any release decision.
 
 Completion criteria: SMS research is proven technically and remains isolated from production builds.
+
+Status: partially validated and documented in `docs/sms-research-validation.md`. Automated checks pass for production/preview research gating, absence of restricted SMS permissions in static app config, dynamic config plugin isolation, backup exclusion of capture inbox data, native Kotlin compilation, and SMS parser noise handling. Current Google Play policy still treats SMS permissions as high-risk and allows SMS-based money management only as a reviewed exception, so MoneyKai remains research-only. Physical Android/OEM, dual-SIM, permission revocation, and background-delivery tests remain pending because they require real devices or a managed device lab.
 
 ### Phase 4H: Production Decision Gate
 
