@@ -2,7 +2,7 @@
 
 This file tracks the implementation phases for the MoneyKai mobile app going forward.
 
-Current focus: **Phase 1 emulator validation complete; physical Android real-notification follow-up pending**
+Current focus: **Phase 2 capture-quality baseline implemented; physical Android real-notification follow-up pending**
 
 ## Phase 1: Android Native Validation
 
@@ -103,86 +103,100 @@ After the Android notification listener works, improve parsing and review qualit
 
 Goal: build a repeatable sample set of real-world notification patterns before changing parser behavior.
 
-- [ ] Collect sanitized examples for UPI payments, bank debits, bank credits, card spends, wallet spends, refunds, cashback, failed transactions, OTPs, low-balance alerts, promotional alerts, and statement reminders.
-- [ ] Store examples as local test fixtures with sensitive values replaced by realistic placeholders.
-- [ ] Include source app, title, body, expected amount, expected merchant, expected transaction type, expected payment method, expected status, and expected capture decision.
-- [ ] Include at least 30 fixture cases before tuning parser rules.
-- [ ] Mark each fixture as `shouldDraft`, `shouldIgnore`, or `needsReview`.
+- [x] Collect sanitized examples for UPI payments, bank debits, bank credits, card spends, wallet spends, refunds, cashback, failed transactions, OTPs, low-balance alerts, promotional alerts, and statement reminders.
+- [x] Store examples as local test fixtures with sensitive values replaced by realistic placeholders.
+- [x] Include source app, title, body, expected amount, expected merchant, expected transaction type, expected payment method, expected status, and expected capture decision.
+- [x] Include at least 30 fixture cases before tuning parser rules.
+- [x] Mark each fixture as `shouldDraft`, `shouldIgnore`, or `needsReview`.
 
 Completion criteria: Phase 2 has a reusable fixture set that represents both valid transaction notifications and noise.
+
+Status: implemented in `src/services/__fixtures__/captureFixtures.ts` with 30 curated sanitized notification cases covering valid drafts, ignored noise, review-needed signals, and duplicate-style updates. Real physical-device examples should still be added as they become available.
 
 ### Phase 2B: Indian Bank And Payment Pattern Expansion
 
 Goal: recognize common Indian financial notification formats more reliably.
 
-- [ ] Add parser patterns for common wording from UPI apps, banks, card issuers, wallets, and payment gateways.
-- [ ] Normalize currency markers including `INR`, `Rs`, `Rs.`, rupee symbol, and amount formats with commas and decimals.
-- [ ] Fix any encoding issues in parser/display text, including mojibake currency or separator characters.
-- [ ] Detect payment rails such as UPI, debit card, credit card, net banking, IMPS, NEFT, RTGS, wallet, and POS.
-- [ ] Keep patterns data-driven enough that new bank/payment phrases can be added without rewriting parser flow.
+- [x] Add parser patterns for common wording from UPI apps, banks, card issuers, wallets, and payment gateways.
+- [x] Normalize currency markers including `INR`, `Rs`, `Rs.`, rupee symbol, and amount formats with commas and decimals.
+- [x] Fix any encoding issues in parser/display text, including mojibake currency or separator characters.
+- [x] Detect payment rails such as UPI, debit card, credit card, net banking, IMPS, NEFT, RTGS, wallet, and POS.
+- [x] Keep patterns data-driven enough that new bank/payment phrases can be added without rewriting parser flow.
 
 Completion criteria: known Indian UPI, bank, wallet, and card notifications parse into the correct amount and payment method across the fixture set.
+
+Status: implemented in `src/services/captureParser.ts`. Parser rules now use explicit amount, direction, payment-method, merchant, ignore, and category rule groups, with fixture coverage for Indian UPI, card, wallet, bank debit/credit, IMPS, NEFT, POS, refund, and cashback wording.
 
 ### Phase 2C: Merchant Extraction Improvements
 
 Goal: extract useful merchant/payee labels from UPI and card messages instead of falling back to source app names.
 
-- [ ] Add merchant extraction patterns for phrases like `paid to`, `sent to`, `to VPA`, `at`, `towards`, `merchant`, `Info`, `UPI Ref`, and card/POS merchant formats.
-- [ ] Strip transaction references, UPI IDs, account masks, timestamps, and trailing bank boilerplate from merchant names.
-- [ ] Normalize merchant keys consistently for dedupe and learned category rules.
-- [ ] Preserve a human-readable merchant label for draft display.
-- [ ] Add fallback priority: parsed merchant, sender, source app, then generic captured transaction label.
+- [x] Add merchant extraction patterns for phrases like `paid to`, `sent to`, `to VPA`, `at`, `towards`, `merchant`, `Info`, `UPI Ref`, and card/POS merchant formats.
+- [x] Strip transaction references, UPI IDs, account masks, timestamps, and trailing bank boilerplate from merchant names.
+- [x] Normalize merchant keys consistently for dedupe and learned category rules.
+- [x] Preserve a human-readable merchant label for draft display.
+- [x] Add fallback priority: parsed merchant, sender, source app, then generic captured transaction label.
 
 Completion criteria: valid fixtures produce stable merchant labels and merchant keys that work for dedupe and learned category matching.
+
+Status: implemented with merchant phrase extraction plus cleanup for UPI refs, UPI IDs, account/card masks, timestamps, and boilerplate. The Phase 1 `PHASE ONE CAFE` truncation is covered by a fixture and now parses as `PHASE ONE CAFE`.
 
 ### Phase 2D: Direction And Status Classification
 
 Goal: detect whether a notification should become an expense, income, or ignored signal.
 
-- [ ] Improve debit vs credit detection using stronger phrase groups instead of single-word matches like `dr` or `cr` alone.
-- [ ] Classify refunds and cashback as income only when the message confirms money was credited or reversed.
-- [ ] Ignore failed, declined, reversed-before-settlement, OTP, mandate, promotional, statement, and low-balance notifications.
-- [ ] Add a clear parse status such as `draft`, `ignore`, or `review` in parser output.
-- [ ] Prefer conservative behavior when ambiguous: create a low-confidence review draft only if amount and financial action are both present.
+- [x] Improve debit vs credit detection using stronger phrase groups instead of single-word matches like `dr` or `cr` alone.
+- [x] Classify refunds and cashback as income only when the message confirms money was credited or reversed.
+- [x] Ignore failed, declined, reversed-before-settlement, OTP, mandate, promotional, statement, and low-balance notifications.
+- [x] Add a clear parse status such as `draft`, `ignore`, or `review` in parser output.
+- [x] Prefer conservative behavior when ambiguous: create a low-confidence review draft only if amount and financial action are both present.
 
 Completion criteria: fixture cases classify debit, credit, refund, cashback, failed-payment, and OTP/noise messages correctly.
+
+Status: implemented. `CaptureParseResult` now exposes `parseStatus`, `ignoreReason`, and transaction reference metadata. Ignored safety-rule matches are stored as ignored signals and do not create drafts.
 
 ### Phase 2E: Explainability And Debug View
 
 Goal: make each captured draft transparent so users and developers can understand why it appeared.
 
-- [ ] Extend capture parse output with explainability metadata such as matched amount pattern, matched direction terms, matched merchant pattern, matched payment method, matched category rule, confidence factors, and ignore reason.
-- [ ] Store safe explainability metadata with captured signals or drafts.
-- [ ] Add a small `Why captured?` section or modal in Auto Capture draft cards.
-- [ ] Show user-safe details: source app, matched amount, matched merchant, capture confidence, suggested category reason, and dedupe key summary.
-- [ ] Avoid showing full raw notification payload by default; expose only sanitized text or compact matched snippets.
+- [x] Extend capture parse output with explainability metadata such as matched amount pattern, matched direction terms, matched merchant pattern, matched payment method, matched category rule, confidence factors, and ignore reason.
+- [x] Store safe explainability metadata with captured signals or drafts.
+- [x] Add a small `Why captured?` section or modal in Auto Capture draft cards.
+- [x] Show user-safe details: source app, matched amount, matched merchant, capture confidence, suggested category reason, and dedupe key summary.
+- [x] Avoid showing full raw notification payload by default; expose only sanitized text or compact matched snippets.
 
 Completion criteria: every pending draft can explain why MoneyKai captured it and which rule or heuristic influenced it.
+
+Status: implemented. Drafts now store safe parse explanation metadata, and Auto Capture draft cards expose `Why captured?` details without showing the full raw notification payload.
 
 ### Phase 2F: Dedupe And Review Quality
 
 Goal: reduce duplicate drafts and make review behavior more stable.
 
-- [ ] Improve dedupe keys using source, amount, merchant key, direction, date/time bucket, and transaction reference when available.
-- [ ] Avoid duplicate drafts from notification updates, grouped notifications, or repeated app alerts.
-- [ ] Keep legitimate repeated transactions possible when they differ by time, merchant, reference, or amount.
-- [ ] Ensure ignored signals do not repeatedly reappear as new drafts.
-- [ ] Preserve learned merchant category rules and apply them only when merchant confidence is high enough.
+- [x] Improve dedupe keys using source, amount, merchant key, direction, date/time bucket, and transaction reference when available.
+- [x] Avoid duplicate drafts from notification updates, grouped notifications, or repeated app alerts.
+- [x] Keep legitimate repeated transactions possible when they differ by time, merchant, reference, or amount.
+- [x] Ensure ignored signals do not repeatedly reappear as new drafts.
+- [x] Preserve learned merchant category rules and apply them only when merchant confidence is high enough.
 
 Completion criteria: duplicate notification fixtures collapse correctly while distinct real transactions remain separate.
+
+Status: implemented with dedupe keys that include source, source app/sender, merchant key, amount, direction, transaction reference when present, and a time bucket. Tests cover duplicate reference collapse and distinct repeated same-amount transactions outside the no-reference time bucket.
 
 ### Phase 2G: Local Parser Test Suite And Signoff
 
 Goal: prevent parser regressions as new bank/payment patterns are added.
 
-- [ ] Add `vitest` as a mobile dev dependency.
-- [ ] Add a local test script such as `test:capture`.
-- [ ] Add tests for `parseCapturedSignal`, `normalizeMerchantKey`, and `buildCaptureDedupeKey`.
-- [ ] Cover fixture cases for UPI, bank debit, bank credit, card spend, wallet spend, refund, cashback, failed transaction, OTP, promotional noise, and duplicate notifications.
-- [ ] Run `npm.cmd run mobile:typecheck`, `npm.cmd run mobile:lint`, and the new capture test script before closing Phase 2.
-- [ ] Document known parser limitations and examples that still require manual review.
+- [x] Add `vitest` as a mobile dev dependency.
+- [x] Add a local test script such as `test:capture`.
+- [x] Add tests for `parseCapturedSignal`, `normalizeMerchantKey`, and `buildCaptureDedupeKey`.
+- [x] Cover fixture cases for UPI, bank debit, bank credit, card spend, wallet spend, refund, cashback, failed transaction, OTP, promotional noise, and duplicate notifications.
+- [x] Run `npm.cmd run mobile:typecheck`, `npm.cmd run mobile:lint`, and the new capture test script before closing Phase 2.
+- [x] Document known parser limitations and examples that still require manual review.
 
 Completion criteria: parser and dedupe behavior is covered by local automated tests, and all Phase 2 fixtures pass with accepted confidence and ignore behavior.
+
+Status: implemented. `npm.cmd run mobile:test:capture`, `npm.cmd run mobile:typecheck`, and `npm.cmd run mobile:lint` passed after the parser/test/UI changes. Known limitation: the fixture set is curated and sanitized; real missed-capture and false-positive examples from physical banking/payment apps should be appended when available.
 
 ## Phase 3: Production Safety
 
