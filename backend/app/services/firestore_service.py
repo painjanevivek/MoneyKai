@@ -135,6 +135,19 @@ def delete_user_resource(user_id: str, resource: str, item_id: str) -> None:
     user_resource_collection(user_id, resource).document(item_id).delete()
 
 
+def create_user_diagnostic_event(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    doc_id = str(payload.get("id") or uuid4().hex)
+    ref = user_doc(user_id).collection("diagnostics").document(doc_id)
+    data = {
+        **payload,
+        "id": doc_id,
+        "user_id": user_id,
+        "received_at": now_iso(),
+    }
+    ref.set(data, merge=False)
+    return to_jsonable(data)
+
+
 def replace_user_resource(user_id: str, resource: str, items: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     collection_ref = user_resource_collection(user_id, resource)
     batch = db().batch()

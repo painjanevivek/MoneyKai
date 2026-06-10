@@ -55,7 +55,7 @@ export const isSmsResearchBuildEnabled = (): boolean =>
   appEnvironment.smsResearchBuild;
 
 export const isNativeSmsResearchBuildEnabled = (): boolean =>
-  isDevRuntime() && appEnvironment.nativeSmsResearchBuild;
+  appEnvironment.nativeSmsResearchBuild;
 
 export const getBackendBaseUrl = (): string => {
   if (appEnvironment.backendBaseUrl.length > 0) {

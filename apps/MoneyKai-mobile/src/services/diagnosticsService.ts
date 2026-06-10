@@ -37,14 +37,28 @@ const sensitiveMetadataKeys = new Set([
 
 let eventSink: DiagnosticEventSink | undefined;
 const recentEvents: DiagnosticEvent[] = [];
+let diagnosticContext: Pick<DiagnosticEvent, 'platform' | 'appVersion'> = {
+  platform: 'unknown',
+};
 
 const getRuntimePlatform = () => {
+  if (diagnosticContext.platform !== 'unknown') {
+    return diagnosticContext.platform;
+  }
+
   const navigatorProduct = globalThis.navigator?.product;
   if (typeof navigatorProduct === 'string' && navigatorProduct.length > 0) {
     return navigatorProduct;
   }
 
   return 'unknown';
+};
+
+export const configureDiagnosticsContext = (context: Partial<Pick<DiagnosticEvent, 'platform' | 'appVersion'>>) => {
+  diagnosticContext = {
+    ...diagnosticContext,
+    ...context,
+  };
 };
 
 const isDevRuntime = () => typeof __DEV__ !== 'undefined' && __DEV__;
@@ -134,6 +148,7 @@ export const captureDiagnosticEvent = (params: {
     message: truncate(params.message, MAX_STRING_LENGTH),
     severity: params.severity ?? 'error',
     platform: getRuntimePlatform(),
+    appVersion: diagnosticContext.appVersion,
     errorName: error?.name,
     errorMessage: error?.message ? truncate(error.message, MAX_STRING_LENGTH) : undefined,
     errorStack: error?.stack ? truncate(error.stack, MAX_STACK_LENGTH) : undefined,

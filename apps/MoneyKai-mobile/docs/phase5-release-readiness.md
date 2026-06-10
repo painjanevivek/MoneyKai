@@ -8,15 +8,17 @@ Last reviewed: 2026-06-11
 - Release APK built locally in production mode, without dev-client autolinking, copied to `artifacts/phase5a/moneykai-phase5-release-no-devclient-arm64.apk`.
 - Release AAB built locally in production mode, without dev-client autolinking, copied to `artifacts/phase5a/moneykai-phase5-release-no-devclient-arm64.aab`.
 - Local SMS Research APK profile added as `sms-research-local`; this build is for direct/local testing only and includes restricted SMS permissions/receiver.
-- Release APK SHA-256: `4FB9D32FB7348AB84F69A7076BDD45195AF6DC87807717D8CFAC93B848A187D5`.
-- Release AAB SHA-256: `58FEB852CFE4EC424D22DB6920A641E87B8EFACF6D557FBF1A20492D3266009A`.
+- Release APK SHA-256: `42158627EE2918DF3FC5BC419F5ECFF13ABBB56DFA8220A177692A9FFD022AE3`.
+- Release AAB SHA-256: `11C2FC95E1A6FF4F37C2CD6AD62563A679EEAEFFFFD9D89FAC55946C7DCCD2D7`.
 - Local SMS Research APK: `artifacts/phase5a/moneykai-phase5-sms-research-local-arm64.apk`.
-- Local SMS Research APK SHA-256: `10463DDB9D94B92727958915E3D43FD497DDEFE248AEBFF06380DCD57C8DC6AB`.
+- Local SMS Research APK SHA-256: `50522083D712E91C4067A7D7701E611AFC5B63221726480CBC5C85D70FEB1804`.
 - The local release APK installed successfully over ADB and launched `com.moneykai.mobile/.MainActivity`.
 - Current `eas.json` profiles cover:
   development -> internal debug/dev-client validation
   preview -> internal APK
   production -> Android App Bundle for store submission
+- App display name is `MoneyKai`.
+- Android launcher/adaptive icon assets are generated from `assets/images/moneykai-app-logo-source.jpeg`.
 - Preview and production enable no-permission manual SMS research through `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`.
 - Preview and production keep native SMS permissions/receiver disabled through `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=false`.
 - Preview and production disable the dev-client launch metadata path through `EXPO_PUBLIC_DEV_CLIENT_BUILD=false`.
@@ -113,6 +115,7 @@ npx eas submit --platform android --profile production
 
 - App id: `com.moneykai.mobile`
 - Version: `1.0.0`
+- App name: `MoneyKai`
 - App icon: `assets/images/icon.png`
 - Adaptive icon foreground/background/monochrome configured in `app.json`
 - Splash image configured in `app.json`
@@ -129,8 +132,9 @@ npx eas submit --platform android --profile production
 - Local SMS Research package accepted Android SMS permission grants for `READ_SMS` and `RECEIVE_SMS`
 - Phase 5B one-device validation is documented in `docs/phase5-device-validation.md`
 - Phase 5C Auto Capture onboarding is completed in the first-login tour, Settings explainer, and Auto Capture setup card
-- Phase 5D local diagnostics hooks are implemented and documented in `docs/phase5-diagnostics.md`
+- Phase 5D diagnostics hooks are implemented and documented in `docs/phase5-diagnostics.md`
 - JS render failures and native capture failures are recorded through `diagnosticsService` with SMS/notification content redaction
+- Warning/error/fatal diagnostics upload to the authenticated backend endpoint `POST /v1/diagnostics/events` when backend auth is available
 - `npm.cmd run mobile:typecheck`, `npm.cmd run mobile:lint`, `npm.cmd run mobile:test:capture`, and `npx.cmd expo-modules-autolinking verify --platform android` pass
 
 ## Remaining release blockers
@@ -138,7 +142,7 @@ npx eas submit --platform android --profile production
 - Local Gradle release signing still uses the debug keystore in the generated Android project, so the locally built release APK/AAB is not equivalent to a real Play upload artifact.
 - A Play-ready production upload still requires EAS-managed Android credentials or a project upload keystore wired into the release build.
 - Multi-device Android validation is still incomplete.
-- Remote/team-visible crash reporting is still not configured. Local diagnostics hooks exist, but a Sentry/Bugsnag/Crashlytics/backend sink must be selected and verified before Phase 5D is complete.
+- Backend diagnostics are configured for app-emitted events. A native crash SDK such as Sentry/Bugsnag/Crashlytics is still recommended later for process-level native crash stack traces.
 - Store screenshots, reviewer notes, and final Data Safety copy still need to be assembled.
 
 ## Internal release checklist

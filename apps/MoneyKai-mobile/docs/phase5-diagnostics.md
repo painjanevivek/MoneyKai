@@ -4,9 +4,9 @@ Last reviewed: 2026-06-11
 
 ## Current status
 
-MoneyKai now has a local diagnostics layer for JavaScript and native-capture failures. It records recent diagnostic events in memory, redacts sensitive SMS/notification content fields, and allows a remote reporting sink to be attached later.
+MoneyKai now has a diagnostics layer for JavaScript and native-capture failures. It records recent diagnostic events in memory, redacts sensitive SMS/notification content fields, and uploads warning/error/fatal events to the authenticated backend diagnostics endpoint when `EXPO_PUBLIC_BACKEND_BASE_URL` and a Firebase user session are available.
 
-This is not a complete crash-reporting rollout yet. A team-visible service such as Sentry, Bugsnag, Firebase Crashlytics, or a backend diagnostics endpoint still needs to be configured before Phase 5D can be closed.
+This is still not a native crash SDK rollout. The backend endpoint covers JavaScript/native-module diagnostic events emitted by the app. A service such as Sentry, Bugsnag, or Firebase Crashlytics is still recommended later for true native crash stack traces.
 
 ## What is captured
 
@@ -20,6 +20,7 @@ This is not a complete crash-reporting rollout yet. A team-visible service such 
 - Native capture source state changes.
 - Native listener add/start/remove/stop failures.
 - Native signal handler failures.
+- Warning/error/fatal events are uploaded to `POST /v1/diagnostics/events` when backend auth is available.
 
 ## Privacy rules
 
@@ -52,21 +53,23 @@ import { getRecentDiagnosticEvents } from '@/services/diagnosticsService';
 const events = getRecentDiagnosticEvents();
 ```
 
-The in-memory buffer keeps the latest 50 events for the current process only. It is useful for local testing and debugging, but it does not survive process death and does not send data to the team.
+The in-memory buffer keeps the latest 50 events for the current process only. It is useful for local testing and debugging, but it does not survive process death.
 
-## Remote reporting handoff
+## Backend reporting
 
-Attach a remote reporter by calling `setDiagnosticEventSink` once during app startup:
+The mobile app installs `diagnosticsUploadService` during root layout startup. That service:
 
-```ts
-import { setDiagnosticEventSink } from '@/services/diagnosticsService';
+- uploads only `warning`, `error`, and `fatal` events;
+- drops uploads when the backend is not configured;
+- caps concurrent uploads at two;
+- relies on the existing Firebase bearer token path in `backendApi`;
+- never blocks app startup or native capture.
 
-setDiagnosticEventSink(async (event) => {
-  // Send `event` to the approved crash/error reporting backend.
-});
-```
+The backend endpoint is `POST /v1/diagnostics/events`. It requires Firebase auth, re-applies sensitive metadata redaction server-side, and stores events under the authenticated user.
 
-Before enabling a provider in preview or production:
+## Remote crash SDK handoff
+
+Before enabling a native crash SDK provider in preview or production:
 
 - Configure the provider/project DSN or endpoint outside source control.
 - Confirm events are visible to the release/testing team.
@@ -74,6 +77,6 @@ Before enabling a provider in preview or production:
 - Confirm privacy policy and Data Safety copy mention the selected diagnostics provider if required.
 - Confirm diagnostics upload failure never blocks app startup or native capture.
 
-## Remaining blocker
+## Remaining follow-up
 
-Phase 5D remains open until a remote crash/error reporting provider is selected, configured, and verified on an internal Android build.
+Backend diagnostics are active for app-emitted events. Native crash SDK coverage remains a later hardening task if the team wants crash stack traces for process-level native crashes.

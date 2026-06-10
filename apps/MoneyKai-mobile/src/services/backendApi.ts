@@ -1,5 +1,6 @@
 import { firebaseAuth } from './firebase';
 import { getBackendBaseUrl } from '@/config/environment';
+import type { DiagnosticEvent } from '@/services/diagnosticsService';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
@@ -80,6 +81,11 @@ export const backendApi = {
     request<{ item: T }>(`/v1/resources/${resource}`, {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+  createDiagnosticEvent: async (event: DiagnosticEvent) =>
+    request<{ accepted: boolean; id: string }>('/v1/diagnostics/events', {
+      method: 'POST',
+      body: JSON.stringify(event),
     }),
   updateResource: async <T>(
     resource: 'transactions' | 'notes' | 'badges' | 'notifications',

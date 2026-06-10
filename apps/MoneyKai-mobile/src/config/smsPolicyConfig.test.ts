@@ -9,7 +9,7 @@ const readJson = <T>(path: string): T =>
   JSON.parse(readFileSync(join(process.cwd(), path), 'utf8')) as T;
 
 describe('SMS research build policy config', () => {
-  it('keeps release SMS research manual and native SMS access development-only', () => {
+  it('keeps Play release SMS research manual and native SMS access in the separate local build only', () => {
     const eas = readJson<{
       build: Record<string, { env?: Record<string, string> }>;
     }>('eas.json');
@@ -20,6 +20,8 @@ describe('SMS research build policy config', () => {
     expect(eas.build.preview.env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('false');
     expect(eas.build.production.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
     expect(eas.build.production.env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('false');
+    expect(eas.build['sms-research-local'].env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
+    expect(eas.build['sms-research-local'].env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('true');
   });
 
   it('blocks restricted SMS permissions in release app config', () => {
@@ -48,7 +50,7 @@ describe('SMS research build policy config', () => {
     expect(blockedPermissions).toContain('android.permission.WRITE_SMS');
   });
 
-  it('loads the SMS research manifest plugin only for development native SMS builds', () => {
+  it('loads the SMS research manifest plugin only for non-Play native SMS builds', () => {
     const previousNativeValue = process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD;
     const previousProfileValue = process.env.EAS_BUILD_PROFILE;
     const configPath = join(process.cwd(), 'app.config.js');
@@ -72,6 +74,12 @@ describe('SMS research build policy config', () => {
       process.env.EAS_BUILD_PROFILE = 'development';
       const researchConfig = requireConfig(configPath) as { plugins?: unknown[] };
       expect(JSON.stringify(researchConfig.plugins)).toContain('withMoneyKaiSmsResearch');
+
+      delete requireConfig.cache[configModulePath];
+      process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = 'true';
+      process.env.EAS_BUILD_PROFILE = 'sms-research-local';
+      const localResearchConfig = requireConfig(configPath) as { plugins?: unknown[] };
+      expect(JSON.stringify(localResearchConfig.plugins)).toContain('withMoneyKaiSmsResearch');
     } finally {
       if (previousNativeValue === undefined) {
         delete process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD;

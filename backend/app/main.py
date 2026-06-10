@@ -5,6 +5,7 @@ from backend.app.core.settings import get_settings
 from backend.app.routers.backups import router as backups_router
 from backend.app.routers.bootstrap import router as bootstrap_router
 from backend.app.routers.challenges import router as challenges_router
+from backend.app.routers.diagnostics import router as diagnostics_router
 from backend.app.routers.groups import router as groups_router
 from backend.app.routers.health import router as health_router
 from backend.app.routers.news import router as news_router
@@ -25,6 +26,7 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(bootstrap_router)
+app.include_router(diagnostics_router)
 app.include_router(resources_router)
 app.include_router(news_router)
 app.include_router(challenges_router)

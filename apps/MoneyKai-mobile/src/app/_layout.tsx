@@ -3,6 +3,7 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, View, Text, TouchableOpacity, ActivityIndicator, LogBox } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,7 +13,8 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
-import { captureDiagnosticEvent, captureException } from '@/services/diagnosticsService';
+import { captureDiagnosticEvent, captureException, configureDiagnosticsContext } from '@/services/diagnosticsService';
+import { installDiagnosticsUploadSink } from '@/services/diagnosticsUploadService';
 import { AppLockGate } from '@/components/security/AppLockGate';
 import { AutoBackupCoordinator } from '@/components/backup/AutoBackupCoordinator';
 import { BudgetResetCoordinator } from '@/components/dashboard/BudgetResetCoordinator';
@@ -120,6 +122,14 @@ export default function RootLayout() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
+
+  useEffect(() => {
+    configureDiagnosticsContext({
+      platform: Platform.OS,
+      appVersion: Constants.expoConfig?.version,
+    });
+    installDiagnosticsUploadSink();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
