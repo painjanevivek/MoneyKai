@@ -44,6 +44,7 @@ type TransactionMonthSection = {
 export default function TransactionsScreen() {
   const { colors, isDark } = useTheme();
   const { deleteTransaction, setFilter } = useTransactionStore();
+  const allTransactions = useTransactionStore((s) => s.transactions);
   const filteredTransactions = useTransactionStore((s) => s.getFilteredTransactions());
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const totalIncome = useTransactionStore((s) => s.getTotalIncome());
@@ -54,6 +55,7 @@ export default function TransactionsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<FilterValue>('all');
   const [paymentFilter, setPaymentFilter] = useState<FilterValue>('all');
+  const [accountFilter, setAccountFilter] = useState<FilterValue>('all');
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
 
@@ -97,7 +99,16 @@ export default function TransactionsScreen() {
     : activeTab === 'Income'
       ? INCOME_CATEGORIES
       : ALL_CATEGORY_OPTIONS;
-  const activeFilterCount = Number(categoryFilter !== 'all') + Number(paymentFilter !== 'all') + Number(dateFilter !== 'all');
+  const accountOptions = useMemo(() => {
+    const options = new Map<string, string>();
+    allTransactions.forEach((transaction) => {
+      if (transaction.captureAccountId) {
+        options.set(transaction.captureAccountId, transaction.captureAccountLabel ?? transaction.captureBankLabel ?? transaction.captureAccountId);
+      }
+    });
+    return Array.from(options, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [allTransactions]);
+  const activeFilterCount = Number(categoryFilter !== 'all') + Number(paymentFilter !== 'all') + Number(accountFilter !== 'all') + Number(dateFilter !== 'all');
   const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest First';
 
   const displayTransactions = useMemo(() => {
@@ -110,6 +121,10 @@ export default function TransactionsScreen() {
 
     if (paymentFilter !== 'all') {
       nextTransactions = nextTransactions.filter((transaction) => transaction.payment_method === paymentFilter);
+    }
+
+    if (accountFilter !== 'all') {
+      nextTransactions = nextTransactions.filter((transaction) => transaction.captureAccountId === accountFilter);
     }
 
     if (dateFilter !== 'all') {
@@ -149,7 +164,7 @@ export default function TransactionsScreen() {
       default:
         return nextTransactions.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
     }
-  }, [categoryFilter, dateFilter, filteredTransactions, paymentFilter, sortOption]);
+  }, [accountFilter, categoryFilter, dateFilter, filteredTransactions, paymentFilter, sortOption]);
 
   const transactionSections = useMemo<TransactionMonthSection[]>(() => {
     const sections = new Map<string, TransactionMonthSection>();
@@ -175,6 +190,7 @@ export default function TransactionsScreen() {
   const resetAdvancedFilters = () => {
     setCategoryFilter('all');
     setPaymentFilter('all');
+    setAccountFilter('all');
     setDateFilter('all');
   };
 
@@ -215,6 +231,11 @@ export default function TransactionsScreen() {
           <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary }}>
             {category?.name} • {formatRelativeDate(txn.transaction_date)} • {PAYMENT_METHODS.find((p) => p.id === txn.payment_method)?.name || txn.payment_method}
           </Text>
+          {txn.captureAccountLabel ? (
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary, marginTop: 2 }}>
+              {txn.captureAccountLabel}
+            </Text>
+          ) : null}
         </View>
         <Text
           style={{
@@ -436,7 +457,7 @@ export default function TransactionsScreen() {
               <View>
                 <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Filters</Text>
                 <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-                  Narrow transactions by category, payment method, and date.
+                  Narrow transactions by category, payment method, account, and date.
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowFilterModal(false)}>
@@ -506,6 +527,41 @@ export default function TransactionsScreen() {
                   );
                 })}
               </View>
+
+              {accountOptions.length > 0 ? (
+                <>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
+                    Bank Account
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base }}>
+                    {[{ id: 'all', name: 'All Accounts' }, ...accountOptions].map((option) => {
+                      const active = accountFilter === option.id;
+                      return (
+                        <TouchableOpacity
+                          key={option.id}
+                          onPress={() => setAccountFilter(option.id)}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
+                            paddingHorizontal: Spacing.md,
+                            paddingVertical: Spacing.sm,
+                            borderRadius: BorderRadius.full,
+                            backgroundColor: active ? colors.primaryBg : colors.surface,
+                            borderWidth: 1,
+                            borderColor: active ? colors.primary : colors.border,
+                          }}
+                        >
+                          <MaterialCommunityIcons name={option.id === 'all' ? 'bank-outline' : 'credit-card-check-outline'} size={16} color={active ? colors.primary : colors.textTertiary} />
+                          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: active ? colors.primary : colors.textSecondary }}>
+                            {option.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
 
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
                 Date Range

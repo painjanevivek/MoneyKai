@@ -7,9 +7,10 @@ import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
+import { getDraftCategoryOptions } from '@/services/captureCategoryRules';
 import { formatMonitoredAccountLabel } from '@/services/captureAccountIdentifier';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, getCategoryById } from '@/constants/categories';
+import { getCategoryById } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 
@@ -32,6 +33,7 @@ export default function NotificationsScreen() {
   const declineMonitoredAccount = useCaptureStore((s) => s.declineMonitoredAccount);
   const confirmDraft = useCaptureStore((s) => s.confirmDraft);
   const ignoreDraft = useCaptureStore((s) => s.ignoreDraft);
+  const [activeSection, setActiveSection] = useState<'drafts' | 'notifications'>('drafts');
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null);
   const [selectedCategoryByDraft, setSelectedCategoryByDraft] = useState<Record<string, string>>({});
   const pendingDrafts = useMemo(() => captureDrafts.filter((draft) => draft.status === 'pending'), [captureDrafts]);
@@ -39,16 +41,19 @@ export default function NotificationsScreen() {
     () => monitoredAccounts.filter((account) => account.status === 'pending'),
     [monitoredAccounts]
   );
-  const hasContent = pendingAccounts.length > 0 || pendingDrafts.length > 0 || (notificationsEnabled && notifications.length > 0);
+  const hasDraftContent = pendingAccounts.length > 0 || pendingDrafts.length > 0;
+  const hasNotificationContent = notificationsEnabled && notifications.length > 0;
+  const currentSectionHasContent = activeSection === 'drafts' ? hasDraftContent : hasNotificationContent;
   const headerSubtitle = useMemo(() => {
-    if (pendingAccounts.length > 0) {
+    if (activeSection === 'drafts' && pendingAccounts.length > 0) {
       return `${pendingAccounts.length} bank account${pendingAccounts.length === 1 ? '' : 's'} waiting for monitoring approval`;
     }
-    if (pendingDrafts.length > 0) {
+    if (activeSection === 'drafts' && pendingDrafts.length > 0) {
       return `${pendingDrafts.length} captured draft${pendingDrafts.length === 1 ? '' : 's'} waiting for review`;
     }
+    if (activeSection === 'drafts') return 'Approve drafts and choose categories';
     return notificationsEnabled ? 'Recent activity and alerts' : 'Notifications are disabled';
-  }, [notificationsEnabled, pendingAccounts.length, pendingDrafts.length]);
+  }, [activeSection, notificationsEnabled, pendingAccounts.length, pendingDrafts.length]);
 
   const promptAccountMonitoring = (accountId: string, accountLabel: string) => {
     Alert.alert(
@@ -77,12 +82,41 @@ export default function NotificationsScreen() {
         </Text>
       </View>
 
-      {!hasContent ? (
+      <View style={{ flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.base, marginBottom: Spacing.md }}>
+        {(['drafts', 'notifications'] as const).map((section) => {
+          const active = activeSection === section;
+          const count = section === 'drafts' ? pendingAccounts.length + pendingDrafts.length : notifications.length;
+          return (
+            <TouchableOpacity
+              key={section}
+              onPress={() => setActiveSection(section)}
+              style={{
+                flex: 1,
+                minHeight: 44,
+                borderRadius: BorderRadius.full,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: active ? colors.primary : colors.card,
+                borderWidth: active ? 0 : 1,
+                borderColor: colors.border,
+              }}
+            >
+              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: active ? colors.textInverse : colors.textSecondary }}>
+                {section === 'drafts' ? `Drafts (${count})` : `Notifications (${count})`}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {!currentSectionHasContent ? (
         <EmptyState
-          icon="bell-outline"
-          title={notificationsEnabled ? 'No notifications yet' : 'Notifications off'}
+          icon={activeSection === 'drafts' ? 'receipt-text-outline' : 'bell-outline'}
+          title={activeSection === 'drafts' ? 'No drafts' : notificationsEnabled ? 'No notifications yet' : 'Notifications off'}
           message={
-            notificationsEnabled
+            activeSection === 'drafts'
+              ? 'Captured transactions and bank account approvals will appear here.'
+              : notificationsEnabled
               ? 'Captured transaction drafts and app alerts will appear here.'
               : 'Captured transaction drafts still appear here when they need review.'
           }
@@ -92,7 +126,7 @@ export default function NotificationsScreen() {
           contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }}
           showsVerticalScrollIndicator={false}
         >
-          {pendingAccounts.length > 0 ? (
+          {activeSection === 'drafts' && pendingAccounts.length > 0 ? (
             <View style={{ marginBottom: Spacing.lg }}>
               <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
                 Bank Accounts Found
@@ -187,14 +221,14 @@ export default function NotificationsScreen() {
             </View>
           ) : null}
 
-          {pendingDrafts.length > 0 ? (
+          {activeSection === 'drafts' && pendingDrafts.length > 0 ? (
             <View style={{ marginBottom: Spacing.lg }}>
               <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
-                Captured Drafts
+                Drafts
               </Text>
               {pendingDrafts.map((draft) => {
                 const isExpanded = expandedDraftId === draft.id;
-                const categories = draft.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+                const categories = getDraftCategoryOptions(draft);
                 const selectedCategoryId = selectedCategoryByDraft[draft.id] ?? draft.category;
                 const selectedCategory = selectedCategoryId ? getCategoryById(selectedCategoryId) : undefined;
 
@@ -377,13 +411,13 @@ export default function NotificationsScreen() {
             </View>
           ) : null}
 
-          {notificationsEnabled && notifications.length > 0 ? (
+          {activeSection === 'notifications' && notificationsEnabled && notifications.length > 0 ? (
             <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
-              Recent Alerts
+              Notifications
             </Text>
           ) : null}
 
-          {notificationsEnabled ? notifications.map((notification, index) => (
+          {activeSection === 'notifications' && notificationsEnabled ? notifications.map((notification, index) => (
             <TouchableOpacity
               key={notification.id}
               onPress={() => {

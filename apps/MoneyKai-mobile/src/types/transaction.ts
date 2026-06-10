@@ -8,6 +8,10 @@ export interface Transaction {
   category: string;
   description: string;
   payment_method: string;
+  captureAccountId?: string;
+  captureAccountLabel?: string;
+  captureBankLabel?: string;
+  captureAccountHint?: string;
   receipt_url?: string;
   transaction_date: string;
   created_at: string;
@@ -21,6 +25,7 @@ export interface TransactionFilter {
   endDate?: string;
   searchQuery?: string;
   paymentMethod?: string;
+  captureAccountId?: string;
 }
 
 export interface TransactionFormData {

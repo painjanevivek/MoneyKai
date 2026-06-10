@@ -1,4 +1,5 @@
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
+import { getAutomaticExpenseCategory } from '@/services/captureCategoryRules';
 import type {
   CaptureParseExplanation,
   CaptureParseResult,
@@ -422,7 +423,8 @@ export const parseCapturedSignal = (
     ? merchantRules.find((rule) => rule.merchantKey === merchantKey || merchantKey.includes(rule.merchantKey))
     : undefined;
   const keywordCategory = direction.type ? scoreKeywordCategory(lowered, merchantKey, direction.type) : undefined;
-  const category = learnedRule?.category ?? keywordCategory;
+  const automaticExpenseCategory = direction.type === 'expense' ? getAutomaticExpenseCategory(input, merchantKey) : undefined;
+  const category = automaticExpenseCategory ?? learnedRule?.category ?? keywordCategory;
   const isValidCategory = category
     ? direction.type === 'income'
       ? validIncomeCategory.has(category)

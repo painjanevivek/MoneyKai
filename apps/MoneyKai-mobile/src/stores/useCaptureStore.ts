@@ -2,7 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { recordAppNotification } from '@/services/notificationService';
-import { buildMonitoredAccount, formatMonitoredAccountLabel, identifyCaptureAccount } from '@/services/captureAccountIdentifier';
+import {
+  buildMonitoredAccount,
+  findMatchingCaptureAccount,
+  formatMonitoredAccountLabel,
+  identifyCaptureAccount,
+} from '@/services/captureAccountIdentifier';
 import { buildCaptureDedupeKey, normalizeMerchantKey, parseCapturedSignal } from '@/services/captureParser';
 import { useAuthStore } from './useAuthStore';
 import { useBudgetStore } from './useBudgetStore';
@@ -219,10 +224,10 @@ export const useCaptureStore = create<CaptureState>()(
         const newPendingAccounts: MonitoredAccount[] = [];
 
         uniqueIdentities.forEach((identity) => {
-          const existing = nextAccounts.find((account) => account.id === identity.id);
+          const existing = findMatchingCaptureAccount(nextAccounts, identity);
           if (existing) {
             nextAccounts = nextAccounts.map((account) =>
-              account.id === identity.id
+              account.id === existing.id
                 ? {
                     ...account,
                     bankLabel: identity.bankLabel,
@@ -253,7 +258,7 @@ export const useCaptureStore = create<CaptureState>()(
         });
 
         const relevantAccounts = uniqueIdentities
-          .map((identity) => nextAccounts.find((account) => account.id === identity.id))
+          .map((identity) => findMatchingCaptureAccount(nextAccounts, identity))
           .filter((account): account is MonitoredAccount => Boolean(account));
 
         return {
@@ -268,7 +273,7 @@ export const useCaptureStore = create<CaptureState>()(
         if (input.source !== 'sms') return true;
         const identity = identifyCaptureAccount(input);
         if (!identity) return false;
-        return get().monitoredAccounts.some((account) => account.id === identity.id && account.status === 'approved');
+        return Boolean(findMatchingCaptureAccount(get().monitoredAccounts, identity, ['approved']));
       },
 
       approveMonitoredAccount: (accountId) =>
@@ -322,6 +327,10 @@ export const useCaptureStore = create<CaptureState>()(
         }
 
         const now = new Date().toISOString();
+        const accountIdentity = input.source === 'sms' ? identifyCaptureAccount(input) : undefined;
+        const monitoredAccount = accountIdentity
+          ? findMatchingCaptureAccount(get().monitoredAccounts, accountIdentity, ['approved'])
+          : undefined;
         const parsed = parseCapturedSignal(input, merchantRules);
         const dedupeKey = buildCaptureDedupeKey(input, parsed);
         const duplicate = signals.find((signal) => signal.dedupeKey === dedupeKey);
@@ -371,6 +380,10 @@ export const useCaptureStore = create<CaptureState>()(
           description: parsed.merchantLabel ?? input.sender ?? input.sourceApp ?? 'Captured transaction',
           merchantKey: parsed.merchantKey,
           payment_method: parsed.paymentMethod ?? 'bank',
+          captureAccountId: monitoredAccount?.id,
+          captureAccountLabel: monitoredAccount ? formatMonitoredAccountLabel(monitoredAccount) : undefined,
+          captureBankLabel: monitoredAccount?.bankLabel,
+          captureAccountHint: monitoredAccount?.accountHint,
           transaction_date: new Date(input.receivedAt ?? now).toISOString().split('T')[0],
           confidence: parsed.confidence,
           captureSource: input.source,
@@ -404,25 +417,49 @@ export const useCaptureStore = create<CaptureState>()(
         if (useBudgetStore.getState().settings.monthly_allowance <= 0) return false;
 
         const confirmedAt = new Date().toISOString();
-        const didAddTransaction = useTransactionStore.getState().addTransaction({
-          user_id: draft.user_id,
-          type: draft.type,
-          amount: draft.amount,
-          category,
-          description: draft.description,
-          payment_method: draft.payment_method,
-          transaction_date: draft.transaction_date,
+        const draftMerchantKey = draft.merchantKey ?? normalizeMerchantKey(draft.description);
+        const matchingDrafts = get().drafts.filter((item) => {
+          if (item.status !== 'pending') return false;
+          if (item.id === draftId) return true;
+          const itemMerchantKey = item.merchantKey ?? normalizeMerchantKey(item.description);
+          return item.type === draft.type && Boolean(draftMerchantKey) && itemMerchantKey === draftMerchantKey;
         });
-        if (!didAddTransaction) return false;
+
+        const confirmedDrafts: DraftTransaction[] = [];
+        for (const item of matchingDrafts) {
+          const didAddTransaction = useTransactionStore.getState().addTransaction({
+            user_id: item.user_id,
+            type: item.type,
+            amount: item.amount,
+            category,
+            description: item.description,
+            payment_method: item.payment_method,
+            captureAccountId: item.captureAccountId,
+            captureAccountLabel: item.captureAccountLabel,
+            captureBankLabel: item.captureBankLabel,
+            captureAccountHint: item.captureAccountHint,
+            transaction_date: item.transaction_date,
+          });
+          if (didAddTransaction) {
+            confirmedDrafts.push(item);
+          }
+        }
+        if (confirmedDrafts.length === 0) return false;
+
+        const confirmedDraftIds = new Set(confirmedDrafts.map((item) => item.id));
+        const confirmedSignalIds = new Set(confirmedDrafts.map((item) => item.signalId));
 
         set((state) => ({
           drafts: state.drafts.map((item) =>
-            item.id === draftId ? { ...item, category, status: 'confirmed', confirmedAt } : item
+            confirmedDraftIds.has(item.id) ? { ...item, category, status: 'confirmed', confirmedAt } : item
           ),
           signals: state.signals.map((signal) =>
-            signal.id === draft.signalId ? { ...signal, processingStatus: 'confirmed' } : signal
+            confirmedSignalIds.has(signal.id) ? { ...signal, processingStatus: 'confirmed' } : signal
           ),
-          merchantRules: createOrStrengthenRule(state.merchantRules, draft, category),
+          merchantRules: confirmedDrafts.reduce(
+            (rules, item) => createOrStrengthenRule(rules, item, category),
+            state.merchantRules
+          ),
         }));
 
         return true;

@@ -232,8 +232,49 @@ describe('useCaptureStore production safety controls', () => {
       expect.objectContaining({
         captureSource: 'sms',
         sourceApp: 'AX-HDFCBK',
+        captureAccountId: 'sms:hdfcbk:ending4321',
+        captureAccountLabel: 'HDFC Bank - A/c ending 4321',
       }),
     ]);
+  });
+
+  it('keeps compatible approved SMS accounts approved for future sender variants', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+        smsResearchModeEnabled: true,
+      },
+    }));
+
+    const approvedInput = {
+      source: 'sms' as const,
+      sender: 'AD-SBIPSG-T',
+      body: 'A/c XX9929 debited by Rs 321.00 for UPI payment to APPROVED ACCOUNT. UPI Ref 555566667777.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+      rawPayload: { smsAccountHint: 'ending 9929' },
+    };
+    useCaptureStore.getState().discoverSmsAccounts([approvedInput]);
+    useCaptureStore.getState().approveMonitoredAccount('sms:sbipsg:ending9929');
+
+    const futureInput = {
+      source: 'sms' as const,
+      sender: 'SBI',
+      body: 'A/c XX9929 debited by Rs 122.00 for UPI payment to SAME ACCOUNT SHOP. UPI Ref 555566667778.',
+      receivedAt: '2026-06-09T10:05:00.000Z',
+      rawPayload: { smsAccountHint: 'ending 9929' },
+    };
+
+    const result = useCaptureStore.getState().ingestSignal(futureInput);
+
+    expect(result.status).toBe('drafted');
+    expect(useCaptureStore.getState().monitoredAccounts.filter((account) => account.status === 'pending')).toHaveLength(0);
+    expect(useCaptureStore.getState().drafts[0]).toEqual(
+      expect.objectContaining({
+        captureAccountId: 'sms:sbipsg:ending9929',
+        captureAccountLabel: 'SBI - A/c ending 9929',
+      })
+    );
   });
 
   it('routes captured draft alerts to the notifications inbox', () => {
@@ -357,6 +398,45 @@ describe('useCaptureStore production safety controls', () => {
         id: result.draftId,
         status: 'pending',
       })
+    );
+  });
+
+  it('confirms repeated pending drafts from the same merchant when one category is chosen', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+      },
+    }));
+
+    const first = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'Google Pay',
+      title: 'Payment successful',
+      body: 'You paid Rs 120 to SAME PERSON via UPI.',
+      receivedAt: '2026-06-09T09:00:00.000Z',
+    });
+    const second = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'Google Pay',
+      title: 'Payment successful',
+      body: 'You paid Rs 180 to SAME PERSON via UPI.',
+      receivedAt: '2026-06-09T09:31:00.000Z',
+    });
+
+    expect(first.status).toBe('drafted');
+    expect(second.status).toBe('drafted');
+
+    expect(useCaptureStore.getState().confirmDraft(first.draftId as string, 'food')).toBe(true);
+
+    expect(mocks.addTransaction).toHaveBeenCalledTimes(2);
+    expect(mocks.addTransaction).toHaveBeenCalledWith(expect.objectContaining({ amount: 120, category: 'food' }));
+    expect(mocks.addTransaction).toHaveBeenCalledWith(expect.objectContaining({ amount: 180, category: 'food' }));
+    expect(useCaptureStore.getState().drafts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: first.draftId, status: 'confirmed', category: 'food' }),
+        expect.objectContaining({ id: second.draftId, status: 'confirmed', category: 'food' }),
+      ])
     );
   });
 

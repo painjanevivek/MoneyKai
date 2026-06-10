@@ -12,7 +12,9 @@ export interface CaptureAccountIdentity {
 const BANK_LABELS: Record<string, string> = {
   axisbk: 'Axis Bank',
   cbssbi: 'SBI',
+  sbipsg: 'SBI',
   sbiupi: 'SBI UPI',
+  sbi: 'SBI',
   hdfcbk: 'HDFC Bank',
   icicib: 'ICICI Bank',
   kotak: 'Kotak Bank',
@@ -85,6 +87,35 @@ export const buildMonitoredAccount = (
   firstSeenAt: now,
   lastSeenAt: now,
 });
+
+const normalizeAccountHint = (value?: string) => value?.replace(/[^a-z0-9]+/gi, '').toLowerCase();
+
+const normalizeAccountBankLabel = (value?: string) => value?.toLowerCase().replace(/\b(?:bank|upi)\b/g, '').replace(/[^a-z0-9]+/g, '');
+
+export const isMatchingCaptureAccount = (account: MonitoredAccount, identity: CaptureAccountIdentity) => {
+  if (account.id === identity.id) return true;
+  if (account.source !== identity.source) return false;
+
+  const sameHint = Boolean(account.accountHint && identity.accountHint && normalizeAccountHint(account.accountHint) === normalizeAccountHint(identity.accountHint));
+  const sameBankKey = account.bankKey === identity.bankKey;
+  const sameBankLabel = normalizeAccountBankLabel(account.bankLabel) === normalizeAccountBankLabel(identity.bankLabel);
+  const sameSender = Boolean(account.sender && identity.sender && normalizeSender(account.sender) === normalizeSender(identity.sender));
+
+  if (sameHint && (sameBankKey || sameBankLabel)) return true;
+  if (!account.accountHint || !identity.accountHint) return sameBankKey && sameSender;
+
+  return false;
+};
+
+export const findMatchingCaptureAccount = (
+  accounts: MonitoredAccount[],
+  identity: CaptureAccountIdentity,
+  statuses?: MonitoredAccount['status'][]
+) =>
+  accounts.find((account) => {
+    if (statuses && !statuses.includes(account.status)) return false;
+    return isMatchingCaptureAccount(account, identity);
+  });
 
 export const formatMonitoredAccountLabel = (account: Pick<MonitoredAccount, 'bankLabel' | 'accountHint' | 'sender'>) =>
   account.accountHint

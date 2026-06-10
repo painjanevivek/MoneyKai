@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CAPTURE_FIXTURES } from '@/services/__fixtures__/captureFixtures';
+import { getDraftCategoryOptions } from '@/services/captureCategoryRules';
 import { buildCaptureDedupeKey, normalizeMerchantKey, parseCapturedSignal } from '@/services/captureParser';
+import type { DraftTransaction } from '@/types/capture';
 
 describe('parseCapturedSignal', () => {
   it.each(CAPTURE_FIXTURES)('$id: $label', (fixture) => {
@@ -79,6 +81,40 @@ describe('parse explanation privacy', () => {
     expect(parsed.parseStatus).toBe('ignore');
     expect(parsed.ignoreReason).toContain('hidden');
     expect(parsed.amount).toBeUndefined();
+  });
+});
+
+describe('app category rules', () => {
+  it.each(['ZOMATO', 'SWIGGY'])('auto-categorizes %s captures as food', (merchant) => {
+    const parsed = parseCapturedSignal({
+      source: 'sms',
+      sender: 'AX-HDFCBK',
+      body: `A/c XX4321 debited by Rs 299.00 for UPI payment to ${merchant}. UPI Ref 412345678901.`,
+      receivedAt: '2026-06-09T09:00:00.000Z',
+    });
+
+    expect(parsed.parseStatus).toBe('draft');
+    expect(parsed.category).toBe('food');
+  });
+
+  it('limits quick commerce draft category choices to food, electronics, and miscellaneous', () => {
+    const options = getDraftCategoryOptions({
+      id: 'draft_1',
+      signalId: 'signal_1',
+      user_id: 'local',
+      type: 'expense',
+      amount: 599,
+      description: 'Blinkit',
+      merchantKey: 'blinkit',
+      payment_method: 'upi',
+      transaction_date: '2026-06-09',
+      confidence: 0.72,
+      captureSource: 'sms',
+      status: 'pending',
+      createdAt: '2026-06-09T09:00:00.000Z',
+    } satisfies DraftTransaction);
+
+    expect(options.map((option) => option.id)).toEqual(['food', 'electronics', 'others']);
   });
 });
 

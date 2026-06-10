@@ -91,6 +91,10 @@ export interface DraftTransaction {
   description: string;
   merchantKey?: string;
   payment_method: string;
+  captureAccountId?: string;
+  captureAccountLabel?: string;
+  captureBankLabel?: string;
+  captureAccountHint?: string;
   transaction_date: string;
   confidence: number;
   captureSource: Exclude<CaptureSource, 'manual'>;
