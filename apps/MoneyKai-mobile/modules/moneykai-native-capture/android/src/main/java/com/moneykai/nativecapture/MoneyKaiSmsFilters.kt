@@ -8,6 +8,7 @@ import java.util.TimeZone
 object MoneyKaiSmsFilters {
   private const val MAX_SMS_FIELD_LENGTH = 500
   private val amountPattern = Regex("""(?:rs\.?|inr|\u20B9)\s*\d""")
+  private val bareActionAmountPattern = Regex("""\b(?:debited|credited|spent|paid|received|sent|withdrawn|transferred|deposited)\s+(?:by|of)?\s*\d""", RegexOption.IGNORE_CASE)
   private val officialSenderPattern = Regex("""^[A-Z]{2}-[A-Z0-9]{3,12}$""")
   private val compactOfficialSenderPattern = Regex("""^[A-Z0-9]{4,12}$""")
   private val numericSenderPattern = Regex("""^\+?\d{8,}$""")
@@ -41,6 +42,10 @@ object MoneyKaiSmsFilters {
     "transaction",
     "purchase",
     "withdrawn",
+    "withdrawal",
+    "transferred",
+    "deposited",
+    "deposit by transfer",
     "refund",
     "cashback"
   )
@@ -54,7 +59,16 @@ object MoneyKaiSmsFilters {
     "declined",
     "unsuccessful",
     "low balance",
-    "statement"
+    "statement",
+    "mandate",
+    "autopay",
+    "will be debited",
+    "scheduled",
+    "password",
+    "share your experience",
+    "feedback",
+    "thank you for the transaction done today",
+    "tdr/stdr"
   )
 
   fun shouldImportSms(sender: String, body: String): Boolean =
@@ -62,7 +76,9 @@ object MoneyKaiSmsFilters {
 
   fun looksLikeFinancialSms(value: String): Boolean {
     val text = value.lowercase(Locale.US)
-    val hasMoneySignal = moneyTerms.any { text.contains(it) } || amountPattern.containsMatchIn(text)
+    val hasMoneySignal = moneyTerms.any { text.contains(it) } ||
+      amountPattern.containsMatchIn(text) ||
+      bareActionAmountPattern.containsMatchIn(text)
     val hasTransactionSignal = transactionTerms.any { text.contains(it) }
     val hasNoiseSignal = noiseTerms.any { text.contains(it) }
     return hasMoneySignal && hasTransactionSignal && !hasNoiseSignal

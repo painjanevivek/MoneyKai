@@ -279,7 +279,7 @@ export const useCaptureStore = create<CaptureState>()(
             ? `${draft.description} was captured and is ready to review.`
             : `${draft.description} needs a category before it is added.`,
           type: 'transaction',
-          actionRoute: '/(tabs)/auto-capture',
+          actionRoute: '/(tabs)/notifications',
         });
 
         return { signalId: signal.id, draftId: draft.id, status: 'drafted', reason: parsed.reason };

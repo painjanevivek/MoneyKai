@@ -182,6 +182,31 @@ describe('useCaptureStore production safety controls', () => {
     ]);
   });
 
+  it('routes captured draft alerts to the notifications inbox', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+      },
+    }));
+
+    const result = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'HDFC Bank',
+      title: 'Debit alert',
+      body: 'Rs 321.00 debited from account for UPI payment to NOTIFICATION ROUTE TEST. UPI Ref 555566667777.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+    });
+
+    expect(result.status).toBe('drafted');
+    expect(mocks.recordAppNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'transaction',
+        actionRoute: '/(tabs)/notifications',
+      })
+    );
+  });
+
   it('persists only safe SMS capture metadata and never raw SMS payload fields', () => {
     useCaptureStore.setState((state) => ({
       settings: {

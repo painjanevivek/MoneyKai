@@ -713,7 +713,7 @@ export default function SettingsScreen() {
             iconBg="#F2F2F2"
             title="Review Captured Drafts"
             subtitle={`${pendingCaptureDrafts} pending`}
-            onPress={() => router.push('/(tabs)/auto-capture' as any)}
+            onPress={() => router.push('/(tabs)/notifications' as any)}
           />
         </Card>
 

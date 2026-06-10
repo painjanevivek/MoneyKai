@@ -68,6 +68,10 @@ const IGNORE_RULES: IgnoreRule[] = [
   { reason: 'reversed before settlement', patterns: [/\breversed before settlement\b/i, /\bno amount is payable\b/i] },
   { reason: 'payment request is not completed', patterns: [/\bcollect request\b/i, /\bpayment request\b/i, /\bpending\b/i, /\bapprove to pay\b/i] },
   { reason: 'bill due reminder', patterns: [/\bbill\b.+\bdue\b/i, /\bdue on\b/i, /\bpay now to avoid\b/i] },
+  { reason: 'mandate or scheduled autopay message', patterns: [/\bmandate\b/i, /\bautopay\b/i, /\bwill be debited\b/i, /\bscheduled\b/i] },
+  { reason: 'bank feedback or survey message', patterns: [/\bshare your experience\b/i, /\bfeedback\b/i, /\bthank you for the transaction done today\b/i] },
+  { reason: 'credential or password reminder', patterns: [/\bpassword\b/i, /\bcredential\b/i] },
+  { reason: 'deposit instrument setup message', patterns: [/\btdr\/stdr\b/i] },
 ];
 
 const PAYMENT_KEYWORDS: { id: PaymentMethodId; label: string; terms: RegExp[] }[] = [
@@ -85,6 +89,14 @@ const AMOUNT_PATTERNS: { name: string; regex: RegExp }[] = [
   {
     name: 'currency suffix',
     regex: /([0-9][0-9,]*(?:\.[0-9]{1,2})?)\s*(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)/gi,
+  },
+  {
+    name: 'amount after completed action',
+    regex: /\b(?:debited|credited|spent|paid|received|sent|withdrawn|transferred|deposited)\s+(?:by|of)?\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)\b/gi,
+  },
+  {
+    name: 'withdrawal amount',
+    regex: /\bwithdrawal\b.{0,40}?\bof\s+([0-9][0-9,]*(?:\.[0-9]{1,2})?)\b/gi,
   },
 ];
 
@@ -156,10 +168,8 @@ const scoreKeywordCategory = (text: string, merchantKey: string | undefined, typ
 };
 
 const detectIgnoreReason = (text: string, amount?: number) => {
-  if (!amount) return 'no transaction amount found';
-
   const matched = IGNORE_RULES.find((rule) => rule.patterns.some((pattern) => pattern.test(text)));
-  return matched?.reason;
+  return matched?.reason ?? (!amount ? 'no transaction amount found' : undefined);
 };
 
 const detectDirection = (text: string): DirectionMatch => {
@@ -178,6 +188,8 @@ const detectDirection = (text: string): DirectionMatch => {
     [/\bsent\b/i, 'sent'],
     [/\btransferred\b/i, 'transferred'],
     [/\bwithdrawn\b/i, 'withdrawn'],
+    [/\bwithdrawal\b/i, 'withdrawal'],
+    [/\bdebit\b/i, 'debit'],
     [/\bpurchase\b/i, 'purchase'],
     [/\bcharged\b/i, 'charged'],
     [/\bsuccessful\b/i, 'successful'],
