@@ -83,6 +83,7 @@ export const useBudgetStore = create<BudgetState>()(
         auto_reset: true,
         carry_forward: false,
         currency: 'INR',
+        category_limits: {},
       },
       adjustments: [],
       isEmergencyMode: false,

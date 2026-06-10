@@ -1,6 +1,7 @@
 const { AndroidConfig, withAndroidManifest } = require('@expo/config-plugins');
 
 const RECEIVE_SMS_PERMISSION = 'android.permission.RECEIVE_SMS';
+const READ_SMS_PERMISSION = 'android.permission.READ_SMS';
 const SMS_RECEIVER_NAME = 'com.moneykai.nativecapture.MoneyKaiSmsReceiver';
 
 const ensureArray = (value) => {
@@ -12,6 +13,7 @@ const withMoneyKaiSmsResearch = (config) =>
   withAndroidManifest(config, (manifestConfig) => {
     const manifest = manifestConfig.modResults;
     AndroidConfig.Permissions.addPermission(manifest, RECEIVE_SMS_PERMISSION);
+    AndroidConfig.Permissions.addPermission(manifest, READ_SMS_PERMISSION);
 
     const mainApplication = AndroidConfig.Manifest.getMainApplicationOrThrow(manifest);
     const receivers = ensureArray(mainApplication.receiver);

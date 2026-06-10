@@ -33,6 +33,7 @@ const SAFE_RAW_PAYLOAD_KEYS = new Set([
   'privacyStatus',
   'captureOrigin',
   'rawBodyStored',
+  'smsMessageId',
   'smsSubscriptionId',
   'smsSlot',
   'smsPhoneId',
@@ -130,8 +131,8 @@ export const useCaptureStore = create<CaptureState>()(
       setNotificationCaptureEnabled: (enabled) =>
         set((state) => ({ settings: { ...state.settings, notificationCaptureEnabled: enabled } })),
 
-      setReviewNotificationsEnabled: (enabled) =>
-        set((state) => ({ settings: { ...state.settings, reviewNotificationsEnabled: enabled } })),
+      setReviewNotificationsEnabled: () =>
+        set((state) => ({ settings: { ...state.settings, reviewNotificationsEnabled: true } })),
 
       setSmsResearchModeEnabled: (enabled) =>
         set((state) => ({ settings: { ...state.settings, smsResearchModeEnabled: enabled } })),
@@ -272,16 +273,14 @@ export const useCaptureStore = create<CaptureState>()(
           drafts: [draft, ...state.drafts].slice(0, MAX_DRAFTS),
         }));
 
-        if (settings.reviewNotificationsEnabled) {
-          void recordAppNotification({
-            title: draft.category ? 'Transaction draft ready' : 'Category needed',
-            body: draft.category
-              ? `${draft.description} was captured and is ready to review.`
-              : `${draft.description} needs a category before it is added.`,
-            type: 'transaction',
-            actionRoute: '/(tabs)/auto-capture',
-          });
-        }
+        void recordAppNotification({
+          title: draft.category ? 'Transaction draft ready' : 'Category needed',
+          body: draft.category
+            ? `${draft.description} was captured and is ready to review.`
+            : `${draft.description} needs a category before it is added.`,
+          type: 'transaction',
+          actionRoute: '/(tabs)/auto-capture',
+        });
 
         return { signalId: signal.id, draftId: draft.id, status: 'drafted', reason: parsed.reason };
       },

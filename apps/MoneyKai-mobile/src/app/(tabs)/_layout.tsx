@@ -113,6 +113,52 @@ export default function TabLayout() {
     setIsBudgetDialogVisible(false);
     router.push('/(tabs)/budget');
   }, []);
+  const goBackFromHiddenTab = React.useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/(tabs)');
+  }, []);
+  const hiddenTabOptions = React.useCallback(
+    (title: string) => ({
+      href: null,
+      title,
+      headerShown: true,
+      headerShadowVisible: false,
+      headerStyle: {
+        backgroundColor: colors.background,
+      },
+      headerTitleStyle: {
+        color: colors.textPrimary,
+        fontFamily: Typography.fontFamily.semiBold,
+        fontSize: 16,
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          activeOpacity={0.75}
+          onPress={goBackFromHiddenTab}
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border,
+            marginLeft: Platform.OS === 'ios' ? 4 : 12,
+          }}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.textPrimary} />
+        </TouchableOpacity>
+      ),
+    }),
+    [colors.background, colors.border, colors.card, colors.textPrimary, goBackFromHiddenTab]
+  );
 
   return (
     <>
@@ -197,13 +243,13 @@ export default function TabLayout() {
           }}
         />
 
-        <Tabs.Screen name="groups" options={{ href: null }} />
-        <Tabs.Screen name="learn-center" options={{ href: null }} />
-        <Tabs.Screen name="settings" options={{ href: null }} />
-        <Tabs.Screen name="analytics" options={{ href: null }} />
-        <Tabs.Screen name="notes" options={{ href: null }} />
-        <Tabs.Screen name="notifications" options={{ href: null }} />
-        <Tabs.Screen name="auto-capture" options={{ href: null }} />
+        <Tabs.Screen name="groups" options={hiddenTabOptions('Groups')} />
+        <Tabs.Screen name="learn-center" options={hiddenTabOptions('Learn Center')} />
+        <Tabs.Screen name="settings" options={hiddenTabOptions('Settings')} />
+        <Tabs.Screen name="analytics" options={hiddenTabOptions('Analytics')} />
+        <Tabs.Screen name="notes" options={hiddenTabOptions('Notes')} />
+        <Tabs.Screen name="notifications" options={hiddenTabOptions('Notifications')} />
+        <Tabs.Screen name="auto-capture" options={hiddenTabOptions('Transaction Capture')} />
       </Tabs>
       {isComposerVisible ? (
         <TransactionComposerSheet visible onClose={() => setIsComposerVisible(false)} />

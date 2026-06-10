@@ -17,6 +17,7 @@ export interface BudgetSettings {
   auto_reset: boolean;
   carry_forward: boolean;
   currency: string;
+  category_limits?: Record<string, number>;
 }
 
 export interface BudgetAdjustment {

@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
-import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
@@ -104,13 +103,11 @@ export default function SettingsScreen() {
   );
   const setAutoCaptureEnabled = useCaptureStore((s) => s.setAutoCaptureEnabled);
   const setNotificationCaptureEnabled = useCaptureStore((s) => s.setNotificationCaptureEnabled);
-  const setReviewNotificationsEnabled = useCaptureStore((s) => s.setReviewNotificationsEnabled);
   const setSmsResearchModeEnabled = useCaptureStore((s) => s.setSmsResearchModeEnabled);
   const acceptNotificationExplainer = useCaptureStore((s) => s.acceptNotificationExplainer);
   const acceptSmsResearchExplainer = useCaptureStore((s) => s.acceptSmsResearchExplainer);
   const setNotificationAccessStatus = useCaptureStore((s) => s.setNotificationAccessStatus);
   const setSmsAccessStatus = useCaptureStore((s) => s.setSmsAccessStatus);
-  const disableAutoCapture = useCaptureStore((s) => s.disableAutoCapture);
   const clearCaptureInbox = useCaptureStore((s) => s.clearCaptureInbox);
   const clearSmsResearchData = useCaptureStore((s) => s.clearSmsResearchData);
   const syncStatus = useSyncStore((s) => s.status);
@@ -158,7 +155,9 @@ export default function SettingsScreen() {
   const smsSourceStatus = useMemo<CaptureSourceStatus>(() => {
     if (!smsResearchBuildEnabled) return 'unsupported';
     if (!captureSettings.autoCaptureEnabled || !captureSettings.smsResearchModeEnabled) return 'disabled';
-    if ((nativeCaptureStatus?.smsAccess ?? captureSettings.smsAccessStatus ?? 'unknown') !== 'granted') {
+    const smsReceiveAccess = nativeCaptureStatus?.smsAccess ?? captureSettings.smsAccessStatus ?? 'unknown';
+    const smsInboxAccess = nativeCaptureStatus?.smsInboxAccess ?? captureSettings.smsAccessStatus ?? 'unknown';
+    if (smsReceiveAccess !== 'granted' || smsInboxAccess !== 'granted') {
       return 'needs_android_access';
     }
     return 'enabled';
@@ -167,6 +166,7 @@ export default function SettingsScreen() {
     captureSettings.smsAccessStatus,
     captureSettings.smsResearchModeEnabled,
     nativeCaptureStatus?.smsAccess,
+    nativeCaptureStatus?.smsInboxAccess,
     smsResearchBuildEnabled,
   ]);
 
@@ -176,9 +176,15 @@ export default function SettingsScreen() {
     }
     try {
       const status = await getNativeCaptureStatus();
+      const smsStatus =
+        status.smsAccess === 'granted' && (status.smsInboxAccess ?? status.smsAccess) === 'granted'
+          ? 'granted'
+          : status.smsAccess === 'unsupported' || status.smsInboxAccess === 'unsupported'
+            ? 'unsupported'
+            : 'denied';
       setNativeCaptureStatus(status);
       setNotificationAccessStatus(status.notificationAccess);
-      setSmsAccessStatus(status.smsAccess);
+      setSmsAccessStatus(smsStatus);
     } finally {
       if (showBusy) {
         setNativeStatusBusy(false);
@@ -294,17 +300,32 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleAutoCaptureToggle = (enabled: boolean) => {
-    setAutoCaptureEnabled(enabled);
-    if (enabled) {
-      Alert.alert(
-        'Auto capture enabled',
-        'MoneyKai will create reviewable drafts from supported transaction signals. Grant Android notification access only if you want bank and payment notifications to be used.'
-      );
-    } else {
+  const handleAutoCaptureToggle = async (enabled: boolean) => {
+    if (!enabled) {
+      setAutoCaptureEnabled(false);
       void setNativeCaptureEnabled(false);
       void clearNativeCaptureQueue();
+      return;
     }
+
+    let smsCaptureEnabledForAlert = smsResearchBuildEnabled && captureSettings.smsResearchModeEnabled;
+
+    if (smsCaptureEnabledForAlert) {
+      const hasSmsAccess = await requestSmsAccessForResearch();
+      if (!hasSmsAccess) {
+        smsCaptureEnabledForAlert = false;
+        setSmsResearchModeEnabled(false);
+        disableNativeSmsCapture();
+      }
+    }
+
+    setAutoCaptureEnabled(true);
+    Alert.alert(
+      'Auto capture enabled',
+      smsCaptureEnabledForAlert
+        ? 'MoneyKai will create reviewable drafts from supported transaction signals. SMS access is requested now because recent SMS import is restricted to explicit Android permission.'
+        : 'MoneyKai will create reviewable drafts from supported transaction signals. Grant Android notification access only if you want bank and payment notifications to be used.'
+    );
   };
 
   const handleOpenNativeCaptureSettings = async () => {
@@ -342,12 +363,12 @@ export default function SettingsScreen() {
   const requestSmsAccessForResearch = async () => {
     const status = await requestNativeSmsPermission();
     setSmsAccessStatus(status);
-    setNativeCaptureStatus((current) => current ? { ...current, smsAccess: status } : current);
+    setNativeCaptureStatus((current) => current ? { ...current, smsAccess: status, smsInboxAccess: status } : current);
 
     if (status !== 'granted') {
       Alert.alert(
         'SMS permission needed',
-        'MoneyKai cannot validate real incoming SMS delivery until Android SMS permission is granted for this research build.'
+        'MoneyKai cannot validate incoming SMS or import recent SMS transactions until Android SMS permission is granted for this research build.'
       );
       return false;
     }
@@ -356,8 +377,10 @@ export default function SettingsScreen() {
   };
 
   const enableSmsResearchMode = async () => {
+    const smsReceiveAccess = nativeCaptureStatus?.smsAccess ?? captureSettings.smsAccessStatus ?? 'unknown';
+    const smsInboxAccess = nativeCaptureStatus?.smsInboxAccess ?? captureSettings.smsAccessStatus ?? 'unknown';
     const hasSmsAccess =
-      (nativeCaptureStatus?.smsAccess ?? captureSettings.smsAccessStatus ?? 'unknown') === 'granted' ||
+      (smsReceiveAccess === 'granted' && smsInboxAccess === 'granted') ||
       await requestSmsAccessForResearch();
 
     if (!hasSmsAccess) {
@@ -402,29 +425,6 @@ export default function SettingsScreen() {
     void enableSmsResearchMode();
   };
 
-  const handleDisableSmsResearch = () => {
-    if (!captureSettings.smsResearchModeEnabled) {
-      Alert.alert('SMS Research Mode is already off', 'No new SMS research signals can be ingested.');
-      return;
-    }
-
-    Alert.alert(
-      'Disable SMS Research Mode?',
-      'MoneyKai will stop accepting new SMS research signals. Existing confirmed transactions stay in your history.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Disable',
-          style: 'destructive',
-          onPress: () => {
-            setSmsResearchModeEnabled(false);
-            disableNativeSmsCapture();
-          },
-        },
-      ]
-    );
-  };
-
   const handleClearSmsResearchData = () => {
     Alert.alert(
       'Clear SMS research data?',
@@ -440,19 +440,19 @@ export default function SettingsScreen() {
     );
   };
 
-  const handleDisableAutoCapture = () => {
+  const handleClearCache = () => {
     Alert.alert(
-      'Disable auto capture?',
-      'MoneyKai will stop listening for new capture signals. Existing confirmed transactions will stay in your history.',
+      'Clear cache?',
+      'This clears temporary capture queues and cached Android capture status. Your transactions and budgets stay in place.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Disable',
+          text: 'Clear',
           style: 'destructive',
           onPress: () => {
-            disableAutoCapture();
-            void setNativeCaptureEnabled(false);
             void clearNativeCaptureQueue();
+            void refreshNativeCaptureStatus(false);
+            Alert.alert('Cache cleared', 'Temporary capture cache has been cleared.');
           },
         },
       ]
@@ -560,10 +560,6 @@ export default function SettingsScreen() {
           />
         </Card>
 
-        <View style={{ marginBottom: Spacing.lg }}>
-          <MonthlyReset />
-        </View>
-
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Appearance</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem
@@ -625,43 +621,12 @@ export default function SettingsScreen() {
               />
             }
           />
-        </Card>
-
-        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Auto Capture</Text>
-        <Card style={{ marginBottom: Spacing.lg }}>
-          <View
-            style={{
-              paddingBottom: Spacing.md,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.borderLight,
-            }}
-          >
-            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-              Auto Capture creates reviewable drafts only. Supported notification text is parsed into safe fields on this device, and unrelated alerts are ignored.
-            </Text>
-          </View>
-          <SettingItem
-            icon="radar"
-            iconColor="#111111"
-            iconBg="#F4F4F4"
-            title="Automatic Capture"
-            subtitle={captureSettings.autoCaptureEnabled ? `${pendingCaptureDrafts} drafts waiting for review` : 'Create drafts from supported transaction alerts'}
-            right={
-              <Switch
-                value={captureSettings.autoCaptureEnabled}
-                onValueChange={handleAutoCaptureToggle}
-                trackColor={switchTrack}
-                thumbColor={switchThumb}
-                ios_backgroundColor={colors.borderLight}
-              />
-            }
-          />
           <SettingItem
             icon="bell-badge-outline"
             iconColor="#444444"
             iconBg="#ECECEC"
             title="Bank Notifications"
-            subtitle={`${sourceStatusLabel[notificationSourceStatus]} | Optional Android notification source`}
+            subtitle={`${sourceStatusLabel[notificationSourceStatus]} | Optional transaction notification source`}
             right={
               <Switch
                 value={captureSettings.notificationCaptureEnabled}
@@ -690,6 +655,37 @@ export default function SettingsScreen() {
               disabled={!captureSettings.autoCaptureEnabled}
             />
           ) : null}
+        </Card>
+
+        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Transaction Capture</Text>
+        <Card style={{ marginBottom: Spacing.lg }}>
+          <View
+            style={{
+              paddingBottom: Spacing.md,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderLight,
+            }}
+          >
+            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+              Transaction Capture creates reviewable drafts from supported transaction signals. Draft review alerts stay on so captured items are never missed.
+            </Text>
+          </View>
+          <SettingItem
+            icon="radar"
+            iconColor="#111111"
+            iconBg="#F4F4F4"
+            title="Automatic Capture"
+            subtitle={captureSettings.autoCaptureEnabled ? `${pendingCaptureDrafts} drafts waiting for review` : 'Create drafts from supported transaction alerts'}
+            right={
+              <Switch
+                value={captureSettings.autoCaptureEnabled}
+                onValueChange={handleAutoCaptureToggle}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
+          />
           <SettingItem
             icon="message-processing-outline"
             iconColor={smsResearchBuildEnabled ? colors.primary : '#5A5A5A'}
@@ -711,43 +707,6 @@ export default function SettingsScreen() {
               />
             }
           />
-          {smsResearchBuildEnabled ? (
-            <>
-              <SettingItem
-                icon="message-off-outline"
-                iconColor={colors.emergency}
-                iconBg={colors.emergencyBg}
-                title="Disable SMS Research"
-                subtitle="Stop SMS research ingestion immediately"
-                onPress={handleDisableSmsResearch}
-                disabled={!captureSettings.smsResearchModeEnabled}
-              />
-              <SettingItem
-                icon="delete-clock-outline"
-                iconColor="#5A5A5A"
-                iconBg="#EFEFEF"
-                title="Clear SMS Research Data"
-                subtitle="Remove pending and ignored SMS research drafts"
-                onPress={handleClearSmsResearchData}
-              />
-            </>
-          ) : null}
-          <SettingItem
-            icon="clipboard-check-outline"
-            iconColor="#707070"
-            iconBg="#F1F1F1"
-            title="Review Alerts"
-            subtitle={captureSettings.reviewNotificationsEnabled ? 'MoneyKai will notify when drafts need review' : 'Drafts stay quiet in the review inbox'}
-            right={
-              <Switch
-                value={captureSettings.reviewNotificationsEnabled}
-                onValueChange={setReviewNotificationsEnabled}
-                trackColor={switchTrack}
-                thumbColor={switchThumb}
-                ios_backgroundColor={colors.borderLight}
-              />
-            }
-          />
           <SettingItem
             icon="inbox-arrow-down-outline"
             iconColor="#8A8A8A"
@@ -756,14 +715,17 @@ export default function SettingsScreen() {
             subtitle={`${pendingCaptureDrafts} pending`}
             onPress={() => router.push('/(tabs)/auto-capture' as any)}
           />
+        </Card>
+
+        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Maintenance</Text>
+        <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem
-            icon="capture"
-            iconColor="#8A8A8A"
-            iconBg="#F2F2F2"
-            title="Disable Auto Capture"
-            subtitle="Stop new capture signals immediately"
-            onPress={handleDisableAutoCapture}
-            disabled={!captureSettings.autoCaptureEnabled}
+            icon="cached"
+            iconColor="#5A5A5A"
+            iconBg="#EFEFEF"
+            title="Clear Cache"
+            subtitle="Clear temporary capture queues"
+            onPress={handleClearCache}
           />
           <SettingItem
             icon="trash-can-outline"
@@ -773,6 +735,16 @@ export default function SettingsScreen() {
             subtitle={`${captureInboxCount} pending or ignored items`}
             onPress={handleClearCaptureHistory}
           />
+          {smsResearchBuildEnabled ? (
+            <SettingItem
+              icon="delete-clock-outline"
+              iconColor="#5A5A5A"
+              iconBg="#EFEFEF"
+              title="Clear SMS Research Data"
+              subtitle="Remove pending and ignored SMS research drafts"
+              onPress={handleClearSmsResearchData}
+            />
+          ) : null}
         </Card>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Data & Privacy</Text>
@@ -936,7 +908,7 @@ export default function SettingsScreen() {
             'MoneyKai only uses supported transaction-like alerts to create drafts for your review.',
             'Drafts do not change budgets or transaction history until you confirm them.',
             'Full raw notification payloads are not shown by default; MoneyKai stores parsed fields and safe explanation details.',
-            'You can disable Auto Capture or clear pending capture history from this screen.',
+            'Use the Transaction Capture toggle to turn capture off, or use Maintenance to clear pending capture history.',
           ].map((item) => (
             <View key={item} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
               <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
@@ -1040,7 +1012,7 @@ export default function SettingsScreen() {
             'Android will ask for SMS permission before real incoming SMS delivery can be validated.',
             'SMS drafts are review-only and never become transactions until you confirm them.',
             'MoneyKai stores sanitized parsed fields, not raw SMS bodies, and cloud backups exclude capture inbox data by default.',
-            'You can disable SMS Research Mode or clear SMS research data from Settings at any time.',
+            'Use the SMS Research Mode toggle to turn SMS research off, or use Maintenance to clear SMS research data.',
           ].map((item) => (
             <View key={item} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
               <MaterialCommunityIcons name="shield-check-outline" size={18} color={colors.primary} />

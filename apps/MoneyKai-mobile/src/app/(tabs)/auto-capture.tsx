@@ -15,7 +15,8 @@ import { ModalSheet } from '@/components/ui/ModalSheet';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, getCategoryById } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { isSmsResearchBuildEnabled } from '@/config/environment';
-import { ingestSmsCapture } from '@/services/autoCaptureService';
+import { ingestSmsCapture, importRecentSmsTransactionsFromInbox } from '@/services/autoCaptureService';
+import { requestNativeSmsPermission } from '@/services/nativeCaptureBridge';
 import { formatCurrency } from '@/utils/formatCurrency';
 import type { CaptureSource, DraftTransaction } from '@/types/capture';
 
@@ -212,6 +213,7 @@ export default function AutoCaptureScreen() {
   const [smsBody, setSmsBody] = useState('');
   const [smsImportError, setSmsImportError] = useState<string | undefined>();
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
+  const [isSmsInboxImporting, setIsSmsInboxImporting] = useState(false);
   const pendingDrafts = useMemo(() => drafts.filter((draft) => draft.status === 'pending'), [drafts]);
   const recentSignals = useMemo(() => signals.slice(0, 5), [signals]);
   const hiddenNotificationSignals = useMemo(
@@ -225,6 +227,7 @@ export default function AutoCaptureScreen() {
   );
   const hasMonthlyBudget = monthlyAllowance > 0;
   const canPasteSms = smsResearchBuildEnabled && smsResearchModeEnabled && hasMonthlyBudget;
+  const canImportSmsInbox = canPasteSms && !isSmsInboxImporting;
 
   const resetSmsImport = () => {
     setSmsSender('');
@@ -291,6 +294,63 @@ export default function AutoCaptureScreen() {
     Alert.alert('Not imported', result.reason);
   };
 
+  const handleImportRecentSmsInbox = async () => {
+    if (!hasMonthlyBudget) {
+      showBudgetRequired();
+      return;
+    }
+
+    if (!smsResearchBuildEnabled || !smsResearchModeEnabled) {
+      Alert.alert('SMS Research Mode is off', 'Enable SMS Research Mode in Settings before importing recent SMS transactions.');
+      return;
+    }
+
+    setIsSmsInboxImporting(true);
+    try {
+      const permissionStatus = await requestNativeSmsPermission();
+      if (permissionStatus !== 'granted') {
+        Alert.alert('SMS permission needed', 'Grant Android SMS access to import recent bank and payment transaction messages.');
+        return;
+      }
+
+      const summary = await importRecentSmsTransactionsFromInbox();
+
+      if (summary.status === 'permission_denied') {
+        Alert.alert('SMS permission needed', summary.message ?? 'Android denied SMS inbox access.');
+        return;
+      }
+
+      if (summary.status === 'unsupported') {
+        Alert.alert('Android build required', summary.message ?? 'Install a MoneyKai Android development build to import SMS history.');
+        return;
+      }
+
+      if (summary.status === 'error') {
+        Alert.alert('Import failed', summary.message ?? 'MoneyKai could not import SMS messages right now.');
+        return;
+      }
+
+      const details = [
+        `Scanned ${summary.scannedCount} recent SMS.`,
+        summary.confirmedCount > 0 ? `Added ${summary.confirmedCount} transactions.` : undefined,
+        summary.pendingReviewCount > 0 ? `${summary.pendingReviewCount} need review.` : undefined,
+        summary.duplicateCount > 0 ? `${summary.duplicateCount} duplicates skipped.` : undefined,
+        summary.nativeIgnoredCount + summary.parserIgnoredCount > 0
+          ? `${summary.nativeIgnoredCount + summary.parserIgnoredCount} non-transaction messages ignored.`
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      Alert.alert(
+        summary.confirmedCount > 0 ? 'SMS transactions imported' : 'No new transactions added',
+        details || 'No official bank or payment transaction SMS were found from the last 30 days.'
+      );
+    } finally {
+      setIsSmsInboxImporting(false);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md, gap: Spacing.md }}>
@@ -304,29 +364,56 @@ export default function AutoCaptureScreen() {
             </Text>
           </View>
           {smsResearchBuildEnabled ? (
-            <TouchableOpacity
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel="Paste SMS"
-              activeOpacity={0.78}
-              onPress={handleOpenSmsImport}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: BorderRadius.md,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: canPasteSms ? colors.primary : colors.surface,
-                borderWidth: 1,
-                borderColor: canPasteSms ? colors.primary : colors.border,
-              }}
-            >
-              <MaterialCommunityIcons
-                name="message-text-outline"
-                size={20}
-                color={canPasteSms ? colors.textInverse : colors.textSecondary}
-              />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <TouchableOpacity
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Import recent SMS"
+                activeOpacity={0.78}
+                onPress={handleImportRecentSmsInbox}
+                disabled={isSmsInboxImporting}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: BorderRadius.md,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: canImportSmsInbox ? colors.primary : colors.surface,
+                  borderWidth: 1,
+                  borderColor: canImportSmsInbox ? colors.primary : colors.border,
+                  opacity: isSmsInboxImporting ? 0.7 : 1,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="message-processing-outline"
+                  size={20}
+                  color={canImportSmsInbox ? colors.textInverse : colors.textSecondary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel="Paste SMS"
+                activeOpacity={0.78}
+                onPress={handleOpenSmsImport}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: BorderRadius.md,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: canPasteSms ? colors.primary : colors.surface,
+                  borderWidth: 1,
+                  borderColor: canPasteSms ? colors.primary : colors.border,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="message-text-outline"
+                  size={20}
+                  color={canPasteSms ? colors.textInverse : colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
           ) : null}
         </View>
       </View>

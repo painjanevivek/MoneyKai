@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Modal, TextInput, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, SectionList, Modal, TextInput, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { endOfDay, endOfWeek, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
+import { endOfDay, endOfWeek, format, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
 import { useTheme } from '@/hooks/useTheme';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +36,10 @@ const SORT_OPTIONS = [
 type DateFilterOption = typeof DATE_FILTER_OPTIONS[number]['id'];
 type SortOption = typeof SORT_OPTIONS[number]['id'];
 type FilterValue = 'all' | string;
+type TransactionMonthSection = {
+  title: string;
+  data: Transaction[];
+};
 
 export default function TransactionsScreen() {
   const { colors, isDark } = useTheme();
@@ -146,6 +150,27 @@ export default function TransactionsScreen() {
         return nextTransactions.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
     }
   }, [categoryFilter, dateFilter, filteredTransactions, paymentFilter, sortOption]);
+
+  const transactionSections = useMemo<TransactionMonthSection[]>(() => {
+    const sections = new Map<string, TransactionMonthSection>();
+
+    displayTransactions.forEach((transaction) => {
+      const sectionTitle = format(parseTransactionDate(transaction.transaction_date), 'MMMM yyyy');
+      const existingSection = sections.get(sectionTitle);
+
+      if (existingSection) {
+        existingSection.data.push(transaction);
+        return;
+      }
+
+      sections.set(sectionTitle, {
+        title: sectionTitle,
+        data: [transaction],
+      });
+    });
+
+    return Array.from(sections.values());
+  }, [displayTransactions]);
 
   const resetAdvancedFilters = () => {
     setCategoryFilter('all');
@@ -379,10 +404,18 @@ export default function TransactionsScreen() {
         </View>
       </View>
 
-      <FlatList
-        data={displayTransactions}
+      <SectionList
+        sections={transactionSections}
         renderItem={renderTransaction}
         keyExtractor={(item) => item.id}
+        renderSectionHeader={({ section }) => (
+          <View style={{ backgroundColor: colors.background, paddingTop: Spacing.sm, paddingBottom: Spacing.xs }}>
+            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
+              {section.title}
+            </Text>
+          </View>
+        )}
+        stickySectionHeadersEnabled={false}
         contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }}
         ListEmptyComponent={<EmptyState icon="receipt" title="No Transactions" message="Start tracking by adding your first transaction." />}
       />

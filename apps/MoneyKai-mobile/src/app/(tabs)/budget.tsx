@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, View, Text, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -13,13 +13,24 @@ import { CategoryBudgetRail } from '@/components/dashboard/CategoryBudgetRail';
 import { SpendingPieChart } from '@/components/charts/SpendingPieChart';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { EXPENSE_CATEGORIES } from '@/constants/categories';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { filterTransactionsByMonth, getMonthKey, getMonthLabel, buildCategoryTotals, buildCategoryBudgetCards } from '@/utils/dashboard';
+import { formatCurrency } from '@/utils/formatCurrency';
+
+const buildCategoryLimitInputs = (limits: Record<string, number> = {}) =>
+  EXPENSE_CATEGORIES.reduce<Record<string, string>>((acc, category) => {
+    const value = limits[category.id];
+    acc[category.id] = value && value > 0 ? String(value) : '';
+    return acc;
+  }, {});
 
 export default function BudgetScreen() {
   const { colors } = useTheme();
-  const { settings } = useBudgetStore();
+  const { settings, updateSettings } = useBudgetStore();
   const transactions = useTransactionStore((s) => s.transactions);
+  const [categoryLimitInputs, setCategoryLimitInputs] = useState(() => buildCategoryLimitInputs(settings.category_limits));
 
   const monthKey = getMonthKey(new Date());
   const monthLabel = getMonthLabel(monthKey);
@@ -32,9 +43,47 @@ export default function BudgetScreen() {
   const monthRemaining = settings.monthly_allowance - monthExpenses;
   const monthProgress = settings.monthly_allowance > 0 ? (monthExpenses / settings.monthly_allowance) * 100 : 0;
   const categoryCards = useMemo(
-    () => buildCategoryBudgetCards(monthCategoryTotals, settings.monthly_allowance),
-    [monthCategoryTotals, settings.monthly_allowance]
+    () => buildCategoryBudgetCards(monthCategoryTotals, settings.category_limits),
+    [monthCategoryTotals, settings.category_limits]
   );
+  const setCategoryLimitInput = (categoryId: string, value: string) => {
+    setCategoryLimitInputs((current) => ({
+      ...current,
+      [categoryId]: value.replace(/[^0-9.]/g, ''),
+    }));
+  };
+  const hasSavedCategoryLimits = Object.values(settings.category_limits ?? {}).some((value) => value > 0);
+
+  useEffect(() => {
+    setCategoryLimitInputs(buildCategoryLimitInputs(settings.category_limits));
+  }, [settings.category_limits]);
+
+  const handleSaveCategoryLimits = () => {
+    const nextLimits: Record<string, number> = {};
+
+    for (const category of EXPENSE_CATEGORIES) {
+      const rawValue = categoryLimitInputs[category.id]?.trim();
+      if (!rawValue) continue;
+
+      const parsed = Number(rawValue);
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        Alert.alert('Invalid limit', `Enter a valid amount for ${category.name}.`);
+        return;
+      }
+
+      if (parsed > 0) {
+        nextLimits[category.id] = Math.round(parsed);
+      }
+    }
+
+    updateSettings({ category_limits: nextLimits });
+    Alert.alert('Category limits saved', 'Your optional category limits are now active for this budget.');
+  };
+
+  const handleClearCategoryLimits = () => {
+    setCategoryLimitInputs(buildCategoryLimitInputs({}));
+    updateSettings({ category_limits: {} });
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -61,6 +110,92 @@ export default function BudgetScreen() {
 
         <View style={{ height: Spacing.base }} />
         <MonthlyReset />
+
+        <View style={{ height: Spacing.base }} />
+        <Card
+          style={{
+            gap: Spacing.md,
+            borderRadius: BorderRadius['2xl'],
+            borderWidth: 1,
+            borderColor: colors.borderLight,
+            ...Shadows.md,
+            shadowColor: colors.shadowColor,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.md }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Category Limits
+              </Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                Optional monthly limits for each expense category
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="tune-variant" size={22} color={colors.primary} />
+          </View>
+
+          <View style={{ gap: Spacing.sm }}>
+            {EXPENSE_CATEGORIES.map((category) => {
+              const spent = monthCategoryTotals.find((item) => item.category === category.id)?.total ?? 0;
+              return (
+                <View
+                  key={category.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: Spacing.sm,
+                    paddingVertical: Spacing.xs,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.borderLight,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: BorderRadius.sm,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: category.colorLight,
+                      borderWidth: 1,
+                      borderColor: colors.borderLight,
+                    }}
+                  >
+                    <MaterialCommunityIcons name={category.icon as any} size={19} color={category.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}
+                    >
+                      {category.name}
+                    </Text>
+                    <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                      {formatCurrency(spent)} spent this month
+                    </Text>
+                  </View>
+                  <Input
+                    value={categoryLimitInputs[category.id] ?? ''}
+                    onChangeText={(value) => setCategoryLimitInput(category.id, value)}
+                    placeholder="No limit"
+                    keyboardType="numeric"
+                    prefix="Rs"
+                    maxLength={8}
+                    style={{ width: 132, marginBottom: 0 }}
+                    inputStyle={{ fontSize: Typography.fontSize.sm }}
+                  />
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+            {hasSavedCategoryLimits ? (
+              <Button title="Clear" icon="close" onPress={handleClearCategoryLimits} variant="outline" style={{ flex: 1 }} />
+            ) : null}
+            <Button title="Save Limits" icon="content-save-outline" onPress={handleSaveCategoryLimits} style={{ flex: 1 }} />
+          </View>
+        </Card>
 
         <View style={{ height: Spacing.base }} />
         <SpendingPieChart

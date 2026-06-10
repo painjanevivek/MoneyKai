@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.Cursor
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -16,6 +18,7 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 class MoneyKaiNativeCaptureModule : Module() {
   override fun definition() = ModuleDefinition {
@@ -70,7 +73,15 @@ class MoneyKaiNativeCaptureModule : Module() {
         "smsAccess",
         getSmsAccessStatus(requireContext())
       )
+      status.putString(
+        "smsInboxAccess",
+        getSmsInboxAccessStatus(requireContext())
+      )
       status
+    }
+
+    Function("importRecentSmsTransactions") { days: Int, maxMessages: Int ->
+      importRecentSmsTransactions(requireContext(), days, maxMessages)
     }
 
     Function("openNotificationListenerSettings") {
@@ -95,6 +106,11 @@ class MoneyKaiNativeCaptureModule : Module() {
     private const val PREFS_CAPTURE_ENABLED = "capture_enabled"
     private const val PREFS_NOTIFICATION_CAPTURE_ENABLED = "notification_capture_enabled"
     private const val PREFS_SMS_CAPTURE_ENABLED = "sms_capture_enabled"
+    private const val MAX_SMS_IMPORT_DAYS = 31
+    private const val MAX_SMS_IMPORT_SCAN_COUNT = 300
+    private const val MAX_SMS_IMPORT_SIGNAL_COUNT = 100
+    private const val MAX_SMS_META_LENGTH = 32
+    private val SMS_INBOX_URI: Uri = Uri.parse("content://sms/inbox")
 
     private var activeModule: MoneyKaiNativeCaptureModule? = null
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -263,6 +279,123 @@ class MoneyKaiNativeCaptureModule : Module() {
       } else {
         "denied"
       }
+    }
+
+    private fun getSmsInboxAccessStatus(context: Context): String {
+      if (!isSmsReceiverDeclared(context)) {
+        return "unsupported"
+      }
+
+      return if (context.checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
+        "granted"
+      } else {
+        "denied"
+      }
+    }
+
+    private fun importRecentSmsTransactions(context: Context, days: Int, maxMessages: Int): String {
+      if (!isSmsReceiverDeclared(context)) {
+        return buildSmsImportResult("unsupported", "SMS research receiver is not available in this build.")
+      }
+
+      if (context.checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+        return buildSmsImportResult("permission_denied", "Android SMS inbox permission has not been granted.")
+      }
+
+      val importDays = days.coerceIn(1, MAX_SMS_IMPORT_DAYS)
+      val scanLimit = maxMessages.coerceIn(1, MAX_SMS_IMPORT_SCAN_COUNT)
+      val sinceMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(importDays.toLong())
+      val signals = JSONArray()
+      var scannedCount = 0
+      var ignoredCount = 0
+
+      return try {
+        val cursor = context.contentResolver.query(
+          SMS_INBOX_URI,
+          arrayOf("_id", "address", "body", "date", "sub_id"),
+          "date >= ?",
+          arrayOf(sinceMillis.toString()),
+          "date DESC"
+        )
+
+        cursor?.use {
+          val idIndex = it.getColumnIndex("_id")
+          val addressIndex = it.getColumnIndex("address")
+          val bodyIndex = it.getColumnIndex("body")
+          val dateIndex = it.getColumnIndex("date")
+          val subscriptionIndex = it.getColumnIndex("sub_id")
+
+          while (it.moveToNext() && scannedCount < scanLimit && signals.length() < MAX_SMS_IMPORT_SIGNAL_COUNT) {
+            scannedCount += 1
+            val sender = it.getStringOrBlank(addressIndex)
+            val body = it.getStringOrBlank(bodyIndex)
+            val receivedAt = it.getLongOrNull(dateIndex) ?: System.currentTimeMillis()
+
+            if (body.isBlank() || !MoneyKaiSmsFilters.shouldImportSms(sender, body)) {
+              ignoredCount += 1
+              continue
+            }
+
+            val signal = JSONObject()
+              .put("source", "sms")
+              .put("sender", MoneyKaiSmsFilters.sanitizeSmsText(sender))
+              .put("body", MoneyKaiSmsFilters.sanitizeSmsText(body))
+              .put("receivedAt", MoneyKaiSmsFilters.toIsoUtc(receivedAt))
+              .put("captureOrigin", "android_sms_inbox_import")
+              .put("rawBodyStored", "false")
+
+            it.getStringOrNull(idIndex)?.let { value ->
+              signal.put("smsMessageId", value.take(MAX_SMS_META_LENGTH))
+            }
+            it.getStringOrNull(subscriptionIndex)?.let { value ->
+              signal.put("smsSubscriptionId", value.take(MAX_SMS_META_LENGTH))
+            }
+
+            signals.put(signal)
+          }
+        }
+
+        buildSmsImportResult(
+          status = "imported",
+          signals = signals,
+          scannedCount = scannedCount,
+          ignoredCount = ignoredCount
+        )
+      } catch (error: SecurityException) {
+        buildSmsImportResult("permission_denied", error.message ?: "Android denied SMS inbox access.")
+      } catch (error: Exception) {
+        buildSmsImportResult("error", error.message ?: "Unable to import SMS messages.")
+      }
+    }
+
+    private fun Cursor.getStringOrBlank(index: Int): String =
+      getStringOrNull(index).orEmpty()
+
+    private fun Cursor.getStringOrNull(index: Int): String? =
+      if (index >= 0 && !isNull(index)) getString(index) else null
+
+    private fun Cursor.getLongOrNull(index: Int): Long? =
+      if (index >= 0 && !isNull(index)) getLong(index) else null
+
+    private fun buildSmsImportResult(
+      status: String,
+      message: String? = null,
+      signals: JSONArray = JSONArray(),
+      scannedCount: Int = 0,
+      ignoredCount: Int = 0
+    ): String {
+      val result = JSONObject()
+        .put("status", status)
+        .put("signals", signals)
+        .put("importedCount", signals.length())
+        .put("scannedCount", scannedCount)
+        .put("ignoredCount", ignoredCount)
+
+      if (!message.isNullOrBlank()) {
+        result.put("message", message)
+      }
+
+      return result.toString()
     }
   }
 }

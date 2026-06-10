@@ -1,20 +1,8 @@
 import { format, parseISO, subMonths } from 'date-fns';
 import { CHALLENGE_TEMPLATES, type Challenge } from '../types/challenge';
-import { getCategoryById } from '../constants/categories';
+import { EXPENSE_CATEGORIES } from '../constants/categories';
 import type { CategoryTotal, Transaction } from '../types/transaction';
 import { formatCurrency } from './formatCurrency';
-
-export const DEFAULT_CATEGORY_ALLOCATIONS: Record<string, number> = {
-  food: 25,
-  transport: 15,
-  bills: 15,
-  shopping: 15,
-  rent: 15,
-  entertainment: 10,
-  education: 3,
-  healthcare: 2,
-  others: 0,
-};
 
 export type DashboardCategoryCard = {
   category: string;
@@ -80,14 +68,17 @@ export const buildCategoryTotals = (transactions: Transaction[]): CategoryTotal[
     .sort((a, b) => b.total - a.total);
 };
 
-export const buildCategoryBudgetCards = (categoryTotals: CategoryTotal[], monthlyAllowance: number): DashboardCategoryCard[] => {
+export const buildCategoryBudgetCards = (
+  categoryTotals: CategoryTotal[],
+  categoryLimits: Record<string, number> = {}
+): DashboardCategoryCard[] => {
   const spentMap = new Map(categoryTotals.map((item) => [item.category, item.total]));
 
-  return Object.entries(DEFAULT_CATEGORY_ALLOCATIONS)
-    .map(([category, weight]) => {
-      const categoryDef = getCategoryById(category);
+  return EXPENSE_CATEGORIES
+    .map((categoryDef) => {
+      const category = categoryDef.id;
       const spent = spentMap.get(category) ?? 0;
-      const budget = Math.max(0, Math.round((monthlyAllowance * weight) / 100));
+      const budget = Math.max(0, Math.round(categoryLimits[category] ?? 0));
       const progress = budget > 0 ? clamp((spent / budget) * 100, 0, 999) : spent > 0 ? 100 : 0;
 
       return {

@@ -19,12 +19,12 @@ export const CategoryBudgetRail: React.FC<CategoryBudgetRailProps> = ({ items })
     return (
       <View style={{ gap: Spacing.sm }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            Category Limits
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-            Spent vs default budget
-          </Text>
+        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+          Category Limits
+        </Text>
+        <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+            Optional limits
+        </Text>
         </View>
         <Card
           style={{
@@ -39,7 +39,7 @@ export const CategoryBudgetRail: React.FC<CategoryBudgetRailProps> = ({ items })
             No category activity yet
           </Text>
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-            Add a few transactions and we&apos;ll show category budgets and progress here.
+            Set optional category limits in the Budget tab or add transactions to see category progress here.
           </Text>
         </Card>
       </View>
@@ -53,7 +53,7 @@ export const CategoryBudgetRail: React.FC<CategoryBudgetRailProps> = ({ items })
           Category Limits
         </Text>
         <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-          Spent vs default budget
+          Spent vs limits
         </Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.sm, paddingVertical: 2 }}>
@@ -94,7 +94,7 @@ export const CategoryBudgetRail: React.FC<CategoryBudgetRailProps> = ({ items })
               </View>
               <ProgressBar progress={item.progress} color={overBudget ? colors.emergency : item.color} height={6} />
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                {formatCurrency(item.budget)} budget
+                {item.budget > 0 ? `${formatCurrency(item.budget)} limit` : 'No limit set'}
               </Text>
             </Card>
           );
