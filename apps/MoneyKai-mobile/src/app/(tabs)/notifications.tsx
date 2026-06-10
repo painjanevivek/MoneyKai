@@ -72,17 +72,14 @@ export default function NotificationsScreen() {
   }, [markAllRead]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-          Notifications
-        </Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
+      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.sm, paddingBottom: Spacing.sm }}>
+        <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
           {headerSubtitle}
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.base, marginBottom: Spacing.md }}>
+      <View style={{ flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
         {(['drafts', 'notifications'] as const).map((section) => {
           const active = activeSection === section;
           const count = section === 'drafts' ? pendingAccounts.length + pendingDrafts.length : notifications.length;
@@ -96,12 +93,18 @@ export default function NotificationsScreen() {
                 borderRadius: BorderRadius.full,
                 alignItems: 'center',
                 justifyContent: 'center',
+                paddingHorizontal: Spacing.sm,
                 backgroundColor: active ? colors.primary : colors.card,
                 borderWidth: active ? 0 : 1,
                 borderColor: colors.border,
               }}
             >
-              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: active ? colors.textInverse : colors.textSecondary }}>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.82}
+                style={{ fontSize: Typography.fontSize.sm, lineHeight: 18, fontFamily: Typography.fontFamily.semiBold, color: active ? colors.textInverse : colors.textSecondary }}
+              >
                 {section === 'drafts' ? `Drafts (${count})` : `Notifications (${count})`}
               </Text>
             </TouchableOpacity>
@@ -409,12 +412,6 @@ export default function NotificationsScreen() {
                 );
               })}
             </View>
-          ) : null}
-
-          {activeSection === 'notifications' && notificationsEnabled && notifications.length > 0 ? (
-            <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
-              Notifications
-            </Text>
           ) : null}
 
           {activeSection === 'notifications' && notificationsEnabled ? notifications.map((notification, index) => (

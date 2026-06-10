@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, View, Text, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,7 +30,7 @@ export default function BudgetScreen() {
   const { colors } = useTheme();
   const { settings, updateSettings } = useBudgetStore();
   const transactions = useTransactionStore((s) => s.transactions);
-  const [categoryLimitInputs, setCategoryLimitInputs] = useState(() => buildCategoryLimitInputs(settings.category_limits));
+  const [categoryLimitDrafts, setCategoryLimitDrafts] = useState<Record<string, string>>({});
 
   const monthKey = getMonthKey(new Date());
   const monthLabel = getMonthLabel(monthKey);
@@ -47,22 +47,20 @@ export default function BudgetScreen() {
     [monthCategoryTotals, settings.category_limits]
   );
   const setCategoryLimitInput = (categoryId: string, value: string) => {
-    setCategoryLimitInputs((current) => ({
+    setCategoryLimitDrafts((current) => ({
       ...current,
       [categoryId]: value.replace(/[^0-9.]/g, ''),
     }));
   };
   const hasSavedCategoryLimits = Object.values(settings.category_limits ?? {}).some((value) => value > 0);
-
-  useEffect(() => {
-    setCategoryLimitInputs(buildCategoryLimitInputs(settings.category_limits));
-  }, [settings.category_limits]);
+  const savedCategoryLimitInputs = useMemo(() => buildCategoryLimitInputs(settings.category_limits), [settings.category_limits]);
+  const getCategoryLimitInput = (categoryId: string) => categoryLimitDrafts[categoryId] ?? savedCategoryLimitInputs[categoryId] ?? '';
 
   const handleSaveCategoryLimits = () => {
     const nextLimits: Record<string, number> = {};
 
     for (const category of EXPENSE_CATEGORIES) {
-      const rawValue = categoryLimitInputs[category.id]?.trim();
+      const rawValue = getCategoryLimitInput(category.id).trim();
       if (!rawValue) continue;
 
       const parsed = Number(rawValue);
@@ -77,26 +75,27 @@ export default function BudgetScreen() {
     }
 
     updateSettings({ category_limits: nextLimits });
+    setCategoryLimitDrafts({});
     Alert.alert('Category limits saved', 'Your optional category limits are now active for this budget.');
   };
 
   const handleClearCategoryLimits = () => {
-    setCategoryLimitInputs(buildCategoryLimitInputs({}));
+    setCategoryLimitDrafts({});
     updateSettings({ category_limits: {} });
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base }}>
+        <Text style={{ fontSize: Typography.fontSize.xl, lineHeight: 28, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
           Budget
         </Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
+        <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
           Budget controls and month-aware summaries
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'], gap: Spacing.base }} showsVerticalScrollIndicator={false}>
         <MonthlyBudgetSummaryCard
           monthLabel={monthLabel}
           monthlyAllowance={settings.monthly_allowance}
@@ -105,13 +104,10 @@ export default function BudgetScreen() {
           progress={monthProgress}
         />
 
-        <View style={{ height: Spacing.base }} />
         <BudgetHealth totalSpent={monthExpenses} />
 
-        <View style={{ height: Spacing.base }} />
         <MonthlyReset />
 
-        <View style={{ height: Spacing.base }} />
         <Card
           style={{
             gap: Spacing.md,
@@ -124,7 +120,7 @@ export default function BudgetScreen() {
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.md }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 22, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                 Category Limits
               </Text>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
@@ -135,7 +131,7 @@ export default function BudgetScreen() {
           </View>
 
           <View style={{ gap: Spacing.sm }}>
-            {EXPENSE_CATEGORIES.map((category) => {
+            {EXPENSE_CATEGORIES.map((category, index) => {
               const spent = monthCategoryTotals.find((item) => item.category === category.id)?.total ?? 0;
               return (
                 <View
@@ -144,9 +140,10 @@ export default function BudgetScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: Spacing.sm,
-                    paddingVertical: Spacing.xs,
+                    minHeight: 58,
+                    paddingVertical: Spacing.sm,
                     borderBottomWidth: 1,
-                    borderBottomColor: colors.borderLight,
+                    borderBottomColor: index === EXPENSE_CATEGORIES.length - 1 ? 'transparent' : colors.borderLight,
                   }}
                 >
                   <View
@@ -166,16 +163,16 @@ export default function BudgetScreen() {
                   <View style={{ flex: 1 }}>
                     <Text
                       numberOfLines={1}
-                      style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}
+                      style={{ fontSize: Typography.fontSize.sm, lineHeight: 18, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}
                     >
                       {category.name}
                     </Text>
-                    <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                    <Text numberOfLines={1} style={{ fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>
                       {formatCurrency(spent)} spent this month
                     </Text>
                   </View>
                   <Input
-                    value={categoryLimitInputs[category.id] ?? ''}
+                    value={getCategoryLimitInput(category.id)}
                     onChangeText={(value) => setCategoryLimitInput(category.id, value)}
                     placeholder="No limit"
                     keyboardType="numeric"
@@ -197,14 +194,12 @@ export default function BudgetScreen() {
           </View>
         </Card>
 
-        <View style={{ height: Spacing.base }} />
         <SpendingPieChart
           categoryTotals={monthCategoryTotals}
           totalSpent={monthExpenses}
           onPressViewMore={() => router.push('/(tabs)/savings')}
         />
 
-        <View style={{ height: Spacing.base }} />
         <Card
           style={{
             gap: Spacing.md,
@@ -217,10 +212,10 @@ export default function BudgetScreen() {
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
-              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 22, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                 Quick Budget Actions
               </Text>
-              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
                 Jump into common budget tasks
               </Text>
             </View>
@@ -232,7 +227,6 @@ export default function BudgetScreen() {
           </View>
         </Card>
 
-        <View style={{ height: Spacing.base }} />
         <CategoryBudgetRail items={categoryCards} />
       </ScrollView>
     </SafeAreaView>

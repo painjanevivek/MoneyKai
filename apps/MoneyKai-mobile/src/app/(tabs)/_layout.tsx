@@ -1,7 +1,8 @@
 import React from 'react';
 import { Tabs, router } from 'expo-router';
-import { View, Platform, Text, TouchableOpacity, type ColorValue } from 'react-native';
+import { View, Platform, TouchableOpacity, type ColorValue } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
 import { Typography, Shadows } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,44 +20,67 @@ const TabLabel = ({
   label: string;
   color: string | ColorValue;
   focused: boolean;
-}) => (
-  <Text
-    numberOfLines={1}
-    adjustsFontSizeToFit
-    minimumFontScale={0.82}
-    style={{
-      fontSize: 11,
-      lineHeight: 14,
-      textAlign: 'center',
-      fontFamily: focused ? Typography.fontFamily.semiBold : Typography.fontFamily.medium,
-      color,
-      width: 104,
-      textShadowColor: focused ? 'rgba(255, 255, 255, 0.32)' : 'transparent',
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: focused ? 8 : 0,
-    }}
-  >
-    {label}
-  </Text>
-);
+}) => {
+  const animatedStyle = useAnimatedStyle(
+    () => ({
+      opacity: withTiming(focused ? 1 : 0.78, { duration: 180 }),
+      transform: [{ translateY: withTiming(focused ? -1 : 0, { duration: 180 }) }],
+    }),
+    [focused]
+  );
 
-const TabIcon = ({ name, color, focused }: { name: IconName; color: string | ColorValue; focused: boolean }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', height: 30 }}>
-    <View
-      style={{
-        width: 46,
-        height: 30,
-        borderRadius: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: focused ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
-        ...(focused ? Shadows.glow(String(color)) : null),
-      }}
+  return (
+    <Animated.Text
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.82}
+      style={[
+        {
+          fontSize: 11,
+          lineHeight: 14,
+          textAlign: 'center',
+          fontFamily: focused ? Typography.fontFamily.semiBold : Typography.fontFamily.medium,
+          color,
+          width: 104,
+        },
+        animatedStyle,
+      ]}
     >
-      <MaterialCommunityIcons name={name} size={24} color={color} />
+      {label}
+    </Animated.Text>
+  );
+};
+
+const TabIcon = ({ name, color, focused }: { name: IconName; color: string | ColorValue; focused: boolean }) => {
+  const animatedStyle = useAnimatedStyle(
+    () => ({
+      opacity: withTiming(focused ? 1 : 0.78, { duration: 180 }),
+      transform: [{ scale: withTiming(focused ? 1.06 : 1, { duration: 180 }) }],
+    }),
+    [focused]
+  );
+
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center', height: 30 }}>
+      <Animated.View
+        style={[
+          {
+            width: 46,
+            height: 30,
+            borderRadius: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: focused ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
+            ...(focused ? Shadows.glow(String(color)) : null),
+          },
+          animatedStyle,
+        ]}
+      >
+        <MaterialCommunityIcons name={name} size={24} color={color} />
+      </Animated.View>
     </View>
-  </View>
-);
+  );
+};
 
 const AddTabButton = ({
   backgroundColor,
@@ -135,6 +159,9 @@ export default function TabLayout() {
         fontFamily: Typography.fontFamily.semiBold,
         fontSize: 16,
       },
+      contentStyle: {
+        backgroundColor: colors.background,
+      },
       headerLeft: () => (
         <TouchableOpacity
           accessibilityRole="button"
@@ -165,6 +192,11 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
+          animation: 'fade',
+          sceneStyle: {
+            backgroundColor: colors.background,
+          },
+          freezeOnBlur: true,
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textTertiary,
           tabBarStyle: {

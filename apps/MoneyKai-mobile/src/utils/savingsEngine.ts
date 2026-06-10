@@ -90,11 +90,11 @@ const BUDGET_HEALTH_FALLBACK_COLORS: Record<BudgetHealthLevel, string> = {
 export const getBudgetHealthColor = (level: BudgetHealthLevel, colors: ColorScheme): string => {
   const themedColors: Record<BudgetHealthLevel, string> = {
     empty: colors.textTertiary,
-    excellent: colors.accent,
-    good: colors.primary,
-    fair: colors.chart3,
-    poor: colors.chart5,
-    critical: colors.emergency,
+    excellent: BUDGET_HEALTH_FALLBACK_COLORS.excellent,
+    good: BUDGET_HEALTH_FALLBACK_COLORS.good,
+    fair: BUDGET_HEALTH_FALLBACK_COLORS.fair,
+    poor: BUDGET_HEALTH_FALLBACK_COLORS.poor,
+    critical: BUDGET_HEALTH_FALLBACK_COLORS.critical,
   };
 
   return themedColors[level] ?? BUDGET_HEALTH_FALLBACK_COLORS[level];

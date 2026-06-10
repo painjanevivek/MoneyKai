@@ -1,13 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { getCategoryById } from '../../constants/categories';
 import { formatCurrency } from '../../utils/formatCurrency';
 import type { CategoryTotal } from '../../types/transaction';
-import { Typography, Spacing } from '../../constants/theme';
+import { BorderRadius, Shadows, Typography, Spacing } from '../../constants/theme';
 
 interface SpendingPieChartProps {
   categoryTotals?: CategoryTotal[];
@@ -69,11 +70,19 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
   );
 
   return (
-    <Card>
+    <Card
+      style={{
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        ...Shadows.md,
+        shadowColor: colors.shadowColor,
+      }}
+    >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
         <Text
           style={{
             fontSize: Typography.fontSize.md,
+            lineHeight: 22,
             fontFamily: Typography.fontFamily.semiBold,
             color: colors.textPrimary,
           }}
@@ -81,25 +90,49 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
           Spending Overview
         </Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.base }}>
+        <View
+          style={{
+            width: 156,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: Spacing.xs,
+          }}
+        >
           {pieData.length > 0 ? (
             <PieChart
               data={pieData}
               donut
-              radius={70}
-              innerRadius={45}
+              radius={68}
+              innerRadius={44}
               innerCircleColor={isDark ? colors.surface : colors.card}
               centerLabelComponent={renderCenterLabel}
+              showGradient
+              focusOnPress
+              strokeColor={colors.card}
+              strokeWidth={2}
             />
           ) : (
-            <View style={{ width: 140, height: 140, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: colors.textTertiary }}>No spending data</Text>
+            <View
+              style={{
+                width: 136,
+                height: 136,
+                borderRadius: 68,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}
+            >
+              <Text style={{ color: colors.textTertiary, fontSize: Typography.fontSize.xs, textAlign: 'center' }}>
+                No spending data
+              </Text>
             </View>
           )}
         </View>
 
-        <View style={{ flex: 1, marginLeft: Spacing.base }}>
+        <View style={{ flex: 1, gap: 7 }}>
           {categoryTotals.slice(0, 6).map((cat, index) => {
             const category = getCategoryById(cat.category);
             return (
@@ -108,7 +141,8 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  marginBottom: 6,
+                  minHeight: 24,
+                  gap: Spacing.sm,
                 }}
               >
                 <View
@@ -117,13 +151,14 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
                     height: 8,
                     borderRadius: 4,
                     backgroundColor: chartColors[index % chartColors.length],
-                    marginRight: 8,
                   }}
                 />
                 <Text
+                  numberOfLines={1}
                   style={{
                     flex: 1,
                     fontSize: Typography.fontSize.xs,
+                    lineHeight: 16,
                     fontFamily: Typography.fontFamily.medium,
                     color: colors.textPrimary,
                   }}
@@ -133,8 +168,11 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
                 <Text
                   style={{
                     fontSize: Typography.fontSize.xs,
+                    lineHeight: 16,
                     fontFamily: Typography.fontFamily.semiBold,
                     color: colors.textSecondary,
+                    textAlign: 'right',
+                    minWidth: 34,
                   }}
                 >
                   {Math.round(cat.percentage)}%
@@ -149,20 +187,26 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
+          alignSelf: 'flex-start',
+          minHeight: 36,
+          paddingHorizontal: Spacing.md,
+          borderRadius: BorderRadius.full,
+          backgroundColor: colors.primaryBg,
           marginTop: Spacing.md,
-          gap: 4,
+          gap: 6,
         }}
       >
         <Text
           style={{
             fontSize: Typography.fontSize.sm,
+            lineHeight: 18,
             fontFamily: Typography.fontFamily.medium,
             color: colors.primary,
           }}
         >
           View budget details
         </Text>
-        <Text style={{ color: colors.primary }}>→</Text>
+        <MaterialCommunityIcons name="arrow-right" size={16} color={colors.primary} />
       </TouchableOpacity>
     </Card>
   );
