@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { recordAppNotification } from '@/services/notificationService';
+import { buildMonitoredAccount, formatMonitoredAccountLabel, identifyCaptureAccount } from '@/services/captureAccountIdentifier';
 import { buildCaptureDedupeKey, normalizeMerchantKey, parseCapturedSignal } from '@/services/captureParser';
 import { useAuthStore } from './useAuthStore';
 import { useBudgetStore } from './useBudgetStore';
@@ -13,6 +14,7 @@ import type {
   CaptureSignalInput,
   DraftTransaction,
   MerchantCategoryRule,
+  MonitoredAccount,
 } from '@/types/capture';
 
 const MAX_CAPTURED_SIGNALS = 100;
@@ -37,6 +39,7 @@ const SAFE_RAW_PAYLOAD_KEYS = new Set([
   'smsSubscriptionId',
   'smsSlot',
   'smsPhoneId',
+  'smsAccountHint',
 ]);
 
 const sanitizeCaptureRawPayload = (rawPayload?: Record<string, unknown>): Record<string, unknown> | undefined => {
@@ -57,6 +60,7 @@ interface CaptureState {
   signals: CapturedSignal[];
   drafts: DraftTransaction[];
   merchantRules: MerchantCategoryRule[];
+  monitoredAccounts: MonitoredAccount[];
   setAutoCaptureEnabled: (enabled: boolean) => void;
   setNotificationCaptureEnabled: (enabled: boolean) => void;
   setReviewNotificationsEnabled: (enabled: boolean) => void;
@@ -67,6 +71,15 @@ interface CaptureState {
   setSmsAccessStatus: (status: CaptureSettings['smsAccessStatus']) => void;
   disableAutoCapture: () => void;
   clearSmsResearchData: () => void;
+  discoverSmsAccounts: (inputs: CaptureSignalInput[]) => {
+    discoveredCount: number;
+    pendingCount: number;
+    approvedCount: number;
+    declinedCount: number;
+  };
+  isSignalAccountApproved: (input: CaptureSignalInput) => boolean;
+  approveMonitoredAccount: (accountId: string) => void;
+  declineMonitoredAccount: (accountId: string) => void;
   ingestSignal: (input: CaptureSignalInput) => CaptureIngestionResult;
   confirmDraft: (draftId: string, category: string) => boolean;
   ignoreDraft: (draftId: string) => void;
@@ -124,6 +137,7 @@ export const useCaptureStore = create<CaptureState>()(
       signals: [],
       drafts: [],
       merchantRules: [],
+      monitoredAccounts: [],
 
       setAutoCaptureEnabled: (enabled) =>
         set((state) => ({ settings: { ...state.settings, autoCaptureEnabled: enabled } })),
@@ -187,6 +201,92 @@ export const useCaptureStore = create<CaptureState>()(
           drafts: state.drafts.filter(
             (draft) => draft.captureSource !== 'sms' || draft.status === 'confirmed'
           ),
+          monitoredAccounts: state.monitoredAccounts.filter((account) => account.status === 'approved'),
+        })),
+
+      discoverSmsAccounts: (inputs) => {
+        const now = new Date().toISOString();
+        const identities = inputs.map(identifyCaptureAccount).filter((item): item is NonNullable<typeof item> => Boolean(item));
+        const uniqueIdentities = identities.filter(
+          (identity, index, list) => list.findIndex((item) => item.id === identity.id) === index
+        );
+
+        if (uniqueIdentities.length === 0) {
+          return { discoveredCount: 0, pendingCount: 0, approvedCount: 0, declinedCount: 0 };
+        }
+
+        let nextAccounts = get().monitoredAccounts;
+        const newPendingAccounts: MonitoredAccount[] = [];
+
+        uniqueIdentities.forEach((identity) => {
+          const existing = nextAccounts.find((account) => account.id === identity.id);
+          if (existing) {
+            nextAccounts = nextAccounts.map((account) =>
+              account.id === identity.id
+                ? {
+                    ...account,
+                    bankLabel: identity.bankLabel,
+                    accountHint: identity.accountHint ?? account.accountHint,
+                    sender: identity.sender ?? account.sender,
+                    sampleCount: account.sampleCount + identities.filter((item) => item.id === identity.id).length,
+                    lastSeenAt: now,
+                  }
+                : account
+            );
+            return;
+          }
+
+          const account = buildMonitoredAccount(identity, now);
+          newPendingAccounts.push(account);
+          nextAccounts = [account, ...nextAccounts];
+        });
+
+        set({ monitoredAccounts: nextAccounts });
+
+        newPendingAccounts.forEach((account) => {
+          void recordAppNotification({
+            title: 'Bank account found',
+            body: `${formatMonitoredAccountLabel(account)} needs approval before MoneyKai fetches SMS transactions.`,
+            type: 'transaction',
+            actionRoute: '/(tabs)/notifications',
+          });
+        });
+
+        const relevantAccounts = uniqueIdentities
+          .map((identity) => nextAccounts.find((account) => account.id === identity.id))
+          .filter((account): account is MonitoredAccount => Boolean(account));
+
+        return {
+          discoveredCount: relevantAccounts.length,
+          pendingCount: relevantAccounts.filter((account) => account.status === 'pending').length,
+          approvedCount: relevantAccounts.filter((account) => account.status === 'approved').length,
+          declinedCount: relevantAccounts.filter((account) => account.status === 'declined').length,
+        };
+      },
+
+      isSignalAccountApproved: (input) => {
+        if (input.source !== 'sms') return true;
+        const identity = identifyCaptureAccount(input);
+        if (!identity) return false;
+        return get().monitoredAccounts.some((account) => account.id === identity.id && account.status === 'approved');
+      },
+
+      approveMonitoredAccount: (accountId) =>
+        set((state) => ({
+          monitoredAccounts: state.monitoredAccounts.map((account) =>
+            account.id === accountId
+              ? { ...account, status: 'approved', approvedAt: new Date().toISOString(), declinedAt: undefined }
+              : account
+          ),
+        })),
+
+      declineMonitoredAccount: (accountId) =>
+        set((state) => ({
+          monitoredAccounts: state.monitoredAccounts.map((account) =>
+            account.id === accountId
+              ? { ...account, status: 'declined', declinedAt: new Date().toISOString(), approvedAt: undefined }
+              : account
+          ),
         })),
 
       ingestSignal: (input) => {
@@ -202,6 +302,19 @@ export const useCaptureStore = create<CaptureState>()(
 
         if (input.source === 'sms' && !settings.smsResearchModeEnabled) {
           return { status: 'ignored', reason: 'sms capture is research-only' };
+        }
+
+        if (input.source === 'sms') {
+          const discovery = get().discoverSmsAccounts([input]);
+          if (!get().isSignalAccountApproved(input)) {
+            return {
+              status: 'ignored',
+              reason:
+                discovery.declinedCount > 0
+                  ? 'sms bank account monitoring is declined'
+                  : 'sms bank account monitoring needs approval',
+            };
+          }
         }
 
         if (useBudgetStore.getState().settings.monthly_allowance <= 0) {
@@ -344,6 +457,7 @@ export const useCaptureStore = create<CaptureState>()(
         signals: state.signals,
         drafts: state.drafts,
         merchantRules: state.merchantRules,
+        monitoredAccounts: state.monitoredAccounts,
       }),
     }
   )

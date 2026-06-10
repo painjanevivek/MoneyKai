@@ -40,6 +40,7 @@ type NativeCaptureSignal = {
   smsSubscriptionId?: string;
   smsSlot?: string;
   smsPhoneId?: string;
+  smsAccountHint?: string;
 };
 
 type MoneyKaiNativeCaptureEvents = {
@@ -260,6 +261,7 @@ const mapNativeSignalToCaptureSignal = (event: NativeCaptureSignal): CaptureSign
       smsSubscriptionId: event.smsSubscriptionId,
       smsSlot: event.smsSlot,
       smsPhoneId: event.smsPhoneId,
+      smsAccountHint: event.smsAccountHint,
     },
   };
 };

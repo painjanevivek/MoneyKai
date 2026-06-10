@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
+import { formatMonitoredAccountLabel } from '@/services/captureAccountIdentifier';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, getCategoryById } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -26,18 +27,40 @@ export default function NotificationsScreen() {
   const notifications = useNotificationStore((s) => s.notifications);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
   const captureDrafts = useCaptureStore((s) => s.drafts);
+  const monitoredAccounts = useCaptureStore((s) => s.monitoredAccounts);
+  const approveMonitoredAccount = useCaptureStore((s) => s.approveMonitoredAccount);
+  const declineMonitoredAccount = useCaptureStore((s) => s.declineMonitoredAccount);
   const confirmDraft = useCaptureStore((s) => s.confirmDraft);
   const ignoreDraft = useCaptureStore((s) => s.ignoreDraft);
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null);
   const [selectedCategoryByDraft, setSelectedCategoryByDraft] = useState<Record<string, string>>({});
   const pendingDrafts = useMemo(() => captureDrafts.filter((draft) => draft.status === 'pending'), [captureDrafts]);
-  const hasContent = pendingDrafts.length > 0 || (notificationsEnabled && notifications.length > 0);
+  const pendingAccounts = useMemo(
+    () => monitoredAccounts.filter((account) => account.status === 'pending'),
+    [monitoredAccounts]
+  );
+  const hasContent = pendingAccounts.length > 0 || pendingDrafts.length > 0 || (notificationsEnabled && notifications.length > 0);
   const headerSubtitle = useMemo(() => {
+    if (pendingAccounts.length > 0) {
+      return `${pendingAccounts.length} bank account${pendingAccounts.length === 1 ? '' : 's'} waiting for monitoring approval`;
+    }
     if (pendingDrafts.length > 0) {
       return `${pendingDrafts.length} captured draft${pendingDrafts.length === 1 ? '' : 's'} waiting for review`;
     }
     return notificationsEnabled ? 'Recent activity and alerts' : 'Notifications are disabled';
-  }, [notificationsEnabled, pendingDrafts.length]);
+  }, [notificationsEnabled, pendingAccounts.length, pendingDrafts.length]);
+
+  const promptAccountMonitoring = (accountId: string, accountLabel: string) => {
+    Alert.alert(
+      'Monitor bank account?',
+      `Fetch transactions from ${accountLabel}?`,
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Decline', style: 'destructive', onPress: () => declineMonitoredAccount(accountId) },
+        { text: 'Monitor', onPress: () => approveMonitoredAccount(accountId) },
+      ]
+    );
+  };
 
   useEffect(() => {
     markAllRead();
@@ -69,6 +92,101 @@ export default function NotificationsScreen() {
           contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }}
           showsVerticalScrollIndicator={false}
         >
+          {pendingAccounts.length > 0 ? (
+            <View style={{ marginBottom: Spacing.lg }}>
+              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
+                Bank Accounts Found
+              </Text>
+              {pendingAccounts.map((account) => {
+                const accountLabel = formatMonitoredAccountLabel(account);
+
+                return (
+                <TouchableOpacity
+                  key={account.id}
+                  activeOpacity={0.94}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Review monitoring for ${accountLabel}`}
+                  onPress={() => promptAccountMonitoring(account.id, accountLabel)}
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: BorderRadius.lg,
+                    padding: Spacing.base,
+                    marginBottom: Spacing.md,
+                    borderWidth: 1,
+                    borderColor: colors.borderLight,
+                    ...Shadows.sm,
+                    shadowColor: colors.shadowColor,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' }}>
+                    <View
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: BorderRadius.sm,
+                        backgroundColor: colors.surface,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderWidth: 1,
+                        borderColor: colors.borderLight,
+                      }}
+                    >
+                      <MaterialCommunityIcons name="bank-outline" size={20} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                        {accountLabel}
+                      </Text>
+                      <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 18, marginTop: 2 }}>
+                        {account.sampleCount} recent SMS found
+                      </Text>
+                      <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, marginTop: 3 }}>
+                        Fetch transactions from this account?
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
+                    <TouchableOpacity
+                      activeOpacity={0.84}
+                      onPress={() => declineMonitoredAccount(account.id)}
+                      style={{
+                        flex: 1,
+                        minHeight: 44,
+                        borderRadius: BorderRadius.md,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.emergencyBg,
+                        borderWidth: 1,
+                        borderColor: `${colors.emergency}44`,
+                      }}
+                    >
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.emergency }}>
+                        Decline
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.84}
+                      onPress={() => approveMonitoredAccount(account.id)}
+                      style={{
+                        flex: 1,
+                        minHeight: 44,
+                        borderRadius: BorderRadius.md,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: colors.primary,
+                      }}
+                    >
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
+                        Monitor
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
+
           {pendingDrafts.length > 0 ? (
             <View style={{ marginBottom: Spacing.lg }}>
               <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>

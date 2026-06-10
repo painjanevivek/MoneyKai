@@ -344,6 +344,9 @@ class MoneyKaiNativeCaptureModule : Module() {
               .put("captureOrigin", "android_sms_inbox_import")
               .put("rawBodyStored", "false")
 
+            MoneyKaiSmsFilters.extractAccountHint(body)?.let { value ->
+              signal.put("smsAccountHint", value)
+            }
             it.getStringOrNull(idIndex)?.let { value ->
               signal.put("smsMessageId", value.take(MAX_SMS_META_LENGTH))
             }

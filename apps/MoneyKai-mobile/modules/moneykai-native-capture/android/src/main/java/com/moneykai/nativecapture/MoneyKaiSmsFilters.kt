@@ -109,6 +109,16 @@ object MoneyKaiSmsFilters {
       .replace(Regex("""\b\d{8,}\b"""), "[number]")
       .take(MAX_SMS_FIELD_LENGTH)
 
+  fun extractAccountHint(value: String): String? {
+    val accountPattern = Regex("""\b(?:a/c|account|acct)\s*(?:no\.?|number)?\s*(?:ending\s*)?(?:x{1,}|xx)?\s*(\d{3,6})\b""", RegexOption.IGNORE_CASE)
+    val compactPattern = Regex("""\b(?:x{1,}|xx)(\d{3,6})\b""", RegexOption.IGNORE_CASE)
+    val accountDigits = accountPattern.find(value)?.groupValues?.getOrNull(1)
+      ?: compactPattern.find(value)?.groupValues?.getOrNull(1)
+      ?: return null
+
+    return "ending ${accountDigits.takeLast(4)}"
+  }
+
   fun toIsoUtc(timestamp: Long): String {
     val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
     formatter.timeZone = TimeZone.getTimeZone("UTC")

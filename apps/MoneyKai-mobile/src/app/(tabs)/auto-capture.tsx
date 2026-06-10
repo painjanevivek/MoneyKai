@@ -330,8 +330,18 @@ export default function AutoCaptureScreen() {
         return;
       }
 
+      if (summary.status === 'needs_account_approval') {
+        Alert.alert(
+          'Bank accounts found',
+          `Found ${summary.pendingAccountApprovalCount} bank account${summary.pendingAccountApprovalCount === 1 ? '' : 's'} that need approval before MoneyKai fetches transactions. Review them in Notifications.`
+        );
+        return;
+      }
+
       const details = [
         `Scanned ${summary.scannedCount} recent SMS.`,
+        summary.approvedAccountCount > 0 ? `${summary.approvedAccountCount} monitored accounts checked.` : undefined,
+        summary.declinedAccountCount > 0 ? `${summary.declinedAccountCount} declined accounts skipped.` : undefined,
         summary.confirmedCount > 0 ? `Added ${summary.confirmedCount} transactions.` : undefined,
         summary.pendingReviewCount > 0 ? `${summary.pendingReviewCount} need review.` : undefined,
         summary.duplicateCount > 0 ? `${summary.duplicateCount} duplicates skipped.` : undefined,

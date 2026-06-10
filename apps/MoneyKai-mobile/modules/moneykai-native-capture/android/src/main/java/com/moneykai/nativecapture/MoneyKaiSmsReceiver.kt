@@ -30,6 +30,7 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
         putString("receivedAt", MoneyKaiSmsFilters.toIsoUtc(receivedAt))
         putString("captureOrigin", "android_sms_receiver")
         putString("rawBodyStored", "false")
+        MoneyKaiSmsFilters.extractAccountHint(body)?.let { putString("smsAccountHint", it) }
         putString("smsSubscriptionId", readIntentExtra(intent, "subscription"))
         putString("smsSlot", readIntentExtra(intent, "slot"))
         putString("smsPhoneId", readIntentExtra(intent, "phone"))

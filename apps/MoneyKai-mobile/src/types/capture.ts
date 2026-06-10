@@ -18,6 +18,8 @@ export type CaptureSourceStatus = 'enabled' | 'disabled' | 'needs_android_access
 
 export type CapturePermissionState = 'unknown' | 'unsupported' | 'not_requested' | 'granted' | 'denied';
 
+export type MonitoredAccountStatus = 'pending' | 'approved' | 'declined';
+
 export interface CaptureParseExplanation {
   matchedAmount?: string;
   matchedAmountPattern?: string;
@@ -39,6 +41,21 @@ export interface CaptureSignalInput {
   sourceApp?: string;
   receivedAt?: string;
   rawPayload?: Record<string, unknown>;
+}
+
+export interface MonitoredAccount {
+  id: string;
+  source: 'sms';
+  bankKey: string;
+  bankLabel: string;
+  accountHint?: string;
+  sender?: string;
+  status: MonitoredAccountStatus;
+  sampleCount: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  approvedAt?: string;
+  declinedAt?: string;
 }
 
 export interface CapturedSignal {

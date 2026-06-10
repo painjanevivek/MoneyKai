@@ -5,10 +5,14 @@ import { useCaptureStore } from '@/stores/useCaptureStore';
 import type { CaptureIngestionResult, CaptureSignalInput } from '@/types/capture';
 
 export interface SmsInboxImportSummary {
-  status: 'imported' | 'permission_denied' | 'unsupported' | 'error' | 'ignored';
+  status: 'imported' | 'needs_account_approval' | 'permission_denied' | 'unsupported' | 'error' | 'ignored';
   scannedCount: number;
   nativeImportedCount: number;
   nativeIgnoredCount: number;
+  discoveredAccountCount: number;
+  pendingAccountApprovalCount: number;
+  approvedAccountCount: number;
+  declinedAccountCount: number;
   draftedCount: number;
   confirmedCount: number;
   duplicateCount: number;
@@ -65,6 +69,10 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
       scannedCount: 0,
       nativeImportedCount: 0,
       nativeIgnoredCount: 0,
+      discoveredAccountCount: 0,
+      pendingAccountApprovalCount: 0,
+      approvedAccountCount: 0,
+      declinedAccountCount: 0,
       draftedCount: 0,
       confirmedCount: 0,
       duplicateCount: 0,
@@ -80,6 +88,10 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
       scannedCount: 0,
       nativeImportedCount: 0,
       nativeIgnoredCount: 0,
+      discoveredAccountCount: 0,
+      pendingAccountApprovalCount: 0,
+      approvedAccountCount: 0,
+      declinedAccountCount: 0,
       draftedCount: 0,
       confirmedCount: 0,
       duplicateCount: 0,
@@ -95,6 +107,10 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
     scannedCount: nativeResult.scannedCount,
     nativeImportedCount: nativeResult.importedCount,
     nativeIgnoredCount: nativeResult.ignoredCount,
+    discoveredAccountCount: 0,
+    pendingAccountApprovalCount: 0,
+    approvedAccountCount: 0,
+    declinedAccountCount: 0,
     draftedCount: 0,
     confirmedCount: 0,
     duplicateCount: 0,
@@ -107,7 +123,22 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
     return summary;
   }
 
-  nativeResult.signals.forEach((signal) => {
+  const captureStore = useCaptureStore.getState();
+  const accountDiscovery = captureStore.discoverSmsAccounts(nativeResult.signals);
+  summary.discoveredAccountCount = accountDiscovery.discoveredCount;
+  summary.pendingAccountApprovalCount = accountDiscovery.pendingCount;
+  summary.approvedAccountCount = accountDiscovery.approvedCount;
+  summary.declinedAccountCount = accountDiscovery.declinedCount;
+
+  if (accountDiscovery.pendingCount > 0 && accountDiscovery.approvedCount === 0) {
+    return {
+      ...summary,
+      status: 'needs_account_approval',
+      message: 'Approve the found bank accounts in Notifications before importing their SMS transactions.',
+    };
+  }
+
+  nativeResult.signals.filter((signal) => captureStore.isSignalAccountApproved(signal)).forEach((signal) => {
     const result = ingestCapturedTransactionSignal(signal);
 
     if (result.status === 'duplicate') {
@@ -125,10 +156,10 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
     }
 
     summary.draftedCount += 1;
-    const captureStore = useCaptureStore.getState();
-    const draft = captureStore.drafts.find((item) => item.id === result.draftId);
+    const latestCaptureStore = useCaptureStore.getState();
+    const draft = latestCaptureStore.drafts.find((item) => item.id === result.draftId);
 
-    if (draft?.category && captureStore.confirmDraft(draft.id, draft.category)) {
+    if (draft?.category && latestCaptureStore.confirmDraft(draft.id, draft.category)) {
       summary.confirmedCount += 1;
     } else {
       summary.pendingReviewCount += 1;

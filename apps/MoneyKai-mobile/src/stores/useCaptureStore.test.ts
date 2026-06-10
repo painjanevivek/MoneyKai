@@ -64,6 +64,7 @@ const resetCaptureStore = () => {
     signals: [],
     drafts: [],
     merchantRules: [],
+    monitoredAccounts: [],
   });
 };
 
@@ -158,13 +159,17 @@ describe('useCaptureStore production safety controls', () => {
       },
     }));
 
-    const result = useCaptureStore.getState().ingestSignal({
+    const input = {
       source: 'sms',
       sender: 'HDFCBK',
       body: 'Rs 321.00 debited from account for UPI payment to SMS TEST CAFE. UPI Ref 555566667777.',
       receivedAt: '2026-06-09T10:00:00.000Z',
       rawPayload: { body: 'should not be used by the manual import path' },
-    });
+    } as const;
+    useCaptureStore.getState().discoverSmsAccounts([input]);
+    useCaptureStore.getState().approveMonitoredAccount('sms:hdfcbk:sender');
+
+    const result = useCaptureStore.getState().ingestSignal(input);
 
     expect(result.status).toBe('drafted');
     expect(useCaptureStore.getState().drafts).toEqual([
@@ -178,6 +183,55 @@ describe('useCaptureStore production safety controls', () => {
       expect.objectContaining({
         source: 'sms',
         body: expect.not.stringContaining('555566667777'),
+      }),
+    ]);
+  });
+
+  it('requires SMS bank account approval before creating SMS drafts', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+        smsResearchModeEnabled: true,
+      },
+    }));
+
+    const input = {
+      source: 'sms' as const,
+      sender: 'AX-HDFCBK',
+      body: 'A/c XX4321 debited by Rs 321.00 for UPI payment to ACCOUNT APPROVAL TEST. UPI Ref 555566667777.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+      rawPayload: {
+        smsAccountHint: 'ending 4321',
+      },
+    };
+
+    const blocked = useCaptureStore.getState().ingestSignal(input);
+
+    expect(blocked).toEqual({ status: 'ignored', reason: 'sms bank account monitoring needs approval' });
+    expect(useCaptureStore.getState().drafts).toHaveLength(0);
+    expect(useCaptureStore.getState().monitoredAccounts).toEqual([
+      expect.objectContaining({
+        id: 'sms:hdfcbk:ending4321',
+        status: 'pending',
+        accountHint: 'ending 4321',
+      }),
+    ]);
+    expect(mocks.recordAppNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Bank account found',
+        actionRoute: '/(tabs)/notifications',
+      })
+    );
+
+    useCaptureStore.getState().approveMonitoredAccount('sms:hdfcbk:ending4321');
+    const drafted = useCaptureStore.getState().ingestSignal(input);
+
+    expect(drafted.status).toBe('drafted');
+    expect(useCaptureStore.getState().drafts).toEqual([
+      expect.objectContaining({
+        captureSource: 'sms',
+        sourceApp: 'AX-HDFCBK',
       }),
     ]);
   });
@@ -217,7 +271,7 @@ describe('useCaptureStore production safety controls', () => {
     }));
 
     const rawBody = 'Rs 321.00 debited from account for UPI payment to RAW PAYLOAD TEST. UPI Ref 555566667777.';
-    const result = useCaptureStore.getState().ingestSignal({
+    const input = {
       source: 'sms',
       sender: 'AXISBK',
       body: rawBody,
@@ -231,7 +285,11 @@ describe('useCaptureStore production safety controls', () => {
         smsSlot: '1',
         smsPhoneId: '1',
       },
-    });
+    } as const;
+    useCaptureStore.getState().discoverSmsAccounts([input]);
+    useCaptureStore.getState().approveMonitoredAccount('sms:axisbk:sender');
+
+    const result = useCaptureStore.getState().ingestSignal(input);
 
     expect(result.status).toBe('drafted');
     expect(useCaptureStore.getState().signals[0]).toEqual(
@@ -343,12 +401,16 @@ describe('useCaptureStore production safety controls', () => {
     useCaptureStore.getState().acceptSmsResearchExplainer();
     expect(useCaptureStore.getState().settings.smsResearchExplainerAcceptedAt).toBeDefined();
 
-    const smsDraft = useCaptureStore.getState().ingestSignal({
+    const smsInput = {
       source: 'sms',
       sender: 'HDFCBK',
       body: 'Rs 321.00 debited from account for UPI payment to SMS CLEAR TEST. UPI Ref 555566667777.',
       receivedAt: '2026-06-09T10:00:00.000Z',
-    });
+    } as const;
+    useCaptureStore.getState().discoverSmsAccounts([smsInput]);
+    useCaptureStore.getState().approveMonitoredAccount('sms:hdfcbk:sender');
+
+    const smsDraft = useCaptureStore.getState().ingestSignal(smsInput);
     const notificationDraft = useCaptureStore.getState().ingestSignal({
       source: 'notification',
       sourceApp: 'HDFC Bank',
