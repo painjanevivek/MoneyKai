@@ -9,54 +9,79 @@ const readJson = <T>(path: string): T =>
   JSON.parse(readFileSync(join(process.cwd(), path), 'utf8')) as T;
 
 describe('SMS research build policy config', () => {
-  it('keeps SMS research disabled for preview and production EAS builds', () => {
+  it('keeps release SMS research manual and native SMS access development-only', () => {
     const eas = readJson<{
       build: Record<string, { env?: Record<string, string> }>;
     }>('eas.json');
 
     expect(eas.build.development.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
-    expect(eas.build.preview.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('false');
-    expect(eas.build.production.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('false');
+    expect(eas.build.development.env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('true');
+    expect(eas.build.preview.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
+    expect(eas.build.preview.env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('false');
+    expect(eas.build.production.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
+    expect(eas.build.production.env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('false');
   });
 
-  it('does not request restricted SMS permissions in app config', () => {
+  it('blocks restricted SMS permissions in release app config', () => {
     const appConfig = readJson<{
       expo: {
         android?: {
           permissions?: string[];
+          blockedPermissions?: string[];
         };
       };
     }>('app.json');
 
     const permissions = appConfig.expo.android?.permissions ?? [];
+    const blockedPermissions = appConfig.expo.android?.blockedPermissions ?? [];
     expect(permissions).not.toContain('android.permission.READ_SMS');
     expect(permissions).not.toContain('android.permission.RECEIVE_SMS');
     expect(permissions).not.toContain('android.permission.RECEIVE_MMS');
     expect(permissions).not.toContain('android.permission.RECEIVE_WAP_PUSH');
     expect(permissions).not.toContain('android.permission.SEND_SMS');
     expect(permissions).not.toContain('android.permission.WRITE_SMS');
+    expect(blockedPermissions).toContain('android.permission.READ_SMS');
+    expect(blockedPermissions).toContain('android.permission.RECEIVE_SMS');
+    expect(blockedPermissions).toContain('android.permission.RECEIVE_MMS');
+    expect(blockedPermissions).toContain('android.permission.RECEIVE_WAP_PUSH');
+    expect(blockedPermissions).toContain('android.permission.SEND_SMS');
+    expect(blockedPermissions).toContain('android.permission.WRITE_SMS');
   });
 
-  it('loads the SMS research manifest plugin only when the development build flag is enabled', () => {
-    const previousValue = process.env.EXPO_PUBLIC_SMS_RESEARCH_BUILD;
+  it('loads the SMS research manifest plugin only for development native SMS builds', () => {
+    const previousNativeValue = process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD;
+    const previousProfileValue = process.env.EAS_BUILD_PROFILE;
     const configPath = join(process.cwd(), 'app.config.js');
     const configModulePath = requireConfig.resolve(configPath);
 
     try {
       delete requireConfig.cache[configModulePath];
-      process.env.EXPO_PUBLIC_SMS_RESEARCH_BUILD = 'false';
+      process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = 'false';
+      process.env.EAS_BUILD_PROFILE = 'production';
       const productionConfig = requireConfig(configPath) as { plugins?: unknown[] };
       expect(JSON.stringify(productionConfig.plugins)).not.toContain('withMoneyKaiSmsResearch');
 
       delete requireConfig.cache[configModulePath];
-      process.env.EXPO_PUBLIC_SMS_RESEARCH_BUILD = 'true';
+      process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = 'true';
+      process.env.EAS_BUILD_PROFILE = 'preview';
+      const previewConfig = requireConfig(configPath) as { plugins?: unknown[] };
+      expect(JSON.stringify(previewConfig.plugins)).not.toContain('withMoneyKaiSmsResearch');
+
+      delete requireConfig.cache[configModulePath];
+      process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = 'true';
+      process.env.EAS_BUILD_PROFILE = 'development';
       const researchConfig = requireConfig(configPath) as { plugins?: unknown[] };
       expect(JSON.stringify(researchConfig.plugins)).toContain('withMoneyKaiSmsResearch');
     } finally {
-      if (previousValue === undefined) {
-        delete process.env.EXPO_PUBLIC_SMS_RESEARCH_BUILD;
+      if (previousNativeValue === undefined) {
+        delete process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD;
       } else {
-        process.env.EXPO_PUBLIC_SMS_RESEARCH_BUILD = previousValue;
+        process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = previousNativeValue;
+      }
+      if (previousProfileValue === undefined) {
+        delete process.env.EAS_BUILD_PROFILE;
+      } else {
+        process.env.EAS_BUILD_PROFILE = previousProfileValue;
       }
       delete requireConfig.cache[configModulePath];
     }

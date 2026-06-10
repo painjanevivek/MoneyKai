@@ -12,6 +12,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '../../constants/theme';
 
@@ -46,10 +47,13 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   presentation = 'bottom',
 }) => {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isSideSheet = presentation === 'side';
   const sideSheetWidth = Math.min(width * 0.86, 380);
   const sideSheetHiddenOffset = -sideSheetWidth - 24;
+  const sideSheetTopOffset = isSideSheet ? insets.top + Spacing.xs : 0;
+  const sideSheetHeight = Math.max(320, height - sideSheetTopOffset);
   const [translateY] = useState(() => new Animated.Value(24));
   const [translateX] = useState(() => new Animated.Value(-400));
   const closeButtonRef = useRef<any>(null);
@@ -184,15 +188,16 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
           style={[
             {
               width: isSideSheet ? sideSheetWidth : undefined,
-              height: isSideSheet ? '100%' : undefined,
-              maxHeight: isSideSheet ? '100%' : maxHeight,
+              height: isSideSheet ? sideSheetHeight : undefined,
+              maxHeight: isSideSheet ? sideSheetHeight : maxHeight,
               backgroundColor: colors.card,
               borderTopLeftRadius: isSideSheet ? 0 : BorderRadius.xl,
               borderTopRightRadius: BorderRadius.xl,
               borderBottomRightRadius: isSideSheet ? BorderRadius.xl : 0,
               paddingHorizontal: Spacing.xl,
-              paddingTop: isSideSheet ? Spacing.xl : Spacing.sm,
-              paddingBottom: Spacing.xl,
+              paddingTop: isSideSheet ? Spacing.lg : Spacing.sm,
+              paddingBottom: Spacing.xl + (isSideSheet ? insets.bottom : 0),
+              marginTop: sideSheetTopOffset,
               ...Shadows.lg,
               shadowColor: colors.shadowColor,
               zIndex: 1,

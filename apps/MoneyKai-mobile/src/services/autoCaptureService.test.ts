@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ingestSmsCapture, importRecentSmsTransactionsFromInbox } from './autoCaptureService';
 
 const mocks = vi.hoisted(() => ({
+  isNativeSmsResearchBuildEnabled: vi.fn(),
   isSmsResearchBuildEnabled: vi.fn(),
   discoverRecentNativeSmsAccounts: vi.fn(),
   importRecentNativeSmsTransactions: vi.fn(),
@@ -9,11 +10,12 @@ const mocks = vi.hoisted(() => ({
   confirmDraft: vi.fn(),
   discoverSmsAccounts: vi.fn(),
   isSignalAccountApproved: vi.fn(),
-  drafts: [] as Array<{ id: string; category?: string }>,
+  drafts: [] as { id: string; category?: string }[],
   monthlyAllowance: 10000,
 }));
 
 vi.mock('@/config/environment', () => ({
+  isNativeSmsResearchBuildEnabled: mocks.isNativeSmsResearchBuildEnabled,
   isSmsResearchBuildEnabled: mocks.isSmsResearchBuildEnabled,
 }));
 
@@ -48,6 +50,7 @@ describe('autoCaptureService SMS research gate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.monthlyAllowance = 10000;
+    mocks.isNativeSmsResearchBuildEnabled.mockReturnValue(true);
     mocks.drafts = [];
     mocks.discoverSmsAccounts.mockReturnValue({
       discoveredCount: 0,
@@ -113,6 +116,7 @@ describe('autoCaptureService SMS research gate', () => {
 
   it('stops recent inbox SMS import until discovered accounts are approved', async () => {
     mocks.isSmsResearchBuildEnabled.mockReturnValue(true);
+    mocks.isNativeSmsResearchBuildEnabled.mockReturnValue(true);
     mocks.discoverRecentNativeSmsAccounts.mockResolvedValue({
       status: 'imported',
       discoveredCount: 1,
@@ -152,6 +156,7 @@ describe('autoCaptureService SMS research gate', () => {
 
   it('imports recent inbox SMS for approved accounts and confirms categorized drafts', async () => {
     mocks.isSmsResearchBuildEnabled.mockReturnValue(true);
+    mocks.isNativeSmsResearchBuildEnabled.mockReturnValue(true);
     mocks.discoverRecentNativeSmsAccounts.mockResolvedValue({
       status: 'imported',
       discoveredCount: 2,
@@ -228,5 +233,20 @@ describe('autoCaptureService SMS research gate', () => {
       approvedAccountIds: ['sms:hdfcbk:sender', 'sms:icicib:sender'],
     });
     expect(mocks.confirmDraft).toHaveBeenCalledWith('draft_1', 'shopping');
+  });
+
+  it('keeps recent inbox SMS import unavailable when native SMS research is disabled', async () => {
+    mocks.isSmsResearchBuildEnabled.mockReturnValue(true);
+    mocks.isNativeSmsResearchBuildEnabled.mockReturnValue(false);
+
+    const summary = await importRecentSmsTransactionsFromInbox();
+
+    expect(summary).toMatchObject({
+      status: 'ignored',
+      scannedCount: 0,
+      nativeImportedCount: 0,
+      message: 'SMS inbox import is only available in internal native SMS research builds.',
+    });
+    expect(mocks.discoverRecentNativeSmsAccounts).not.toHaveBeenCalled();
   });
 });

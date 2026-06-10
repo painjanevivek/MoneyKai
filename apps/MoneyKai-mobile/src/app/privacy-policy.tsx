@@ -50,7 +50,7 @@ export default function PrivacyPolicyScreen() {
             },
             {
               title: 'SMS Research Mode',
-              body: 'SMS Research Mode is experimental, disabled by default, and intended for internal research builds only. When available, MoneyKai may create reviewable drafts from supported transaction SMS signals, stores only sanitized parsed fields, and excludes raw SMS bodies and capture inbox data from cloud backups by default.',
+              body: 'SMS Research Mode is experimental, disabled by default, and creates reviewable drafts from SMS text you paste into MoneyKai. Release builds do not request restricted SMS permissions or read your SMS inbox. Internal native research builds may test direct SMS access separately, but that path is excluded from Play-safe release builds.',
             },
             {
               title: 'Sharing and selling',

@@ -47,11 +47,17 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
   }
 
   private fun readIntentExtra(intent: Intent, key: String): String? {
-    val value = intent.extras?.get(key) ?: return null
-    return value.toString().take(MAX_SMS_META_LENGTH)
+    if (!intent.hasExtra(key)) return null
+    val value = intent.getStringExtra(key)
+      ?: intent.getIntExtra(key, UNKNOWN_INT_EXTRA).takeIf { it != UNKNOWN_INT_EXTRA }?.toString()
+      ?: intent.getLongExtra(key, UNKNOWN_LONG_EXTRA).takeIf { it != UNKNOWN_LONG_EXTRA }?.toString()
+      ?: intent.getBooleanExtra(key, false).toString()
+    return value.take(MAX_SMS_META_LENGTH)
   }
 
   companion object {
     private const val MAX_SMS_META_LENGTH = 32
+    private const val UNKNOWN_INT_EXTRA = Int.MIN_VALUE
+    private const val UNKNOWN_LONG_EXTRA = Long.MIN_VALUE
   }
 }

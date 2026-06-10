@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, PanResponder } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -33,6 +33,7 @@ import {
 
 const MENU_ACTIONS = [
   { label: 'Notifications', icon: 'bell-outline', route: '/(tabs)/notifications' as const },
+  { label: 'Transaction Capture', icon: 'text-box-check-outline', route: '/(tabs)/auto-capture' as const },
   { label: 'Notes', icon: 'note-text-outline', route: '/(tabs)/notes' as const },
   { label: 'Groups', icon: 'account-group-outline', route: '/(tabs)/groups' as const },
   { label: 'Settings', icon: 'cog-outline', route: '/(tabs)/settings' as const },
@@ -55,6 +56,25 @@ export default function DashboardScreen() {
   const [selectedMonthKey, setSelectedMonthKey] = useState(() => months[months.length - 1]?.key ?? getMonthKey(new Date()));
   const [showMonthMenu, setShowMonthMenu] = useState(false);
   const [showMenuSheet, setShowMenuSheet] = useState(false);
+  const openMenuFromSwipe = React.useCallback(() => {
+    setShowMenuSheet(true);
+  }, []);
+  const homeMenuPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (event, gestureState) => {
+          const startedNearLeftEdge = event.nativeEvent.pageX <= 72;
+          const isRightSwipe = gestureState.dx > 18 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.4;
+          return startedNearLeftEdge && isRightSwipe && !showMenuSheet && !showMonthMenu;
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx > 72 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.2) {
+            openMenuFromSwipe();
+          }
+        },
+      }),
+    [openMenuFromSwipe, showMenuSheet, showMonthMenu]
+  );
 
   const tourCompletedForUser = user?.id ? (tourCompletedByUserId[user.id] ?? tourCompleted) : false;
   const showTour = Boolean(user?.id && !isHydratingSession && !tourCompletedForUser);
@@ -158,7 +178,7 @@ export default function DashboardScreen() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']} {...homeMenuPanResponder.panHandlers}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: Spacing['2xl'] }}

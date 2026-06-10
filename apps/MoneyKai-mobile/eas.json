@@ -8,7 +8,9 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_SMS_RESEARCH_BUILD": "true"
+        "EXPO_PUBLIC_DEV_CLIENT_BUILD": "true",
+        "EXPO_PUBLIC_SMS_RESEARCH_BUILD": "true",
+        "EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD": "true"
       },
       "android": {
         "gradleCommand": ":app:assembleDebug"
@@ -17,7 +19,20 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_SMS_RESEARCH_BUILD": "false"
+        "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
+        "EXPO_PUBLIC_SMS_RESEARCH_BUILD": "true",
+        "EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD": "false"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "sms-research-local": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
+        "EXPO_PUBLIC_SMS_RESEARCH_BUILD": "true",
+        "EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD": "true"
       },
       "android": {
         "buildType": "apk"
@@ -26,7 +41,9 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_SMS_RESEARCH_BUILD": "false"
+        "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
+        "EXPO_PUBLIC_SMS_RESEARCH_BUILD": "true",
+        "EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD": "false"
       },
       "android": {
         "buildType": "app-bundle"

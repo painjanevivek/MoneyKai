@@ -28,6 +28,12 @@ const TOUR_STEPS: TourStep[] = [
     hint: 'This is where your history grows.',
   },
   {
+    icon: 'text-box-check-outline',
+    title: 'Review Transaction Capture drafts',
+    body: 'Auto Capture is optional. When you enable Android notification access, MoneyKai creates reviewable drafts from supported transaction alerts instead of adding transactions automatically.',
+    hint: 'Review drafts before they affect your budget.',
+  },
+  {
     icon: 'account-group-outline',
     title: 'Track shared expenses in Groups',
     body: 'Rooms, trips, and shared bills belong in Groups so you can split costs without messy calculations.',
@@ -42,7 +48,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     icon: 'cog-outline',
     title: 'Finish in Settings',
-    body: 'Monthly budget, reset controls, backups, privacy, and account actions all live in Settings when you need them.',
+    body: 'Monthly budget, backups, privacy, Android notification access, and account actions all live in Settings when you need them.',
     hint: 'Settings keeps the important controls together.',
   },
 ];

@@ -1,4 +1,4 @@
-import { isSmsResearchBuildEnabled } from '@/config/environment';
+import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
 import { discoverRecentNativeSmsAccounts, importRecentNativeSmsTransactions } from '@/services/nativeCaptureBridge';
 import { identifyCaptureAccount } from '@/services/captureAccountIdentifier';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -64,7 +64,7 @@ export const ingestSmsCapture = (params: {
 };
 
 export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxImportSummary> => {
-  if (!isSmsResearchBuildEnabled()) {
+  if (!isNativeSmsResearchBuildEnabled()) {
     return {
       status: 'ignored',
       scannedCount: 0,
@@ -79,7 +79,7 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
       duplicateCount: 0,
       pendingReviewCount: 0,
       parserIgnoredCount: 0,
-      message: 'sms research build is disabled',
+      message: 'SMS inbox import is only available in internal native SMS research builds.',
     };
   }
 

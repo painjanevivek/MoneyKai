@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, SectionList, Modal, TextInput, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { endOfDay, endOfWeek, format, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
 import { useTheme } from '@/hooks/useTheme';
 import { useTransactionStore } from '@/stores/useTransactionStore';
@@ -287,9 +288,42 @@ export default function TransactionsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Transactions</Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Manage your income and expenses</Text>
+      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Transactions</Text>
+          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Manage your income and expenses</Text>
+        </View>
+        <TouchableOpacity
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Open transaction capture"
+          activeOpacity={0.82}
+          onPress={() => router.push('/(tabs)/auto-capture' as never)}
+          style={{
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: Spacing.md,
+            paddingVertical: Spacing.sm,
+            borderRadius: BorderRadius.full,
+            backgroundColor: colors.primary,
+            borderWidth: 1,
+            borderColor: colors.primary,
+            ...Shadows.sm,
+            shadowColor: colors.shadowColor,
+          }}
+        >
+          <MaterialCommunityIcons name="text-box-check-outline" size={18} color={colors.textInverse} />
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+            style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}
+          >
+            Capture
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}>

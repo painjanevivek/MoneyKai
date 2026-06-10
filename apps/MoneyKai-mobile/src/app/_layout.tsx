@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
+import { captureDiagnosticEvent, captureException } from '@/services/diagnosticsService';
 import { AppLockGate } from '@/components/security/AppLockGate';
 import { AutoBackupCoordinator } from '@/components/backup/AutoBackupCoordinator';
 import { BudgetResetCoordinator } from '@/components/dashboard/BudgetResetCoordinator';
@@ -48,6 +49,14 @@ class AppErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[AppErrorBoundary] Unhandled render error:', error, info);
+    captureException(error, {
+      scope: 'app.errorBoundary',
+      message: 'Unhandled React render error',
+      severity: 'fatal',
+      metadata: {
+        componentStack: info.componentStack,
+      },
+    });
   }
 
   handleRetry = () => this.setState({ hasError: false, error: null });
@@ -121,6 +130,11 @@ export default function RootLayout() {
       }
 
       hydrateSession().catch((e) => {
+        captureException(e, {
+          scope: 'app.hydrateSession',
+          message: 'Session hydration failed',
+          severity: 'warning',
+        });
         if (__DEV__) console.warn('[MoneyKai] hydrateSession error:', e);
       });
     }
@@ -140,6 +154,12 @@ export default function RootLayout() {
     void initializeNotificationChannel();
     const uninstall = installNotificationListeners((route) => {
       if (route) {
+        captureDiagnosticEvent({
+          scope: 'notifications.responseRoute',
+          message: 'Notification response route opened',
+          severity: 'info',
+          metadata: { route },
+        });
         router.push(route as any);
       }
     });

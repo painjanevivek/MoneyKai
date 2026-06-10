@@ -2,7 +2,7 @@
 
 This file tracks the implementation phases for the MoneyKai mobile app going forward.
 
-Current focus: **Phase 3 production-safety baseline implemented; Android manual validation pending**
+Current focus: **Phase 5 release readiness; Play-safe manual SMS research enabled in release, native SMS inbox access remains internal-only**
 
 ## Phase 1: Android Native Validation
 
@@ -346,7 +346,7 @@ Goal: design SMS capture so it cannot accidentally ship in production.
 
 Completion criteria: SMS research can be tested without creating Play Store production risk.
 
-Status: implemented as a research-only architecture guard. `smsResearchModeEnabled` remains disabled by default and separate from the Auto Capture master and notification source toggles. `ingestSmsCapture()` now refuses SMS signals unless `isSmsResearchBuildEnabled()` returns true, and the environment guard only allows that when `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true` in a dev runtime. `eas.json` explicitly enables the research flag only for the internal development profile and disables it for preview and production. Production app config still declares no restricted SMS permissions. Repeatable tests cover the SMS research ingestion gate, EAS profile flag split, and absence of restricted SMS permissions in `app.json`.
+Status: implemented as a release-safe architecture guard. `smsResearchModeEnabled` remains disabled by default and separate from the Auto Capture master and notification source toggles. `ingestSmsCapture()` accepts user-provided SMS text only when `SMS Research Mode` is enabled, and release builds expose that manual paste path without requesting restricted SMS permissions. Native SMS receiver/inbox access is controlled separately by `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=true` and is excluded from preview and production. Production app config blocks restricted SMS permissions. Repeatable tests cover manual SMS research availability, native SMS import gating, EAS profile flag split, and absence of restricted SMS permissions in release config.
 
 ### Phase 4C: SMS Ingestion Strategy Spike
 
@@ -373,16 +373,16 @@ Strategy notes:
 Goal: validate SMS parsing value without requesting restricted Android SMS permissions.
 
 - [x] Add an internal research-only paste/import entry point.
-- [x] Keep production and preview builds free of SMS import UI and SMS permissions.
+- [x] Keep production and preview builds free of restricted SMS permissions.
 - [x] Require `SMS Research Mode` as a kill switch before pasted SMS can be imported.
 - [x] Route pasted SMS through the existing capture pipeline as `source: 'sms'`.
 - [x] Do not auto-confirm imported SMS transactions.
 - [x] Store only sanitized capture fields and discard raw pasted text after parsing.
 - [x] Cover the manual SMS import path with repeatable tests.
 
-Completion criteria: internal builds can create reviewable SMS drafts from pasted messages without adding Android SMS permissions or storing raw SMS payloads.
+Completion criteria: release builds can create reviewable SMS drafts from pasted messages without adding Android SMS permissions or storing raw SMS payloads.
 
-Status: implemented. The Auto Capture review screen now exposes a dev/research-only `Paste SMS` action when `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`. The action remains blocked unless `SMS Research Mode` is enabled in Settings, preserving a clear kill switch. Pasted SMS text is passed through `ingestSmsCapture()` without raw payload forwarding, creates only reviewable drafts, and uses the existing `SMS` source badge and sanitized parse-explanation model. Production and preview builds keep the SMS research flag off and still request no restricted SMS permissions.
+Status: implemented. The Auto Capture review screen exposes a release-safe `Paste SMS` action when `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`. The action remains blocked unless `SMS Research Mode` is enabled in Settings, preserving a clear kill switch. Pasted SMS text is passed through `ingestSmsCapture()` without raw payload forwarding, creates only reviewable drafts, and uses the existing `SMS` source badge and sanitized parse-explanation model. Preview and production builds enable the manual SMS research UI while still requesting no restricted SMS permissions.
 
 ### Phase 4D: Dev-Only Native SMS Prototype
 
@@ -397,7 +397,7 @@ Goal: build a contained prototype only if Phase 4A and 4C allow it.
 
 Completion criteria: SMS can create reviewable research drafts in dev builds without affecting production builds.
 
-Status: implemented as a dev-only native prototype. `app.config.js` preserves the existing Expo config but loads `withMoneyKaiSmsResearch` only when `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`; production and preview builds therefore keep `app.json` free of restricted SMS permissions and do not register the SMS receiver. The Android receiver handles only new `SMS_RECEIVED` events in research builds, requires the native capture master switch plus the SMS source switch, performs conservative native filtering for financial wording while dropping OTP/promotional/failed/noise messages, sanitizes SMS sender/body fields before queuing, and emits through the existing capture event path as `source: 'sms'`. The JS coordinator now sets notification and SMS native source switches independently, while the store still requires `SMS Research Mode` before creating reviewable SMS drafts.
+Status: implemented as a dev-only native prototype. `app.config.js` preserves the existing Expo config but loads `withMoneyKaiSmsResearch` only when `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=true` outside preview and production. Release builds therefore keep restricted SMS permissions blocked and do not register the SMS receiver. The Android receiver handles only new `SMS_RECEIVED` events in native research builds, requires the native capture master switch plus the SMS source switch, performs conservative native filtering for financial wording while dropping OTP/promotional/failed/noise messages, sanitizes SMS sender/body fields before queuing, and emits through the existing capture event path as `source: 'sms'`. The JS coordinator now enables native SMS only for native research builds, while the store still requires `SMS Research Mode` before creating reviewable SMS drafts.
 
 ### Phase 4E: SMS Parser And Noise Handling
 
@@ -424,7 +424,7 @@ Goal: make SMS research transparent and reversible.
 
 Completion criteria: users can understand, disable, and clear SMS research data safely.
 
-Status: implemented. Settings now requires an SMS-specific explainer before enabling `SMS Research Mode`, records the acceptance timestamp, and keeps SMS research disabled by default outside internal builds. Internal builds expose quick `Disable SMS Research` and `Clear SMS Research Data` controls that stop new SMS ingestion and remove pending or ignored SMS research drafts without touching notification drafts or confirmed transactions. Cloud backup copy now states that capture inbox data and raw SMS bodies are excluded by default, the Privacy Policy includes SMS Research Mode, and automated tests cover consent tracking, SMS-only clearing, config gating, and backup exclusion.
+Status: implemented. Settings requires an SMS-specific explainer before enabling `SMS Research Mode`, records the acceptance timestamp, and keeps SMS research disabled by default. Release builds expose manual SMS paste research without SMS permissions; native SMS access remains internal-only. `Disable SMS Research` and `Clear SMS Research Data` controls stop new SMS research ingestion and remove pending or ignored SMS research drafts without touching notification drafts or confirmed transactions. Cloud backup copy states that capture inbox data and raw SMS bodies are excluded by default, the Privacy Policy includes SMS Research Mode, and automated tests cover consent tracking, SMS-only clearing, config gating, and backup exclusion.
 
 ### Phase 4G: Device And Policy Validation
 
@@ -453,7 +453,7 @@ Goal: decide whether SMS should remain research-only, be removed, or move toward
 
 Completion criteria: SMS has a clear final path: abandoned, research-only, or production candidate with approval requirements.
 
-Status: completed with final path `Research-only`. SMS capture remains excluded from preview and production builds because policy risk is high, physical-device validation is incomplete, and Play Console/legal/privacy/Data Safety review has not been completed. The dev-only native prototype can remain available for internal research behind `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`, while production continues to rely on safer alternatives such as notification capture and manual/import workflows. The production decision is documented in `docs/sms-production-decision.md`.
+Status: completed with final path `Release manual research, native SMS development-only`. Manual SMS Research Mode is available in preview and production without restricted SMS permissions, using user-provided pasted SMS text only. Native SMS receiver/inbox access remains excluded from preview and production because policy risk is high, physical-device validation is incomplete, and Play Console/legal/privacy/Data Safety review for SMS permissions has not been completed. The native prototype can remain available for internal research behind `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=true`, while production relies on notification capture plus no-permission manual SMS paste. The production decision is documented in `docs/sms-production-decision.md`.
 
 ## Phase 5: Release Readiness
 
@@ -463,14 +463,16 @@ Once native capture is stable, move toward an APK/internal release with onboardi
 
 Goal: create a reliable internal Android release path.
 
-- [ ] Confirm `eas.json` has development, preview APK, and production AAB profiles.
-- [ ] Build a development APK for native-module validation.
-- [ ] Build a preview/internal APK for broader tester distribution.
-- [ ] Confirm app version, package name, app icon, adaptive icon, splash screen, and app metadata are release-ready.
-- [ ] Confirm production builds do not include research-only SMS permissions or dev-only diagnostics.
-- [ ] Document exact build commands for dev APK, preview APK, and production AAB.
+- [x] Confirm `eas.json` has development, preview APK, and production AAB profiles.
+- [x] Build a development APK for native-module validation.
+- [x] Build a preview/internal APK for broader tester distribution.
+- [x] Confirm app version, package name, app icon, adaptive icon, splash screen, and app metadata are release-ready for internal testing.
+- [x] Confirm production builds do not include research-only SMS permissions or dev-only diagnostics.
+- [x] Document exact build commands for dev APK, preview APK, and production AAB.
 
 Completion criteria: MoneyKai can produce a repeatable internal APK build that installs and launches on tester devices.
+
+Status: completed locally for internal build setup. `eas.json` contains a development profile for local native validation, a preview APK profile, a production Android App Bundle profile, and a separate `sms-research-local` internal APK profile for full native SMS research. Preview and production enable no-permission manual SMS research through `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true` while keeping native SMS permissions/receiver disabled through `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=false`. The `sms-research-local` profile enables `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=true` and is not Play Store-safe. Release autolinking excludes `expo-dev-client`, `expo-dev-launcher`, and `expo-dev-menu` outside development builds. A production-safe Android prebuild does not include the SMS receiver in the generated app manifest, and the installed release package has no SMS receiver, no restricted SMS permissions, and no dev-client/dev-menu components. Current artifacts are in `artifacts/phase5a/`: `moneykai-phase5-debug.apk`, `moneykai-phase5-release-no-devclient-arm64.apk`, `moneykai-phase5-release-no-devclient-arm64.aab`, and `moneykai-phase5-sms-research-local-arm64.apk`. The Play-safe release APK and the SMS Research local APK both installed over ADB and launched `com.moneykai.mobile/.MainActivity` on the connected Android device. The SMS Research local APK package inspection confirmed `MoneyKaiSmsReceiver`, `READ_SMS`, and `RECEIVE_SMS`, and Android granted both SMS permissions for local testing. Validation passed with `npm.cmd run mobile:typecheck`, `npm.cmd run mobile:lint`, `npm.cmd run mobile:test:capture`, `npx.cmd expo-modules-autolinking verify --platform android`, `:app:assembleRelease`, and `:app:bundleRelease`. Remaining Play Store blocker: generated local release signing still uses the debug keystore, so a true Play-upload-ready AAB requires EAS-managed Android credentials or a project upload keystore wired into release signing.
 
 ### Phase 5B: Multi-Device Android Validation
 
@@ -478,39 +480,45 @@ Goal: verify Auto Capture behaves across Android versions and vendors.
 
 - [ ] Test on at least one Android 10/11 device if available.
 - [ ] Test on at least one Android 12/13 device if available.
-- [ ] Test on at least one Android 14/15+ device if available.
+- [x] Test on at least one Android 14/15+ device if available.
 - [ ] Test common Indian OEMs where possible: Samsung, Xiaomi/Redmi, OnePlus, Vivo/Oppo, Realme, Motorola.
-- [ ] Verify notification-listener permission flow on each tested device.
+- [x] Verify notification-listener permission flow on each tested device.
 - [ ] Verify background delivery, app restart, reboot behavior, battery saver behavior, and permission revocation behavior.
-- [ ] Record known OEM-specific issues and workarounds.
+- [x] Record known OEM-specific issues and workarounds.
 
 Completion criteria: internal APK is tested on enough Android environments to identify major vendor/version failures.
+
+Status: partially validated on one physical device and documented in `docs/phase5-device-validation.md`. The Phase 5A release APK installs and launches on a Nothing AIN065 running Android 16/API 36, survives force-stop, foreground launch, Home/background, and relaunch without fatal crash logs, appears in Android Notification Access settings, and is listed as an enabled/live notification listener after notification access is granted on the device. The installed package declares the notification listener service and does not include SMS permissions, the SMS receiver, or dev-client/dev-menu components. Remaining work: background capture validation on this device, reboot/battery-saver checks, Android 10/11, Android 12/13, and the target OEM matrix.
 
 ### Phase 5C: Auto Capture Onboarding
 
 Goal: help users understand and safely enable Auto Capture.
 
-- [ ] Add onboarding entry for Auto Capture after first login or first Settings visit.
-- [ ] Explain that Auto Capture creates reviewable drafts, not automatic confirmed transactions.
-- [ ] Explain that Android notification access is optional and can be disabled.
-- [ ] Link onboarding to Auto Capture settings and privacy details.
-- [ ] Add empty-state guidance in Auto Capture explaining how drafts appear.
-- [ ] Avoid enabling native capture silently without user action.
+- [x] Add onboarding entry for Auto Capture after first login or first Settings visit.
+- [x] Explain that Auto Capture creates reviewable drafts, not automatic confirmed transactions.
+- [x] Explain that Android notification access is optional and can be disabled.
+- [x] Link onboarding to Auto Capture settings and privacy details.
+- [x] Add empty-state guidance in Auto Capture explaining how drafts appear.
+- [x] Avoid enabling native capture silently without user action.
 
 Completion criteria: first-time users understand Auto Capture before enabling Android notification access.
+
+Status: completed. Settings explains that Android notification access is optional, the notification explainer states that supported alerts become reviewable drafts instead of automatic transactions, and the first-login tour includes a dedicated Transaction Capture step. The Auto Capture screen has empty-state guidance plus a contextual setup card that links directly to Capture Settings and Privacy Details when notification capture is not fully ready. Native capture is never enabled silently; users must use the Transaction Capture toggle and Android notification-access flow.
 
 ### Phase 5D: Crash And Native Failure Reporting
 
 Goal: make native capture failures diagnosable before internal release.
 
-- [ ] Add a crash/error reporting solution, such as Sentry or another Expo-compatible service.
-- [ ] Capture JS errors from the existing app error boundary.
-- [ ] Capture native-module failures from status checks, listener startup, listener shutdown, and settings open actions.
-- [ ] Add safe diagnostic events for capture state changes without logging raw notification content.
-- [ ] Add user-safe fallback messages when native capture is unavailable.
-- [ ] Document how to inspect crash reports during internal testing.
+- [ ] Add a remote crash/error reporting solution, such as Sentry, Bugsnag, Crashlytics, or a backend diagnostics endpoint.
+- [x] Capture JS errors from the existing app error boundary.
+- [x] Capture native-module failures from status checks, listener startup, listener shutdown, and settings open actions.
+- [x] Add safe diagnostic events for capture state changes without logging raw notification content.
+- [x] Add user-safe fallback messages when native capture is unavailable.
+- [x] Document how to inspect diagnostics during internal testing.
 
 Completion criteria: native capture failures are visible to the team without exposing sensitive user notification content.
+
+Status: partially complete. `src/services/diagnosticsService.ts` now records local diagnostic events, keeps the most recent 50 events in memory, supports a future remote event sink, and redacts SMS/notification content metadata. The app error boundary reports fatal React render failures. The native capture bridge now captures status, listener lifecycle, settings-open, queue-clear, SMS permission, SMS discovery/import, and signal-handler failures while returning user-safe fallback values. Diagnostics are documented in `docs/phase5-diagnostics.md`, and `npm.cmd run mobile:test:capture` includes redaction coverage. Remaining blocker: configure and verify a team-visible remote reporting provider or backend endpoint before closing Phase 5D.
 
 ### Phase 5E: Play Store-Safe Disclosure Package
 
@@ -529,15 +537,17 @@ Completion criteria: internal or closed-track release materials accurately descr
 
 Goal: ensure native capture does not break existing mobile app flows.
 
-- [ ] Run `npm.cmd run mobile:typecheck`.
-- [ ] Run `npm.cmd run mobile:lint`.
-- [ ] Run mobile web export/build.
-- [ ] Run Android native build.
+- [x] Run `npm.cmd run mobile:typecheck`.
+- [x] Run `npm.cmd run mobile:lint`.
+- [x] Run mobile web export/build.
+- [x] Run Android native build.
 - [ ] Test login, signup, sign out, profile edit, settings, app lock, notifications, backup/restore, transactions, budgets, groups, notes, savings, and Auto Capture.
 - [ ] Test offline/local-first behavior and restore behavior.
 - [ ] Confirm confirmed capture drafts become normal transactions and update budgets correctly.
 
 Completion criteria: mobile app core flows pass after native capture and safety work.
+
+Status: partially verified. Current clean checks pass for `npm.cmd run mobile:typecheck`, `npm.cmd run mobile:lint`, `npm.cmd run mobile:test:capture`, `npm.cmd run mobile:build`, and `npx.cmd expo-modules-autolinking verify --platform android`. Fresh Android release APK and AAB builds also pass from the current workspace, and the release APK installs and launches on the connected Android device. The wider signed-in regression matrix and offline/restore flow verification still need a structured pass on device.
 
 ### Phase 5G: Web Regression Pass
 
@@ -551,6 +561,8 @@ Goal: verify monorepo web app behavior remains stable.
 - [ ] Confirm web does not expose Android-only native capture controls.
 
 Completion criteria: web app passes build and smoke checks after mobile release work.
+
+Status: partially verified. `npm.cmd run web:typecheck`, `npm.cmd run web:lint`, and `npm.cmd run web:build` all pass from the current monorepo state, and the static export completes successfully into `dist`. Route-level manual smoke coverage is still pending, especially for logged-in paths and confirming the web app stays free of Android-only notification-access controls.
 
 ### Phase 5H: Internal Release Signoff
 

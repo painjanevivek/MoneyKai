@@ -68,7 +68,7 @@
     "web": "expo start --web",
     "lint": "expo lint --no-cache",
     "typecheck": "tsc --noEmit",
-    "test:capture": "vitest run src/services/captureParser.test.ts src/services/autoCaptureService.test.ts src/stores/useCaptureStore.test.ts src/config/smsPolicyConfig.test.ts"
+    "test:capture": "vitest run src/services/captureParser.test.ts src/services/autoCaptureService.test.ts src/services/diagnosticsService.test.ts src/stores/useCaptureStore.test.ts src/config/smsPolicyConfig.test.ts"
   },
   "engines": {
     "node": ">=22.13.0"

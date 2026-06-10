@@ -5,7 +5,7 @@ const FOOD_APP_PATTERNS = [/\bzomato\b/i, /\bswiggy\b/i];
 const QUICK_COMMERCE_PATTERNS = [/\bzepto\b/i, /\bblinkit\b/i, /\bbig\s*basket\b/i, /\bswiggy\s*instamart\b/i];
 const QUICK_COMMERCE_CATEGORY_IDS = new Set(['food', 'electronics', 'others']);
 
-const buildSearchText = (...values: Array<string | undefined>) => values.filter(Boolean).join(' ');
+const buildSearchText = (...values: (string | undefined)[]) => values.filter(Boolean).join(' ');
 
 export const getAutomaticExpenseCategory = (input: CaptureSignalInput, merchantKey?: string) => {
   const text = buildSearchText(input.title, input.body, input.sender, input.sourceApp, merchantKey);

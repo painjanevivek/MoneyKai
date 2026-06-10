@@ -1,5 +1,6 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
+import { captureDiagnosticEvent, captureException } from '@/services/diagnosticsService';
 import type { CaptureSignalInput } from '@/types/capture';
 
 export type NativeCapturePermissionStatus = 'unsupported' | 'not_requested' | 'granted' | 'denied';
@@ -54,6 +55,24 @@ type NativeCaptureSignal = {
   lastSeenAt?: string;
 };
 
+type NativeSmsAccountDiscoveryPayload = {
+  status?: NativeSmsAccountDiscoveryResult['status'];
+  discoveredCount?: number;
+  scannedCount?: number;
+  ignoredCount?: number;
+  accounts?: NativeCaptureSignal[];
+  message?: string;
+};
+
+type NativeSmsImportPayload = {
+  status?: NativeSmsImportResult['status'];
+  importedCount?: number;
+  scannedCount?: number;
+  ignoredCount?: number;
+  signals?: NativeCaptureSignal[];
+  message?: string;
+};
+
 type MoneyKaiNativeCaptureEvents = {
   onNotificationSignal: (event: NativeCaptureSignal) => void;
 };
@@ -85,12 +104,46 @@ const fallbackStatus: NativeCaptureStatus = {
   nativeModuleAvailable: false,
 };
 
+const captureNativeFailure = (
+  operation: string,
+  error: unknown,
+  metadata?: Record<string, unknown>,
+  severity: 'warning' | 'error' = 'error'
+) =>
+  captureException(error, {
+    scope: `nativeCapture.${operation}`,
+    message: `Native capture ${operation} failed`,
+    severity,
+    metadata,
+  });
+
+const parseNativeJson = <T extends object>(
+  operation: string,
+  rawResult: string,
+  fallback: T
+): T => {
+  try {
+    return JSON.parse(rawResult) as T;
+  } catch (error) {
+    captureNativeFailure(operation, error, { rawResultLength: rawResult.length });
+    return fallback;
+  }
+};
+
 export const getNativeCaptureStatus = async (): Promise<NativeCaptureStatus> => {
   if (!nativeCaptureModule?.getStatus) {
     return fallbackStatus;
   }
 
-  return nativeCaptureModule.getStatus();
+  try {
+    return nativeCaptureModule.getStatus();
+  } catch (error) {
+    captureNativeFailure('getStatus', error);
+    return {
+      ...fallbackStatus,
+      nativeModuleAvailable: true,
+    };
+  }
 };
 
 export const requestNativeSmsPermission = async (): Promise<NativeCapturePermissionStatus> => {
@@ -98,7 +151,13 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
     return 'unsupported';
   }
 
-  const currentStatus = nativeCaptureModule.getStatus();
+  let currentStatus: NativeCaptureStatus;
+  try {
+    currentStatus = nativeCaptureModule.getStatus();
+  } catch (error) {
+    captureNativeFailure('requestSmsPermission.status', error);
+    return 'unsupported';
+  }
   const inboxStatus = currentStatus.smsInboxAccess ?? 'unsupported';
   if (currentStatus.smsAccess === 'unsupported') {
     return currentStatus.smsAccess;
@@ -106,31 +165,45 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
 
   const receivePermission = PermissionsAndroid.PERMISSIONS.RECEIVE_SMS;
   const readPermission = PermissionsAndroid.PERMISSIONS.READ_SMS;
-  const receiveGranted = currentStatus.smsAccess === 'granted' || await PermissionsAndroid.check(receivePermission);
-  const readGranted = inboxStatus === 'granted' || await PermissionsAndroid.check(readPermission);
+  let receiveGranted = false;
+  let readGranted = false;
+  try {
+    receiveGranted = currentStatus.smsAccess === 'granted' || await PermissionsAndroid.check(receivePermission);
+    readGranted = inboxStatus === 'granted' || await PermissionsAndroid.check(readPermission);
+  } catch (error) {
+    captureNativeFailure('requestSmsPermission.check', error);
+    return 'denied';
+  }
 
   if (receiveGranted && readGranted) {
     return 'granted';
   }
 
-  const receiveResult = receiveGranted
-    ? PermissionsAndroid.RESULTS.GRANTED
-    : await PermissionsAndroid.request(receivePermission, {
-        title: 'Allow SMS Research Mode',
-        message:
-          'MoneyKai needs SMS receive access only in this internal research build to capture real bank transaction SMS.',
-        buttonPositive: 'Allow',
-        buttonNegative: 'Not now',
-      });
-  const readResult = readGranted
-    ? PermissionsAndroid.RESULTS.GRANTED
-    : await PermissionsAndroid.request(readPermission, {
-        title: 'Import Recent Bank SMS',
-        message:
-          'MoneyKai needs one-time SMS inbox access only in this internal research build to import the last 30 days of bank and payment transaction SMS.',
-        buttonPositive: 'Allow',
-        buttonNegative: 'Not now',
-      });
+  let receiveResult = PermissionsAndroid.RESULTS.DENIED;
+  let readResult = PermissionsAndroid.RESULTS.DENIED;
+  try {
+    receiveResult = receiveGranted
+      ? PermissionsAndroid.RESULTS.GRANTED
+      : await PermissionsAndroid.request(receivePermission, {
+          title: 'Allow SMS Research Mode',
+          message:
+            'MoneyKai needs SMS receive access only in this internal research build to capture real bank transaction SMS.',
+          buttonPositive: 'Allow',
+          buttonNegative: 'Not now',
+        });
+    readResult = readGranted
+      ? PermissionsAndroid.RESULTS.GRANTED
+      : await PermissionsAndroid.request(readPermission, {
+          title: 'Import Recent Bank SMS',
+          message:
+            'MoneyKai needs one-time SMS inbox access only in this internal research build to import the last 30 days of bank and payment transaction SMS.',
+          buttonPositive: 'Allow',
+          buttonNegative: 'Not now',
+        });
+  } catch (error) {
+    captureNativeFailure('requestSmsPermission.request', error);
+    return 'denied';
+  }
   const nextReceiveGranted = receiveResult === PermissionsAndroid.RESULTS.GRANTED;
   const nextReadGranted = readResult === PermissionsAndroid.RESULTS.GRANTED;
 
@@ -171,24 +244,21 @@ export const discoverRecentNativeSmsAccounts = async (params?: {
 
   const days = Math.min(31, Math.max(1, Math.round(params?.days ?? 30)));
   const maxMessages = Math.min(300, Math.max(1, Math.round(params?.maxMessages ?? 300)));
-  const rawResult = nativeCaptureModule.discoverRecentSmsAccounts(days, maxMessages);
-  const parsed = (() => {
-    try {
-      return JSON.parse(rawResult) as {
-        status?: NativeSmsAccountDiscoveryResult['status'];
-        discoveredCount?: number;
-        scannedCount?: number;
-        ignoredCount?: number;
-        accounts?: NativeCaptureSignal[];
-        message?: string;
-      };
-    } catch {
-      return {
-        status: 'error' as const,
-        message: 'The Android SMS account discovery response could not be parsed.',
-      };
+  let rawResult: string;
+  try {
+    rawResult = nativeCaptureModule.discoverRecentSmsAccounts(days, maxMessages);
+  } catch (error) {
+    captureNativeFailure('discoverRecentSmsAccounts', error, { days, maxMessages });
+    return emptySmsAccountDiscoveryResult('error', 'The Android SMS account discovery request failed.');
+  }
+  const parsed = parseNativeJson<NativeSmsAccountDiscoveryPayload>(
+    'discoverRecentSmsAccounts.parse',
+    rawResult,
+    {
+      status: 'error' as const,
+      message: 'The Android SMS account discovery response could not be parsed.',
     }
-  })();
+  );
 
   return {
     status: parsed.status ?? 'error',
@@ -214,24 +284,25 @@ export const importRecentNativeSmsTransactions = async (params?: {
   const days = Math.min(31, Math.max(1, Math.round(params?.days ?? 30)));
   const maxMessages = Math.min(300, Math.max(1, Math.round(params?.maxMessages ?? 300)));
   const approvedAccountIdsJson = JSON.stringify(params?.approvedAccountIds ?? []);
-  const rawResult = nativeCaptureModule.importRecentSmsTransactions(days, maxMessages, approvedAccountIdsJson);
-  const parsed = (() => {
-    try {
-      return JSON.parse(rawResult) as {
-        status?: NativeSmsImportResult['status'];
-        importedCount?: number;
-        scannedCount?: number;
-        ignoredCount?: number;
-        signals?: NativeCaptureSignal[];
-        message?: string;
-      };
-    } catch {
-      return {
-        status: 'error' as const,
-        message: 'The Android SMS import response could not be parsed.',
-      };
+  let rawResult: string;
+  try {
+    rawResult = nativeCaptureModule.importRecentSmsTransactions(days, maxMessages, approvedAccountIdsJson);
+  } catch (error) {
+    captureNativeFailure('importRecentSmsTransactions', error, {
+      days,
+      maxMessages,
+      approvedAccountCount: params?.approvedAccountIds?.length ?? 0,
+    });
+    return emptySmsImportResult('error', 'The Android SMS import request failed.');
+  }
+  const parsed = parseNativeJson<NativeSmsImportPayload>(
+    'importRecentSmsTransactions.parse',
+    rawResult,
+    {
+      status: 'error' as const,
+      message: 'The Android SMS import response could not be parsed.',
     }
-  })();
+  );
 
   return {
     status: parsed.status ?? 'error',
@@ -250,7 +321,12 @@ export const openNativeCaptureSettings = async () => {
     return false;
   }
 
-  return nativeCaptureModule.openNotificationListenerSettings();
+  try {
+    return nativeCaptureModule.openNotificationListenerSettings();
+  } catch (error) {
+    captureNativeFailure('openNotificationListenerSettings', error);
+    return false;
+  }
 };
 
 export const clearNativeCaptureQueue = async () => {
@@ -258,7 +334,12 @@ export const clearNativeCaptureQueue = async () => {
     return false;
   }
 
-  return nativeCaptureModule.clearPendingSignals();
+  try {
+    return nativeCaptureModule.clearPendingSignals();
+  } catch (error) {
+    captureNativeFailure('clearPendingSignals', error);
+    return false;
+  }
 };
 
 export const setNativeCaptureEnabled = async (enabled: boolean) => {
@@ -266,7 +347,12 @@ export const setNativeCaptureEnabled = async (enabled: boolean) => {
     return false;
   }
 
-  return nativeCaptureModule.setCaptureEnabled(enabled);
+  try {
+    return nativeCaptureModule.setCaptureEnabled(enabled);
+  } catch (error) {
+    captureNativeFailure('setCaptureEnabled', error, { enabled });
+    return false;
+  }
 };
 
 export const setNativeCaptureSourcesEnabled = async (params: {
@@ -274,7 +360,19 @@ export const setNativeCaptureSourcesEnabled = async (params: {
   smsEnabled: boolean;
 }) => {
   if (nativeCaptureModule?.setCaptureSourcesEnabled) {
-    return nativeCaptureModule.setCaptureSourcesEnabled(params.notificationEnabled, params.smsEnabled);
+    try {
+      const result = nativeCaptureModule.setCaptureSourcesEnabled(params.notificationEnabled, params.smsEnabled);
+      captureDiagnosticEvent({
+        scope: 'nativeCapture.setSources',
+        message: 'Native capture source state changed',
+        severity: 'info',
+        metadata: params,
+      });
+      return result;
+    } catch (error) {
+      captureNativeFailure('setCaptureSourcesEnabled', error, params);
+      return false;
+    }
   }
 
   return setNativeCaptureEnabled(params.notificationEnabled);
@@ -285,7 +383,12 @@ export const setNativeApprovedSmsAccounts = async (approvedAccountIds: string[])
     return false;
   }
 
-  return nativeCaptureModule.setApprovedSmsAccounts(JSON.stringify(approvedAccountIds));
+  try {
+    return nativeCaptureModule.setApprovedSmsAccounts(JSON.stringify(approvedAccountIds));
+  } catch (error) {
+    captureNativeFailure('setApprovedSmsAccounts', error, { approvedAccountCount: approvedAccountIds.length });
+    return false;
+  }
 };
 
 export const subscribeToNativeCaptureSignals = (
@@ -295,18 +398,56 @@ export const subscribeToNativeCaptureSignals = (
     return { remove: () => undefined };
   }
 
-  const subscription = nativeCaptureModule.addListener('onNotificationSignal', (event) => {
-    const signal = mapNativeSignalToCaptureSignal(event);
-    if (signal) {
-      handler(signal);
-    }
-  });
-  nativeCaptureModule.startListening?.();
+  let subscription: NativeCaptureSubscription;
+  try {
+    subscription = nativeCaptureModule.addListener('onNotificationSignal', (event) => {
+      try {
+        const signal = mapNativeSignalToCaptureSignal(event);
+        if (signal) {
+          handler(signal);
+        }
+      } catch (error) {
+        captureNativeFailure('signalHandler', error, {
+          source: event.source,
+          sourceApp: event.sourceApp,
+          privacyStatus: event.privacyStatus,
+          captureOrigin: event.captureOrigin,
+        });
+      }
+    });
+  } catch (error) {
+    captureNativeFailure('addListener', error);
+    return { remove: () => undefined };
+  }
+
+  try {
+    nativeCaptureModule.startListening?.();
+    captureDiagnosticEvent({
+      scope: 'nativeCapture.startListening',
+      message: 'Native capture listener started',
+      severity: 'info',
+    });
+  } catch (error) {
+    captureNativeFailure('startListening', error);
+  }
 
   return {
     remove: () => {
-      subscription.remove();
-      nativeCaptureModule.stopListening?.();
+      try {
+        subscription.remove();
+      } catch (error) {
+        captureNativeFailure('removeListener', error, undefined, 'warning');
+      }
+      try {
+        nativeCaptureModule.stopListening?.();
+        captureDiagnosticEvent({
+          scope: 'nativeCapture.stopListening',
+          message: 'Native capture listener stopped',
+          severity: 'info',
+        });
+      } catch (error) {
+        captureNativeFailure('stopListening', error);
+      }
     },
   };
 };

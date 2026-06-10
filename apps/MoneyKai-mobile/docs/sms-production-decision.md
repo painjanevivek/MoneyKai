@@ -1,20 +1,22 @@
 # SMS Production Decision
 
-Decision date: 2026-06-10
+Decision date: 2026-06-11
 
 ## Decision
 
-SMS capture remains research-only and must stay out of preview and production builds.
+SMS Research Mode can be present in preview and production only as a no-permission manual SMS research path. Native SMS receiver and inbox-read access remain development-only and must stay out of preview and production builds.
 
 MoneyKai should continue to prioritize safer alternatives:
 
 - Android notification capture for supported transaction alerts.
-- Manual SMS paste/import in internal research builds.
+- Manual SMS paste/import in release builds without SMS permissions.
 - Future structured imports such as bank exports or regulated Account Aggregator integrations.
 
 ## Rationale
 
 Google Play treats SMS permissions as high-risk or sensitive. SMS-based money management can be an eligible exception for budgeting apps, but it still requires Google Play review, declaration, clear user disclosure, strong data minimization, and compliance with broader user-data policies. MoneyKai has not completed real-device SMS validation, dual-SIM validation, permission revocation validation, legal/privacy review, Play Console declaration, or Data Safety review for SMS permissions.
+
+Manual SMS paste does not request `READ_SMS`, `RECEIVE_SMS`, `SEND_SMS`, or related restricted permissions. Users choose exactly which SMS text to paste, MoneyKai parses it into a reviewable draft, and raw pasted text is discarded after sanitized parsing.
 
 Policy source: https://support.google.com/googleplay/android-developer/answer/10208820
 
@@ -32,16 +34,17 @@ MoneyKai can reconsider SMS for production only after all of the following are c
 
 ## Current Guardrails
 
-- `EXPO_PUBLIC_SMS_RESEARCH_BUILD` is true only for the development EAS profile.
-- Preview and production EAS profiles set `EXPO_PUBLIC_SMS_RESEARCH_BUILD=false`.
-- `app.json` does not declare restricted SMS permissions.
-- `app.config.js` loads the SMS manifest plugin only when the research build flag is true.
+- `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true` enables the no-permission manual SMS research UI in preview and production.
+- `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=true` is reserved for internal native SMS research.
+- Preview and production EAS profiles set `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=false`.
+- `app.json` blocks restricted SMS permissions for release builds.
+- `app.config.js` loads the SMS manifest plugin only when native SMS research is enabled outside preview and production.
 - SMS Research Mode is disabled by default and requires explicit in-app consent.
 - SMS drafts are review-only and never auto-confirm transactions.
 - Capture inbox data and raw SMS bodies are excluded from cloud backup snapshots by default.
 
 ## Final Phase 4H Outcome
 
-Final path: `Research-only`.
+Final path: `Release manual research, native SMS development-only`.
 
-Production status: blocked until policy approval, device validation, privacy/legal review, and explicit release signoff are complete.
+Production status: no-permission manual SMS research can ship in release builds. Native SMS receiver or inbox-read production access remains blocked until policy approval, device validation, privacy/legal review, and explicit release signoff are complete.

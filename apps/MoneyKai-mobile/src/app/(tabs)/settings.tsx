@@ -29,7 +29,7 @@ import {
   setNativeCaptureSourcesEnabled,
   type NativeCaptureStatus,
 } from '@/services/nativeCaptureBridge';
-import { getStoreReviewUrl, isSmsResearchBuildEnabled } from '@/config/environment';
+import { getStoreReviewUrl, isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
 import type { CaptureSourceStatus } from '@/types/capture';
 
 interface SettingItemProps {
@@ -126,6 +126,7 @@ export default function SettingsScreen() {
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [nativeStatusBusy, setNativeStatusBusy] = useState(false);
   const smsResearchBuildEnabled = isSmsResearchBuildEnabled();
+  const nativeSmsResearchBuildEnabled = isNativeSmsResearchBuildEnabled();
 
   const switchTrack = {
     false: colors.border,
@@ -155,6 +156,7 @@ export default function SettingsScreen() {
   const smsSourceStatus = useMemo<CaptureSourceStatus>(() => {
     if (!smsResearchBuildEnabled) return 'unsupported';
     if (!captureSettings.autoCaptureEnabled || !captureSettings.smsResearchModeEnabled) return 'disabled';
+    if (!nativeSmsResearchBuildEnabled) return 'enabled';
     const smsReceiveAccess = nativeCaptureStatus?.smsAccess ?? captureSettings.smsAccessStatus ?? 'unknown';
     const smsInboxAccess = nativeCaptureStatus?.smsInboxAccess ?? captureSettings.smsAccessStatus ?? 'unknown';
     if (smsReceiveAccess !== 'granted' || smsInboxAccess !== 'granted') {
@@ -167,6 +169,7 @@ export default function SettingsScreen() {
     captureSettings.smsResearchModeEnabled,
     nativeCaptureStatus?.smsAccess,
     nativeCaptureStatus?.smsInboxAccess,
+    nativeSmsResearchBuildEnabled,
     smsResearchBuildEnabled,
   ]);
 
@@ -308,7 +311,10 @@ export default function SettingsScreen() {
       return;
     }
 
-    let smsCaptureEnabledForAlert = smsResearchBuildEnabled && captureSettings.smsResearchModeEnabled;
+    let smsCaptureEnabledForAlert =
+      smsResearchBuildEnabled &&
+      nativeSmsResearchBuildEnabled &&
+      captureSettings.smsResearchModeEnabled;
 
     if (smsCaptureEnabledForAlert) {
       const hasSmsAccess = await requestSmsAccessForResearch();
@@ -377,6 +383,15 @@ export default function SettingsScreen() {
   };
 
   const enableSmsResearchMode = async () => {
+    if (!nativeSmsResearchBuildEnabled) {
+      if (!captureSettings.autoCaptureEnabled) {
+        setAutoCaptureEnabled(true);
+      }
+      setSmsResearchModeEnabled(true);
+      disableNativeSmsCapture();
+      return;
+    }
+
     const smsReceiveAccess = nativeCaptureStatus?.smsAccess ?? captureSettings.smsAccessStatus ?? 'unknown';
     const smsInboxAccess = nativeCaptureStatus?.smsInboxAccess ?? captureSettings.smsAccessStatus ?? 'unknown';
     const hasSmsAccess =
@@ -509,7 +524,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={[]}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'] }} showsVerticalScrollIndicator={false}>
         <Card style={{ marginBottom: Spacing.lg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
@@ -693,7 +708,9 @@ export default function SettingsScreen() {
             title="SMS Research Mode"
             subtitle={
               smsResearchBuildEnabled
-                ? `${sourceStatusLabel[smsSourceStatus]} | Research-only real SMS validation`
+                ? nativeSmsResearchBuildEnabled
+                  ? `${sourceStatusLabel[smsSourceStatus]} | Internal native SMS validation`
+                  : `${sourceStatusLabel[smsSourceStatus]} | Paste SMS manually, no SMS permission`
                 : `${sourceStatusLabel[smsSourceStatus]} | Not available in production controls`
             }
             right={
@@ -976,7 +993,11 @@ export default function SettingsScreen() {
       <ModalSheet
         visible={showSmsResearchExplainer}
         title="SMS Research Mode"
-        subtitle="Experimental internal research. Use only if you understand the privacy and policy limits."
+        subtitle={
+          nativeSmsResearchBuildEnabled
+            ? 'Experimental internal research. Use only if you understand the privacy and policy limits.'
+            : 'Paste transaction SMS manually for review without granting SMS permissions.'
+        }
         onClose={() => setShowSmsResearchExplainer(false)}
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
@@ -1007,9 +1028,15 @@ export default function SettingsScreen() {
       >
         <View style={{ gap: Spacing.md }}>
           {[
-            'SMS access is experimental and disabled by default.',
-            'Production and preview builds do not expose SMS capture controls or request SMS permissions.',
-            'Android will ask for SMS permission before real incoming SMS delivery can be validated.',
+            nativeSmsResearchBuildEnabled
+              ? 'SMS access is experimental and disabled by default.'
+              : 'SMS Research Mode is disabled by default and uses manual paste in release builds.',
+            nativeSmsResearchBuildEnabled
+              ? 'Android will ask for SMS permission before real incoming SMS delivery can be validated.'
+              : 'Release builds do not request READ_SMS, RECEIVE_SMS, or other restricted SMS permissions.',
+            nativeSmsResearchBuildEnabled
+              ? 'Recent SMS inbox import is available only in internal native SMS research builds.'
+              : 'To use it, paste one bank or payment SMS into Transaction Capture and review the draft.',
             'SMS drafts are review-only and never become transactions until you confirm them.',
             'MoneyKai stores sanitized parsed fields, not raw SMS bodies, and cloud backups exclude capture inbox data by default.',
             'Use the SMS Research Mode toggle to turn SMS research off, or use Maintenance to clear SMS research data.',

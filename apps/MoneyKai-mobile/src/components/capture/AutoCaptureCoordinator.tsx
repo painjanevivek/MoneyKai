@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { isSmsResearchBuildEnabled } from '@/config/environment';
+import { isNativeSmsResearchBuildEnabled } from '@/config/environment';
 import { ingestCapturedTransactionSignal } from '@/services/autoCaptureService';
 import {
   setNativeApprovedSmsAccounts,
@@ -25,7 +25,7 @@ export function AutoCaptureCoordinator() {
   }, [approvedSmsAccountIds]);
 
   useEffect(() => {
-    const smsEnabled = isSmsResearchBuildEnabled() && smsResearchModeEnabled;
+    const smsEnabled = isNativeSmsResearchBuildEnabled() && smsResearchModeEnabled;
     const notificationEnabled = notificationCaptureEnabled;
 
     if (!autoCaptureEnabled || (!notificationEnabled && !smsEnabled)) {

@@ -93,27 +93,35 @@ const AddTabButton = ({
   borderColor: string;
   onPress: () => void;
 }) => (
-  <TouchableOpacity
-    activeOpacity={0.9}
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityLabel="Add transaction"
+  <View
     style={{
-      marginTop: -18,
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor,
-      borderWidth: 4,
-      borderColor,
-      ...Shadows.lg,
-      shadowColor: backgroundColor,
     }}
   >
-    <MaterialCommunityIcons name="plus" size={30} color={foregroundColor} />
-  </TouchableOpacity>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Add transaction"
+      style={{
+        marginTop: -18,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor,
+        borderWidth: 4,
+        borderColor,
+        ...Shadows.lg,
+        shadowColor: backgroundColor,
+      }}
+    >
+      <MaterialCommunityIcons name="plus" size={30} color={foregroundColor} />
+    </TouchableOpacity>
+  </View>
 );
 
 export default function TabLayout() {

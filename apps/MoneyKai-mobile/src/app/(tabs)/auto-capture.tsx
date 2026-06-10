@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, getCategoryById } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
-import { isSmsResearchBuildEnabled } from '@/config/environment';
+import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
 import { ingestSmsCapture, importRecentSmsTransactionsFromInbox } from '@/services/autoCaptureService';
 import { requestNativeSmsPermission } from '@/services/nativeCaptureBridge';
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -205,9 +205,11 @@ export default function AutoCaptureScreen() {
   const drafts = useCaptureStore((state) => state.drafts);
   const signals = useCaptureStore((state) => state.signals);
   const merchantRules = useCaptureStore((state) => state.merchantRules);
+  const captureSettings = useCaptureStore((state) => state.settings);
   const smsResearchModeEnabled = useCaptureStore((state) => state.settings.smsResearchModeEnabled);
   const monthlyAllowance = useBudgetStore((state) => state.settings.monthly_allowance);
   const smsResearchBuildEnabled = isSmsResearchBuildEnabled();
+  const nativeSmsResearchBuildEnabled = isNativeSmsResearchBuildEnabled();
   const [showSmsImport, setShowSmsImport] = useState(false);
   const [smsSender, setSmsSender] = useState('');
   const [smsBody, setSmsBody] = useState('');
@@ -227,7 +229,12 @@ export default function AutoCaptureScreen() {
   );
   const hasMonthlyBudget = monthlyAllowance > 0;
   const canPasteSms = smsResearchBuildEnabled && smsResearchModeEnabled && hasMonthlyBudget;
-  const canImportSmsInbox = canPasteSms && !isSmsInboxImporting;
+  const canImportSmsInbox = nativeSmsResearchBuildEnabled && canPasteSms && !isSmsInboxImporting;
+  const notificationCaptureReady =
+    captureSettings.autoCaptureEnabled &&
+    captureSettings.notificationCaptureEnabled &&
+    captureSettings.notificationAccessStatus === 'granted';
+  const showCaptureSetup = pendingDrafts.length === 0 && !notificationCaptureReady;
 
   const resetSmsImport = () => {
     setSmsSender('');
@@ -300,6 +307,11 @@ export default function AutoCaptureScreen() {
       return;
     }
 
+    if (!nativeSmsResearchBuildEnabled) {
+      Alert.alert('Manual SMS only', 'This release build is Play-safe and does not read your SMS inbox. Paste a transaction SMS here to create a reviewable draft.');
+      return;
+    }
+
     if (!smsResearchBuildEnabled || !smsResearchModeEnabled) {
       Alert.alert('SMS Research Mode is off', 'Enable SMS Research Mode in Settings before importing recent SMS transactions.');
       return;
@@ -362,7 +374,7 @@ export default function AutoCaptureScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={[]}>
       <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md, gap: Spacing.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md }}>
           <View style={{ flex: 1 }}>
@@ -375,31 +387,33 @@ export default function AutoCaptureScreen() {
           </View>
           {smsResearchBuildEnabled ? (
             <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <TouchableOpacity
-                accessible
-                accessibilityRole="button"
-                accessibilityLabel="Import recent SMS"
-                activeOpacity={0.78}
-                onPress={handleImportRecentSmsInbox}
-                disabled={isSmsInboxImporting}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: BorderRadius.md,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: canImportSmsInbox ? colors.primary : colors.surface,
-                  borderWidth: 1,
-                  borderColor: canImportSmsInbox ? colors.primary : colors.border,
-                  opacity: isSmsInboxImporting ? 0.7 : 1,
-                }}
-              >
-                <MaterialCommunityIcons
-                  name="message-processing-outline"
-                  size={20}
-                  color={canImportSmsInbox ? colors.textInverse : colors.textSecondary}
-                />
-              </TouchableOpacity>
+              {nativeSmsResearchBuildEnabled ? (
+                <TouchableOpacity
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel="Import recent SMS"
+                  activeOpacity={0.78}
+                  onPress={handleImportRecentSmsInbox}
+                  disabled={isSmsInboxImporting}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: BorderRadius.md,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: canImportSmsInbox ? colors.primary : colors.surface,
+                    borderWidth: 1,
+                    borderColor: canImportSmsInbox ? colors.primary : colors.border,
+                    opacity: isSmsInboxImporting ? 0.7 : 1,
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="message-processing-outline"
+                    size={20}
+                    color={canImportSmsInbox ? colors.textInverse : colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity
                 accessible
                 accessibilityRole="button"
@@ -460,6 +474,41 @@ export default function AutoCaptureScreen() {
           </Card>
         ) : null}
 
+        {showCaptureSetup ? (
+          <Card variant="outlined" borderRadius="md" padding="md" style={{ marginBottom: Spacing.md, backgroundColor: colors.surface }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm }}>
+              <MaterialCommunityIcons name="shield-check-outline" size={20} color={colors.primary} />
+              <View style={{ flex: 1, gap: Spacing.sm }}>
+                <View>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    Set up Transaction Capture
+                  </Text>
+                  <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18, marginTop: 3 }}>
+                    Turn it on from Settings, then review drafts here before anything reaches your budget.
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+                  <Button
+                    title="Capture Settings"
+                    icon="cog-outline"
+                    size="sm"
+                    onPress={() => router.push('/(tabs)/settings' as any)}
+                    style={{ flexGrow: 1 }}
+                  />
+                  <Button
+                    title="Privacy Details"
+                    icon="shield-lock-outline"
+                    size="sm"
+                    variant="outline"
+                    onPress={() => router.push('/privacy-policy' as any)}
+                    style={{ flexGrow: 1 }}
+                  />
+                </View>
+              </View>
+            </View>
+          </Card>
+        ) : null}
+
         {pendingDrafts.length === 0 ? (
           <EmptyState
             icon="check-circle-outline"
@@ -503,7 +552,7 @@ export default function AutoCaptureScreen() {
         <ModalSheet
           visible={showSmsImport}
           title="Paste SMS"
-          subtitle="Internal research import. MoneyKai creates reviewable drafts from pasted text and stores only sanitized capture fields."
+          subtitle="Play-safe SMS research. MoneyKai creates reviewable drafts from pasted text and stores only sanitized capture fields."
           onClose={() => {
             resetSmsImport();
             setShowSmsImport(false);
