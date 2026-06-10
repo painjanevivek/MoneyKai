@@ -1,5 +1,6 @@
 import { isSmsResearchBuildEnabled } from '@/config/environment';
-import { importRecentNativeSmsTransactions } from '@/services/nativeCaptureBridge';
+import { discoverRecentNativeSmsAccounts, importRecentNativeSmsTransactions } from '@/services/nativeCaptureBridge';
+import { identifyCaptureAccount } from '@/services/captureAccountIdentifier';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import type { CaptureIngestionResult, CaptureSignalInput } from '@/types/capture';
@@ -101,12 +102,12 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
     };
   }
 
-  const nativeResult = await importRecentNativeSmsTransactions({ days: 30, maxMessages: 300 });
+  const accountPreview = await discoverRecentNativeSmsAccounts({ days: 30, maxMessages: 300 });
   const summary: SmsInboxImportSummary = {
-    status: nativeResult.status,
-    scannedCount: nativeResult.scannedCount,
-    nativeImportedCount: nativeResult.importedCount,
-    nativeIgnoredCount: nativeResult.ignoredCount,
+    status: accountPreview.status,
+    scannedCount: accountPreview.scannedCount,
+    nativeImportedCount: 0,
+    nativeIgnoredCount: accountPreview.ignoredCount,
     discoveredAccountCount: 0,
     pendingAccountApprovalCount: 0,
     approvedAccountCount: 0,
@@ -116,26 +117,55 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
     duplicateCount: 0,
     pendingReviewCount: 0,
     parserIgnoredCount: 0,
-    message: nativeResult.message,
+    message: accountPreview.message,
   };
 
-  if (nativeResult.status !== 'imported') {
+  if (accountPreview.status !== 'imported') {
     return summary;
   }
 
   const captureStore = useCaptureStore.getState();
-  const accountDiscovery = captureStore.discoverSmsAccounts(nativeResult.signals);
+  const accountDiscovery = captureStore.discoverSmsAccounts(accountPreview.signals);
   summary.discoveredAccountCount = accountDiscovery.discoveredCount;
   summary.pendingAccountApprovalCount = accountDiscovery.pendingCount;
   summary.approvedAccountCount = accountDiscovery.approvedCount;
   summary.declinedAccountCount = accountDiscovery.declinedCount;
 
-  if (accountDiscovery.pendingCount > 0 && accountDiscovery.approvedCount === 0) {
+  if (accountDiscovery.pendingCount > 0) {
     return {
       ...summary,
       status: 'needs_account_approval',
       message: 'Approve the found bank accounts in Notifications before importing their SMS transactions.',
     };
+  }
+
+  const approvedAccountIds = accountPreview.signals
+    .filter((signal) => captureStore.isSignalAccountApproved(signal))
+    .map(identifyCaptureAccount)
+    .filter((identity): identity is NonNullable<ReturnType<typeof identifyCaptureAccount>> => Boolean(identity))
+    .map((identity) => identity.id);
+
+  if (approvedAccountIds.length === 0) {
+    return {
+      ...summary,
+      status: 'needs_account_approval',
+      message: 'Approve at least one bank account before importing SMS transactions.',
+    };
+  }
+
+  const nativeResult = await importRecentNativeSmsTransactions({
+    days: 30,
+    maxMessages: 300,
+    approvedAccountIds,
+  });
+  summary.status = nativeResult.status;
+  summary.scannedCount = nativeResult.scannedCount;
+  summary.nativeImportedCount = nativeResult.importedCount;
+  summary.nativeIgnoredCount = nativeResult.ignoredCount;
+  summary.message = nativeResult.message;
+
+  if (nativeResult.status !== 'imported') {
+    return summary;
   }
 
   nativeResult.signals.filter((signal) => captureStore.isSignalAccountApproved(signal)).forEach((signal) => {

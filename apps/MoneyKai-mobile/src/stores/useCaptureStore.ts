@@ -15,6 +15,7 @@ import { useTransactionStore } from './useTransactionStore';
 import type {
   CapturedSignal,
   CaptureIngestionResult,
+  CaptureParseResult,
   CaptureSettings,
   CaptureSignalInput,
   DraftTransaction,
@@ -58,6 +59,36 @@ const sanitizeCaptureRawPayload = (rawPayload?: Record<string, unknown>): Record
   }, {});
 
   return Object.keys(safePayload).length > 0 ? safePayload : undefined;
+};
+
+const isSourceFallbackMerchant = (parsed: CaptureParseResult, input: CaptureSignalInput) => {
+  const merchant = parsed.merchantLabel?.trim();
+  if (!merchant) return true;
+  return [input.sender, input.sourceApp, input.title].some((value) => value?.trim() === merchant);
+};
+
+const buildDraftDescription = (parsed: CaptureParseResult, input: CaptureSignalInput) => {
+  const merchant = parsed.merchantLabel?.trim();
+  const hasUsefulMerchant = Boolean(merchant && !isSourceFallbackMerchant(parsed, input));
+
+  if (parsed.type === 'income') {
+    const directionTerms = parsed.explanation.matchedDirectionTerms.map((term) => term.toLowerCase());
+    if (parsed.category === 'allowance' || directionTerms.includes('salary')) {
+      return hasUsefulMerchant ? `Salary from ${merchant}` : 'Salary deposit';
+    }
+    if (directionTerms.includes('cashback')) {
+      return hasUsefulMerchant ? `Cashback from ${merchant}` : 'Cashback received';
+    }
+    if (parsed.category === 'refund' || directionTerms.includes('refund')) {
+      return hasUsefulMerchant ? `Refund from ${merchant}` : 'Refund received';
+    }
+    if (parsed.category === 'freelance') {
+      return hasUsefulMerchant ? `Payment from ${merchant}` : 'Freelance payment';
+    }
+    return hasUsefulMerchant ? `Deposit from ${merchant}` : 'Bank deposit';
+  }
+
+  return merchant || input.sender || input.sourceApp || 'Captured transaction';
 };
 
 interface CaptureState {
@@ -377,7 +408,7 @@ export const useCaptureStore = create<CaptureState>()(
           type: parsed.type ?? 'expense',
           amount: parsed.amount,
           category: parsed.category,
-          description: parsed.merchantLabel ?? input.sender ?? input.sourceApp ?? 'Captured transaction',
+          description: buildDraftDescription(parsed, input),
           merchantKey: parsed.merchantKey,
           payment_method: parsed.paymentMethod ?? 'bank',
           captureAccountId: monitoredAccount?.id,

@@ -1,13 +1,28 @@
 import { useEffect } from 'react';
 import { isSmsResearchBuildEnabled } from '@/config/environment';
 import { ingestCapturedTransactionSignal } from '@/services/autoCaptureService';
-import { setNativeCaptureSourcesEnabled, subscribeToNativeCaptureSignals } from '@/services/nativeCaptureBridge';
+import {
+  setNativeApprovedSmsAccounts,
+  setNativeCaptureSourcesEnabled,
+  subscribeToNativeCaptureSignals,
+} from '@/services/nativeCaptureBridge';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 
 export function AutoCaptureCoordinator() {
   const autoCaptureEnabled = useCaptureStore((state) => state.settings.autoCaptureEnabled);
   const notificationCaptureEnabled = useCaptureStore((state) => state.settings.notificationCaptureEnabled);
   const smsResearchModeEnabled = useCaptureStore((state) => state.settings.smsResearchModeEnabled);
+  const approvedSmsAccountIds = useCaptureStore((state) =>
+    state.monitoredAccounts
+      .filter((account) => account.status === 'approved')
+      .map((account) => account.id)
+      .sort()
+      .join('|')
+  );
+
+  useEffect(() => {
+    void setNativeApprovedSmsAccounts(approvedSmsAccountIds ? approvedSmsAccountIds.split('|') : []);
+  }, [approvedSmsAccountIds]);
 
   useEffect(() => {
     const smsEnabled = isSmsResearchBuildEnabled() && smsResearchModeEnabled;

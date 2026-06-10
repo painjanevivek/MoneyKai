@@ -132,7 +132,7 @@ describe('real bank SMS variants', () => {
     expect(parsed.amount).toBeUndefined();
   });
 
-  it('keeps cheque withdrawal SMS as a reviewable expense draft', () => {
+  it('ignores cheque withdrawal SMS instead of drafting a transaction', () => {
     const parsed = parseCapturedSignal({
       source: 'sms',
       sender: 'JK-CBSSBI-S',
@@ -140,9 +140,20 @@ describe('real bank SMS variants', () => {
       receivedAt: '2026-05-16T10:00:00.000Z',
     });
 
-    expect(parsed.parseStatus).toBe('review');
-    expect(parsed.type).toBe('expense');
-    expect(parsed.amount).toBeCloseTo(72466.72);
+    expect(parsed.parseStatus).toBe('ignore');
+    expect(parsed.ignoreReason?.toLowerCase()).toContain('cheque');
+  });
+
+  it('ignores GST and tax messages instead of drafting a transaction', () => {
+    const parsed = parseCapturedSignal({
+      source: 'sms',
+      sender: 'AD-HDFCBK',
+      body: 'GST invoice generated for INR 1,180.00 including CGST and SGST for your recent payment.',
+      receivedAt: '2026-06-05T10:00:00.000Z',
+    });
+
+    expect(parsed.parseStatus).toBe('ignore');
+    expect(parsed.ignoreReason?.toLowerCase()).toContain('gst');
   });
 
   it('reads SBI UPI debit amounts even when the SMS omits Rs or INR', () => {

@@ -73,6 +73,8 @@ const IGNORE_RULES: IgnoreRule[] = [
   { reason: 'bank feedback or survey message', patterns: [/\bshare your experience\b/i, /\bfeedback\b/i, /\bthank you for the transaction done today\b/i] },
   { reason: 'credential or password reminder', patterns: [/\bpassword\b/i, /\bcredential\b/i] },
   { reason: 'deposit instrument setup message', patterns: [/\btdr\/stdr\b/i] },
+  { reason: 'cheque payment message', patterns: [/\bcheque\b/i, /\bchq\b/i] },
+  { reason: 'GST or tax message', patterns: [/\bgst(?:in)?\b/i, /\bcgst\b/i, /\bsgst\b/i, /\bigst\b/i, /\btax invoice\b/i] },
 ];
 
 const PAYMENT_KEYWORDS: { id: PaymentMethodId; label: string; terms: RegExp[] }[] = [

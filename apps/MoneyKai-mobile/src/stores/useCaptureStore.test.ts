@@ -238,6 +238,32 @@ describe('useCaptureStore production safety controls', () => {
     ]);
   });
 
+  it('uses short generated descriptions for bank deposits', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+      },
+    }));
+
+    const result = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'Axis Bank',
+      title: 'Credit Alert',
+      body: 'INR 25,000.00 credited to A/c XX8888 from ACME PAYROLL as salary. UTR 333344445555.',
+      receivedAt: '2026-06-09T09:40:00.000Z',
+    });
+
+    expect(result.status).toBe('drafted');
+    expect(useCaptureStore.getState().drafts[0]).toEqual(
+      expect.objectContaining({
+        type: 'income',
+        category: 'allowance',
+        description: 'Salary from ACME PAYROLL',
+      })
+    );
+  });
+
   it('keeps compatible approved SMS accounts approved for future sender variants', () => {
     useCaptureStore.setState((state) => ({
       settings: {

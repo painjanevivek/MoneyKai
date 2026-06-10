@@ -20,15 +20,23 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
     val body = messages.joinToString(separator = "") { message -> message.messageBody.orEmpty() }.trim()
 
     if (body.isBlank() || !MoneyKaiSmsFilters.shouldImportSms(sender, body)) return
+    val accountId = MoneyKaiSmsFilters.buildAccountId(sender, body)
+    val accountApproved = MoneyKaiNativeCaptureModule.isSmsAccountApproved(context, accountId)
 
     MoneyKaiNativeCaptureModule.handleNativeSignal(
       context,
       Bundle().apply {
         putString("source", "sms")
         putString("sender", MoneyKaiSmsFilters.sanitizeSmsText(sender))
-        putString("body", MoneyKaiSmsFilters.sanitizeSmsText(body))
+        putString(
+          "body",
+          if (accountApproved) MoneyKaiSmsFilters.sanitizeSmsText(body) else "Bank account approval preview"
+        )
         putString("receivedAt", MoneyKaiSmsFilters.toIsoUtc(receivedAt))
-        putString("captureOrigin", "android_sms_receiver")
+        putString(
+          "captureOrigin",
+          if (accountApproved) "android_sms_receiver" else "android_sms_account_discovery"
+        )
         putString("rawBodyStored", "false")
         MoneyKaiSmsFilters.extractAccountHint(body)?.let { putString("smsAccountHint", it) }
         putString("smsSubscriptionId", readIntentExtra(intent, "subscription"))

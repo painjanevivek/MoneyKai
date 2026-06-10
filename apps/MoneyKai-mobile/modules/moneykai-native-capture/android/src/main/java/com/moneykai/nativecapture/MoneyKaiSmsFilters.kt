@@ -68,7 +68,15 @@ object MoneyKaiSmsFilters {
     "share your experience",
     "feedback",
     "thank you for the transaction done today",
-    "tdr/stdr"
+    "tdr/stdr",
+    "cheque",
+    "chq",
+    "gst",
+    "gstin",
+    "cgst",
+    "sgst",
+    "igst",
+    "tax invoice"
   )
 
   fun shouldImportSms(sender: String, body: String): Boolean =
@@ -117,6 +125,31 @@ object MoneyKaiSmsFilters {
       ?: return null
 
     return "ending ${accountDigits.takeLast(4)}"
+  }
+
+  fun buildAccountId(sender: String, body: String): String? {
+    val bankKey = deriveBankKey(sender)
+    if (bankKey.isBlank()) return null
+
+    val accountKeyPart = extractAccountHint(body)
+      ?.replace(Regex("""[^a-z0-9]+""", RegexOption.IGNORE_CASE), "")
+      ?.lowercase(Locale.US)
+      ?: "sender"
+
+    return "sms:$bankKey:$accountKeyPart"
+  }
+
+  private fun deriveBankKey(sender: String): String {
+    val normalized = sender.trim().uppercase(Locale.US)
+    if (normalized.isBlank()) return ""
+
+    val senderCore = Regex("""^[A-Z]{2}-([A-Z0-9]{3,12})(?:-[A-Z])?$""")
+      .find(normalized)
+      ?.groupValues
+      ?.getOrNull(1)
+      ?: normalized
+
+    return senderCore.replace(Regex("""[^A-Z0-9]"""), "").lowercase(Locale.US)
   }
 
   fun toIsoUtc(timestamp: Long): String {

@@ -60,6 +60,11 @@ class MoneyKaiNativeCaptureModule : Module() {
       true
     }
 
+    Function("setApprovedSmsAccounts") { approvedAccountIdsJson: String ->
+      setApprovedSmsAccounts(requireContext(), approvedAccountIdsJson)
+      true
+    }
+
     Function("getStatus") {
       activeModule = this@MoneyKaiNativeCaptureModule
       val status = Bundle()
@@ -80,8 +85,12 @@ class MoneyKaiNativeCaptureModule : Module() {
       status
     }
 
-    Function("importRecentSmsTransactions") { days: Int, maxMessages: Int ->
-      importRecentSmsTransactions(requireContext(), days, maxMessages)
+    Function("discoverRecentSmsAccounts") { days: Int, maxMessages: Int ->
+      discoverRecentSmsAccounts(requireContext(), days, maxMessages)
+    }
+
+    Function("importRecentSmsTransactions") { days: Int, maxMessages: Int, approvedAccountIdsJson: String ->
+      importRecentSmsTransactions(requireContext(), days, maxMessages, approvedAccountIdsJson)
     }
 
     Function("openNotificationListenerSettings") {
@@ -106,6 +115,7 @@ class MoneyKaiNativeCaptureModule : Module() {
     private const val PREFS_CAPTURE_ENABLED = "capture_enabled"
     private const val PREFS_NOTIFICATION_CAPTURE_ENABLED = "notification_capture_enabled"
     private const val PREFS_SMS_CAPTURE_ENABLED = "sms_capture_enabled"
+    private const val PREFS_APPROVED_SMS_ACCOUNT_IDS = "approved_sms_account_ids"
     private const val MAX_SMS_IMPORT_DAYS = 31
     private const val MAX_SMS_IMPORT_SCAN_COUNT = 300
     private const val MAX_SMS_IMPORT_SIGNAL_COUNT = 100
@@ -216,6 +226,13 @@ class MoneyKaiNativeCaptureModule : Module() {
         .apply()
     }
 
+    private fun setApprovedSmsAccounts(context: Context, approvedAccountIdsJson: String) {
+      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putString(PREFS_APPROVED_SMS_ACCOUNT_IDS, approvedAccountIdsJson)
+        .apply()
+    }
+
     fun isCaptureEnabled(context: Context): Boolean =
       context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .getBoolean(PREFS_CAPTURE_ENABLED, false)
@@ -227,6 +244,18 @@ class MoneyKaiNativeCaptureModule : Module() {
     fun isSmsCaptureEnabled(context: Context): Boolean =
       context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .getBoolean(PREFS_SMS_CAPTURE_ENABLED, false)
+
+    fun isSmsAccountApproved(context: Context, accountId: String?): Boolean {
+      if (accountId.isNullOrBlank()) return false
+
+      val rawValue = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getString(PREFS_APPROVED_SMS_ACCOUNT_IDS, "[]")
+        .orEmpty()
+
+      return parseApprovedAccountIds(rawValue).any { approvedId ->
+        accountIdsCompatible(approvedId, accountId)
+      }
+    }
 
     private fun bundleToJson(bundle: Bundle): JSONObject {
       val json = JSONObject()
@@ -293,13 +322,96 @@ class MoneyKaiNativeCaptureModule : Module() {
       }
     }
 
-    private fun importRecentSmsTransactions(context: Context, days: Int, maxMessages: Int): String {
+    private fun discoverRecentSmsAccounts(context: Context, days: Int, maxMessages: Int): String {
+      if (!isSmsReceiverDeclared(context)) {
+        return buildSmsAccountDiscoveryResult("unsupported", "SMS research receiver is not available in this build.")
+      }
+
+      if (context.checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+        return buildSmsAccountDiscoveryResult("permission_denied", "Android SMS inbox permission has not been granted.")
+      }
+
+      val importDays = days.coerceIn(1, MAX_SMS_IMPORT_DAYS)
+      val scanLimit = maxMessages.coerceIn(1, MAX_SMS_IMPORT_SCAN_COUNT)
+      val sinceMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(importDays.toLong())
+      val accountsById = linkedMapOf<String, JSONObject>()
+      var scannedCount = 0
+      var ignoredCount = 0
+
+      return try {
+        val cursor = context.contentResolver.query(
+          SMS_INBOX_URI,
+          arrayOf("address", "body", "date"),
+          "date >= ?",
+          arrayOf(sinceMillis.toString()),
+          "date DESC"
+        )
+
+        cursor?.use {
+          val addressIndex = it.getColumnIndex("address")
+          val bodyIndex = it.getColumnIndex("body")
+          val dateIndex = it.getColumnIndex("date")
+
+          while (it.moveToNext() && scannedCount < scanLimit) {
+            scannedCount += 1
+            val sender = it.getStringOrBlank(addressIndex)
+            val body = it.getStringOrBlank(bodyIndex)
+            val receivedAt = it.getLongOrNull(dateIndex) ?: System.currentTimeMillis()
+
+            if (body.isBlank() || !MoneyKaiSmsFilters.shouldImportSms(sender, body)) {
+              ignoredCount += 1
+              continue
+            }
+
+            val accountId = MoneyKaiSmsFilters.buildAccountId(sender, body)
+            if (accountId.isNullOrBlank()) {
+              ignoredCount += 1
+              continue
+            }
+
+            val existing = accountsById[accountId]
+            if (existing == null) {
+              val account = JSONObject()
+                .put("source", "sms")
+                .put("sender", MoneyKaiSmsFilters.sanitizeSmsText(sender))
+                .put("sampleCount", 1)
+                .put("lastSeenAt", MoneyKaiSmsFilters.toIsoUtc(receivedAt))
+
+              MoneyKaiSmsFilters.extractAccountHint(body)?.let { value ->
+                account.put("smsAccountHint", value)
+              }
+              accountsById[accountId] = account
+            } else {
+              existing.put("sampleCount", existing.optInt("sampleCount", 1) + 1)
+            }
+          }
+        }
+
+        buildSmsAccountDiscoveryResult(
+          status = "imported",
+          accounts = JSONArray(accountsById.values),
+          scannedCount = scannedCount,
+          ignoredCount = ignoredCount
+        )
+      } catch (error: SecurityException) {
+        buildSmsAccountDiscoveryResult("permission_denied", error.message ?: "Android denied SMS inbox access.")
+      } catch (error: Exception) {
+        buildSmsAccountDiscoveryResult("error", error.message ?: "Unable to discover SMS accounts.")
+      }
+    }
+
+    private fun importRecentSmsTransactions(context: Context, days: Int, maxMessages: Int, approvedAccountIdsJson: String): String {
       if (!isSmsReceiverDeclared(context)) {
         return buildSmsImportResult("unsupported", "SMS research receiver is not available in this build.")
       }
 
       if (context.checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
         return buildSmsImportResult("permission_denied", "Android SMS inbox permission has not been granted.")
+      }
+
+      val approvedAccountIds = parseApprovedAccountIds(approvedAccountIdsJson)
+      if (approvedAccountIds.isEmpty()) {
+        return buildSmsImportResult("imported", "Approve at least one bank account before importing SMS transactions.")
       }
 
       val importDays = days.coerceIn(1, MAX_SMS_IMPORT_DAYS)
@@ -332,6 +444,12 @@ class MoneyKaiNativeCaptureModule : Module() {
             val receivedAt = it.getLongOrNull(dateIndex) ?: System.currentTimeMillis()
 
             if (body.isBlank() || !MoneyKaiSmsFilters.shouldImportSms(sender, body)) {
+              ignoredCount += 1
+              continue
+            }
+
+            val accountId = MoneyKaiSmsFilters.buildAccountId(sender, body)
+            if (accountId.isNullOrBlank() || approvedAccountIds.none { approvedId -> accountIdsCompatible(approvedId, accountId) }) {
               ignoredCount += 1
               continue
             }
@@ -371,6 +489,49 @@ class MoneyKaiNativeCaptureModule : Module() {
       }
     }
 
+    private fun parseApprovedAccountIds(rawValue: String): Set<String> =
+      runCatching {
+        val values = JSONArray(rawValue)
+        buildSet {
+          for (index in 0 until values.length()) {
+            values.optString(index).takeIf { it.isNotBlank() }?.let { add(it) }
+          }
+        }
+      }.getOrElse { emptySet() }
+
+    private fun accountIdsCompatible(approvedId: String, candidateId: String): Boolean {
+      if (approvedId == candidateId) return true
+
+      val approvedParts = approvedId.split(":")
+      val candidateParts = candidateId.split(":")
+      if (approvedParts.size != 3 || candidateParts.size != 3) return false
+      if (approvedParts[0] != "sms" || candidateParts[0] != "sms") return false
+
+      val approvedBank = bankFamily(approvedParts[1])
+      val candidateBank = bankFamily(candidateParts[1])
+      val approvedAccount = approvedParts[2]
+      val candidateAccount = candidateParts[2]
+
+      return approvedAccount != "sender" &&
+        candidateAccount != "sender" &&
+        approvedAccount == candidateAccount &&
+        approvedBank == candidateBank
+    }
+
+    private fun bankFamily(bankKey: String): String =
+      when {
+        bankKey.contains("sbi") -> "sbi"
+        bankKey.contains("hdfc") -> "hdfc"
+        bankKey.contains("icici") -> "icici"
+        bankKey.contains("axis") -> "axis"
+        bankKey.contains("kotak") -> "kotak"
+        bankKey.contains("yes") -> "yes"
+        bankKey.contains("idfc") -> "idfc"
+        bankKey.contains("indus") -> "indus"
+        bankKey.contains("federal") -> "federal"
+        else -> bankKey
+      }
+
     private fun Cursor.getStringOrBlank(index: Int): String =
       getStringOrNull(index).orEmpty()
 
@@ -391,6 +552,27 @@ class MoneyKaiNativeCaptureModule : Module() {
         .put("status", status)
         .put("signals", signals)
         .put("importedCount", signals.length())
+        .put("scannedCount", scannedCount)
+        .put("ignoredCount", ignoredCount)
+
+      if (!message.isNullOrBlank()) {
+        result.put("message", message)
+      }
+
+      return result.toString()
+    }
+
+    private fun buildSmsAccountDiscoveryResult(
+      status: String,
+      message: String? = null,
+      accounts: JSONArray = JSONArray(),
+      scannedCount: Int = 0,
+      ignoredCount: Int = 0
+    ): String {
+      val result = JSONObject()
+        .put("status", status)
+        .put("accounts", accounts)
+        .put("discoveredCount", accounts.length())
         .put("scannedCount", scannedCount)
         .put("ignoredCount", ignoredCount)
 
