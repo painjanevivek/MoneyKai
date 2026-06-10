@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
-from backend.app.services.news_service import NewsServiceError, get_live_news
+from ..services.news_service import NewsServiceError, get_live_news
 
 router = APIRouter(prefix="/v1/news", tags=["news"])
 

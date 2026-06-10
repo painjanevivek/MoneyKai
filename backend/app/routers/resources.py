@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.app.core.security import CurrentUser, get_current_user
-from backend.app.services.firestore_service import (
+from ..core.security import CurrentUser, get_current_user
+from ..services.firestore_service import (
     delete_user_resource,
     ensure_user_profile,
     list_user_resources,
@@ -60,4 +60,3 @@ def delete_resource_item(resource: str, item_id: str, user: CurrentUser = Depend
     ensure_user_profile(user)
     delete_user_resource(user.uid, resource, item_id)
     return {"deleted": True}
-

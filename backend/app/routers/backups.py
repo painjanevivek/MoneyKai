@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.app.core.security import CurrentUser, get_current_user
-from backend.app.services.firestore_service import (
+from ..core.security import CurrentUser, get_current_user
+from ..services.firestore_service import (
     build_bootstrap_snapshot,
     ensure_user_profile,
     get_latest_backup,
@@ -54,4 +54,3 @@ def restore_from_payload(payload: dict, user: CurrentUser = Depends(get_current_
         raise HTTPException(status_code=400, detail="Missing snapshot.")
     restore_snapshot_for_user(user.uid, snapshot)
     return {"item": snapshot}
-

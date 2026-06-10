@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from backend.app.core.security import CurrentUser, get_current_user
-from backend.app.services.firestore_service import (
+from ..core.security import CurrentUser, get_current_user
+from ..services.firestore_service import (
     delete_user_account,
     ensure_user_profile,
     get_app_settings,

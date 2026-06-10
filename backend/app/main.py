@@ -1,16 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.core.settings import get_settings
-from backend.app.routers.backups import router as backups_router
-from backend.app.routers.bootstrap import router as bootstrap_router
-from backend.app.routers.challenges import router as challenges_router
-from backend.app.routers.diagnostics import router as diagnostics_router
-from backend.app.routers.groups import router as groups_router
-from backend.app.routers.health import router as health_router
-from backend.app.routers.news import router as news_router
-from backend.app.routers.resources import router as resources_router
-from backend.app.routers.settings import router as settings_router
+from .core.settings import get_settings
+from .routers.backups import router as backups_router
+from .routers.bootstrap import router as bootstrap_router
+from .routers.challenges import router as challenges_router
+from .routers.diagnostics import router as diagnostics_router
+from .routers.groups import router as groups_router
+from .routers.health import router as health_router
+from .routers.news import router as news_router
+from .routers.resources import router as resources_router
+from .routers.settings import router as settings_router
 
 settings = get_settings()
 

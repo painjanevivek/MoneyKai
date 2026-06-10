@@ -5,8 +5,8 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field, field_validator
 
-from backend.app.core.security import CurrentUser, get_current_user
-from backend.app.services.firestore_service import create_user_diagnostic_event, ensure_user_profile
+from ..core.security import CurrentUser, get_current_user
+from ..services.firestore_service import create_user_diagnostic_event, ensure_user_profile
 
 DiagnosticSeverity = Literal["info", "warning", "error", "fatal"]
 

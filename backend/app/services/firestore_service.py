@@ -7,8 +7,8 @@ from uuid import uuid4
 
 from firebase_admin import auth as firebase_auth
 
-from backend.app.core.firebase import get_firestore_client
-from backend.app.core.security import CurrentUser
+from ..core.firebase import get_firestore_client
+from ..core.security import CurrentUser
 
 USER_RESOURCE_SORT_KEYS: dict[str, str] = {
     "transactions": "transaction_date",

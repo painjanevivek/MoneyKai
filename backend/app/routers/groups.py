@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.app.core.security import CurrentUser, get_current_user
-from backend.app.services.firestore_service import (
+from ..core.security import CurrentUser, get_current_user
+from ..services.firestore_service import (
     delete_group_for_user,
     ensure_user_profile,
     list_group_expenses_for_user,
