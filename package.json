@@ -24,8 +24,8 @@
     "build": "npm run web:build",
     "install": "npm --prefix apps/MoneyKai-mobile install && npm --prefix apps/MoneyKai-web install",
     "launch:check": "node ./scripts/launch-check.mjs",
-    "backend:dev": "\"C:\\Users\\ASUS\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe\" -m uvicorn backend.app.main:app --reload --app-dir backend --port 8000",
-    "backend:test": "\"C:\\Users\\ASUS\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe\" -m pytest backend/tests",
-    "backend:compile": "\"C:\\Users\\ASUS\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe\" -m compileall backend"
+    "backend:dev": "node ./scripts/backend-runner.mjs dev",
+    "backend:test": "node ./scripts/backend-runner.mjs test",
+    "backend:compile": "node ./scripts/backend-runner.mjs compile"
   }
 }

@@ -14,5 +14,5 @@ npm run web:typecheck
 ## Notes
 
 - The mobile app lives in `apps/MoneyKai-mobile/`.
-- The backend lives in `backend/`.
+- The backend lives in the sibling repository `../MoneyKai-backend/`.
 - This package is optimized for the public website and browser-first rendering.

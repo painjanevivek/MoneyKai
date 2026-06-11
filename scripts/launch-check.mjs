@@ -48,11 +48,27 @@ const printStatus = (label, ok, details) => {
   console.log(`[${state}] ${label}${details ? ` - ${details}` : ''}`);
 };
 
+const isBackendDir = (directory) =>
+  typeof directory === 'string' &&
+  fs.existsSync(path.join(directory, 'requirements.txt')) &&
+  fs.existsSync(path.join(directory, 'app', 'main.py'));
+
+const resolveBackendDir = () => {
+  const candidates = [
+    process.env.MONEYKAI_BACKEND_DIR,
+    path.resolve(root, '..', 'MoneyKai-backend'),
+    path.join(root, 'backend'),
+  ].filter(Boolean);
+
+  return candidates.find(isBackendDir) ?? null;
+};
+
 const mobileEnvPath = path.join(root, 'apps', 'MoneyKai-mobile', '.env');
-const backendEnvPath = path.join(root, 'backend', '.env');
+const backendDir = resolveBackendDir();
+const backendEnvPath = backendDir ? path.join(backendDir, '.env') : null;
 
 const mobileEnv = readEnvFile(mobileEnvPath);
-const backendEnv = readEnvFile(backendEnvPath);
+const backendEnv = backendEnvPath ? readEnvFile(backendEnvPath) : null;
 
 printSection('MoneyKai Launch Audit');
 
@@ -103,9 +119,10 @@ for (const key of ['EXPO_PUBLIC_APP_STORE_URL', 'EXPO_PUBLIC_PLAY_STORE_URL']) {
 printSection('Backend Admin Setup');
 
 if (!backendEnv) {
-  printStatus('Backend .env', false, 'Missing backend/.env');
+  const details = backendDir ? `Missing ${path.relative(root, backendEnvPath)}` : 'Missing sibling MoneyKai-backend repo or backend/.env';
+  printStatus('Backend .env', false, details);
 } else {
-  printStatus('Backend .env', true, 'Found backend/.env');
+  printStatus('Backend .env', true, `Found ${path.relative(root, backendEnvPath)}`);
 }
 
 const projectId = backendEnv?.FIREBASE_PROJECT_ID ?? process.env.FIREBASE_PROJECT_ID ?? '';
@@ -115,15 +132,24 @@ const serviceAccountPath =
   process.env.FIREBASE_SERVICE_ACCOUNT_PATH ??
   process.env.GOOGLE_APPLICATION_CREDENTIALS ??
   '';
+const serviceAccountJson =
+  backendEnv?.FIREBASE_SERVICE_ACCOUNT_JSON ??
+  process.env.FIREBASE_SERVICE_ACCOUNT_JSON ??
+  '';
 
 printStatus('FIREBASE_PROJECT_ID', isRealValue(projectId), isRealValue(projectId) ? projectId : 'Missing');
 printStatus('FIREBASE_STORAGE_BUCKET', isRealValue(storageBucket), isRealValue(storageBucket) ? storageBucket : 'Missing');
 
 const serviceAccountExists = serviceAccountPath.length > 0 && fs.existsSync(serviceAccountPath);
+const serviceAccountJsonConfigured = isRealValue(serviceAccountJson);
 printStatus(
   'Firebase Admin credentials',
-  serviceAccountExists,
-  serviceAccountExists ? serviceAccountPath : 'Missing backend credential path or file'
+  serviceAccountExists || serviceAccountJsonConfigured,
+  serviceAccountExists
+    ? serviceAccountPath
+    : serviceAccountJsonConfigured
+      ? 'Configured via FIREBASE_SERVICE_ACCOUNT_JSON'
+      : 'Missing backend credential path/file or FIREBASE_SERVICE_ACCOUNT_JSON'
 );
 
 printSection('Manual Verification Still Required');
@@ -131,4 +157,3 @@ console.log('- Firebase Authentication providers must still be checked in Fireba
 console.log('- Firestore backup and restore still need one real signed-in account test.');
 console.log('- Notification delivery and tap routing still need a physical device pass.');
 console.log('- Cross-device restore still needs a second device or a fresh install verification.');
-

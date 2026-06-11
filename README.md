@@ -1,12 +1,12 @@
-# MoneyKai Monorepo
+# MoneyKai Workspace
 
-MoneyKai is organized as a monorepo so the production mobile app, the public website frontend, and the Python backend live together with a clear boundary.
+MoneyKai keeps the production mobile app and the public website frontend together here, while the Python backend now lives in a sibling repository for cleaner Vercel deployment.
 
 ## Layout
 
 - `apps/MoneyKai-mobile` - Expo Router mobile app
 - `apps/MoneyKai-web` - Expo Router website frontend
-- `backend` - FastAPI + Firestore backend
+- `../MoneyKai-backend` - FastAPI + Firestore backend
 
 ## Common commands
 
@@ -28,7 +28,9 @@ npm run backend:test
 npm run backend:compile
 ```
 
-The two app packages each have their own config and entry points under `apps/`, so the mobile and website surfaces can evolve independently while sharing the same repository.
+These commands look for the backend in `../MoneyKai-backend` by default, or in the directory pointed to by `MONEYKAI_BACKEND_DIR`.
+
+The two app packages each have their own config and entry points under `apps/`, so the mobile and website surfaces can evolve independently while sharing the same workspace.
 
 ## Production Launch Checklist
 
