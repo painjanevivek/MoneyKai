@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Text, TouchableOpacity, View } from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ReactNativeBiometrics from 'react-native-biometrics';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -31,19 +31,14 @@ export function AppLockGate({ children }: Props) {
     setIsChecking(true);
 
     try {
-      const compatible = await LocalAuthentication.hasHardwareAsync();
-      const enrolled = compatible ? await LocalAuthentication.isEnrolledAsync() : false;
+      const biometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true });
+      const sensorStatus = await biometrics.isSensorAvailable();
 
       if (unlockRequestId.current === requestId) {
-        setHasBiometrics(compatible && enrolled);
+        setHasBiometrics(sensorStatus.available);
       }
 
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock MoneyKai',
-        cancelLabel: 'Cancel',
-        fallbackLabel: 'Use device passcode',
-        disableDeviceFallback: false,
-      });
+      const result = await biometrics.simplePrompt({ promptMessage: 'Unlock MoneyKai' });
 
       if (unlockRequestId.current === requestId) {
         setIsUnlocked(result.success);

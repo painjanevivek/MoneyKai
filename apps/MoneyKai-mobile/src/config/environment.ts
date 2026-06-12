@@ -1,43 +1,60 @@
 const PLACEHOLDER_PATTERNS = ['placeholder', 'REPLACE_ME', 'your-project', 'your-api-key'];
 
-const readEnv = (key: string): string => process.env[key]?.trim() ?? '';
-
 const isRealValue = (value: string): boolean =>
   value.length > 0 && !PLACEHOLDER_PATTERNS.some((pattern) => value.includes(pattern));
 
+const readEnv = (...keys: string[]): string => {
+  for (const key of keys) {
+    const value = process.env[key]?.trim();
+    if (value) {
+      return value;
+    }
+  }
+  return '';
+};
+
 const firebaseEnv = {
-  apiKey: readEnv('EXPO_PUBLIC_FIREBASE_API_KEY'),
-  authDomain: readEnv('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-  projectId: readEnv('EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
-  storageBucket: readEnv('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: readEnv('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
-  appId: readEnv('EXPO_PUBLIC_FIREBASE_APP_ID'),
+  apiKey: readEnv('MONEYKAI_FIREBASE_API_KEY', 'EXPO_PUBLIC_FIREBASE_API_KEY'),
+  authDomain: readEnv('MONEYKAI_FIREBASE_AUTH_DOMAIN', 'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+  projectId: readEnv('MONEYKAI_FIREBASE_PROJECT_ID', 'EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
+  storageBucket: readEnv('MONEYKAI_FIREBASE_STORAGE_BUCKET', 'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: readEnv('MONEYKAI_FIREBASE_MESSAGING_SENDER_ID', 'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: readEnv('MONEYKAI_FIREBASE_APP_ID', 'EXPO_PUBLIC_FIREBASE_APP_ID'),
 };
 
 const googleEnv = {
-  webClientId: readEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
-  iosClientId: readEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
-  androidClientId: readEnv('EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'),
+  webClientId: readEnv('MONEYKAI_GOOGLE_WEB_CLIENT_ID', 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
+  iosClientId: readEnv('MONEYKAI_GOOGLE_IOS_CLIENT_ID', 'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
+  androidClientId: readEnv('MONEYKAI_GOOGLE_ANDROID_CLIENT_ID', 'EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'),
 };
 
 const storeReviewEnv = {
-  iosUrl: readEnv('EXPO_PUBLIC_APP_STORE_URL'),
-  androidUrl: readEnv('EXPO_PUBLIC_PLAY_STORE_URL'),
+  iosUrl: readEnv('MONEYKAI_APP_STORE_URL', 'EXPO_PUBLIC_APP_STORE_URL'),
+  androidUrl: readEnv('MONEYKAI_PLAY_STORE_URL', 'EXPO_PUBLIC_PLAY_STORE_URL'),
 };
 
-const backendBaseUrl = readEnv('EXPO_PUBLIC_BACKEND_BASE_URL').replace(/\/$/, '');
+const normalizeBackendBaseUrl = (value: string): string => {
+  const trimmedValue = value.trim().replace(/\/$/, '');
+  if (trimmedValue.length === 0) {
+    return '';
+  }
+
+  return /^https?:\/\//i.test(trimmedValue) ? trimmedValue : `https://${trimmedValue}`;
+};
+
+const backendBaseUrl = normalizeBackendBaseUrl(readEnv('MONEYKAI_BACKEND_BASE_URL', 'EXPO_PUBLIC_BACKEND_BASE_URL'));
 const isDevRuntime = (): boolean => typeof __DEV__ !== 'undefined' && __DEV__;
-const smsResearchBuildValue = readEnv('EXPO_PUBLIC_SMS_RESEARCH_BUILD');
+const smsResearchBuildValue = readEnv('MONEYKAI_SMS_RESEARCH_BUILD', 'EXPO_PUBLIC_SMS_RESEARCH_BUILD');
 
 export const appEnvironment = {
   firebase: firebaseEnv,
   google: googleEnv,
   storeReview: storeReviewEnv,
   backendBaseUrl,
-  debug: readEnv('EXPO_PUBLIC_DEBUG') === 'true',
-  demoMode: readEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
+  debug: readEnv('MONEYKAI_DEBUG', 'EXPO_PUBLIC_DEBUG') === 'true',
+  demoMode: readEnv('MONEYKAI_DEMO_MODE', 'EXPO_PUBLIC_DEMO_MODE') === 'true',
   smsResearchBuild: smsResearchBuildValue === '' ? true : smsResearchBuildValue === 'true',
-  nativeSmsResearchBuild: readEnv('EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD') === 'true',
+  nativeSmsResearchBuild: readEnv('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD', 'EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD') === 'true',
 };
 
 export const hasFirebaseEnvironment = (): boolean =>
@@ -65,10 +82,28 @@ export const getBackendBaseUrl = (): string => {
   return isDevRuntime() ? 'http://localhost:8000' : '';
 };
 
-export const hasGoogleClientIds = (): boolean =>
-  isRealValue(googleEnv.webClientId) &&
-  isRealValue(googleEnv.iosClientId) &&
-  isRealValue(googleEnv.androidClientId);
+type GoogleClientPlatform = 'android' | 'ios' | 'web';
+
+export const hasGoogleClientIds = (platform?: GoogleClientPlatform): boolean => {
+  const hasWebClientId = isRealValue(googleEnv.webClientId);
+  if (!hasWebClientId) {
+    return false;
+  }
+
+  if (platform === 'android') {
+    return isRealValue(googleEnv.androidClientId);
+  }
+
+  if (platform === 'ios') {
+    return isRealValue(googleEnv.iosClientId);
+  }
+
+  if (platform === 'web') {
+    return true;
+  }
+
+  return isRealValue(googleEnv.androidClientId);
+};
 
 export const getStoreReviewUrl = (platform: 'ios' | 'android'): string => {
   const configuredUrl = platform === 'ios' ? storeReviewEnv.iosUrl : storeReviewEnv.androidUrl;

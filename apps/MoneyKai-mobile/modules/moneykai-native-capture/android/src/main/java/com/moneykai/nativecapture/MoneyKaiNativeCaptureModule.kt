@@ -14,99 +14,110 @@ import android.os.Looper
 import android.provider.Settings
 import android.provider.Telephony
 import android.text.TextUtils
-import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.modules.ModuleDefinition
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-class MoneyKaiNativeCaptureModule : Module() {
-  override fun definition() = ModuleDefinition {
-    Name("MoneyKaiNativeCapture")
+class MoneyKaiNativeCaptureModule(
+  private val reactContext: ReactApplicationContext
+) : ReactContextBaseJavaModule(reactContext) {
+  override fun getName(): String = "MoneyKaiNativeCapture"
 
-    Events("onNotificationSignal")
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun startListening(): Boolean {
+    activeModule = this
+    flushPendingSignals(reactContext)
+    return true
+  }
 
-    Function("startListening") {
-      activeModule = this@MoneyKaiNativeCaptureModule
-      flushPendingSignals(requireContext())
-      true
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun stopListening(): Boolean {
+    if (activeModule === this) {
+      activeModule = null
     }
+    return true
+  }
 
-    Function("stopListening") {
-      if (activeModule === this@MoneyKaiNativeCaptureModule) {
-        activeModule = null
-      }
-      true
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun clearPendingSignals(): Boolean {
+    clearPendingSignals(reactContext)
+    return true
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun setCaptureEnabled(enabled: Boolean): Boolean {
+    setCaptureEnabled(reactContext, enabled)
+    if (!enabled) {
+      clearPendingSignals(reactContext)
     }
+    return true
+  }
 
-    Function("clearPendingSignals") {
-      clearPendingSignals(requireContext())
-      true
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun setCaptureSourcesEnabled(notificationEnabled: Boolean, smsEnabled: Boolean): Boolean {
+    setCaptureSourcesEnabled(reactContext, notificationEnabled, smsEnabled)
+    if (!notificationEnabled && !smsEnabled) {
+      clearPendingSignals(reactContext)
     }
+    return true
+  }
 
-    Function("setCaptureEnabled") { enabled: Boolean ->
-      setCaptureEnabled(requireContext(), enabled)
-      if (!enabled) {
-        clearPendingSignals(requireContext())
-      }
-      true
-    }
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun setApprovedSmsAccounts(approvedAccountIdsJson: String): Boolean {
+    setApprovedSmsAccounts(reactContext, approvedAccountIdsJson)
+    return true
+  }
 
-    Function("setCaptureSourcesEnabled") { notificationEnabled: Boolean, smsEnabled: Boolean ->
-      setCaptureSourcesEnabled(requireContext(), notificationEnabled, smsEnabled)
-      if (!notificationEnabled && !smsEnabled) {
-        clearPendingSignals(requireContext())
-      }
-      true
-    }
-
-    Function("setApprovedSmsAccounts") { approvedAccountIdsJson: String ->
-      setApprovedSmsAccounts(requireContext(), approvedAccountIdsJson)
-      true
-    }
-
-    Function("getStatus") {
-      activeModule = this@MoneyKaiNativeCaptureModule
-      val status = Bundle()
-      status.putString("platform", "android")
-      status.putBoolean("nativeModuleAvailable", true)
-      status.putString(
-        "notificationAccess",
-        if (isNotificationListenerEnabled(requireContext())) "granted" else "not_requested"
-      )
-      status.putString(
-        "smsAccess",
-        getSmsAccessStatus(requireContext())
-      )
-      status.putString(
-        "smsInboxAccess",
-        getSmsInboxAccessStatus(requireContext())
-      )
-      status
-    }
-
-    Function("discoverRecentSmsAccounts") { days: Int, maxMessages: Int ->
-      discoverRecentSmsAccounts(requireContext(), days, maxMessages)
-    }
-
-    Function("importRecentSmsTransactions") { days: Int, maxMessages: Int, approvedAccountIdsJson: String ->
-      importRecentSmsTransactions(requireContext(), days, maxMessages, approvedAccountIdsJson)
-    }
-
-    Function("openNotificationListenerSettings") {
-      val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-      }
-      try {
-        requireContext().startActivity(intent)
-        true
-      } catch (_: ActivityNotFoundException) {
-        false
-      }
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun getStatus(): WritableMap {
+    activeModule = this
+    return Arguments.createMap().apply {
+      putString("platform", "android")
+      putBoolean("nativeModuleAvailable", true)
+      putString("notificationAccess", if (isNotificationListenerEnabled(reactContext)) "granted" else "not_requested")
+      putString("smsAccess", getSmsAccessStatus(reactContext))
+      putString("smsInboxAccess", getSmsInboxAccessStatus(reactContext))
     }
   }
 
-  private fun requireContext(): Context = requireNotNull(appContext.reactContext)
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun discoverRecentSmsAccounts(days: Int, maxMessages: Int): String =
+    discoverRecentSmsAccounts(reactContext, days, maxMessages)
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun importRecentSmsTransactions(days: Int, maxMessages: Int, approvedAccountIdsJson: String): String =
+    importRecentSmsTransactions(reactContext, days, maxMessages, approvedAccountIdsJson)
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun openNotificationListenerSettings(): Boolean {
+    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    return try {
+      reactContext.startActivity(intent)
+      true
+    } catch (_: ActivityNotFoundException) {
+      false
+    }
+  }
+
+  @ReactMethod
+  fun addListener(eventName: String) = Unit
+
+  @ReactMethod
+  fun removeListeners(count: Int) = Unit
+
+  private fun sendEvent(eventName: String, event: Bundle) {
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit(eventName, Arguments.fromBundle(event))
+  }
 
   companion object {
     private const val MAX_PENDING_SIGNALS = 50

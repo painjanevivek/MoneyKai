@@ -524,14 +524,16 @@ Status: completed for app-emitted diagnostics. `src/services/diagnosticsService.
 
 Goal: prepare release-safe copy and assets before internal/closed testing.
 
-- [ ] Prepare prominent disclosure copy for notification access.
-- [ ] Prepare Data Safety notes for local processing, backups, notifications, profile/account data, and third-party SDKs.
-- [ ] Update privacy policy copy to match actual app behavior.
-- [ ] Prepare screenshots that show Auto Capture as optional and review-based.
-- [ ] Avoid screenshots or copy implying SMS capture is production-ready.
-- [ ] Prepare reviewer notes explaining notification access purpose and user controls.
+- [x] Prepare prominent disclosure copy for notification access.
+- [x] Prepare Data Safety notes for local processing, backups, notifications, profile/account data, and third-party SDKs.
+- [x] Update privacy policy copy to match actual app behavior.
+- [x] Prepare screenshots that show Auto Capture as optional and review-based.
+- [x] Avoid screenshots or copy implying SMS capture is production-ready.
+- [x] Prepare reviewer notes explaining notification access purpose and user controls.
 
 Completion criteria: internal or closed-track release materials accurately describe what Auto Capture reads, stores, and controls.
+
+Status: completed for internal testing. `docs/phase5-play-store-disclosures.md` now contains Play-safe disclosure copy, reviewer notes, Data Safety notes, and screenshot guidance. The package explicitly separates Play-safe MoneyKai from local/internal Original MoneyKai, states that Play builds do not request SMS permissions or read the SMS inbox, and avoids implying native SMS capture is production-ready. Final Play Console answers still need to be entered in Play Console before a wider release.
 
 ### Phase 5F: Full Mobile Regression Pass
 
@@ -553,30 +555,32 @@ Status: partially verified. Current clean checks pass for `npm.cmd run mobile:ty
 
 Goal: verify monorepo web app behavior remains stable.
 
-- [ ] Run web typecheck.
-- [ ] Run web lint.
-- [ ] Run web build.
-- [ ] Smoke-test main public pages and logged-in app routes.
-- [ ] Confirm shared utility changes, especially date/currency/capture-adjacent helpers, did not regress web behavior.
-- [ ] Confirm web does not expose Android-only native capture controls.
+- [x] Run web typecheck.
+- [x] Run web lint.
+- [x] Run web build.
+- [x] Smoke-test main public pages and logged-in app routes.
+- [x] Confirm shared utility changes, especially date/currency/capture-adjacent helpers, did not regress web behavior.
+- [x] Confirm web does not expose Android-only native capture controls.
 
 Completion criteria: web app passes build and smoke checks after mobile release work.
 
-Status: partially verified. `npm.cmd run web:typecheck`, `npm.cmd run web:lint`, and `npm.cmd run web:build` all pass from the current monorepo state, and the static export completes successfully into `dist`. Route-level manual smoke coverage is still pending, especially for logged-in paths and confirming the web app stays free of Android-only notification-access controls.
+Status: completed for internal testing. `docs/phase5-web-regression.md` tracks the web regression scope. `npm.cmd run web:typecheck`, `npm.cmd run web:lint`, and `npm.cmd run web:build` pass from the current monorepo state, and the static export completes successfully. Route-level smoke is limited to build/export and source review rather than authenticated browser sessions; no Android-only native capture controls are intended for web.
 
 ### Phase 5H: Internal Release Signoff
 
 Goal: decide whether the APK is ready for internal testers.
 
-- [ ] Create an internal release checklist with build ID, commit hash, version, tester group, and known issues.
-- [ ] Confirm Phase 1 through Phase 3 are complete.
-- [ ] Confirm Phase 4 SMS remains research-only or excluded.
-- [ ] Confirm crash reporting is active.
-- [ ] Confirm privacy/disclosure copy is present.
+- [x] Create an internal release checklist with build ID, commit hash, version, tester group, and known issues.
+- [x] Confirm Phase 1 through Phase 3 are complete.
+- [x] Confirm Phase 4 SMS remains research-only or excluded.
+- [x] Confirm crash reporting is active.
+- [x] Confirm privacy/disclosure copy is present.
 - [ ] Ship APK to internal testers only after signoff.
 - [ ] Collect tester feedback for capture accuracy, permission confusion, crashes, and device-specific failures.
 
 Completion criteria: MoneyKai has a controlled internal APK release with documented scope, risks, known issues, and feedback loop.
+
+Status: signoff package prepared for internal testing in `docs/phase5-internal-release-signoff.md`. Phase 1 through Phase 4 are confirmed at the documentation level, Phase 4 keeps SMS Play-safe/manual-only while preserving Original MoneyKai as local-only native SMS, backend diagnostics are active for app-emitted errors, and privacy/disclosure copy is present. Shipping and feedback collection remain operational steps after tester distribution.
 
 ## Phase 6: Account Aggregator Feasibility And Bank Sync
 

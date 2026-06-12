@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useTransactionStore } from '../../stores/useTransactionStore';
@@ -123,7 +122,7 @@ export const AIInsights: React.FC<AIInsightsProps> = ({
       )}
 
       <TouchableOpacity
-        onPress={onPress ?? (() => router.push('/(tabs)/savings'))}
+        onPress={onPress ?? (() => undefined)}
         style={{
           flexDirection: 'row',
           alignItems: 'center',

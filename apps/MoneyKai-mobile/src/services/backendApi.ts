@@ -1,4 +1,4 @@
-import { firebaseAuth } from './firebase';
+import { getCurrentFirebaseIdToken } from './authService';
 import { getBackendBaseUrl } from '@/config/environment';
 import type { DiagnosticEvent } from '@/services/diagnosticsService';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
@@ -20,12 +20,7 @@ class BackendApiError extends Error {
 }
 
 async function getAuthToken(): Promise<string> {
-  const currentUser = firebaseAuth.currentUser;
-  if (!currentUser) {
-    throw new Error('You need to be signed in to call the backend.');
-  }
-
-  return currentUser.getIdToken();
+  return getCurrentFirebaseIdToken();
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {

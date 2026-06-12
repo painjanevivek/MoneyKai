@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Linking, Platform, Share, Text, TouchableOpacity, View } from 'react-native';
-import * as Contacts from 'expo-contacts';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Alert, Linking, Share, Text, TouchableOpacity, View } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/hooks/useTheme';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Input } from '@/components/ui/Input';
@@ -71,55 +70,12 @@ export const SplitBillSheet: React.FC<SplitBillSheetProps> = ({ visible, groupNa
     });
   };
 
-  const handlePickContact = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert('Contacts unavailable on web', 'Use the email field to add recipients on web.');
-      return;
-    }
-
-    setPickingContact(true);
-    try {
-      const available = await Contacts.isAvailableAsync();
-      if (!available) {
-        Alert.alert('Contacts unavailable', 'This device cannot open the contacts picker right now.');
-        return;
-      }
-
-      const permission = await Contacts.requestPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Contacts permission needed', 'Grant contacts access to pick people from your address book.');
-        return;
-      }
-
-      const contact = await Contacts.presentContactPickerAsync();
-      if (!contact) {
-        return;
-      }
-
-      const emails = (contact as any).emails ?? [];
-      const email = emails.find((entry: any) => entry?.email)?.email;
-      if (!email) {
-        Alert.alert('No email found', 'That contact does not have an email address. Add one manually instead.');
-        return;
-      }
-
-      const contactName =
-        [contact.firstName, contact.lastName].filter(Boolean).join(' ') ||
-        (contact as any).name ||
-        (contact as any).displayName ||
-        'Contact';
-
-      addRecipient({
-        id: `contact_${Date.now()}`,
-        name: contactName,
-        email,
-        source: 'contact',
-      });
-    } catch (error) {
-      Alert.alert('Contacts failed', error instanceof Error ? error.message : 'Could not open contacts.');
-    } finally {
-      setPickingContact(false);
-    }
+  const handlePickContact = () => {
+    setPickingContact(false);
+    Alert.alert(
+      'Contacts picker not configured',
+      'The Expo contacts picker was removed for the CLI build. Add recipients manually by email for now.'
+    );
   };
 
   const handleSend = async () => {
@@ -177,7 +133,7 @@ export const SplitBillSheet: React.FC<SplitBillSheetProps> = ({ visible, groupNa
     <ModalSheet
       visible={visible}
       title="Share split bill"
-      subtitle="Add one person, two people, or a group. Contacts help on mobile, and manual email entry always stays available."
+      subtitle="Add one person, two people, or a group. Manual email entry stays available in the CLI build."
       onClose={onClose}
       maxHeight={760}
       footer={
@@ -201,7 +157,7 @@ export const SplitBillSheet: React.FC<SplitBillSheetProps> = ({ visible, groupNa
             {groupName}
           </Text>
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-            Add recipients one by one or use the contacts picker on mobile. The email composer will open with a ready-to-send split summary.
+            Add recipients one by one. The email composer will open with a ready-to-send split summary.
           </Text>
         </View>
 
@@ -212,7 +168,7 @@ export const SplitBillSheet: React.FC<SplitBillSheetProps> = ({ visible, groupNa
           value={amount}
           onChangeText={(value) => setAmount(value.replace(/[^0-9.]/g, ''))}
           keyboardType="numeric"
-          prefix="₹"
+          prefix={'\u20b9'}
           icon="currency-inr"
         />
         <Input label="Note" placeholder="Optional note for the people you're sharing with" value={note} onChangeText={setNote} icon="note-text-outline" />

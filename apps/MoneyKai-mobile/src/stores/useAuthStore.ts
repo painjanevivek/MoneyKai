@@ -2,15 +2,15 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  updateProfile as updateFirebaseProfile,
-} from 'firebase/auth';
-import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
+  createUserWithEmail,
+  isFirebaseConfigured,
+  signInWithEmail,
+  signOutFromFirebase,
+  updateFirebaseUserProfile,
+  waitForAuthState,
+  type NativeFirebaseUser,
+} from '@/services/authService';
 import { isDemoModeEnabled } from '@/config/environment';
-import { signInWithGoogleAsync } from '@/services/googleAuth';
-import { requestAutomaticBackup } from '@/services/backupService';
 
 export interface User {
   id: string;
@@ -37,7 +37,7 @@ interface AuthState {
   hydrateSession: () => Promise<void>;
 }
 
-const toAppUser = (user: import('firebase/auth').User): User => {
+const toAppUser = (user: NativeFirebaseUser): User => {
   const providerId = user.providerData.find((provider) => provider.providerId === 'google.com')
     ? 'google'
     : 'email';
@@ -96,7 +96,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (isDemoModeEnabled()) {
-            await new Promise((resolve) => setTimeout(resolve, 600));
+            await new Promise<void>((resolve) => setTimeout(() => resolve(), 600));
             set({
               user: {
                 id: 'sample-user-001',
@@ -112,10 +112,10 @@ export const useAuthStore = create<AuthState>()(
           }
 
           if (!isFirebaseConfigured()) {
-            throw new Error('Firebase is not configured. Set the EXPO_PUBLIC_FIREBASE_* values in .env to enable sign in.');
+            throw new Error('Firebase is not configured. Add android/app/google-services.json and set the MONEYKAI_FIREBASE_* values to enable sign in.');
           }
 
-          const credentials = await signInWithEmailAndPassword(firebaseAuth, email, password);
+          const credentials = await signInWithEmail(email, password);
           set({
             user: toAppUser(credentials.user),
             isAuthenticated: true,
@@ -134,7 +134,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (isDemoModeEnabled()) {
-            await new Promise((resolve) => setTimeout(resolve, 800));
+            await new Promise<void>((resolve) => setTimeout(() => resolve(), 800));
             set({
               user: {
                 id: 'sample-user-001',
@@ -150,11 +150,11 @@ export const useAuthStore = create<AuthState>()(
           }
 
           if (!isFirebaseConfigured()) {
-            throw new Error('Firebase is not configured. Set the EXPO_PUBLIC_FIREBASE_* values in .env to enable sign up.');
+            throw new Error('Firebase is not configured. Add android/app/google-services.json and set the MONEYKAI_FIREBASE_* values to enable sign up.');
           }
 
-          const credentials = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-          await updateFirebaseProfile(credentials.user, {
+          const credentials = await createUserWithEmail(email, password);
+          await updateFirebaseUserProfile(credentials.user, {
             displayName: fullName.trim(),
           });
 
@@ -180,7 +180,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           if (isDemoModeEnabled()) {
-            await new Promise((resolve) => setTimeout(resolve, 800));
+            await new Promise<void>((resolve) => setTimeout(() => resolve(), 800));
             set({
               user: {
                 id: 'sample-google-001',
@@ -196,9 +196,10 @@ export const useAuthStore = create<AuthState>()(
           }
 
           if (!isFirebaseConfigured()) {
-            throw new Error('Firebase is not configured. Set the EXPO_PUBLIC_FIREBASE_* values in .env to enable Google sign in.');
+            throw new Error('Firebase is not configured. Add android/app/google-services.json and set the MONEYKAI_FIREBASE_* values to enable Google sign in.');
           }
 
+          const { signInWithGoogleAsync } = await import('@/services/googleAuth');
           const user = await signInWithGoogleAsync();
 
           set({
@@ -218,7 +219,7 @@ export const useAuthStore = create<AuthState>()(
       signOut: async () => {
         const cleanup = async () => {
           if (isFirebaseConfigured()) {
-            await firebaseSignOut(firebaseAuth).catch(() => {
+            await signOutFromFirebase().catch(() => {
               // Local sign-out already happened; ignore network cleanup failures.
             });
           }
@@ -241,7 +242,9 @@ export const useAuthStore = create<AuthState>()(
         set((state) => {
           const nextUser = state.user ? { ...state.user, ...updates } : null;
           if (nextUser) {
-            void requestAutomaticBackup('profile updated');
+            void import('@/services/backupService')
+              .then(({ requestAutomaticBackup }) => requestAutomaticBackup('profile updated'))
+              .catch(() => undefined);
           }
           return { user: nextUser };
         }),

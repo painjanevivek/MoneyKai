@@ -8,14 +8,14 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 
 type DialogAction = {
   label: string;
   onPress: () => void;
-  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon?: string;
 };
 
 type AppDialogProps = {
@@ -23,7 +23,7 @@ type AppDialogProps = {
   eyebrow?: string;
   title: string;
   message: string;
-  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon?: string;
   confirmAction: DialogAction;
   cancelAction?: DialogAction;
   onRequestClose: () => void;

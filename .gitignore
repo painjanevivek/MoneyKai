@@ -21,6 +21,7 @@ apps/*/expo-env.d.ts
 **/.gradle/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key

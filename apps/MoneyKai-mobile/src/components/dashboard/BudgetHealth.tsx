@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';

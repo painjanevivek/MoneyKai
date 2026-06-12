@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { router } from 'expo-router';
 import { Alert, Animated, Dimensions, Easing, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -20,6 +19,7 @@ type TransactionComposerSheetProps = {
   visible: boolean;
   editingTransaction?: Transaction | null;
   onClose: () => void;
+  onSetBudget?: () => void;
 };
 
 const sanitizeAmount = (value: string) => value.replace(/[^0-9]/g, '');
@@ -31,6 +31,7 @@ export function TransactionComposerSheet({
   visible,
   editingTransaction = null,
   onClose,
+  onSetBudget,
 }: TransactionComposerSheetProps) {
   const { colors } = useTheme();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
@@ -92,7 +93,7 @@ export function TransactionComposerSheet({
   const handleSetBudgetFromDialog = () => {
     setShowBudgetDialog(false);
     handleClose();
-    router.push('/(tabs)/budget');
+    onSetBudget?.();
   };
 
   const handleSubmitTransaction = () => {
@@ -334,12 +335,12 @@ export function TransactionComposerSheet({
                       padding: Spacing.sm,
                     }}
                   >
-                    <ExpoDateTimePicker
+                    <DateTimePicker
                       value={parseTransactionDate(txnDate)}
                       mode="date"
                       display="inline"
                       maximumDate={new Date()}
-                      onValueChange={(_, date) => {
+                      onChange={(_, date) => {
                         if (date) {
                           handleDateChange(formatDate(date, 'yyyy-MM-dd'));
                         }
@@ -356,13 +357,12 @@ export function TransactionComposerSheet({
                   </View>
                 ) : null}
                 {Platform.OS === 'android' && showMobileDatePicker ? (
-                  <ExpoDateTimePicker
+                  <DateTimePicker
                     value={parseTransactionDate(txnDate)}
                     mode="date"
-                    presentation="dialog"
+                    display="default"
                     maximumDate={new Date()}
-                    onDismiss={() => setShowMobileDatePicker(false)}
-                    onValueChange={(_, date) => {
+                    onChange={(_, date) => {
                       if (date) {
                         handleDateChange(formatDate(date, 'yyyy-MM-dd'));
                       }

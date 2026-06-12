@@ -1,5 +1,4 @@
-import { PermissionsAndroid, Platform } from 'react-native';
-import { requireOptionalNativeModule } from 'expo';
+import { NativeEventEmitter, NativeModules, PermissionsAndroid, Platform } from 'react-native';
 import { captureDiagnosticEvent, captureException } from '@/services/diagnosticsService';
 import type { CaptureSignalInput } from '@/types/capture';
 
@@ -88,13 +87,12 @@ type MoneyKaiNativeCaptureModule = {
   discoverRecentSmsAccounts?: (days: number, maxMessages: number) => string;
   importRecentSmsTransactions?: (days: number, maxMessages: number, approvedAccountIdsJson: string) => string;
   openNotificationListenerSettings?: () => boolean;
-  addListener?: (
-    eventName: keyof MoneyKaiNativeCaptureEvents,
-    listener: MoneyKaiNativeCaptureEvents[keyof MoneyKaiNativeCaptureEvents]
-  ) => NativeCaptureSubscription;
+  addListener?: (eventName: keyof MoneyKaiNativeCaptureEvents) => void;
+  removeListeners?: (count: number) => void;
 };
 
-const nativeCaptureModule = requireOptionalNativeModule<MoneyKaiNativeCaptureModule>('MoneyKaiNativeCapture');
+const nativeCaptureModule = NativeModules.MoneyKaiNativeCapture as MoneyKaiNativeCaptureModule | undefined;
+const nativeCaptureEvents = nativeCaptureModule ? new NativeEventEmitter(nativeCaptureModule as never) : null;
 
 const fallbackStatus: NativeCaptureStatus = {
   platform: Platform.OS === 'android' || Platform.OS === 'ios' || Platform.OS === 'web' ? Platform.OS : 'unknown',
@@ -394,13 +392,17 @@ export const setNativeApprovedSmsAccounts = async (approvedAccountIds: string[])
 export const subscribeToNativeCaptureSignals = (
   handler: (signal: CaptureSignalInput) => void
 ): NativeCaptureSubscription => {
-  if (!nativeCaptureModule?.addListener) {
+  if (!nativeCaptureEvents) {
+    return { remove: () => undefined };
+  }
+  const module = nativeCaptureModule;
+  if (!module) {
     return { remove: () => undefined };
   }
 
   let subscription: NativeCaptureSubscription;
   try {
-    subscription = nativeCaptureModule.addListener('onNotificationSignal', (event) => {
+    subscription = nativeCaptureEvents.addListener('onNotificationSignal', (event: NativeCaptureSignal) => {
       try {
         const signal = mapNativeSignalToCaptureSignal(event);
         if (signal) {
@@ -421,7 +423,7 @@ export const subscribeToNativeCaptureSignals = (
   }
 
   try {
-    nativeCaptureModule.startListening?.();
+    module.startListening?.();
     captureDiagnosticEvent({
       scope: 'nativeCapture.startListening',
       message: 'Native capture listener started',
@@ -439,7 +441,7 @@ export const subscribeToNativeCaptureSignals = (
         captureNativeFailure('removeListener', error, undefined, 'warning');
       }
       try {
-        nativeCaptureModule.stopListening?.();
+        module.stopListening?.();
         captureDiagnosticEvent({
           scope: 'nativeCapture.stopListening',
           message: 'Native capture listener stopped',

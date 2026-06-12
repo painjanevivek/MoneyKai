@@ -1,12 +1,3 @@
-import {
-  addDoc,
-  collection,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  serverTimestamp,
-} from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -26,7 +17,7 @@ import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { AppNotification } from '@/types/notification';
 import type { ThemeMode } from '@/constants/theme';
-import { firebaseDb, isFirebaseConfigured } from './firebase';
+import { getLatestUserBackup, isFirebaseConfigured, saveUserBackup } from './firestoreService';
 import { backendApi, isBackendConfigured } from './backendApi';
 
 const AUTO_BACKUP_STATE_KEY = 'moneykai-auto-backup-state';
@@ -342,12 +333,7 @@ export const saveCloudBackup = async (options: { silent?: boolean; preserveAutom
 
   const snapshot = buildBackupSnapshot();
   try {
-    await addDoc(collection(firebaseDb, 'users', snapshot.profile.id, 'backups'), {
-      backup_name: `Backup ${new Date().toLocaleString()}`,
-      snapshot,
-      createdAt: serverTimestamp(),
-      createdAtMs: Date.now(),
-    });
+    await saveUserBackup(snapshot.profile.id, snapshot);
   } catch (error) {
     throw formatBackupError(error, 'save');
   }
@@ -391,25 +377,18 @@ export const getLatestCloudBackup = async () => {
     throw new Error('Configure Firebase to restore cloud backups.');
   }
 
-  const snapshotQuery = query(
-    collection(firebaseDb, 'users', user.id, 'backups'),
-    orderBy('createdAtMs', 'desc'),
-    limit(1)
-  );
-
-  let latestBackup;
+  let latestBackup: MoneyKaiBackupSnapshot | null;
   try {
-    const results = await getDocs(snapshotQuery);
-    latestBackup = results.docs[0]?.data();
+    latestBackup = await getLatestUserBackup<MoneyKaiBackupSnapshot>(user.id);
   } catch (error) {
     throw formatBackupError(error, 'restore');
   }
 
-  if (!latestBackup?.snapshot) {
+  if (!latestBackup) {
     throw new Error('No cloud backup exists yet.');
   }
 
-  return latestBackup.snapshot as MoneyKaiBackupSnapshot;
+  return latestBackup;
 };
 
 export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {

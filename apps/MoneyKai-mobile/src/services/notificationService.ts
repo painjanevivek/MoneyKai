@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import notifee, { AndroidImportance, AuthorizationStatus, EventType } from '@notifee/react-native';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useNotificationStore, type NotificationType } from '@/stores/useNotificationStore';
 import { backendApi, isBackendConfigured } from './backendApi';
@@ -15,39 +15,38 @@ const ICON_STYLES: Record<NotificationType, { icon: string; iconColor: string; i
 let listenersInstalled = false;
 let pendingBackendWrites = 0;
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
-
 export const initializeNotificationChannel = async () => {
   if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync('moneykai-default', {
+  await notifee.createChannel({
+    id: 'moneykai-default',
     name: 'MoneyKai Alerts',
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: AndroidImportance.HIGH,
     vibrationPattern: [0, 200, 100, 200],
+    lights: true,
     lightColor: '#111111',
   });
 };
 
 export const ensureNotificationPermission = async () => {
-  const current = await Notifications.getPermissionsAsync();
-  if (current.granted || current.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+  const current = await notifee.getNotificationSettings();
+  if (
+    current.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
+    current.authorizationStatus === AuthorizationStatus.PROVISIONAL
+  ) {
     return true;
   }
 
-  const result = await Notifications.requestPermissionsAsync();
-  return result.granted;
+  const result = await notifee.requestPermission();
+  return (
+    result.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
+    result.authorizationStatus === AuthorizationStatus.PROVISIONAL
+  );
 };
 
 export const setNotificationEnabled = async (enabled: boolean) => {
   if (!enabled) {
     useSettingsStore.getState().setNotificationsEnabled(false);
-    await Notifications.cancelAllScheduledNotificationsAsync().catch(() => undefined);
+    await notifee.cancelAllNotifications().catch(() => undefined);
     return false;
   }
 
@@ -92,7 +91,7 @@ export const recordAppNotification = async (params: {
   }
 
   const enabled = useSettingsStore.getState().notificationsEnabled;
-  if (!enabled || Platform.OS === 'web' || params.schedule === false) {
+  if (!enabled || params.schedule === false) {
     return;
   }
 
@@ -100,14 +99,17 @@ export const recordAppNotification = async (params: {
   if (!granted) return;
 
   await initializeNotificationChannel();
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: params.title,
-      body: params.body,
-      data: { actionRoute: params.actionRoute ?? '/(tabs)/notifications' },
-      sound: false,
+  await notifee.displayNotification({
+    title: params.title,
+    body: params.body,
+    data: { actionRoute: params.actionRoute ?? 'Notifications' },
+    android: {
+      channelId: 'moneykai-default',
+      smallIcon: 'ic_launcher',
+      pressAction: {
+        id: 'default',
+      },
     },
-    trigger: null,
   });
 };
 
@@ -116,18 +118,18 @@ export const installNotificationListeners = (onResponse?: (route?: string) => vo
     return () => undefined;
   }
 
-  const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+  const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
+    if (type !== EventType.PRESS) {
       return;
     }
 
-    const route = (response.notification.request.content.data?.actionRoute as string | undefined) ?? '/(tabs)/notifications';
+    const route = detail.notification?.data?.actionRoute as string | undefined;
     onResponse?.(route);
   });
 
   listenersInstalled = true;
   return () => {
-    responseSubscription.remove();
+    unsubscribe();
     listenersInstalled = false;
   };
 };

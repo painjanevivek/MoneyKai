@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, type ViewStyle } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
 import { Typography, Spacing } from '../../constants/theme';
 
 interface EmptyStateProps {
-  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon?: string;
   title: string;
   message?: string;
   action?: React.ReactNode;

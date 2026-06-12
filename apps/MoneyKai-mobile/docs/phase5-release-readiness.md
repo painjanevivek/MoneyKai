@@ -133,6 +133,10 @@ npx eas submit --platform android --profile production
 - Phase 5B one-device validation is documented in `docs/phase5-device-validation.md`
 - Phase 5C Auto Capture onboarding is completed in the first-login tour, Settings explainer, and Auto Capture setup card
 - Phase 5D diagnostics hooks are implemented and documented in `docs/phase5-diagnostics.md`
+- Phase 5E disclosure package is documented in `docs/phase5-play-store-disclosures.md`
+- Phase 5F mobile regression checklist is documented in `docs/phase5-mobile-regression.md`
+- Phase 5G web regression checklist is documented in `docs/phase5-web-regression.md`
+- Phase 5H internal signoff checklist is documented in `docs/phase5-internal-release-signoff.md`
 - JS render failures and native capture failures are recorded through `diagnosticsService` with SMS/notification content redaction
 - Warning/error/fatal diagnostics upload to the authenticated backend endpoint `POST /v1/diagnostics/events` when backend auth is available
 - `npm.cmd run mobile:typecheck`, `npm.cmd run mobile:lint`, `npm.cmd run mobile:test:capture`, and `npx.cmd expo-modules-autolinking verify --platform android` pass
@@ -141,7 +145,7 @@ npx eas submit --platform android --profile production
 
 - Local Gradle release signing still uses the debug keystore in the generated Android project, so the locally built release APK/AAB is not equivalent to a real Play upload artifact.
 - A Play-ready production upload still requires EAS-managed Android credentials or a project upload keystore wired into the release build.
-- Multi-device Android validation is still incomplete.
+- Multi-device Android validation is still incomplete and accepted only as a documented risk for internal testing.
 - Backend diagnostics are configured for app-emitted events. A native crash SDK such as Sentry/Bugsnag/Crashlytics is still recommended later for process-level native crash stack traces.
 - Store screenshots, reviewer notes, and final Data Safety copy still need to be assembled.
 
