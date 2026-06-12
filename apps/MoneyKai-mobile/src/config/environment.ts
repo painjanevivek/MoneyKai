@@ -91,7 +91,7 @@ export const hasGoogleClientIds = (platform?: GoogleClientPlatform): boolean => 
   }
 
   if (platform === 'android') {
-    return isRealValue(googleEnv.androidClientId);
+    return true;
   }
 
   if (platform === 'ios') {
@@ -102,7 +102,7 @@ export const hasGoogleClientIds = (platform?: GoogleClientPlatform): boolean => 
     return true;
   }
 
-  return isRealValue(googleEnv.androidClientId);
+  return true;
 };
 
 export const getStoreReviewUrl = (platform: 'ios' | 'android'): string => {

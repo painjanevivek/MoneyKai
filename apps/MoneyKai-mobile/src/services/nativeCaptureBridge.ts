@@ -87,6 +87,7 @@ type MoneyKaiNativeCaptureModule = {
   discoverRecentSmsAccounts?: (days: number, maxMessages: number) => string;
   importRecentSmsTransactions?: (days: number, maxMessages: number, approvedAccountIdsJson: string) => string;
   openNotificationListenerSettings?: () => boolean;
+  getDefaultWebClientId?: () => Promise<string>;
   addListener?: (eventName: keyof MoneyKaiNativeCaptureEvents) => void;
   removeListeners?: (count: number) => void;
 };
@@ -141,6 +142,20 @@ export const getNativeCaptureStatus = async (): Promise<NativeCaptureStatus> => 
       ...fallbackStatus,
       nativeModuleAvailable: true,
     };
+  }
+};
+
+export const getNativeGoogleWebClientId = async (): Promise<string> => {
+  if (Platform.OS !== 'android' || !nativeCaptureModule?.getDefaultWebClientId) {
+    return '';
+  }
+
+  try {
+    const webClientId = await nativeCaptureModule.getDefaultWebClientId();
+    return webClientId.trim();
+  } catch (error) {
+    captureNativeFailure('getDefaultWebClientId', error, undefined, 'warning');
+    return '';
   }
 };
 

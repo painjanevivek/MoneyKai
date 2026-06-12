@@ -109,7 +109,7 @@ export function HomeScreen() {
                 <View style={{ flex: 1, paddingRight: Spacing.md }}>
                   <Text style={styles.value}>{item.description || item.category}</Text>
                   <Text style={styles.muted}>
-                    {item.category} · {formatDate(item.transaction_date)}
+                    {item.category} - {formatDate(item.transaction_date)}
                   </Text>
                 </View>
                 <Text style={{ ...styles.value, color: item.type === 'income' ? colors.success : colors.textPrimary }}>

@@ -15,6 +15,7 @@ import android.provider.Settings
 import android.provider.Telephony
 import android.text.TextUtils
 import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -105,6 +106,22 @@ class MoneyKaiNativeCaptureModule(
     } catch (_: ActivityNotFoundException) {
       false
     }
+  }
+
+  @ReactMethod
+  fun getDefaultWebClientId(promise: Promise) {
+    val resourceId = reactContext.resources.getIdentifier(
+      "default_web_client_id",
+      "string",
+      reactContext.packageName
+    )
+    if (resourceId == 0) {
+      promise.resolve("")
+      return
+    }
+
+    val webClientId = runCatching { reactContext.getString(resourceId) }.getOrDefault("")
+    promise.resolve(webClientId)
   }
 
   @ReactMethod

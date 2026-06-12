@@ -64,4 +64,15 @@ describe('app environment', () => {
     expect(environment.hasGoogleClientIds('ios')).toBe(false);
     expect(environment.hasGoogleClientIds()).toBe(true);
   });
+
+  it('uses the web client ID as the Android Google sign-in requirement', async () => {
+    const environment = await loadEnvironment({
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 'web-client.apps.googleusercontent.com',
+      EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: '',
+      EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: '',
+    });
+
+    expect(environment.hasGoogleClientIds('android')).toBe(true);
+    expect(environment.hasGoogleClientIds('ios')).toBe(false);
+  });
 });

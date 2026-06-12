@@ -1,26 +1,42 @@
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Platform } from 'react-native';
-import { appEnvironment, hasGoogleClientIds } from '@/config/environment';
+import { appEnvironment } from '@/config/environment';
+import { bundledGoogleWebClientId } from '@/config/googleOAuthClient';
+import { getNativeGoogleWebClientId } from './nativeCaptureBridge';
 import type { NativeFirebaseUser } from './authService';
 
 let configured = false;
 
-const configureGoogleSignIn = () => {
+const getGoogleWebClientId = async (): Promise<string> => {
+  if (appEnvironment.google.webClientId) {
+    return appEnvironment.google.webClientId;
+  }
+
+  if (bundledGoogleWebClientId) {
+    return bundledGoogleWebClientId;
+  }
+
+  if (Platform.OS === 'android') {
+    return getNativeGoogleWebClientId();
+  }
+
+  return '';
+};
+
+const configureGoogleSignIn = async () => {
   if (configured) {
     return;
   }
 
+  const webClientId = await getGoogleWebClientId();
   GoogleSignin.configure({
-    webClientId: appEnvironment.google.webClientId || undefined,
+    webClientId: webClientId || undefined,
     iosClientId: appEnvironment.google.iosClientId || undefined,
     offlineAccess: false,
   });
   configured = true;
 };
-
-const getGoogleClientPlatform = () =>
-  Platform.OS === 'android' || Platform.OS === 'ios' ? Platform.OS : 'web';
 
 const readIdToken = (response: unknown): string | undefined => {
   if (!response || typeof response !== 'object') {
@@ -40,13 +56,15 @@ const readIdToken = (response: unknown): string | undefined => {
 };
 
 export const signInWithGoogleAsync = async (): Promise<NativeFirebaseUser> => {
-  if (!hasGoogleClientIds(getGoogleClientPlatform())) {
+  const webClientId = await getGoogleWebClientId();
+  const hasPlatformClientId = Platform.OS !== 'ios' || Boolean(appEnvironment.google.iosClientId);
+  if (!webClientId || !hasPlatformClientId) {
     throw new Error(
-      'Google sign-in is not configured yet. Add the required MONEYKAI_GOOGLE_* client IDs to .env and Firebase Console to enable it on this platform.'
+      'Google sign-in is not configured yet. Add a Web OAuth client to Firebase, download the latest android/app/google-services.json, and add SHA fingerprints in Firebase Console.'
     );
   }
 
-  configureGoogleSignIn();
+  await configureGoogleSignIn();
 
   if (Platform.OS === 'android') {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });

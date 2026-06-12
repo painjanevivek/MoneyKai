@@ -28,7 +28,7 @@ export function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) 
     if (!isFirebaseConfigured()) {
       Alert.alert(
         'Demo Mode',
-        'Password reset emails require Firebase to be configured. Add android/app/google-services.json and set the MONEYKAI_FIREBASE_* values.'
+        'Password reset emails require Firebase to be configured. Add android/app/google-services.json.'
       );
       return;
     }
