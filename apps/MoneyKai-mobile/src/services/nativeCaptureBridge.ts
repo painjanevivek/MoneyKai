@@ -1,7 +1,9 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
+import { getSmsImportRangeOption } from '@/constants/smsImportRanges';
 import { captureDiagnosticEvent, captureException } from '@/services/diagnosticsService';
 import type { CaptureSignalInput } from '@/types/capture';
+import type { SmsImportRangeId } from '@/types/smsImport';
 
 export type NativeCapturePermissionStatus = 'unsupported' | 'not_requested' | 'granted' | 'denied';
 
@@ -19,6 +21,8 @@ export interface NativeSmsImportResult {
   scannedCount: number;
   ignoredCount: number;
   signals: CaptureSignalInput[];
+  hasMore: boolean;
+  nextCursor?: string;
   message?: string;
 }
 
@@ -28,6 +32,8 @@ export interface NativeSmsAccountDiscoveryResult {
   scannedCount: number;
   ignoredCount: number;
   signals: CaptureSignalInput[];
+  hasMore: boolean;
+  nextCursor?: string;
   message?: string;
 }
 
@@ -51,6 +57,10 @@ type NativeCaptureSignal = {
   smsSlot?: string;
   smsPhoneId?: string;
   smsAccountHint?: string;
+  discoverySampleRedactedBody?: string;
+  discoverySampleSender?: string;
+  discoverySampleReceivedAt?: string;
+  discoverySampleMessageId?: string;
   sampleCount?: number;
   lastSeenAt?: string;
 };
@@ -61,6 +71,8 @@ type NativeSmsAccountDiscoveryPayload = {
   scannedCount?: number;
   ignoredCount?: number;
   accounts?: NativeCaptureSignal[];
+  hasMore?: boolean;
+  nextCursor?: string;
   message?: string;
 };
 
@@ -70,7 +82,18 @@ type NativeSmsImportPayload = {
   scannedCount?: number;
   ignoredCount?: number;
   signals?: NativeCaptureSignal[];
+  hasMore?: boolean;
+  nextCursor?: string;
   message?: string;
+};
+
+type NativeSmsScanParams = {
+  rangeId?: SmsImportRangeId;
+  days?: number;
+  sinceMillis?: number;
+  maxMessages?: number;
+  pageSize?: number;
+  cursor?: string;
 };
 
 type MoneyKaiNativeCaptureEvents = {
@@ -85,8 +108,8 @@ type MoneyKaiNativeCaptureModule = {
   setCaptureSourcesEnabled?: (notificationEnabled: boolean, smsEnabled: boolean) => boolean;
   setApprovedSmsAccounts?: (approvedAccountIdsJson: string) => boolean;
   getStatus?: () => NativeCaptureStatus;
-  discoverRecentSmsAccounts?: (days: number, maxMessages: number) => string;
-  importRecentSmsTransactions?: (days: number, maxMessages: number, approvedAccountIdsJson: string) => string;
+  discoverRecentSmsAccounts?: (optionsJson: string) => string;
+  importRecentSmsTransactions?: (optionsJson: string, approvedAccountIdsJson: string) => string;
   openNotificationListenerSettings?: () => boolean;
   addListener?: (
     eventName: keyof MoneyKaiNativeCaptureEvents,
@@ -196,7 +219,7 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
       : await PermissionsAndroid.request(readPermission, {
           title: 'Import Recent Bank SMS',
           message:
-            'MoneyKai needs one-time SMS inbox access only in this internal research build to import the last 30 days of bank and payment transaction SMS.',
+            'MoneyKai needs one-time SMS inbox access only in this internal research build to import bank and payment transaction SMS for your selected range.',
           buttonPositive: 'Allow',
           buttonNegative: 'Not now',
         });
@@ -219,6 +242,7 @@ const emptySmsImportResult = (
   scannedCount: 0,
   ignoredCount: 0,
   signals: [],
+  hasMore: false,
   message,
 });
 
@@ -231,24 +255,43 @@ const emptySmsAccountDiscoveryResult = (
   scannedCount: 0,
   ignoredCount: 0,
   signals: [],
+  hasMore: false,
   message,
 });
 
-export const discoverRecentNativeSmsAccounts = async (params?: {
-  days?: number;
-  maxMessages?: number;
-}): Promise<NativeSmsAccountDiscoveryResult> => {
+const buildNativeSmsScanOptions = (params?: NativeSmsScanParams) => {
+  const range = getSmsImportRangeOption(params?.rangeId);
+  const maxMessages = Math.min(
+    range.maxMessages,
+    Math.max(1, Math.round(params?.maxMessages ?? range.maxMessages))
+  );
+  const pageSize = Math.min(
+    maxMessages,
+    range.pageSize,
+    Math.max(1, Math.round(params?.pageSize ?? range.pageSize))
+  );
+
+  return {
+    rangeId: range.id,
+    days: params?.days ?? range.days ?? 0,
+    sinceMillis: params?.sinceMillis ?? 0,
+    maxMessages,
+    pageSize,
+    cursor: params?.cursor,
+  };
+};
+
+export const discoverRecentNativeSmsAccounts = async (params?: NativeSmsScanParams): Promise<NativeSmsAccountDiscoveryResult> => {
   if (Platform.OS !== 'android' || !nativeCaptureModule?.discoverRecentSmsAccounts) {
     return emptySmsAccountDiscoveryResult('unsupported', 'SMS account discovery requires an Android development build.');
   }
 
-  const days = Math.min(31, Math.max(1, Math.round(params?.days ?? 30)));
-  const maxMessages = Math.min(300, Math.max(1, Math.round(params?.maxMessages ?? 300)));
+  const options = buildNativeSmsScanOptions(params);
   let rawResult: string;
   try {
-    rawResult = nativeCaptureModule.discoverRecentSmsAccounts(days, maxMessages);
+    rawResult = nativeCaptureModule.discoverRecentSmsAccounts(JSON.stringify(options));
   } catch (error) {
-    captureNativeFailure('discoverRecentSmsAccounts', error, { days, maxMessages });
+    captureNativeFailure('discoverRecentSmsAccounts', error, options);
     return emptySmsAccountDiscoveryResult('error', 'The Android SMS account discovery request failed.');
   }
   const parsed = parseNativeJson<NativeSmsAccountDiscoveryPayload>(
@@ -265,6 +308,8 @@ export const discoverRecentNativeSmsAccounts = async (params?: {
     discoveredCount: parsed.discoveredCount ?? 0,
     scannedCount: parsed.scannedCount ?? 0,
     ignoredCount: parsed.ignoredCount ?? 0,
+    hasMore: parsed.hasMore === true,
+    nextCursor: parsed.nextCursor,
     message: parsed.message,
     signals: (parsed.accounts ?? [])
       .map(mapNativeAccountToCaptureSignal)
@@ -273,24 +318,26 @@ export const discoverRecentNativeSmsAccounts = async (params?: {
 };
 
 export const importRecentNativeSmsTransactions = async (params?: {
+  rangeId?: SmsImportRangeId;
   days?: number;
+  sinceMillis?: number;
   maxMessages?: number;
+  pageSize?: number;
+  cursor?: string;
   approvedAccountIds?: string[];
 }): Promise<NativeSmsImportResult> => {
   if (Platform.OS !== 'android' || !nativeCaptureModule?.importRecentSmsTransactions) {
     return emptySmsImportResult('unsupported', 'SMS inbox import requires an Android development build.');
   }
 
-  const days = Math.min(31, Math.max(1, Math.round(params?.days ?? 30)));
-  const maxMessages = Math.min(300, Math.max(1, Math.round(params?.maxMessages ?? 300)));
+  const options = buildNativeSmsScanOptions(params);
   const approvedAccountIdsJson = JSON.stringify(params?.approvedAccountIds ?? []);
   let rawResult: string;
   try {
-    rawResult = nativeCaptureModule.importRecentSmsTransactions(days, maxMessages, approvedAccountIdsJson);
+    rawResult = nativeCaptureModule.importRecentSmsTransactions(JSON.stringify(options), approvedAccountIdsJson);
   } catch (error) {
     captureNativeFailure('importRecentSmsTransactions', error, {
-      days,
-      maxMessages,
+      ...options,
       approvedAccountCount: params?.approvedAccountIds?.length ?? 0,
     });
     return emptySmsImportResult('error', 'The Android SMS import request failed.');
@@ -309,6 +356,8 @@ export const importRecentNativeSmsTransactions = async (params?: {
     importedCount: parsed.importedCount ?? 0,
     scannedCount: parsed.scannedCount ?? 0,
     ignoredCount: parsed.ignoredCount ?? 0,
+    hasMore: parsed.hasMore === true,
+    nextCursor: parsed.nextCursor,
     message: parsed.message,
     signals: (parsed.signals ?? [])
       .map(mapNativeSignalToCaptureSignal)
@@ -479,6 +528,10 @@ const mapNativeSignalToCaptureSignal = (event: NativeCaptureSignal): CaptureSign
       smsSlot: event.smsSlot,
       smsPhoneId: event.smsPhoneId,
       smsAccountHint: event.smsAccountHint,
+      discoverySampleRedactedBody: event.discoverySampleRedactedBody,
+      discoverySampleSender: event.discoverySampleSender,
+      discoverySampleReceivedAt: event.discoverySampleReceivedAt,
+      discoverySampleMessageId: event.discoverySampleMessageId,
     },
   };
 };
@@ -490,12 +543,16 @@ const mapNativeAccountToCaptureSignal = (event: NativeCaptureSignal): CaptureSig
   return {
     source: 'sms',
     sender,
-    body: 'Bank account approval preview',
-    receivedAt: event.lastSeenAt,
+    body: event.discoverySampleRedactedBody?.trim() || 'Bank account approval preview',
+    receivedAt: event.discoverySampleReceivedAt ?? event.lastSeenAt,
     rawPayload: {
       captureOrigin: 'android_sms_account_discovery',
       rawBodyStored: 'false',
       smsAccountHint: event.smsAccountHint,
+      discoverySampleRedactedBody: event.discoverySampleRedactedBody,
+      discoverySampleSender: event.discoverySampleSender ?? sender,
+      discoverySampleReceivedAt: event.discoverySampleReceivedAt ?? event.lastSeenAt,
+      discoverySampleMessageId: event.discoverySampleMessageId,
     },
   };
 };

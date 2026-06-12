@@ -2,13 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { recordAppNotification } from '@/services/notificationService';
+import { DEFAULT_SMS_IMPORT_RANGE_ID } from '@/constants/smsImportRanges';
 import {
   buildMonitoredAccount,
   findMatchingCaptureAccount,
   formatMonitoredAccountLabel,
   identifyCaptureAccount,
 } from '@/services/captureAccountIdentifier';
-import { buildCaptureDedupeKey, normalizeMerchantKey, parseCapturedSignal } from '@/services/captureParser';
+import { buildCaptureDedupeKeys } from '@/services/captureDedupe';
+import { normalizeMerchantKey, parseCapturedSignal } from '@/services/captureParser';
+import { setNativeApprovedSmsAccounts } from '@/services/nativeCaptureBridge';
 import { useAuthStore } from './useAuthStore';
 import { useBudgetStore } from './useBudgetStore';
 import { useTransactionStore } from './useTransactionStore';
@@ -22,6 +25,7 @@ import type {
   MerchantCategoryRule,
   MonitoredAccount,
 } from '@/types/capture';
+import type { SmsImportRangeId } from '@/types/smsImport';
 
 const MAX_CAPTURED_SIGNALS = 100;
 const MAX_DRAFTS = 100;
@@ -32,6 +36,7 @@ const DEFAULT_CAPTURE_SETTINGS: CaptureSettings = {
   smsResearchModeEnabled: false,
   notificationAccessStatus: 'unknown',
   smsAccessStatus: 'unknown',
+  smsImportRangeId: DEFAULT_SMS_IMPORT_RANGE_ID,
 };
 
 const buildId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -46,6 +51,10 @@ const SAFE_RAW_PAYLOAD_KEYS = new Set([
   'smsSlot',
   'smsPhoneId',
   'smsAccountHint',
+  'discoverySampleRedactedBody',
+  'discoverySampleSender',
+  'discoverySampleReceivedAt',
+  'discoverySampleMessageId',
 ]);
 
 const sanitizeCaptureRawPayload = (rawPayload?: Record<string, unknown>): Record<string, unknown> | undefined => {
@@ -101,6 +110,7 @@ interface CaptureState {
   setNotificationCaptureEnabled: (enabled: boolean) => void;
   setReviewNotificationsEnabled: (enabled: boolean) => void;
   setSmsResearchModeEnabled: (enabled: boolean) => void;
+  setSmsImportRangeId: (rangeId: SmsImportRangeId) => void;
   acceptNotificationExplainer: () => void;
   acceptSmsResearchExplainer: () => void;
   setNotificationAccessStatus: (status: CaptureSettings['notificationAccessStatus']) => void;
@@ -114,8 +124,12 @@ interface CaptureState {
     declinedCount: number;
   };
   isSignalAccountApproved: (input: CaptureSignalInput) => boolean;
+  getApprovedSmsAccountIds: () => string[];
+  syncApprovedAccountsToNative: () => void;
   approveMonitoredAccount: (accountId: string) => void;
   declineMonitoredAccount: (accountId: string) => void;
+  pauseMonitoredAccount: (accountId: string) => void;
+  resumeMonitoredAccount: (accountId: string) => void;
   ingestSignal: (input: CaptureSignalInput) => CaptureIngestionResult;
   confirmDraft: (draftId: string, category: string) => boolean;
   ignoreDraft: (draftId: string) => void;
@@ -166,6 +180,15 @@ const createOrStrengthenRule = (
   ];
 };
 
+const syncApprovedAccountsToNative = (accounts: MonitoredAccount[]) => {
+  const approvedAccountIds = accounts
+    .filter((account) => account.status === 'approved')
+    .map((account) => account.id)
+    .sort();
+
+  void setNativeApprovedSmsAccounts(approvedAccountIds);
+};
+
 export const useCaptureStore = create<CaptureState>()(
   persist(
     (set, get) => ({
@@ -186,6 +209,9 @@ export const useCaptureStore = create<CaptureState>()(
 
       setSmsResearchModeEnabled: (enabled) =>
         set((state) => ({ settings: { ...state.settings, smsResearchModeEnabled: enabled } })),
+
+      setSmsImportRangeId: (rangeId) =>
+        set((state) => ({ settings: { ...state.settings, smsImportRangeId: rangeId } })),
 
       acceptNotificationExplainer: () =>
         set((state) => ({
@@ -237,7 +263,7 @@ export const useCaptureStore = create<CaptureState>()(
           drafts: state.drafts.filter(
             (draft) => draft.captureSource !== 'sms' || draft.status === 'confirmed'
           ),
-          monitoredAccounts: state.monitoredAccounts.filter((account) => account.status === 'approved'),
+          monitoredAccounts: state.monitoredAccounts.filter((account) => account.status !== 'pending'),
         })),
 
       discoverSmsAccounts: (inputs) => {
@@ -266,6 +292,7 @@ export const useCaptureStore = create<CaptureState>()(
                     sender: identity.sender ?? account.sender,
                     sampleCount: account.sampleCount + identities.filter((item) => item.id === identity.id).length,
                     lastSeenAt: now,
+                    discoverySample: identity.discoverySample ?? account.discoverySample,
                   }
                 : account
             );
@@ -307,23 +334,84 @@ export const useCaptureStore = create<CaptureState>()(
         return Boolean(findMatchingCaptureAccount(get().monitoredAccounts, identity, ['approved']));
       },
 
-      approveMonitoredAccount: (accountId) =>
-        set((state) => ({
-          monitoredAccounts: state.monitoredAccounts.map((account) =>
-            account.id === accountId
-              ? { ...account, status: 'approved', approvedAt: new Date().toISOString(), declinedAt: undefined }
-              : account
-          ),
-        })),
+      getApprovedSmsAccountIds: () =>
+        get()
+          .monitoredAccounts.filter((account) => account.status === 'approved')
+          .map((account) => account.id)
+          .sort(),
 
-      declineMonitoredAccount: (accountId) =>
+      syncApprovedAccountsToNative: () => {
+        syncApprovedAccountsToNative(get().monitoredAccounts);
+      },
+
+      approveMonitoredAccount: (accountId) => {
+        const now = new Date().toISOString();
         set((state) => ({
           monitoredAccounts: state.monitoredAccounts.map((account) =>
             account.id === accountId
-              ? { ...account, status: 'declined', declinedAt: new Date().toISOString(), approvedAt: undefined }
+              ? {
+                  ...account,
+                  status: 'approved',
+                  approvedAt: account.approvedAt ?? now,
+                  resumedAt: account.status === 'paused' ? now : account.resumedAt,
+                  declinedAt: undefined,
+                  pausedAt: undefined,
+                }
               : account
           ),
-        })),
+        }));
+        get().syncApprovedAccountsToNative();
+      },
+
+      declineMonitoredAccount: (accountId) => {
+        const now = new Date().toISOString();
+        set((state) => ({
+          monitoredAccounts: state.monitoredAccounts.map((account) =>
+            account.id === accountId
+              ? {
+                  ...account,
+                  status: 'declined',
+                  declinedAt: now,
+                  approvedAt: undefined,
+                  pausedAt: undefined,
+                  resumedAt: undefined,
+                }
+              : account
+          ),
+        }));
+        get().syncApprovedAccountsToNative();
+      },
+
+      pauseMonitoredAccount: (accountId) => {
+        const now = new Date().toISOString();
+        set((state) => ({
+          monitoredAccounts: state.monitoredAccounts.map((account) =>
+            account.id === accountId && account.status === 'approved'
+              ? { ...account, status: 'paused', pausedAt: now }
+              : account
+          ),
+        }));
+        get().syncApprovedAccountsToNative();
+      },
+
+      resumeMonitoredAccount: (accountId) => {
+        const now = new Date().toISOString();
+        set((state) => ({
+          monitoredAccounts: state.monitoredAccounts.map((account) =>
+            account.id === accountId && (account.status === 'paused' || account.status === 'declined')
+              ? {
+                  ...account,
+                  status: 'approved',
+                  approvedAt: account.approvedAt ?? now,
+                  resumedAt: now,
+                  declinedAt: undefined,
+                  pausedAt: undefined,
+                }
+              : account
+          ),
+        }));
+        get().syncApprovedAccountsToNative();
+      },
 
       ingestSignal: (input) => {
         const { settings, signals, merchantRules } = get();
@@ -363,11 +451,26 @@ export const useCaptureStore = create<CaptureState>()(
           ? findMatchingCaptureAccount(get().monitoredAccounts, accountIdentity, ['approved'])
           : undefined;
         const parsed = parseCapturedSignal(input, merchantRules);
-        const dedupeKey = buildCaptureDedupeKey(input, parsed);
-        const duplicate = signals.find((signal) => signal.dedupeKey === dedupeKey);
+        const dedupeKeys = buildCaptureDedupeKeys(input, parsed, monitoredAccount?.id);
+        const duplicateSignal = signals.find(
+          (signal) =>
+            signal.sourceFingerprint === dedupeKeys.sourceFingerprint ||
+            signal.canonicalTransactionKey === dedupeKeys.canonicalTransactionKey ||
+            signal.dedupeKey === dedupeKeys.legacyDedupeKey
+        );
 
-        if (duplicate) {
-          return { signalId: duplicate.id, status: 'duplicate', reason: 'duplicate capture signal' };
+        if (duplicateSignal) {
+          return { signalId: duplicateSignal.id, status: 'duplicate', reason: 'duplicate capture signal' };
+        }
+
+        const duplicateDraft = get().drafts.find(
+          (draft) =>
+            draft.sourceFingerprint === dedupeKeys.sourceFingerprint ||
+            draft.canonicalTransactionKey === dedupeKeys.canonicalTransactionKey
+        );
+
+        if (duplicateDraft) {
+          return { signalId: duplicateDraft.signalId, draftId: duplicateDraft.id, status: 'duplicate', reason: 'duplicate transaction draft' };
         }
 
         const signal: CapturedSignal = {
@@ -378,7 +481,10 @@ export const useCaptureStore = create<CaptureState>()(
           sourceApp: input.sourceApp,
           receivedAt: input.receivedAt ?? now,
           createdAt: now,
-          dedupeKey,
+          dedupeKey: dedupeKeys.legacyDedupeKey,
+          canonicalTransactionKey: dedupeKeys.canonicalTransactionKey,
+          sourceFingerprint: dedupeKeys.sourceFingerprint,
+          captureAccountId: monitoredAccount?.id,
           processingStatus: parsed.parseStatus === 'ignore' ? 'ignored' : 'drafted',
           parsedAmount: parsed.amount,
           parsedType: parsed.type,
@@ -408,8 +514,11 @@ export const useCaptureStore = create<CaptureState>()(
           type: parsed.type ?? 'expense',
           amount: parsed.amount,
           category: parsed.category,
+          suggestedCategory: parsed.category,
           description: buildDraftDescription(parsed, input),
           merchantKey: parsed.merchantKey,
+          canonicalTransactionKey: dedupeKeys.canonicalTransactionKey,
+          sourceFingerprint: dedupeKeys.sourceFingerprint,
           payment_method: parsed.paymentMethod ?? 'bank',
           captureAccountId: monitoredAccount?.id,
           captureAccountLabel: monitoredAccount ? formatMonitoredAccountLabel(monitoredAccount) : undefined,
@@ -421,6 +530,7 @@ export const useCaptureStore = create<CaptureState>()(
           sourceApp: input.sourceApp ?? input.sender,
           parseReason: parsed.reason,
           parseExplanation: parsed.explanation,
+          reviewRequired: true,
           status: 'pending',
           createdAt: now,
         };
@@ -448,49 +558,32 @@ export const useCaptureStore = create<CaptureState>()(
         if (useBudgetStore.getState().settings.monthly_allowance <= 0) return false;
 
         const confirmedAt = new Date().toISOString();
-        const draftMerchantKey = draft.merchantKey ?? normalizeMerchantKey(draft.description);
-        const matchingDrafts = get().drafts.filter((item) => {
-          if (item.status !== 'pending') return false;
-          if (item.id === draftId) return true;
-          const itemMerchantKey = item.merchantKey ?? normalizeMerchantKey(item.description);
-          return item.type === draft.type && Boolean(draftMerchantKey) && itemMerchantKey === draftMerchantKey;
+        const didAddTransaction = useTransactionStore.getState().addTransaction({
+          user_id: draft.user_id,
+          type: draft.type,
+          amount: draft.amount,
+          category,
+          description: draft.description,
+          payment_method: draft.payment_method,
+          captureAccountId: draft.captureAccountId,
+          captureAccountLabel: draft.captureAccountLabel,
+          captureBankLabel: draft.captureBankLabel,
+          captureAccountHint: draft.captureAccountHint,
+          canonicalTransactionKey: draft.canonicalTransactionKey,
+          sourceFingerprint: draft.sourceFingerprint,
+          transaction_date: draft.transaction_date,
         });
 
-        const confirmedDrafts: DraftTransaction[] = [];
-        for (const item of matchingDrafts) {
-          const didAddTransaction = useTransactionStore.getState().addTransaction({
-            user_id: item.user_id,
-            type: item.type,
-            amount: item.amount,
-            category,
-            description: item.description,
-            payment_method: item.payment_method,
-            captureAccountId: item.captureAccountId,
-            captureAccountLabel: item.captureAccountLabel,
-            captureBankLabel: item.captureBankLabel,
-            captureAccountHint: item.captureAccountHint,
-            transaction_date: item.transaction_date,
-          });
-          if (didAddTransaction) {
-            confirmedDrafts.push(item);
-          }
-        }
-        if (confirmedDrafts.length === 0) return false;
-
-        const confirmedDraftIds = new Set(confirmedDrafts.map((item) => item.id));
-        const confirmedSignalIds = new Set(confirmedDrafts.map((item) => item.signalId));
+        if (!didAddTransaction) return false;
 
         set((state) => ({
           drafts: state.drafts.map((item) =>
-            confirmedDraftIds.has(item.id) ? { ...item, category, status: 'confirmed', confirmedAt } : item
+            item.id === draft.id ? { ...item, category, status: 'confirmed', confirmedAt } : item
           ),
           signals: state.signals.map((signal) =>
-            confirmedSignalIds.has(signal.id) ? { ...signal, processingStatus: 'confirmed' } : signal
+            signal.id === draft.signalId ? { ...signal, processingStatus: 'confirmed' } : signal
           ),
-          merchantRules: confirmedDrafts.reduce(
-            (rules, item) => createOrStrengthenRule(rules, item, category),
-            state.merchantRules
-          ),
+          merchantRules: createOrStrengthenRule(state.merchantRules, draft, category),
         }));
 
         return true;

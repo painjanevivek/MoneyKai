@@ -8,11 +8,18 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import { getDraftCategoryOptions } from '@/services/captureCategoryRules';
-import { formatMonitoredAccountLabel } from '@/services/captureAccountIdentifier';
+import { importRecentSmsTransactionsFromInbox } from '@/services/autoCaptureService';
+import { requestNativeSmsPermission } from '@/services/nativeCaptureBridge';
+import { isNativeSmsResearchBuildEnabled } from '@/config/environment';
+import { MonitoredAccountCard } from '@/components/capture/MonitoredAccountCard';
+import { SmsDiscoveryMessageDialog } from '@/components/capture/SmsDiscoveryMessageDialog';
+import { SmsImportProgressSheet } from '@/components/capture/SmsImportProgressSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { getCategoryById } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import type { MonitoredAccount } from '@/types/capture';
+import type { SmsImportProgress } from '@/types/smsImport';
 
 const iconByType: Record<string, string> = {
   budget: 'wallet-outline',
@@ -31,17 +38,28 @@ export default function NotificationsScreen() {
   const monitoredAccounts = useCaptureStore((s) => s.monitoredAccounts);
   const approveMonitoredAccount = useCaptureStore((s) => s.approveMonitoredAccount);
   const declineMonitoredAccount = useCaptureStore((s) => s.declineMonitoredAccount);
+  const pauseMonitoredAccount = useCaptureStore((s) => s.pauseMonitoredAccount);
+  const resumeMonitoredAccount = useCaptureStore((s) => s.resumeMonitoredAccount);
+  const smsImportRangeId = useCaptureStore((s) => s.settings.smsImportRangeId);
   const confirmDraft = useCaptureStore((s) => s.confirmDraft);
   const ignoreDraft = useCaptureStore((s) => s.ignoreDraft);
   const [activeSection, setActiveSection] = useState<'drafts' | 'notifications'>('drafts');
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null);
   const [selectedCategoryByDraft, setSelectedCategoryByDraft] = useState<Record<string, string>>({});
+  const [messageAccount, setMessageAccount] = useState<MonitoredAccount | undefined>();
+  const [isSmsImporting, setIsSmsImporting] = useState(false);
+  const [smsImportProgress, setSmsImportProgress] = useState<SmsImportProgress | undefined>();
+  const [showSmsImportProgress, setShowSmsImportProgress] = useState(false);
   const pendingDrafts = useMemo(() => captureDrafts.filter((draft) => draft.status === 'pending'), [captureDrafts]);
   const pendingAccounts = useMemo(
     () => monitoredAccounts.filter((account) => account.status === 'pending'),
     [monitoredAccounts]
   );
-  const hasDraftContent = pendingAccounts.length > 0 || pendingDrafts.length > 0;
+  const visibleMonitoredAccounts = useMemo(
+    () => monitoredAccounts.filter((account) => account.status !== 'pending'),
+    [monitoredAccounts]
+  );
+  const hasDraftContent = pendingAccounts.length > 0 || pendingDrafts.length > 0 || visibleMonitoredAccounts.length > 0;
   const hasNotificationContent = notificationsEnabled && notifications.length > 0;
   const currentSectionHasContent = activeSection === 'drafts' ? hasDraftContent : hasNotificationContent;
   const headerSubtitle = useMemo(() => {
@@ -55,16 +73,44 @@ export default function NotificationsScreen() {
     return notificationsEnabled ? 'Recent activity and alerts' : 'Notifications are disabled';
   }, [activeSection, notificationsEnabled, pendingAccounts.length, pendingDrafts.length]);
 
-  const promptAccountMonitoring = (accountId: string, accountLabel: string) => {
-    Alert.alert(
-      'Monitor bank account?',
-      `Fetch transactions from ${accountLabel}?`,
-      [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Decline', style: 'destructive', onPress: () => declineMonitoredAccount(accountId) },
-        { text: 'Monitor', onPress: () => approveMonitoredAccount(accountId) },
-      ]
-    );
+  const importAfterApproval = async () => {
+    if (!isNativeSmsResearchBuildEnabled()) return;
+
+    setIsSmsImporting(true);
+    setShowSmsImportProgress(true);
+    setSmsImportProgress(undefined);
+    try {
+      const permissionStatus = await requestNativeSmsPermission();
+      if (permissionStatus !== 'granted') {
+        Alert.alert('SMS permission needed', 'Grant Android SMS access from Auto Capture to import this account.');
+        return;
+      }
+
+      const summary = await importRecentSmsTransactionsFromInbox(smsImportRangeId, setSmsImportProgress);
+      if (summary.status === 'permission_denied' || summary.status === 'unsupported' || summary.status === 'error') {
+        Alert.alert('SMS import paused', summary.message ?? 'MoneyKai could not import SMS after approval.');
+        return;
+      }
+
+      Alert.alert(
+        summary.draftedCount > 0 ? 'SMS drafts imported' : 'Monitoring enabled',
+        summary.draftedCount > 0
+          ? `${summary.draftedCount} draft${summary.draftedCount === 1 ? '' : 's'} are ready for review.`
+          : 'MoneyKai will monitor this account for future approved SMS captures.'
+      );
+    } finally {
+      setIsSmsImporting(false);
+    }
+  };
+
+  const handleApproveAccount = (account: MonitoredAccount) => {
+    approveMonitoredAccount(account.id);
+    void importAfterApproval();
+  };
+
+  const handleResumeAccount = (account: MonitoredAccount) => {
+    resumeMonitoredAccount(account.id);
+    void importAfterApproval();
   };
 
   useEffect(() => {
@@ -82,7 +128,10 @@ export default function NotificationsScreen() {
       <View style={{ flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
         {(['drafts', 'notifications'] as const).map((section) => {
           const active = activeSection === section;
-          const count = section === 'drafts' ? pendingAccounts.length + pendingDrafts.length : notifications.length;
+          const count =
+            section === 'drafts'
+              ? pendingAccounts.length + visibleMonitoredAccounts.length + pendingDrafts.length
+              : notifications.length;
           return (
             <TouchableOpacity
               key={section}
@@ -134,93 +183,33 @@ export default function NotificationsScreen() {
               <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
                 Bank Accounts Found
               </Text>
-              {pendingAccounts.map((account) => {
-                const accountLabel = formatMonitoredAccountLabel(account);
-
-                return (
-                <TouchableOpacity
+              {pendingAccounts.map((account) => (
+                <MonitoredAccountCard
                   key={account.id}
-                  activeOpacity={0.94}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Review monitoring for ${accountLabel}`}
-                  onPress={() => promptAccountMonitoring(account.id, accountLabel)}
-                  style={{
-                    backgroundColor: colors.card,
-                    borderRadius: BorderRadius.lg,
-                    padding: Spacing.base,
-                    marginBottom: Spacing.md,
-                    borderWidth: 1,
-                    borderColor: colors.borderLight,
-                    ...Shadows.sm,
-                    shadowColor: colors.shadowColor,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' }}>
-                    <View
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: BorderRadius.sm,
-                        backgroundColor: colors.surface,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderWidth: 1,
-                        borderColor: colors.borderLight,
-                      }}
-                    >
-                      <MaterialCommunityIcons name="bank-outline" size={20} color={colors.primary} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                        {accountLabel}
-                      </Text>
-                      <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 18, marginTop: 2 }}>
-                        {account.sampleCount} recent SMS found
-                      </Text>
-                      <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, marginTop: 3 }}>
-                        Fetch transactions from this account?
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
-                    <TouchableOpacity
-                      activeOpacity={0.84}
-                      onPress={() => declineMonitoredAccount(account.id)}
-                      style={{
-                        flex: 1,
-                        minHeight: 44,
-                        borderRadius: BorderRadius.md,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: colors.emergencyBg,
-                        borderWidth: 1,
-                        borderColor: `${colors.emergency}44`,
-                      }}
-                    >
-                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.emergency }}>
-                        Decline
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      activeOpacity={0.84}
-                      onPress={() => approveMonitoredAccount(account.id)}
-                      style={{
-                        flex: 1,
-                        minHeight: 44,
-                        borderRadius: BorderRadius.md,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: colors.primary,
-                      }}
-                    >
-                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
-                        Monitor
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-                );
-              })}
+                  account={account}
+                  onApprove={handleApproveAccount}
+                  onDecline={(item) => declineMonitoredAccount(item.id)}
+                  onShowMessage={setMessageAccount}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          {activeSection === 'drafts' && visibleMonitoredAccounts.length > 0 ? (
+            <View style={{ marginBottom: Spacing.lg }}>
+              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
+                Monitored SMS Accounts
+              </Text>
+              {visibleMonitoredAccounts.map((account) => (
+                <MonitoredAccountCard
+                  key={account.id}
+                  account={account}
+                  onPause={(item) => pauseMonitoredAccount(item.id)}
+                  onResume={handleResumeAccount}
+                  onDecline={(item) => declineMonitoredAccount(item.id)}
+                  onShowMessage={setMessageAccount}
+                />
+              ))}
             </View>
           ) : null}
 
@@ -465,6 +454,20 @@ export default function NotificationsScreen() {
           )) : null}
         </ScrollView>
       )}
+      <SmsDiscoveryMessageDialog
+        visible={Boolean(messageAccount)}
+        account={messageAccount}
+        onClose={() => setMessageAccount(undefined)}
+      />
+      <SmsImportProgressSheet
+        visible={showSmsImportProgress}
+        progress={smsImportProgress}
+        onClose={() => {
+          if (!isSmsImporting) {
+            setShowSmsImportProgress(false);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }

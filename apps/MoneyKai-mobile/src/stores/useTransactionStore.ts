@@ -8,6 +8,7 @@ import { useAuthStore } from './useAuthStore';
 import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { isDuplicateTransaction } from '@/services/captureDedupe';
 
 // Sample data used when Firebase is not configured locally.
 const today = new Date().toISOString().split('T')[0];
@@ -211,6 +212,10 @@ export const useTransactionStore = create<TransactionState>()(
             return false;
           }
 
+          if (isDuplicateTransaction(transaction, get().transactions)) {
+            return false;
+          }
+
           const newTransaction: Transaction = {
             ...transaction,
             id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -301,6 +306,5 @@ export const useTransactionStore = create<TransactionState>()(
     }
   )
 );
-
 
 

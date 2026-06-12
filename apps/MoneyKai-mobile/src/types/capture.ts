@@ -1,4 +1,5 @@
 import type { TransactionType } from './transaction';
+import type { SmsImportRangeId } from './smsImport';
 
 export type CaptureSource = 'notification' | 'sms' | 'aa' | 'manual';
 
@@ -18,7 +19,7 @@ export type CaptureSourceStatus = 'enabled' | 'disabled' | 'needs_android_access
 
 export type CapturePermissionState = 'unknown' | 'unsupported' | 'not_requested' | 'granted' | 'denied';
 
-export type MonitoredAccountStatus = 'pending' | 'approved' | 'declined';
+export type MonitoredAccountStatus = 'pending' | 'approved' | 'declined' | 'paused';
 
 export interface CaptureParseExplanation {
   matchedAmount?: string;
@@ -43,6 +44,13 @@ export interface CaptureSignalInput {
   rawPayload?: Record<string, unknown>;
 }
 
+export interface SmsDiscoverySample {
+  receivedAt?: string;
+  sender?: string;
+  redactedBody: string;
+  localMessageId?: string;
+}
+
 export interface MonitoredAccount {
   id: string;
   source: 'sms';
@@ -56,6 +64,9 @@ export interface MonitoredAccount {
   lastSeenAt: string;
   approvedAt?: string;
   declinedAt?: string;
+  pausedAt?: string;
+  resumedAt?: string;
+  discoverySample?: SmsDiscoverySample;
 }
 
 export interface CapturedSignal {
@@ -68,6 +79,9 @@ export interface CapturedSignal {
   receivedAt: string;
   createdAt: string;
   dedupeKey: string;
+  canonicalTransactionKey?: string;
+  sourceFingerprint?: string;
+  captureAccountId?: string;
   processingStatus: CaptureProcessingStatus;
   parsedAmount?: number;
   parsedType?: TransactionType;
@@ -90,6 +104,8 @@ export interface DraftTransaction {
   category?: string;
   description: string;
   merchantKey?: string;
+  canonicalTransactionKey?: string;
+  sourceFingerprint?: string;
   payment_method: string;
   captureAccountId?: string;
   captureAccountLabel?: string;
@@ -101,6 +117,8 @@ export interface DraftTransaction {
   sourceApp?: string;
   parseReason?: string;
   parseExplanation?: CaptureParseExplanation;
+  reviewRequired?: boolean;
+  suggestedCategory?: string;
   status: DraftTransactionStatus;
   createdAt: string;
   confirmedAt?: string;
@@ -146,6 +164,7 @@ export interface CaptureSettings {
   notificationAccessLastCheckedAt?: string;
   smsAccessStatus: CapturePermissionState;
   smsAccessLastCheckedAt?: string;
+  smsImportRangeId?: SmsImportRangeId;
 }
 
 export interface CaptureIngestionResult {

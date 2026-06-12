@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   addTransaction: vi.fn(),
   monthlyAllowance: 10000,
   recordAppNotification: vi.fn(),
+  setNativeApprovedSmsAccounts: vi.fn(),
 }));
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
@@ -18,6 +19,10 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 
 vi.mock('@/services/notificationService', () => ({
   recordAppNotification: mocks.recordAppNotification,
+}));
+
+vi.mock('@/services/nativeCaptureBridge', () => ({
+  setNativeApprovedSmsAccounts: mocks.setNativeApprovedSmsAccounts,
 }));
 
 vi.mock('./useAuthStore', () => ({
@@ -60,6 +65,7 @@ const resetCaptureStore = () => {
       smsResearchModeEnabled: false,
       notificationAccessStatus: 'unknown',
       smsAccessStatus: 'unknown',
+      smsImportRangeId: '1_month',
     },
     signals: [],
     drafts: [],
@@ -303,6 +309,32 @@ describe('useCaptureStore production safety controls', () => {
     );
   });
 
+  it('pauses and resumes approved SMS account monitoring while syncing native IDs', () => {
+    const input = {
+      source: 'sms' as const,
+      sender: 'AX-HDFCBK',
+      body: 'A/c XX4321 debited by Rs 321.00 for UPI payment to ACCOUNT LIFECYCLE. UPI Ref 555566667777.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+      rawPayload: { smsAccountHint: 'ending 4321' },
+    };
+
+    useCaptureStore.getState().discoverSmsAccounts([input]);
+    useCaptureStore.getState().approveMonitoredAccount('sms:hdfcbk:ending4321');
+    expect(mocks.setNativeApprovedSmsAccounts).toHaveBeenLastCalledWith(['sms:hdfcbk:ending4321']);
+
+    useCaptureStore.getState().pauseMonitoredAccount('sms:hdfcbk:ending4321');
+    expect(useCaptureStore.getState().monitoredAccounts[0]).toEqual(
+      expect.objectContaining({ status: 'paused', pausedAt: expect.any(String) })
+    );
+    expect(mocks.setNativeApprovedSmsAccounts).toHaveBeenLastCalledWith([]);
+
+    useCaptureStore.getState().resumeMonitoredAccount('sms:hdfcbk:ending4321');
+    expect(useCaptureStore.getState().monitoredAccounts[0]).toEqual(
+      expect.objectContaining({ status: 'approved', resumedAt: expect.any(String) })
+    );
+    expect(mocks.setNativeApprovedSmsAccounts).toHaveBeenLastCalledWith(['sms:hdfcbk:ending4321']);
+  });
+
   it('routes captured draft alerts to the notifications inbox', () => {
     useCaptureStore.setState((state) => ({
       settings: {
@@ -427,7 +459,7 @@ describe('useCaptureStore production safety controls', () => {
     );
   });
 
-  it('confirms repeated pending drafts from the same merchant when one category is chosen', () => {
+  it('confirms only the selected pending draft when one category is chosen', () => {
     useCaptureStore.setState((state) => ({
       settings: {
         ...state.settings,
@@ -455,15 +487,48 @@ describe('useCaptureStore production safety controls', () => {
 
     expect(useCaptureStore.getState().confirmDraft(first.draftId as string, 'food')).toBe(true);
 
-    expect(mocks.addTransaction).toHaveBeenCalledTimes(2);
+    expect(mocks.addTransaction).toHaveBeenCalledTimes(1);
     expect(mocks.addTransaction).toHaveBeenCalledWith(expect.objectContaining({ amount: 120, category: 'food' }));
-    expect(mocks.addTransaction).toHaveBeenCalledWith(expect.objectContaining({ amount: 180, category: 'food' }));
     expect(useCaptureStore.getState().drafts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: first.draftId, status: 'confirmed', category: 'food' }),
-        expect.objectContaining({ id: second.draftId, status: 'confirmed', category: 'food' }),
+        expect.objectContaining({ id: second.draftId, status: 'pending' }),
       ])
     );
+  });
+
+  it('blocks one real transaction captured from SMS and notification variants', () => {
+    useCaptureStore.setState((state) => ({
+      settings: {
+        ...state.settings,
+        autoCaptureEnabled: true,
+        smsResearchModeEnabled: true,
+      },
+    }));
+
+    const smsInput = {
+      source: 'sms',
+      sender: 'AX-HDFCBK',
+      body: 'A/c XX4321 debited by Rs 1.00 for UPI payment to AKSHAY PAINJANE. UPI Ref 555566667777.',
+      receivedAt: '2026-06-09T10:00:00.000Z',
+      rawPayload: { smsAccountHint: 'ending 4321', smsMessageId: '42' },
+    } as const;
+
+    useCaptureStore.getState().discoverSmsAccounts([smsInput]);
+    useCaptureStore.getState().approveMonitoredAccount('sms:hdfcbk:ending4321');
+
+    const smsDraft = useCaptureStore.getState().ingestSignal(smsInput);
+    const notificationDuplicate = useCaptureStore.getState().ingestSignal({
+      source: 'notification',
+      sourceApp: 'HDFC Bank',
+      title: 'Debit alert',
+      body: 'Rs 1.00 debited from account for UPI payment to AKSHAY PAINJANE. UPI Ref 555566667777.',
+      receivedAt: '2026-06-09T10:02:00.000Z',
+    });
+
+    expect(smsDraft.status).toBe('drafted');
+    expect(notificationDuplicate.status).toBe('duplicate');
+    expect(useCaptureStore.getState().drafts).toHaveLength(1);
   });
 
   it('keeps a visible ignored signal when Android hides notification content', () => {

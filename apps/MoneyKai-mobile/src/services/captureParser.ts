@@ -1,5 +1,6 @@
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { getAutomaticExpenseCategory } from '@/services/captureCategoryRules';
+import { buildCaptureDedupeKeys } from '@/services/captureDedupe';
 import type {
   CaptureParseExplanation,
   CaptureParseResult,
@@ -379,16 +380,7 @@ const calculateConfidence = (params: {
 };
 
 export const buildCaptureDedupeKey = (input: CaptureSignalInput, parsed: CaptureParseResult) => {
-  const receivedAt = new Date(input.receivedAt ?? Date.now());
-  const validTime = Number.isFinite(receivedAt.getTime()) ? receivedAt.getTime() : Date.now();
-  const timeBucketMinutes = parsed.transactionReference ? 60 : 30;
-  const bucketMs = timeBucketMinutes * 60 * 1000;
-  const timeBucket = new Date(Math.floor(validTime / bucketMs) * bucketMs).toISOString();
-  const amount = parsed.amount?.toFixed(2) ?? 'unknown';
-  const merchant = parsed.merchantKey ?? normalizeMerchantKey(input.sender ?? input.sourceApp ?? 'unknown');
-  const reference = parsed.transactionReference ?? 'no-ref';
-
-  return [input.source, input.sourceApp ?? input.sender ?? 'unknown', merchant, amount, parsed.type ?? 'unknown', reference, timeBucket].join(':');
+  return buildCaptureDedupeKeys(input, parsed).canonicalTransactionKey;
 };
 
 export const parseCapturedSignal = (

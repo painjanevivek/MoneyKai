@@ -10,7 +10,9 @@ const mocks = vi.hoisted(() => ({
   confirmDraft: vi.fn(),
   discoverSmsAccounts: vi.fn(),
   isSignalAccountApproved: vi.fn(),
+  getApprovedSmsAccountIds: vi.fn(),
   drafts: [] as { id: string; category?: string }[],
+  monitoredAccounts: [] as { id: string; status: 'pending' | 'approved' | 'declined' | 'paused' }[],
   monthlyAllowance: 10000,
 }));
 
@@ -31,7 +33,12 @@ vi.mock('@/stores/useCaptureStore', () => ({
       confirmDraft: mocks.confirmDraft,
       discoverSmsAccounts: mocks.discoverSmsAccounts,
       isSignalAccountApproved: mocks.isSignalAccountApproved,
+      getApprovedSmsAccountIds: mocks.getApprovedSmsAccountIds,
+      settings: {
+        smsImportRangeId: '1_month',
+      },
       drafts: mocks.drafts,
+      monitoredAccounts: mocks.monitoredAccounts,
     }),
   },
 }));
@@ -52,6 +59,8 @@ describe('autoCaptureService SMS research gate', () => {
     mocks.monthlyAllowance = 10000;
     mocks.isNativeSmsResearchBuildEnabled.mockReturnValue(true);
     mocks.drafts = [];
+    mocks.monitoredAccounts = [];
+    mocks.getApprovedSmsAccountIds.mockReturnValue([]);
     mocks.discoverSmsAccounts.mockReturnValue({
       discoveredCount: 0,
       pendingCount: 0,
@@ -65,6 +74,7 @@ describe('autoCaptureService SMS research gate', () => {
       scannedCount: 0,
       ignoredCount: 0,
       signals: [],
+      hasMore: false,
     });
   });
 
@@ -131,7 +141,9 @@ describe('autoCaptureService SMS research gate', () => {
           rawPayload: { smsAccountHint: 'ending 4321' },
         },
       ],
+      hasMore: false,
     });
+    mocks.monitoredAccounts = [{ id: 'sms:hdfcbk:ending4321', status: 'pending' }];
     mocks.discoverSmsAccounts.mockReturnValue({
       discoveredCount: 1,
       pendingCount: 1,
@@ -154,7 +166,7 @@ describe('autoCaptureService SMS research gate', () => {
     expect(mocks.importRecentNativeSmsTransactions).not.toHaveBeenCalled();
   });
 
-  it('imports recent inbox SMS for approved accounts and confirms categorized drafts', async () => {
+  it('imports recent inbox SMS for approved accounts as review drafts', async () => {
     mocks.isSmsResearchBuildEnabled.mockReturnValue(true);
     mocks.isNativeSmsResearchBuildEnabled.mockReturnValue(true);
     mocks.discoverRecentNativeSmsAccounts.mockResolvedValue({
@@ -176,6 +188,7 @@ describe('autoCaptureService SMS research gate', () => {
           receivedAt: '2026-06-08T10:00:00.000Z',
         },
       ],
+      hasMore: false,
     });
     mocks.importRecentNativeSmsTransactions.mockResolvedValue({
       status: 'imported',
@@ -196,7 +209,13 @@ describe('autoCaptureService SMS research gate', () => {
           receivedAt: '2026-06-08T10:00:00.000Z',
         },
       ],
+      hasMore: false,
     });
+    mocks.monitoredAccounts = [
+      { id: 'sms:hdfcbk:sender', status: 'approved' },
+      { id: 'sms:icicib:sender', status: 'approved' },
+    ];
+    mocks.getApprovedSmsAccountIds.mockReturnValue(['sms:hdfcbk:sender', 'sms:icicib:sender']);
     mocks.discoverSmsAccounts.mockReturnValue({
       discoveredCount: 2,
       pendingCount: 0,
@@ -211,28 +230,30 @@ describe('autoCaptureService SMS research gate', () => {
       { id: 'draft_1', category: 'shopping' },
       { id: 'draft_2' },
     ];
-    mocks.confirmDraft.mockReturnValue(true);
 
     const summary = await importRecentSmsTransactionsFromInbox();
 
     expect(summary).toMatchObject({
       status: 'imported',
-      scannedCount: 4,
+      scannedCount: 8,
       nativeImportedCount: 2,
-      nativeIgnoredCount: 2,
+      nativeIgnoredCount: 4,
       discoveredAccountCount: 2,
       pendingAccountApprovalCount: 0,
       approvedAccountCount: 2,
       draftedCount: 2,
-      confirmedCount: 1,
-      pendingReviewCount: 1,
+      confirmedCount: 0,
+      pendingReviewCount: 2,
     });
     expect(mocks.importRecentNativeSmsTransactions).toHaveBeenCalledWith({
-      days: 30,
-      maxMessages: 300,
+      rangeId: '1_month',
+      days: 31,
+      maxMessages: 500,
+      pageSize: 250,
+      cursor: undefined,
       approvedAccountIds: ['sms:hdfcbk:sender', 'sms:icicib:sender'],
     });
-    expect(mocks.confirmDraft).toHaveBeenCalledWith('draft_1', 'shopping');
+    expect(mocks.confirmDraft).not.toHaveBeenCalled();
   });
 
   it('keeps recent inbox SMS import unavailable when native SMS research is disabled', async () => {

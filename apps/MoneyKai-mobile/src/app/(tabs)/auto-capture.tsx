@@ -12,13 +12,17 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
+import { SmsImportProgressSheet } from '@/components/capture/SmsImportProgressSheet';
+import { SmsImportRangeSelector } from '@/components/capture/SmsImportRangeSelector';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, getCategoryById } from '@/constants/categories';
+import { DEFAULT_SMS_IMPORT_RANGE_ID } from '@/constants/smsImportRanges';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
 import { ingestSmsCapture, importRecentSmsTransactionsFromInbox } from '@/services/autoCaptureService';
 import { requestNativeSmsPermission } from '@/services/nativeCaptureBridge';
 import { formatCurrency } from '@/utils/formatCurrency';
 import type { CaptureSource, DraftTransaction } from '@/types/capture';
+import type { SmsImportProgress } from '@/types/smsImport';
 
 const confidenceLabel = (confidence: number) => {
   if (confidence >= 0.8) return 'High confidence';
@@ -206,6 +210,8 @@ export default function AutoCaptureScreen() {
   const signals = useCaptureStore((state) => state.signals);
   const merchantRules = useCaptureStore((state) => state.merchantRules);
   const captureSettings = useCaptureStore((state) => state.settings);
+  const smsImportRangeId = useCaptureStore((state) => state.settings.smsImportRangeId ?? DEFAULT_SMS_IMPORT_RANGE_ID);
+  const setSmsImportRangeId = useCaptureStore((state) => state.setSmsImportRangeId);
   const smsResearchModeEnabled = useCaptureStore((state) => state.settings.smsResearchModeEnabled);
   const monthlyAllowance = useBudgetStore((state) => state.settings.monthly_allowance);
   const smsResearchBuildEnabled = isSmsResearchBuildEnabled();
@@ -216,6 +222,8 @@ export default function AutoCaptureScreen() {
   const [smsImportError, setSmsImportError] = useState<string | undefined>();
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
   const [isSmsInboxImporting, setIsSmsInboxImporting] = useState(false);
+  const [showSmsImportProgress, setShowSmsImportProgress] = useState(false);
+  const [smsImportProgress, setSmsImportProgress] = useState<SmsImportProgress | undefined>();
   const pendingDrafts = useMemo(() => drafts.filter((draft) => draft.status === 'pending'), [drafts]);
   const recentSignals = useMemo(() => signals.slice(0, 5), [signals]);
   const hiddenNotificationSignals = useMemo(
@@ -318,6 +326,8 @@ export default function AutoCaptureScreen() {
     }
 
     setIsSmsInboxImporting(true);
+    setShowSmsImportProgress(true);
+    setSmsImportProgress(undefined);
     try {
       const permissionStatus = await requestNativeSmsPermission();
       if (permissionStatus !== 'granted') {
@@ -325,7 +335,7 @@ export default function AutoCaptureScreen() {
         return;
       }
 
-      const summary = await importRecentSmsTransactionsFromInbox();
+      const summary = await importRecentSmsTransactionsFromInbox(smsImportRangeId, setSmsImportProgress);
 
       if (summary.status === 'permission_denied') {
         Alert.alert('SMS permission needed', summary.message ?? 'Android denied SMS inbox access.');
@@ -353,9 +363,9 @@ export default function AutoCaptureScreen() {
       const details = [
         `Scanned ${summary.scannedCount} recent SMS.`,
         summary.approvedAccountCount > 0 ? `${summary.approvedAccountCount} monitored accounts checked.` : undefined,
-        summary.declinedAccountCount > 0 ? `${summary.declinedAccountCount} declined accounts skipped.` : undefined,
-        summary.confirmedCount > 0 ? `Added ${summary.confirmedCount} transactions.` : undefined,
-        summary.pendingReviewCount > 0 ? `${summary.pendingReviewCount} need review.` : undefined,
+        summary.accountsSkippedCount > 0 ? `${summary.accountsSkippedCount} unselected or declined accounts skipped.` : undefined,
+        summary.draftedCount > 0 ? `Created ${summary.draftedCount} review drafts.` : undefined,
+        summary.pendingReviewCount > 0 ? `${summary.pendingReviewCount} waiting for category approval.` : undefined,
         summary.duplicateCount > 0 ? `${summary.duplicateCount} duplicates skipped.` : undefined,
         summary.nativeIgnoredCount + summary.parserIgnoredCount > 0
           ? `${summary.nativeIgnoredCount + summary.parserIgnoredCount} non-transaction messages ignored.`
@@ -365,8 +375,8 @@ export default function AutoCaptureScreen() {
         .join('\n');
 
       Alert.alert(
-        summary.confirmedCount > 0 ? 'SMS transactions imported' : 'No new transactions added',
-        details || 'No official bank or payment transaction SMS were found from the last 30 days.'
+        summary.draftedCount > 0 ? 'SMS drafts imported' : 'No new drafts',
+        details || 'No official bank or payment transaction SMS were found for the selected range.'
       );
     } finally {
       setIsSmsInboxImporting(false);
@@ -457,6 +467,16 @@ export default function AutoCaptureScreen() {
             </Text>
           </Card>
         </View>
+
+        {nativeSmsResearchBuildEnabled ? (
+          <Card variant="outlined" borderRadius="md" padding="md" style={{ marginBottom: Spacing.md, backgroundColor: colors.surface }}>
+            <SmsImportRangeSelector
+              value={smsImportRangeId}
+              onChange={setSmsImportRangeId}
+              disabled={isSmsInboxImporting}
+            />
+          </Card>
+        ) : null}
 
         {hiddenNotificationSignals.length > 0 ? (
           <Card variant="outlined" borderRadius="md" padding="md" style={{ marginBottom: Spacing.md, backgroundColor: colors.surface }}>
@@ -614,6 +634,11 @@ export default function AutoCaptureScreen() {
         message="Set a monthly budget before confirming captured transactions or importing SMS drafts."
         onCancel={() => setShowBudgetDialog(false)}
         onSetBudget={handleSetBudget}
+      />
+      <SmsImportProgressSheet
+        visible={showSmsImportProgress}
+        progress={smsImportProgress}
+        onClose={() => setShowSmsImportProgress(false)}
       />
     </SafeAreaView>
   );

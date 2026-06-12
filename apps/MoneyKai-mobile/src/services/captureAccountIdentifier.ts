@@ -1,4 +1,4 @@
-import type { CaptureSignalInput, MonitoredAccount } from '@/types/capture';
+import type { CaptureSignalInput, MonitoredAccount, SmsDiscoverySample } from '@/types/capture';
 
 export interface CaptureAccountIdentity {
   id: string;
@@ -7,6 +7,7 @@ export interface CaptureAccountIdentity {
   bankLabel: string;
   accountHint?: string;
   sender?: string;
+  discoverySample?: SmsDiscoverySample;
 }
 
 const BANK_LABELS: Record<string, string> = {
@@ -43,6 +44,21 @@ const readSafePayloadString = (input: CaptureSignalInput, key: string) => {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 };
 
+const buildDiscoverySample = (input: CaptureSignalInput): SmsDiscoverySample | undefined => {
+  if (input.source !== 'sms') return undefined;
+
+  const redactedBody = readSafePayloadString(input, 'discoverySampleRedactedBody') ?? input.body;
+  const normalizedBody = redactedBody.trim();
+  if (!normalizedBody || normalizedBody === 'Bank account approval preview') return undefined;
+
+  return {
+    redactedBody: normalizedBody,
+    sender: readSafePayloadString(input, 'discoverySampleSender') ?? input.sender,
+    receivedAt: readSafePayloadString(input, 'discoverySampleReceivedAt') ?? input.receivedAt,
+    localMessageId: readSafePayloadString(input, 'discoverySampleMessageId') ?? readSafePayloadString(input, 'smsMessageId'),
+  };
+};
+
 const extractAccountHintFromText = (text: string) => {
   const accountMatch =
     text.match(/\b(?:a\/c|account|acct)\s*(?:no\.?|number)?\s*(?:ending\s*)?(?:x{1,}|xx)?\s*(\d{3,6})\b/i) ??
@@ -69,6 +85,7 @@ export const identifyCaptureAccount = (input: CaptureSignalInput): CaptureAccoun
     bankLabel,
     accountHint,
     sender,
+    discoverySample: buildDiscoverySample(input),
   };
 };
 
@@ -86,6 +103,7 @@ export const buildMonitoredAccount = (
   sampleCount: 1,
   firstSeenAt: now,
   lastSeenAt: now,
+  discoverySample: identity.discoverySample,
 });
 
 const normalizeAccountHint = (value?: string) => value?.replace(/[^a-z0-9]+/gi, '').toLowerCase();

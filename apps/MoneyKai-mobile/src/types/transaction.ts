@@ -12,6 +12,8 @@ export interface Transaction {
   captureAccountLabel?: string;
   captureBankLabel?: string;
   captureAccountHint?: string;
+  canonicalTransactionKey?: string;
+  sourceFingerprint?: string;
   receipt_url?: string;
   transaction_date: string;
   created_at: string;
