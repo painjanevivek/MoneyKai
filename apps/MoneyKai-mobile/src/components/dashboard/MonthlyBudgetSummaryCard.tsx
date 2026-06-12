@@ -23,6 +23,10 @@ export function MonthlyBudgetSummaryCard({
 }: MonthlyBudgetSummaryCardProps) {
   const { colors } = useTheme();
   const overBudget = remaining < 0;
+  const remainingLabel = overBudget ? 'Overspent' : 'Available';
+  const remainingAmount = overBudget ? Math.abs(remaining) : remaining;
+  const statusColor = overBudget ? colors.chart5 : colors.chart6;
+  const progressLabel = `Budget used (${Math.round(progress)}%)`;
 
   return (
     <Card
@@ -74,22 +78,21 @@ export function MonthlyBudgetSummaryCard({
           </Text>
         </View>
         <View style={{ flex: 1, padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Remaining</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: overBudget ? colors.emergency : colors.primaryLight }}>
-            {formatCurrency(Math.max(0, remaining))}
+          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>{remainingLabel}</Text>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: statusColor }}>
+            {formatCurrency(remainingAmount)}
           </Text>
         </View>
       </View>
 
       <ProgressBar
         progress={progress}
-        color={overBudget ? colors.emergency : colors.primary}
+        color={statusColor}
         height={8}
-        showLabel
-        label="Budget used"
+        label={progressLabel}
       />
       {overBudget ? (
-        <Text style={{ fontSize: Typography.fontSize.xs, color: colors.emergency }}>
+        <Text style={{ fontSize: Typography.fontSize.xs, color: statusColor }}>
           You are {formatCurrency(Math.abs(remaining))} over your monthly budget.
         </Text>
       ) : (

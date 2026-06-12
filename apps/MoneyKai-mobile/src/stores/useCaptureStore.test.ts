@@ -264,7 +264,8 @@ describe('useCaptureStore production safety controls', () => {
     expect(useCaptureStore.getState().drafts[0]).toEqual(
       expect.objectContaining({
         type: 'income',
-        category: 'allowance',
+        category: undefined,
+        suggestedCategory: 'allowance',
         description: 'Salary from ACME PAYROLL',
       })
     );

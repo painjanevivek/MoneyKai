@@ -14,12 +14,14 @@ interface SpendingPieChartProps {
   categoryTotals?: CategoryTotal[];
   totalSpent?: number;
   onPressViewMore?: () => void;
+  actionLabel?: string;
 }
 
 export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
   categoryTotals: categoryTotalsProp,
   totalSpent: totalSpentProp,
   onPressViewMore,
+  actionLabel = 'View budget details',
 }) => {
   const { colors, isDark } = useTheme();
   const storeCategoryTotals = useTransactionStore((s) => s.getCategoryTotals());
@@ -53,7 +55,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
             color: colors.textTertiary,
           }}
         >
-          Total Spent
+          Expenses
         </Text>
         <Text
           style={{
@@ -204,7 +206,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
             color: colors.primary,
           }}
         >
-          View budget details
+          {actionLabel}
         </Text>
         <MaterialCommunityIcons name="arrow-right" size={16} color={colors.primary} />
       </TouchableOpacity>

@@ -11,6 +11,7 @@ import {
 } from '@/services/captureAccountIdentifier';
 import { buildCaptureDedupeKeys } from '@/services/captureDedupe';
 import { normalizeMerchantKey, parseCapturedSignal } from '@/services/captureParser';
+import { getCaptureReviewDecision } from '@/services/captureReviewPolicy';
 import { setNativeApprovedSmsAccounts } from '@/services/nativeCaptureBridge';
 import { useAuthStore } from './useAuthStore';
 import { useBudgetStore } from './useBudgetStore';
@@ -507,14 +508,15 @@ export const useCaptureStore = create<CaptureState>()(
         }
 
         const userId = useAuthStore.getState().user?.id ?? 'local';
+        const reviewDecision = getCaptureReviewDecision(parsed, input.source);
         const draft: DraftTransaction = {
           id: buildId('draft'),
           signalId: signal.id,
           user_id: userId,
           type: parsed.type ?? 'expense',
           amount: parsed.amount,
-          category: parsed.category,
-          suggestedCategory: parsed.category,
+          category: reviewDecision.approvedCategory,
+          suggestedCategory: reviewDecision.suggestedCategory,
           description: buildDraftDescription(parsed, input),
           merchantKey: parsed.merchantKey,
           canonicalTransactionKey: dedupeKeys.canonicalTransactionKey,
@@ -530,7 +532,7 @@ export const useCaptureStore = create<CaptureState>()(
           sourceApp: input.sourceApp ?? input.sender,
           parseReason: parsed.reason,
           parseExplanation: parsed.explanation,
-          reviewRequired: true,
+          reviewRequired: reviewDecision.reviewRequired,
           status: 'pending',
           createdAt: now,
         };
@@ -541,8 +543,8 @@ export const useCaptureStore = create<CaptureState>()(
         }));
 
         void recordAppNotification({
-          title: draft.category ? 'Transaction draft ready' : 'Category needed',
-          body: draft.category
+          title: draft.suggestedCategory ? 'Transaction draft ready' : 'Category needed',
+          body: draft.suggestedCategory
             ? `${draft.description} was captured and is ready to review.`
             : `${draft.description} needs a category before it is added.`,
           type: 'transaction',

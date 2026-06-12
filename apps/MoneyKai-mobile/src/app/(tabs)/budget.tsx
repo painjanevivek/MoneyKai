@@ -1,22 +1,25 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, View, Text, ScrollView } from 'react-native';
+import { Alert, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
+import { useCalendarStore } from '@/stores/useCalendarStore';
 import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
 import { BudgetHealth } from '@/components/dashboard/BudgetHealth';
 import { MonthlyBudgetSummaryCard } from '@/components/dashboard/MonthlyBudgetSummaryCard';
 import { CategoryBudgetRail } from '@/components/dashboard/CategoryBudgetRail';
 import { SpendingPieChart } from '@/components/charts/SpendingPieChart';
+import { MonthYearPickerSheet } from '@/components/calendar/MonthYearPickerSheet';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { EXPENSE_CATEGORIES } from '@/constants/categories';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
-import { filterTransactionsByMonth, getMonthKey, getMonthLabel, buildCategoryTotals, buildCategoryBudgetCards } from '@/utils/dashboard';
+import { buildCategoryBudgetCards } from '@/utils/dashboard';
+import { getMonthSummary } from '@/utils/monthAnalytics';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 const buildCategoryLimitInputs = (limits: Record<string, number> = {}) =>
@@ -30,16 +33,16 @@ export default function BudgetScreen() {
   const { colors } = useTheme();
   const { settings, updateSettings } = useBudgetStore();
   const transactions = useTransactionStore((s) => s.transactions);
+  const selectedMonthKey = useCalendarStore((s) => s.selectedMonthKey);
+  const setSelectedMonthKey = useCalendarStore((s) => s.setSelectedMonthKey);
+  const resetToCurrentMonth = useCalendarStore((s) => s.resetToCurrentMonth);
   const [categoryLimitDrafts, setCategoryLimitDrafts] = useState<Record<string, string>>({});
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
-  const monthKey = getMonthKey(new Date());
-  const monthLabel = getMonthLabel(monthKey);
-  const monthTransactions = useMemo(() => filterTransactionsByMonth(transactions, monthKey), [transactions, monthKey]);
-  const monthCategoryTotals = useMemo(() => buildCategoryTotals(monthTransactions), [monthTransactions]);
-  const monthExpenses = useMemo(
-    () => monthTransactions.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + transaction.amount, 0),
-    [monthTransactions]
-  );
+  const monthSummary = useMemo(() => getMonthSummary(transactions, selectedMonthKey), [transactions, selectedMonthKey]);
+  const monthLabel = monthSummary.monthLabel;
+  const monthCategoryTotals = monthSummary.categoryTotals;
+  const monthExpenses = monthSummary.expenses;
   const monthRemaining = settings.monthly_allowance - monthExpenses;
   const monthProgress = settings.monthly_allowance > 0 ? (monthExpenses / settings.monthly_allowance) * 100 : 0;
   const categoryCards = useMemo(
@@ -86,13 +89,35 @@ export default function BudgetScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, lineHeight: 28, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-          Budget
-        </Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
-          Budget controls and month-aware summaries
-        </Text>
+      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base, flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: Typography.fontSize.xl, lineHeight: 28, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+            Budget
+          </Text>
+          <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
+            {monthLabel}
+          </Text>
+        </View>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={`Select budget month, currently ${monthLabel}`}
+          activeOpacity={0.82}
+          onPress={() => setShowMonthPicker(true)}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: BorderRadius.md,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border,
+            ...Shadows.sm,
+            shadowColor: colors.shadowColor,
+          }}
+        >
+          <MaterialCommunityIcons name="calendar-month-outline" size={21} color={colors.textPrimary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'], gap: Spacing.base }} showsVerticalScrollIndicator={false}>
@@ -168,7 +193,7 @@ export default function BudgetScreen() {
                       {category.name}
                     </Text>
                     <Text numberOfLines={1} style={{ fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>
-                      {formatCurrency(spent)} spent this month
+                      {formatCurrency(spent)} spent in {monthLabel}
                     </Text>
                   </View>
                   <Input
@@ -197,7 +222,8 @@ export default function BudgetScreen() {
         <SpendingPieChart
           categoryTotals={monthCategoryTotals}
           totalSpent={monthExpenses}
-          onPressViewMore={() => router.push('/(tabs)/savings')}
+          onPressViewMore={() => router.push('/(tabs)/analytics')}
+          actionLabel="View analytics"
         />
 
         <Card
@@ -229,6 +255,13 @@ export default function BudgetScreen() {
 
         <CategoryBudgetRail items={categoryCards} />
       </ScrollView>
+      <MonthYearPickerSheet
+        visible={showMonthPicker}
+        selectedMonthKey={selectedMonthKey}
+        onSelect={setSelectedMonthKey}
+        onClose={() => setShowMonthPicker(false)}
+        onResetToCurrentMonth={resetToCurrentMonth}
+      />
     </SafeAreaView>
   );
 }

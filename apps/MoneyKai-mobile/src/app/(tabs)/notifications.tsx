@@ -221,7 +221,7 @@ export default function NotificationsScreen() {
               {pendingDrafts.map((draft) => {
                 const isExpanded = expandedDraftId === draft.id;
                 const categories = getDraftCategoryOptions(draft);
-                const selectedCategoryId = selectedCategoryByDraft[draft.id] ?? draft.category;
+                const selectedCategoryId = selectedCategoryByDraft[draft.id] ?? draft.category ?? draft.suggestedCategory;
                 const selectedCategory = selectedCategoryId ? getCategoryById(selectedCategoryId) : undefined;
 
                 const handleApprove = () => {
@@ -297,7 +297,7 @@ export default function NotificationsScreen() {
                           {formatCurrency(draft.amount)} | {draft.transaction_date}
                         </Text>
                         <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, marginTop: 3 }}>
-                          {selectedCategory?.name ?? 'Category needed'} | {draft.captureSource.toUpperCase()}
+                          {selectedCategory?.name ? `Suggested: ${selectedCategory.name}` : 'Category needed'} | {draft.captureSource.toUpperCase()}
                         </Text>
                       </View>
                     </View>

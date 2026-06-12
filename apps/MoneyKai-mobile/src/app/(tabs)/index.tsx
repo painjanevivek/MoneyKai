@@ -9,27 +9,28 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
+import { useCalendarStore } from '@/stores/useCalendarStore';
 import { MonthlyBudgetSummaryCard } from '@/components/dashboard/MonthlyBudgetSummaryCard';
 import { SpendingPieChart } from '@/components/charts/SpendingPieChart';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { SavingsGoalCard } from '@/components/dashboard/SavingsGoalCard';
 import { CategoryBudgetRail } from '@/components/dashboard/CategoryBudgetRail';
+import { MonthYearPickerSheet } from '@/components/calendar/MonthYearPickerSheet';
+import { DashboardCalendarButton } from '@/components/dashboard/DashboardCalendarButton';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Button } from '@/components/ui/Button';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
-import { getLastSixMonths } from '@/utils/dateUtils';
 import {
   buildCategoryBudgetCards,
-  buildCategoryTotals,
   buildDashboardInsight,
   buildSavingsGoalSnapshot,
   filterTransactionsByMonth,
-  getMonthKey,
   getMonthLabel,
   getPreviousMonthKey,
 } from '@/utils/dashboard';
+import { getMonthSummary } from '@/utils/monthAnalytics';
 
 const MENU_ACTIONS = [
   { label: 'Notifications', icon: 'bell-outline', route: '/(tabs)/notifications' as const },
@@ -50,10 +51,11 @@ export default function DashboardScreen() {
   const setTourCompletedForUser = useSettingsStore((s) => s.setTourCompletedForUser);
   const transactions = useTransactionStore((s) => s.transactions);
   const { settings } = useBudgetStore();
+  const selectedMonthKey = useCalendarStore((s) => s.selectedMonthKey);
+  const setSelectedMonthKey = useCalendarStore((s) => s.setSelectedMonthKey);
+  const resetToCurrentMonth = useCalendarStore((s) => s.resetToCurrentMonth);
   const activeChallenges = useChallengeStore((s) => s.getActiveChallenges());
 
-  const months = useMemo(() => getLastSixMonths(), []);
-  const [selectedMonthKey, setSelectedMonthKey] = useState(() => months[months.length - 1]?.key ?? getMonthKey(new Date()));
   const [showMonthMenu, setShowMonthMenu] = useState(false);
   const [showMenuSheet, setShowMenuSheet] = useState(false);
   const openMenuFromSwipe = React.useCallback(() => {
@@ -81,13 +83,8 @@ export default function DashboardScreen() {
 
   const selectedMonthLabel = useMemo(() => getMonthLabel(selectedMonthKey), [selectedMonthKey]);
 
-  const monthTransactions = useMemo(
-    () =>
-      [...filterTransactionsByMonth(transactions, selectedMonthKey)].sort(
-        (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
-      ),
-    [transactions, selectedMonthKey]
-  );
+  const monthSummary = useMemo(() => getMonthSummary(transactions, selectedMonthKey), [transactions, selectedMonthKey]);
+  const monthTransactions = monthSummary.transactions;
 
   const previousMonthKey = useMemo(() => getPreviousMonthKey(selectedMonthKey), [selectedMonthKey]);
   const previousMonthTransactions = useMemo(
@@ -95,19 +92,13 @@ export default function DashboardScreen() {
     [transactions, previousMonthKey]
   );
 
-  const monthCategoryTotals = useMemo(() => buildCategoryTotals(monthTransactions), [monthTransactions]);
+  const monthCategoryTotals = monthSummary.categoryTotals;
   const categoryCards = useMemo(
     () => buildCategoryBudgetCards(monthCategoryTotals, settings.category_limits),
     [monthCategoryTotals, settings.category_limits]
   );
 
-  const monthExpenseTotal = useMemo(
-    () =>
-      monthTransactions
-        .filter((transaction) => transaction.type === 'expense')
-        .reduce((sum, transaction) => sum + transaction.amount, 0),
-    [monthTransactions]
-  );
+  const monthExpenseTotal = monthSummary.expenses;
   const previousMonthExpenseTotal = useMemo(
     () =>
       previousMonthTransactions
@@ -140,42 +131,6 @@ export default function DashboardScreen() {
     await signOut();
     router.replace('/login');
   };
-
-  const monthTiles = (
-    <View style={{ gap: Spacing.sm }}>
-      {months.map((month) => {
-        const active = month.key === selectedMonthKey;
-
-        return (
-          <TouchableOpacity
-            key={month.key}
-            onPress={() => {
-              setSelectedMonthKey(month.key);
-              setShowMonthMenu(false);
-            }}
-            style={{
-              paddingHorizontal: Spacing.md,
-              paddingVertical: Spacing.md,
-              borderRadius: BorderRadius.md,
-              borderWidth: 1,
-              borderColor: active ? colors.primary : colors.border,
-              backgroundColor: active ? colors.primaryBg : colors.surface,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: Typography.fontSize.base,
-                fontFamily: Typography.fontFamily.medium,
-                color: active ? colors.primary : colors.textPrimary,
-              }}
-            >
-              {month.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']} {...homeMenuPanResponder.panHandlers}>
@@ -247,35 +202,9 @@ export default function DashboardScreen() {
             >
               <MaterialCommunityIcons name="bell-outline" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
-          </View>
 
-          <TouchableOpacity
-            onPress={() => setShowMonthMenu(true)}
-            style={{
-              alignSelf: 'flex-start',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              paddingHorizontal: Spacing.md,
-              paddingVertical: 8,
-              borderRadius: BorderRadius.full,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-            }}
-          >
-            <MaterialCommunityIcons name="calendar-month-outline" size={16} color={colors.primary} />
-            <Text
-              style={{
-                fontSize: Typography.fontSize.xs,
-                fontFamily: Typography.fontFamily.semiBold,
-                color: colors.textSecondary,
-              }}
-            >
-              Viewing {selectedMonthLabel}
-            </Text>
-            <MaterialCommunityIcons name="chevron-down" size={16} color={colors.textSecondary} />
-          </TouchableOpacity>
+            <DashboardCalendarButton monthLabel={selectedMonthLabel} onPress={() => setShowMonthMenu(true)} />
+          </View>
         </View>
 
         <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
@@ -366,14 +295,13 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <ModalSheet
+      <MonthYearPickerSheet
         visible={showMonthMenu}
-        title="Select Month"
-        subtitle="Choose from the last six months."
         onClose={() => setShowMonthMenu(false)}
-      >
-        {monthTiles}
-      </ModalSheet>
+        selectedMonthKey={selectedMonthKey}
+        onSelect={setSelectedMonthKey}
+        onResetToCurrentMonth={resetToCurrentMonth}
+      />
 
       <ModalSheet
         visible={showMenuSheet}

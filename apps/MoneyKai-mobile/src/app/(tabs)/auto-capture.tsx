@@ -88,7 +88,8 @@ const DraftCard = ({ draft, onBudgetRequired }: { draft: DraftTransaction; onBud
   const confirmDraft = useCaptureStore((state) => state.confirmDraft);
   const ignoreDraft = useCaptureStore((state) => state.ignoreDraft);
   const categories = draft.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  const selectedCategory = draft.category ? getCategoryById(draft.category) : undefined;
+  const suggestedCategoryId = draft.suggestedCategory ?? draft.category;
+  const selectedCategory = suggestedCategoryId ? getCategoryById(suggestedCategoryId) : undefined;
 
   const handleConfirm = (category: string) => {
     const confirmed = confirmDraft(draft.id, category);
@@ -154,8 +155,8 @@ const DraftCard = ({ draft, onBudgetRequired }: { draft: DraftTransaction; onBud
               paddingVertical: Spacing.sm,
               borderRadius: BorderRadius.full,
               borderWidth: 1,
-              borderColor: draft.category === category.id ? category.color : colors.border,
-              backgroundColor: draft.category === category.id ? category.colorLight : colors.surface,
+              borderColor: suggestedCategoryId === category.id ? category.color : colors.border,
+              backgroundColor: suggestedCategoryId === category.id ? category.colorLight : colors.surface,
             }}
           >
             <MaterialCommunityIcons name={category.icon as any} size={15} color={category.color} />
@@ -167,11 +168,11 @@ const DraftCard = ({ draft, onBudgetRequired }: { draft: DraftTransaction; onBud
       </View>
 
       <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
-        {draft.category ? (
+        {suggestedCategoryId ? (
           <Button
             title="Confirm Suggested"
             icon="check"
-            onPress={() => handleConfirm(draft.category as string)}
+            onPress={() => handleConfirm(suggestedCategoryId)}
             style={{ flex: 1 }}
           />
         ) : null}
