@@ -33,7 +33,7 @@ const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
   { href: '/transactions', title: 'Transactions', subtitle: 'Track income, expenses, and history' },
   { href: '/budgets', title: 'Budgets', subtitle: 'Review monthly limits and budget health' },
   { href: '/goals', title: 'Goals', subtitle: 'Stay focused on savings progress' },
-  { href: '/reports', title: 'Reports', subtitle: 'Spot patterns in your spending' },
+  { href: '/reports', title: 'Reports', subtitle: 'Import bank statements and reconcile spending' },
   { href: '/accounts', title: 'Accounts', subtitle: 'Profile and account-related preferences' },
   { href: '/categories', title: 'Categories', subtitle: 'See where money goes by category' },
   { href: '/settings', title: 'Settings', subtitle: 'Profile, privacy, and backups' },
