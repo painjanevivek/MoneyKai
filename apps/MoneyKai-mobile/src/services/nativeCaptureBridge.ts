@@ -50,6 +50,8 @@ type NativeCaptureSignal = {
   smsSlot?: string;
   smsPhoneId?: string;
   smsAccountHint?: string;
+  smsFingerprint?: string;
+  smsSampleSnippet?: string;
   sampleCount?: number;
   lastSeenAt?: string;
 };
@@ -209,7 +211,7 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
       : await PermissionsAndroid.request(readPermission, {
           title: 'Import Recent Bank SMS',
           message:
-            'MoneyKai needs one-time SMS inbox access only in this internal research build to import the last 30 days of bank and payment transaction SMS.',
+            'MoneyKai needs one-time SMS inbox access only in this internal research build to import bank and payment transaction SMS for the range you choose.',
           buttonPositive: 'Allow',
           buttonNegative: 'Not now',
         });
@@ -255,8 +257,8 @@ export const discoverRecentNativeSmsAccounts = async (params?: {
     return emptySmsAccountDiscoveryResult('unsupported', 'SMS account discovery requires an Android development build.');
   }
 
-  const days = Math.min(31, Math.max(1, Math.round(params?.days ?? 30)));
-  const maxMessages = Math.min(300, Math.max(1, Math.round(params?.maxMessages ?? 300)));
+  const days = Math.max(0, Math.round(params?.days ?? 30));
+  const maxMessages = Math.min(50000, Math.max(1, Math.round(params?.maxMessages ?? 300)));
   let rawResult: string;
   try {
     rawResult = nativeCaptureModule.discoverRecentSmsAccounts(days, maxMessages);
@@ -294,8 +296,8 @@ export const importRecentNativeSmsTransactions = async (params?: {
     return emptySmsImportResult('unsupported', 'SMS inbox import requires an Android development build.');
   }
 
-  const days = Math.min(31, Math.max(1, Math.round(params?.days ?? 30)));
-  const maxMessages = Math.min(300, Math.max(1, Math.round(params?.maxMessages ?? 300)));
+  const days = Math.max(0, Math.round(params?.days ?? 30));
+  const maxMessages = Math.min(50000, Math.max(1, Math.round(params?.maxMessages ?? 300)));
   const approvedAccountIdsJson = JSON.stringify(params?.approvedAccountIds ?? []);
   let rawResult: string;
   try {
@@ -496,6 +498,8 @@ const mapNativeSignalToCaptureSignal = (event: NativeCaptureSignal): CaptureSign
       smsSlot: event.smsSlot,
       smsPhoneId: event.smsPhoneId,
       smsAccountHint: event.smsAccountHint,
+      smsFingerprint: event.smsFingerprint,
+      smsSampleSnippet: event.smsSampleSnippet,
     },
   };
 };
@@ -513,6 +517,7 @@ const mapNativeAccountToCaptureSignal = (event: NativeCaptureSignal): CaptureSig
       captureOrigin: 'android_sms_account_discovery',
       rawBodyStored: 'false',
       smsAccountHint: event.smsAccountHint,
+      smsSampleSnippet: event.smsSampleSnippet ?? event.body,
     },
   };
 };

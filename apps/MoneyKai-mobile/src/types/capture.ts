@@ -50,6 +50,7 @@ export interface MonitoredAccount {
   bankLabel: string;
   accountHint?: string;
   sender?: string;
+  sampleMessage?: string;
   status: MonitoredAccountStatus;
   sampleCount: number;
   firstSeenAt: string;

@@ -1,14 +1,132 @@
-import React, { useState } from 'react';
-import { Alert, ScrollView, Switch, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { EXPENSE_CATEGORIES, getCategoryById } from '@/constants/categories';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
-import { Spacing } from '@/constants/theme';
+import type { CategoryTotal } from '@/types/transaction';
+import { buildCategoryTotals, filterTransactionsByMonth, getMonthKey } from '@/utils/dashboard';
 import { createAppScreenStyles } from './screenStyles';
+
+const toLimitDrafts = (limits?: Record<string, number>) =>
+  EXPENSE_CATEGORIES.reduce<Record<string, string>>((acc, category) => {
+    const value = limits?.[category.id];
+    acc[category.id] = value && value > 0 ? String(value) : '';
+    return acc;
+  }, {});
+
+const normalizeLimits = (drafts: Record<string, string>) =>
+  Object.entries(drafts).reduce<Record<string, number>>((acc, [categoryId, value]) => {
+    const amount = Number(value);
+    if (Number.isFinite(amount) && amount > 0) {
+      acc[categoryId] = amount;
+    }
+    return acc;
+  }, {});
+
+function BudgetSpendingPieChart({
+  spentTotals,
+  formatMoney,
+}: {
+  spentTotals: CategoryTotal[];
+  formatMoney: (value: number) => string;
+}) {
+  const { colors } = useTheme();
+  const totalSpent = spentTotals.reduce((sum, item) => sum + item.total, 0);
+  const circumference = 2 * Math.PI * 58;
+  const chartColors = [colors.chart1, colors.chart2, colors.chart3, colors.chart4, colors.chart5, colors.chart6, colors.chart7, colors.chart8];
+
+  return (
+    <View style={{ marginBottom: Spacing.base }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md }}>
+        <MaterialCommunityIcons name="chart-donut" size={22} color={colors.primary} />
+        <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.lg }}>
+          Spending split
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.base }}>
+        <View style={{ height: 142, width: 142, alignItems: 'center', justifyContent: 'center' }}>
+          <Svg width={136} height={136} viewBox="0 0 136 136" style={{ position: 'absolute' }}>
+            <Circle cx={68} cy={68} r={58} stroke={colors.borderLight} strokeWidth={18} fill="none" />
+            {totalSpent > 0 &&
+              spentTotals.slice(0, 8).reduce<{ nodes: React.ReactNode[]; offset: number }>(
+                (acc, item, index) => {
+                  const dash = (item.total / totalSpent) * circumference;
+                  acc.nodes.push(
+                    <Circle
+                      key={item.category}
+                      cx={68}
+                      cy={68}
+                      r={58}
+                      stroke={chartColors[index % chartColors.length]}
+                      strokeWidth={18}
+                      fill="none"
+                      strokeDasharray={`${dash} ${circumference - dash}`}
+                      strokeDashoffset={-acc.offset}
+                      strokeLinecap="round"
+                      rotation={-90}
+                      originX={68}
+                      originY={68}
+                    />
+                  );
+                  acc.offset += dash;
+                  return acc;
+                },
+                { nodes: [], offset: 0 }
+              ).nodes}
+          </Svg>
+          <View style={{ alignItems: 'center', maxWidth: 92 }}>
+            <Text style={{ color: colors.textTertiary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.xs }}>
+              Spent
+            </Text>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.md }}
+            >
+              {formatMoney(totalSpent)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ flex: 1, gap: Spacing.sm }}>
+          {spentTotals.length === 0 ? (
+            <Text style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm }}>
+              Add expenses to see where your money is going.
+            </Text>
+          ) : (
+            spentTotals.slice(0, 5).map((item, index) => {
+              const category = getCategoryById(item.category);
+              const percent = Math.round(item.percentage);
+              return (
+                <View key={item.category} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                  <View style={{ height: 9, width: 9, borderRadius: 5, backgroundColor: chartColors[index % chartColors.length] }} />
+                  <Text
+                    numberOfLines={1}
+                    style={{ flex: 1, color: colors.textPrimary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm }}
+                  >
+                    {category?.name ?? item.category}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.xs }}>
+                    {percent}%
+                  </Text>
+                </View>
+              );
+            })
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export function BudgetScreen() {
   const { colors } = useTheme();
@@ -25,8 +143,16 @@ export function BudgetScreen() {
   const [resetDay, setResetDay] = useState(String(settings.reset_day || 1));
   const [adjustmentAmount, setAdjustmentAmount] = useState('');
   const [adjustmentReason, setAdjustmentReason] = useState('');
+  const [categoryLimitDrafts, setCategoryLimitDrafts] = useState(() => toLimitDrafts(settings.category_limits));
 
-  const spent = transactions.filter((item) => item.type === 'expense').reduce((sum, item) => sum + item.amount, 0);
+  const currentMonthTransactions = useMemo(
+    () => filterTransactionsByMonth(transactions, getMonthKey(new Date())),
+    [transactions]
+  );
+  const spent = currentMonthTransactions.filter((item) => item.type === 'expense').reduce((sum, item) => sum + item.amount, 0);
+  const spentTotals = useMemo(() => buildCategoryTotals(currentMonthTransactions), [currentMonthTransactions]);
+  const normalizedLimits = useMemo(() => normalizeLimits(categoryLimitDrafts), [categoryLimitDrafts]);
+  const totalCategoryLimits = Object.values(normalizedLimits).reduce((sum, value) => sum + value, 0);
   const remaining = Math.max(settings.monthly_allowance - spent, 0);
   const formatMoney = (value: number) => `${currencySymbol}${value.toLocaleString('en-IN')}`;
 
@@ -46,8 +172,9 @@ export function BudgetScreen() {
       monthly_allowance: nextAllowance,
       reset_day: nextResetDay,
       currency: settings.currency,
+      category_limits: normalizedLimits,
     });
-    Alert.alert('Budget saved', 'Your budget settings were saved and synced.');
+    Alert.alert('Budget saved', 'Your budget settings and category limits were saved.');
   };
 
   const saveAdjustment = (type: 'add' | 'subtract') => {
@@ -74,22 +201,106 @@ export function BudgetScreen() {
         <View style={styles.header}>
           <Text style={styles.eyebrow}>Budget</Text>
           <Text style={styles.title}>Monthly guardrails</Text>
-          <Text style={styles.subtitle}>Set your allowance and track how much room is left this cycle.</Text>
+          <Text style={styles.subtitle}>Set category limits, watch the split, and keep this month in control. ✨</Text>
         </View>
 
         <View style={styles.panel}>
           <View style={styles.row}>
             <View>
               <Text style={styles.muted}>Remaining</Text>
-              <Text style={styles.value}>{formatMoney(remaining)}</Text>
+              <Text style={[styles.value, { fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize['2xl'] }]}>
+                {formatMoney(remaining)}
+              </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.muted}>Spent</Text>
+              <Text style={styles.muted}>Spent this month</Text>
               <Text style={styles.value}>{formatMoney(spent)}</Text>
             </View>
           </View>
           <View style={styles.divider} />
-          <Text style={styles.muted}>Allowance: {formatMoney(settings.monthly_allowance)}</Text>
+          <Text style={styles.muted}>
+            Allowance {formatMoney(settings.monthly_allowance)} - Category limits {formatMoney(totalCategoryLimits)}
+          </Text>
+        </View>
+
+        <View style={styles.panel}>
+          <BudgetSpendingPieChart spentTotals={spentTotals} formatMoney={formatMoney} />
+          <Text style={styles.sectionTitle}>Category limit settings</Text>
+          <Text style={[styles.muted, { marginBottom: Spacing.md }]}>
+            Give every noisy spending category a clear ceiling. Leave a field empty when you do not want a limit.
+          </Text>
+          <View style={{ gap: Spacing.sm }}>
+            {EXPENSE_CATEGORIES.map((category) => {
+              const spentAmount = spentTotals.find((item) => item.category === category.id)?.total ?? 0;
+              const limitAmount = normalizedLimits[category.id] ?? 0;
+              const percentUsed = limitAmount > 0 ? Math.min(100, Math.round((spentAmount / limitAmount) * 100)) : 0;
+
+              return (
+                <View
+                  key={category.id}
+                  style={{
+                    borderColor: colors.borderLight,
+                    borderRadius: BorderRadius.md,
+                    borderWidth: 1,
+                    padding: Spacing.md,
+                  }}
+                >
+                  <View style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.md }}>
+                    <View
+                      style={{
+                        alignItems: 'center',
+                        backgroundColor: colors.primaryBg,
+                        borderRadius: BorderRadius.md,
+                        height: 42,
+                        justifyContent: 'center',
+                        width: 42,
+                      }}
+                    >
+                      <MaterialCommunityIcons name={category.icon} size={21} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.base }}>
+                        {category.name}
+                      </Text>
+                      <Text style={styles.muted}>
+                        {limitAmount > 0 ? `${formatMoney(spentAmount)} used - ${percentUsed}%` : `${formatMoney(spentAmount)} spent this month`}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        alignItems: 'center',
+                        borderColor: colors.border,
+                        borderRadius: BorderRadius.md,
+                        borderWidth: 1,
+                        flexDirection: 'row',
+                        minHeight: 44,
+                        paddingHorizontal: Spacing.sm,
+                        width: 112,
+                      }}
+                    >
+                      <Text style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.bold, marginRight: 4 }}>{currencySymbol}</Text>
+                      <TextInput
+                        accessibilityLabel={`${category.name} limit`}
+                        value={categoryLimitDrafts[category.id] ?? ''}
+                        onChangeText={(value) => setCategoryLimitDrafts((current) => ({ ...current, [category.id]: value.replace(/[^0-9.]/g, '') }))}
+                        keyboardType="decimal-pad"
+                        inputMode="decimal"
+                        placeholder="0"
+                        placeholderTextColor={colors.textTertiary}
+                        style={{
+                          color: colors.textPrimary,
+                          flex: 1,
+                          fontFamily: Typography.fontFamily.semiBold,
+                          fontSize: Typography.fontSize.base,
+                          paddingVertical: 8,
+                        }}
+                      />
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.panel}>
@@ -166,20 +377,26 @@ export function BudgetScreen() {
         </View>
 
         <Text style={styles.sectionTitle}>Recent adjustments</Text>
-        {adjustments.slice(0, 4).map((item) => (
-          <View key={`${item.date}-${item.reason}`} style={styles.panel}>
-            <View style={styles.row}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.value}>{item.reason}</Text>
-                <Text style={styles.muted}>{new Date(item.date).toLocaleDateString('en-IN')}</Text>
-              </View>
-              <Text style={styles.value}>
-                {item.type === 'add' ? '+' : '-'}
-                {formatMoney(item.amount)}
-              </Text>
-            </View>
+        {adjustments.length === 0 ? (
+          <View style={styles.panel}>
+            <Text style={styles.emptyText}>No manual adjustments yet. Add one when your monthly allowance changes mid-cycle.</Text>
           </View>
-        ))}
+        ) : (
+          adjustments.slice(0, 4).map((item) => (
+            <View key={`${item.date}-${item.reason}`} style={styles.panel}>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.value}>{item.reason}</Text>
+                  <Text style={styles.muted}>{new Date(item.date).toLocaleDateString('en-IN')}</Text>
+                </View>
+                <Text style={styles.value}>
+                  {item.type === 'add' ? '+' : '-'}
+                  {formatMoney(item.amount)}
+                </Text>
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );

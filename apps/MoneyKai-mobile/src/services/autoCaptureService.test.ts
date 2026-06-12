@@ -138,6 +138,7 @@ describe('autoCaptureService SMS research gate', () => {
       approvedCount: 0,
       declinedCount: 0,
     });
+    mocks.isSignalAccountApproved.mockReturnValue(false);
 
     const summary = await importRecentSmsTransactionsFromInbox();
 
@@ -154,7 +155,7 @@ describe('autoCaptureService SMS research gate', () => {
     expect(mocks.importRecentNativeSmsTransactions).not.toHaveBeenCalled();
   });
 
-  it('imports recent inbox SMS for approved accounts and confirms categorized drafts', async () => {
+  it('imports recent inbox SMS for approved accounts and leaves every draft pending for category review', async () => {
     mocks.isSmsResearchBuildEnabled.mockReturnValue(true);
     mocks.isNativeSmsResearchBuildEnabled.mockReturnValue(true);
     mocks.discoverRecentNativeSmsAccounts.mockResolvedValue({
@@ -224,15 +225,15 @@ describe('autoCaptureService SMS research gate', () => {
       pendingAccountApprovalCount: 0,
       approvedAccountCount: 2,
       draftedCount: 2,
-      confirmedCount: 1,
-      pendingReviewCount: 1,
+      confirmedCount: 0,
+      pendingReviewCount: 2,
     });
     expect(mocks.importRecentNativeSmsTransactions).toHaveBeenCalledWith({
       days: 30,
-      maxMessages: 300,
+      maxMessages: 1000,
       approvedAccountIds: ['sms:hdfcbk:sender', 'sms:icicib:sender'],
     });
-    expect(mocks.confirmDraft).toHaveBeenCalledWith('draft_1', 'shopping');
+    expect(mocks.confirmDraft).not.toHaveBeenCalled();
   });
 
   it('keeps recent inbox SMS import unavailable when native SMS research is disabled', async () => {

@@ -7,6 +7,7 @@ export interface CaptureAccountIdentity {
   bankLabel: string;
   accountHint?: string;
   sender?: string;
+  sampleMessage?: string;
 }
 
 const BANK_LABELS: Record<string, string> = {
@@ -59,6 +60,7 @@ export const identifyCaptureAccount = (input: CaptureSignalInput): CaptureAccoun
 
   const payloadHint = readSafePayloadString(input, 'smsAccountHint');
   const accountHint = payloadHint ?? extractAccountHintFromText(input.body);
+  const sampleMessage = readSafePayloadString(input, 'smsSampleSnippet') ?? input.body;
   const accountKeyPart = accountHint?.replace(/[^a-z0-9]+/gi, '').toLowerCase() || 'sender';
   const bankLabel = deriveBankLabel(bankKey, sender);
 
@@ -69,6 +71,7 @@ export const identifyCaptureAccount = (input: CaptureSignalInput): CaptureAccoun
     bankLabel,
     accountHint,
     sender,
+    sampleMessage,
   };
 };
 
@@ -82,6 +85,7 @@ export const buildMonitoredAccount = (
   bankLabel: identity.bankLabel,
   accountHint: identity.accountHint,
   sender: identity.sender,
+  sampleMessage: identity.sampleMessage,
   status: 'pending',
   sampleCount: 1,
   firstSeenAt: now,

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, SectionList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -10,8 +10,12 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Spacing } from '@/constants/theme';
+import { PAYMENT_METHODS, getCategoryById } from '@/constants/categories';
 import type { AppTabParamList } from '@/navigation/types';
 import type { TransactionType } from '@/types/transaction';
+import type { Transaction } from '@/types/transaction';
+import { getMonthKey, getMonthLabel } from '@/utils/dashboard';
+import { titleCase } from '@/utils/labels';
 import { createAppScreenStyles, formatDate } from './screenStyles';
 
 type TransactionsNavigation = BottomTabNavigationProp<AppTabParamList, 'Transactions'>;
@@ -25,6 +29,8 @@ export function TransactionsScreen() {
   const deleteTransaction = useTransactionStore((state) => state.deleteTransaction);
   const [query, setQuery] = useState('');
   const [type, setType] = useState<TransactionType | 'all'>('all');
+  const formatCategory = (categoryId: string) => getCategoryById(categoryId)?.name ?? titleCase(categoryId);
+  const formatPaymentMethod = (methodId: string) => PAYMENT_METHODS.find((item) => item.id === methodId)?.name ?? titleCase(methodId);
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -34,12 +40,29 @@ export function TransactionsScreen() {
         if (!normalizedQuery) return true;
         return (
           item.description.toLowerCase().includes(normalizedQuery) ||
-          item.category.toLowerCase().includes(normalizedQuery) ||
-          item.payment_method.toLowerCase().includes(normalizedQuery)
+          formatCategory(item.category).toLowerCase().includes(normalizedQuery) ||
+          formatPaymentMethod(item.payment_method).toLowerCase().includes(normalizedQuery)
         );
       })
       .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
   }, [query, transactions, type]);
+
+  const sections = useMemo(() => {
+    const grouped = new Map<string, Transaction[]>();
+    filtered.forEach((transaction) => {
+      const monthKey = getMonthKey(transaction.transaction_date);
+      const items = grouped.get(monthKey) ?? [];
+      items.push(transaction);
+      grouped.set(monthKey, items);
+    });
+
+    return [...grouped.entries()]
+      .sort(([monthA], [monthB]) => monthB.localeCompare(monthA))
+      .map(([monthKey, data]) => ({
+        title: getMonthLabel(monthKey),
+        data: data.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()),
+      }));
+  }, [filtered]);
 
   const formatMoney = (value: number) => `${currencySymbol}${value.toLocaleString('en-IN')}`;
 
@@ -52,10 +75,11 @@ export function TransactionsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <FlatList
-        data={filtered}
+      <SectionList
+        sections={sections}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.scrollContent}
+        stickySectionHeadersEnabled={false}
         ListHeaderComponent={
           <>
             <View style={styles.header}>
@@ -97,6 +121,11 @@ export function TransactionsScreen() {
             <Text style={styles.emptyText}>No matching transactions yet.</Text>
           </View>
         }
+        renderSectionHeader={({ section }) => (
+          <View style={{ paddingTop: Spacing.sm }}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+          </View>
+        )}
         renderItem={({ item }) => (
           <View style={styles.panel}>
             <View style={styles.row}>
@@ -119,9 +148,9 @@ export function TransactionsScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.value}>{item.description || item.category}</Text>
+                  <Text style={styles.value}>{item.description || formatCategory(item.category)}</Text>
                   <Text style={styles.muted}>
-                    {item.category} · {item.payment_method} · {formatDate(item.transaction_date)}
+                    {formatCategory(item.category)} - {formatPaymentMethod(item.payment_method)} - {formatDate(item.transaction_date)}
                   </Text>
                 </View>
               </View>

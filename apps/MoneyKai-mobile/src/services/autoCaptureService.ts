@@ -5,6 +5,20 @@ import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import type { CaptureIngestionResult, CaptureSignalInput } from '@/types/capture';
 
+export type SmsImportRangeId = '15d' | '1m' | '3m' | '6m' | '1y' | 'all';
+
+export const SMS_IMPORT_RANGES: Array<{ id: SmsImportRangeId; label: string; days: number; maxMessages: number }> = [
+  { id: '15d', label: '15 days', days: 15, maxMessages: 500 },
+  { id: '1m', label: '1 month', days: 30, maxMessages: 1000 },
+  { id: '3m', label: '3 months', days: 90, maxMessages: 3000 },
+  { id: '6m', label: '6 months', days: 180, maxMessages: 6000 },
+  { id: '1y', label: '1 year', days: 365, maxMessages: 12000 },
+  { id: 'all', label: 'ALL', days: 0, maxMessages: 50000 },
+];
+
+const getSmsImportRange = (rangeId: SmsImportRangeId = '1m') =>
+  SMS_IMPORT_RANGES.find((range) => range.id === rangeId) ?? SMS_IMPORT_RANGES[1];
+
 export interface SmsInboxImportSummary {
   status: 'imported' | 'needs_account_approval' | 'permission_denied' | 'unsupported' | 'error' | 'ignored';
   scannedCount: number;
@@ -63,7 +77,9 @@ export const ingestSmsCapture = (params: {
   });
 };
 
-export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxImportSummary> => {
+export const importRecentSmsTransactionsFromInbox = async (
+  rangeId: SmsImportRangeId = '1m'
+): Promise<SmsInboxImportSummary> => {
   if (!isNativeSmsResearchBuildEnabled()) {
     return {
       status: 'ignored',
@@ -102,7 +118,11 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
     };
   }
 
-  const accountPreview = await discoverRecentNativeSmsAccounts({ days: 30, maxMessages: 300 });
+  const range = getSmsImportRange(rangeId);
+  const accountPreview = await discoverRecentNativeSmsAccounts({
+    days: range.days,
+    maxMessages: range.maxMessages,
+  });
   const summary: SmsInboxImportSummary = {
     status: accountPreview.status,
     scannedCount: accountPreview.scannedCount,
@@ -131,19 +151,19 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
   summary.approvedAccountCount = accountDiscovery.approvedCount;
   summary.declinedAccountCount = accountDiscovery.declinedCount;
 
-  if (accountDiscovery.pendingCount > 0) {
+  const approvedAccountIds = accountPreview.signals
+    .filter((signal) => captureStore.isSignalAccountApproved(signal))
+    .map(identifyCaptureAccount)
+    .filter((identity): identity is NonNullable<ReturnType<typeof identifyCaptureAccount>> => Boolean(identity))
+    .map((identity) => identity.id);
+
+  if (approvedAccountIds.length === 0 && accountDiscovery.pendingCount > 0) {
     return {
       ...summary,
       status: 'needs_account_approval',
       message: 'Approve the found bank accounts in Notifications before importing their SMS transactions.',
     };
   }
-
-  const approvedAccountIds = accountPreview.signals
-    .filter((signal) => captureStore.isSignalAccountApproved(signal))
-    .map(identifyCaptureAccount)
-    .filter((identity): identity is NonNullable<ReturnType<typeof identifyCaptureAccount>> => Boolean(identity))
-    .map((identity) => identity.id);
 
   if (approvedAccountIds.length === 0) {
     return {
@@ -154,8 +174,8 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
   }
 
   const nativeResult = await importRecentNativeSmsTransactions({
-    days: 30,
-    maxMessages: 300,
+    days: range.days,
+    maxMessages: range.maxMessages,
     approvedAccountIds,
   });
   summary.status = nativeResult.status;
@@ -189,9 +209,7 @@ export const importRecentSmsTransactionsFromInbox = async (): Promise<SmsInboxIm
     const latestCaptureStore = useCaptureStore.getState();
     const draft = latestCaptureStore.drafts.find((item) => item.id === result.draftId);
 
-    if (draft?.category && latestCaptureStore.confirmDraft(draft.id, draft.category)) {
-      summary.confirmedCount += 1;
-    } else {
+    if (draft) {
       summary.pendingReviewCount += 1;
     }
   });

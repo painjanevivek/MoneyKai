@@ -18,6 +18,8 @@ class MainApplication : Application(), ReactApplication {
       packageList =
         PackageList(this).packages.apply {
           add(MoneyKaiNativeCapturePackage())
+          add(MoneyKaiProfileMediaPackage())
+          add(MoneyKaiBuildConfigPackage())
         },
     )
   }

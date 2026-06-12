@@ -23,6 +23,7 @@ import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import org.json.JSONArray
 import org.json.JSONObject
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 class MoneyKaiNativeCaptureModule(
@@ -144,9 +145,9 @@ class MoneyKaiNativeCaptureModule(
     private const val PREFS_NOTIFICATION_CAPTURE_ENABLED = "notification_capture_enabled"
     private const val PREFS_SMS_CAPTURE_ENABLED = "sms_capture_enabled"
     private const val PREFS_APPROVED_SMS_ACCOUNT_IDS = "approved_sms_account_ids"
-    private const val MAX_SMS_IMPORT_DAYS = 31
-    private const val MAX_SMS_IMPORT_SCAN_COUNT = 300
-    private const val MAX_SMS_IMPORT_SIGNAL_COUNT = 100
+    private const val MAX_SMS_IMPORT_DAYS = 3650
+    private const val MAX_SMS_IMPORT_SCAN_COUNT = 50000
+    private const val MAX_SMS_IMPORT_SIGNAL_COUNT = 10000
     private const val MAX_SMS_META_LENGTH = 32
     private val SMS_INBOX_URI: Uri = Uri.parse("content://sms/inbox")
 
@@ -359,7 +360,7 @@ class MoneyKaiNativeCaptureModule(
         return buildSmsAccountDiscoveryResult("permission_denied", "Android SMS inbox permission has not been granted.")
       }
 
-      val importDays = days.coerceIn(1, MAX_SMS_IMPORT_DAYS)
+      val importDays = days.coerceIn(0, MAX_SMS_IMPORT_DAYS)
       val scanLimit = maxMessages.coerceIn(1, MAX_SMS_IMPORT_SCAN_COUNT)
       val sinceMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(importDays.toLong())
       val accountsById = linkedMapOf<String, JSONObject>()
@@ -370,8 +371,8 @@ class MoneyKaiNativeCaptureModule(
         val cursor = context.contentResolver.query(
           SMS_INBOX_URI,
           arrayOf("address", "body", "date"),
-          "date >= ?",
-          arrayOf(sinceMillis.toString()),
+          if (importDays > 0) "date >= ?" else null,
+          if (importDays > 0) arrayOf(sinceMillis.toString()) else null,
           "date DESC"
         )
 
@@ -408,6 +409,7 @@ class MoneyKaiNativeCaptureModule(
               MoneyKaiSmsFilters.extractAccountHint(body)?.let { value ->
                 account.put("smsAccountHint", value)
               }
+              account.put("smsSampleSnippet", MoneyKaiSmsFilters.sanitizeSmsText(body))
               accountsById[accountId] = account
             } else {
               existing.put("sampleCount", existing.optInt("sampleCount", 1) + 1)
@@ -442,7 +444,7 @@ class MoneyKaiNativeCaptureModule(
         return buildSmsImportResult("imported", "Approve at least one bank account before importing SMS transactions.")
       }
 
-      val importDays = days.coerceIn(1, MAX_SMS_IMPORT_DAYS)
+      val importDays = days.coerceIn(0, MAX_SMS_IMPORT_DAYS)
       val scanLimit = maxMessages.coerceIn(1, MAX_SMS_IMPORT_SCAN_COUNT)
       val sinceMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(importDays.toLong())
       val signals = JSONArray()
@@ -453,8 +455,8 @@ class MoneyKaiNativeCaptureModule(
         val cursor = context.contentResolver.query(
           SMS_INBOX_URI,
           arrayOf("_id", "address", "body", "date", "sub_id"),
-          "date >= ?",
-          arrayOf(sinceMillis.toString()),
+          if (importDays > 0) "date >= ?" else null,
+          if (importDays > 0) arrayOf(sinceMillis.toString()) else null,
           "date DESC"
         )
 
@@ -489,6 +491,7 @@ class MoneyKaiNativeCaptureModule(
               .put("receivedAt", MoneyKaiSmsFilters.toIsoUtc(receivedAt))
               .put("captureOrigin", "android_sms_inbox_import")
               .put("rawBodyStored", "false")
+              .put("smsFingerprint", buildSmsFingerprint(sender, body, receivedAt))
 
             MoneyKaiSmsFilters.extractAccountHint(body)?.let { value ->
               signal.put("smsAccountHint", value)
@@ -559,6 +562,12 @@ class MoneyKaiNativeCaptureModule(
         bankKey.contains("federal") -> "federal"
         else -> bankKey
       }
+
+    fun buildSmsFingerprint(sender: String, body: String, receivedAt: Long): String {
+      val value = "${sender.trim().lowercase()}|${body.trim()}|$receivedAt"
+      val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
+      return digest.joinToString("") { byte -> "%02x".format(byte) }.take(32)
+    }
 
     private fun Cursor.getStringOrBlank(index: Int): String =
       getStringOrNull(index).orEmpty()

@@ -379,6 +379,16 @@ const calculateConfidence = (params: {
 };
 
 export const buildCaptureDedupeKey = (input: CaptureSignalInput, parsed: CaptureParseResult) => {
+  const nativeFingerprint = input.rawPayload?.smsFingerprint;
+  if (input.source === 'sms' && typeof nativeFingerprint === 'string' && nativeFingerprint.trim()) {
+    return `sms:fingerprint:${nativeFingerprint.trim()}`;
+  }
+
+  const nativeMessageId = input.rawPayload?.smsMessageId;
+  if (input.source === 'sms' && typeof nativeMessageId === 'string' && nativeMessageId.trim()) {
+    return `sms:message:${input.sender ?? 'unknown'}:${nativeMessageId.trim()}`;
+  }
+
   const receivedAt = new Date(input.receivedAt ?? Date.now());
   const validTime = Number.isFinite(receivedAt.getTime()) ? receivedAt.getTime() : Date.now();
   const timeBucketMinutes = parsed.transactionReference ? 60 : 30;
@@ -387,8 +397,12 @@ export const buildCaptureDedupeKey = (input: CaptureSignalInput, parsed: Capture
   const amount = parsed.amount?.toFixed(2) ?? 'unknown';
   const merchant = parsed.merchantKey ?? normalizeMerchantKey(input.sender ?? input.sourceApp ?? 'unknown');
   const reference = parsed.transactionReference ?? 'no-ref';
+  const sourceKey =
+    input.source === 'sms'
+      ? `sms:${input.rawPayload?.smsAccountHint ?? input.sender ?? 'unknown'}`
+      : `${input.source}:${input.sourceApp ?? input.sender ?? 'unknown'}`;
 
-  return [input.source, input.sourceApp ?? input.sender ?? 'unknown', merchant, amount, parsed.type ?? 'unknown', reference, timeBucket].join(':');
+  return [sourceKey, merchant, amount, parsed.type ?? 'unknown', reference, timeBucket].join(':');
 };
 
 export const parseCapturedSignal = (

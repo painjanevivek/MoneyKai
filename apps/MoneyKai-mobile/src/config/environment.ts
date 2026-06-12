@@ -13,6 +13,26 @@ const readEnv = (...keys: string[]): string => {
   return '';
 };
 
+const readNativeBuildConfig = (): { smsResearchBuild?: boolean; nativeSmsResearchBuild?: boolean } => {
+  try {
+    // Standalone React Native builds do not reliably carry arbitrary process.env values.
+    // The Android app exposes these constants from BuildConfig for local research APKs.
+    const reactNative = require('react-native') as {
+      NativeModules?: {
+        MoneyKaiBuildConfig?: {
+          smsResearchBuild?: boolean;
+          nativeSmsResearchBuild?: boolean;
+        };
+      };
+    };
+    return reactNative.NativeModules?.MoneyKaiBuildConfig ?? {};
+  } catch {
+    return {};
+  }
+};
+
+const nativeBuildConfig = readNativeBuildConfig();
+
 const firebaseEnv = {
   apiKey: readEnv('MONEYKAI_FIREBASE_API_KEY', 'EXPO_PUBLIC_FIREBASE_API_KEY'),
   authDomain: readEnv('MONEYKAI_FIREBASE_AUTH_DOMAIN', 'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
@@ -45,6 +65,7 @@ const normalizeBackendBaseUrl = (value: string): string => {
 const backendBaseUrl = normalizeBackendBaseUrl(readEnv('MONEYKAI_BACKEND_BASE_URL', 'EXPO_PUBLIC_BACKEND_BASE_URL'));
 const isDevRuntime = (): boolean => typeof __DEV__ !== 'undefined' && __DEV__;
 const smsResearchBuildValue = readEnv('MONEYKAI_SMS_RESEARCH_BUILD', 'EXPO_PUBLIC_SMS_RESEARCH_BUILD');
+const nativeSmsResearchBuildValue = readEnv('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD', 'EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD');
 
 export const appEnvironment = {
   firebase: firebaseEnv,
@@ -53,8 +74,8 @@ export const appEnvironment = {
   backendBaseUrl,
   debug: readEnv('MONEYKAI_DEBUG', 'EXPO_PUBLIC_DEBUG') === 'true',
   demoMode: readEnv('MONEYKAI_DEMO_MODE', 'EXPO_PUBLIC_DEMO_MODE') === 'true',
-  smsResearchBuild: smsResearchBuildValue === '' ? true : smsResearchBuildValue === 'true',
-  nativeSmsResearchBuild: readEnv('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD', 'EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD') === 'true',
+  smsResearchBuild: smsResearchBuildValue === 'true' || nativeBuildConfig.smsResearchBuild === true,
+  nativeSmsResearchBuild: nativeSmsResearchBuildValue === 'true' || nativeBuildConfig.nativeSmsResearchBuild === true,
 };
 
 export const hasFirebaseEnvironment = (): boolean =>

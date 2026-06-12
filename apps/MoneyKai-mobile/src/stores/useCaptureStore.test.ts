@@ -427,7 +427,7 @@ describe('useCaptureStore production safety controls', () => {
     );
   });
 
-  it('confirms repeated pending drafts from the same merchant when one category is chosen', () => {
+  it('confirms only the selected pending draft when a category is chosen', () => {
     useCaptureStore.setState((state) => ({
       settings: {
         ...state.settings,
@@ -455,13 +455,12 @@ describe('useCaptureStore production safety controls', () => {
 
     expect(useCaptureStore.getState().confirmDraft(first.draftId as string, 'food')).toBe(true);
 
-    expect(mocks.addTransaction).toHaveBeenCalledTimes(2);
+    expect(mocks.addTransaction).toHaveBeenCalledTimes(1);
     expect(mocks.addTransaction).toHaveBeenCalledWith(expect.objectContaining({ amount: 120, category: 'food' }));
-    expect(mocks.addTransaction).toHaveBeenCalledWith(expect.objectContaining({ amount: 180, category: 'food' }));
     expect(useCaptureStore.getState().drafts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: first.draftId, status: 'confirmed', category: 'food' }),
-        expect.objectContaining({ id: second.draftId, status: 'confirmed', category: 'food' }),
+        expect.objectContaining({ id: second.draftId, status: 'pending' }),
       ])
     );
   });

@@ -9,8 +9,7 @@ export type AppTabParamList = {
   Transactions: undefined;
   Add: undefined;
   Budget: undefined;
-  Savings: undefined;
-  SettingsTab: undefined;
+  More: undefined;
 };
 
 export type RootStackParamList = {
@@ -20,6 +19,8 @@ export type RootStackParamList = {
   Notifications: undefined;
   Notes: undefined;
   Groups: undefined;
+  Learn: undefined;
+  Savings: undefined;
   Settings: undefined;
   AutoCapture: undefined;
 };

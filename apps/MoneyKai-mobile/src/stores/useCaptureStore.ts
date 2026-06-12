@@ -46,6 +46,8 @@ const SAFE_RAW_PAYLOAD_KEYS = new Set([
   'smsSlot',
   'smsPhoneId',
   'smsAccountHint',
+  'smsFingerprint',
+  'smsSampleSnippet',
 ]);
 
 const sanitizeCaptureRawPayload = (rawPayload?: Record<string, unknown>): Record<string, unknown> | undefined => {
@@ -116,6 +118,7 @@ interface CaptureState {
   isSignalAccountApproved: (input: CaptureSignalInput) => boolean;
   approveMonitoredAccount: (accountId: string) => void;
   declineMonitoredAccount: (accountId: string) => void;
+  unselectMonitoredAccount: (accountId: string) => void;
   ingestSignal: (input: CaptureSignalInput) => CaptureIngestionResult;
   confirmDraft: (draftId: string, category: string) => boolean;
   ignoreDraft: (draftId: string) => void;
@@ -264,6 +267,7 @@ export const useCaptureStore = create<CaptureState>()(
                     bankLabel: identity.bankLabel,
                     accountHint: identity.accountHint ?? account.accountHint,
                     sender: identity.sender ?? account.sender,
+                    sampleMessage: identity.sampleMessage ?? account.sampleMessage,
                     sampleCount: account.sampleCount + identities.filter((item) => item.id === identity.id).length,
                     lastSeenAt: now,
                   }
@@ -317,6 +321,15 @@ export const useCaptureStore = create<CaptureState>()(
         })),
 
       declineMonitoredAccount: (accountId) =>
+        set((state) => ({
+          monitoredAccounts: state.monitoredAccounts.map((account) =>
+            account.id === accountId
+              ? { ...account, status: 'declined', declinedAt: new Date().toISOString(), approvedAt: undefined }
+              : account
+          ),
+        })),
+
+      unselectMonitoredAccount: (accountId) =>
         set((state) => ({
           monitoredAccounts: state.monitoredAccounts.map((account) =>
             account.id === accountId
@@ -448,13 +461,7 @@ export const useCaptureStore = create<CaptureState>()(
         if (useBudgetStore.getState().settings.monthly_allowance <= 0) return false;
 
         const confirmedAt = new Date().toISOString();
-        const draftMerchantKey = draft.merchantKey ?? normalizeMerchantKey(draft.description);
-        const matchingDrafts = get().drafts.filter((item) => {
-          if (item.status !== 'pending') return false;
-          if (item.id === draftId) return true;
-          const itemMerchantKey = item.merchantKey ?? normalizeMerchantKey(item.description);
-          return item.type === draft.type && Boolean(draftMerchantKey) && itemMerchantKey === draftMerchantKey;
-        });
+        const matchingDrafts = get().drafts.filter((item) => item.status === 'pending' && item.id === draftId);
 
         const confirmedDrafts: DraftTransaction[] = [];
         for (const item of matchingDrafts) {

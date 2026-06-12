@@ -12,8 +12,11 @@ import { ProfileEditScreen } from '@/screens/app/ProfileEditScreen';
 import { NotificationsScreen } from '@/screens/app/NotificationsScreen';
 import { NotesScreen } from '@/screens/app/NotesScreen';
 import { GroupsScreen } from '@/screens/app/GroupsScreen';
+import { LearnScreen } from '@/screens/app/LearnScreen';
+import { SavingsScreen } from '@/screens/app/SavingsScreen';
 import { SettingsScreen } from '@/screens/app/SettingsScreen';
 import { AutoCaptureScreen } from '@/screens/app/AutoCaptureScreen';
+import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordinator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -50,21 +53,34 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.textPrimary,
+          headerTitleStyle: { color: colors.textPrimary },
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
         {isAuthenticated ? (
           <>
-            <Stack.Screen name="App" component={AppTabs} />
-            <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} />
-            <Stack.Screen name="Notes" component={NotesScreen} />
-            <Stack.Screen name="Groups" component={GroupsScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="AutoCapture" component={AutoCaptureScreen} />
+            <Stack.Group screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="App" component={AppTabs} />
+            </Stack.Group>
+            <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ title: 'Profile' }} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+            <Stack.Screen name="Notes" component={NotesScreen} options={{ title: 'Notes' }} />
+            <Stack.Screen name="Groups" component={GroupsScreen} options={{ title: 'Groups' }} />
+            <Stack.Screen name="Learn" component={LearnScreen} options={{ title: 'MoneyKai Learn' }} />
+            <Stack.Screen name="Savings" component={SavingsScreen} options={{ title: 'Savings' }} />
+            <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+            <Stack.Screen name="AutoCapture" component={AutoCaptureScreen} options={{ title: 'Auto Capture' }} />
           </>
         ) : (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
+          <Stack.Screen name="Auth" component={AuthNavigator} options={{ headerShown: false }} />
         )}
       </Stack.Navigator>
+      {isAuthenticated && <AutoCaptureCoordinator />}
     </NavigationContainer>
   );
 }

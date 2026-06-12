@@ -18,6 +18,7 @@ apps/*/expo-env.d.ts
 # Native
 .kotlin/
 .gradle/
+.gradle-*/
 **/.gradle/
 *.orig.*
 *.jks
@@ -78,5 +79,8 @@ apps/*/modules/*/android/build/
 
 # local device/debug artifacts
 RKStorage.device
-device-screen.png
+device-screen*.png
+device-*.png
 window.xml
+LOGO.jpeg
+imp/

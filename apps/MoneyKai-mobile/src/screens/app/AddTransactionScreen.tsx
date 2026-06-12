@@ -3,19 +3,19 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
-import { Spacing } from '@/constants/theme';
+import { BorderRadius, Spacing } from '@/constants/theme';
 import type { AppTabParamList } from '@/navigation/types';
 import type { TransactionType } from '@/types/transaction';
 import { createAppScreenStyles } from './screenStyles';
-
-const EXPENSE_CATEGORIES = ['food', 'transport', 'shopping', 'bills', 'rent', 'healthcare', 'education', 'entertainment', 'others'];
-const INCOME_CATEGORIES = ['salary', 'freelance', 'refund', 'gift', 'others'];
-const PAYMENT_METHODS = ['upi', 'card', 'cash', 'bank'];
 
 type AddNavigation = BottomTabNavigationProp<AppTabParamList, 'Add'>;
 
@@ -24,19 +24,28 @@ export function AddTransactionScreen() {
   const { colors } = useTheme();
   const styles = createAppScreenStyles(colors);
   const user = useAuthStore((state) => state.user);
+  const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const addTransaction = useTransactionStore((state) => state.addTransaction);
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
-  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
+  const [category, setCategory] = useState(EXPENSE_CATEGORIES[0].id);
+  const [paymentMethod, setPaymentMethod] = useState<string>(PAYMENT_METHODS[0].id);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
   const selectType = (nextType: TransactionType) => {
     setType(nextType);
-    setCategory(nextType === 'expense' ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0]);
+    setCategory(nextType === 'expense' ? EXPENSE_CATEGORIES[0].id : INCOME_CATEGORIES[0].id);
+  };
+
+  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (event.type === 'set' && selectedDate) {
+      setDate(selectedDate.toISOString().slice(0, 10));
+    }
   };
 
   const submit = () => {
@@ -74,11 +83,13 @@ export function AddTransactionScreen() {
 
     setAmount('');
     setDescription('');
-    Alert.alert('Transaction saved', 'Your entry was saved and queued for account sync.', [
-      { text: 'Add another' },
-      { text: 'View list', onPress: () => navigation.navigate('Transactions') },
-    ]);
+    navigation.navigate('Transactions');
   };
+
+  const selectedDate = new Date(`${date}T00:00:00`);
+  const displayDate = Number.isFinite(selectedDate.getTime())
+    ? selectedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : date;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -86,7 +97,7 @@ export function AddTransactionScreen() {
         <View style={styles.header}>
           <Text style={styles.eyebrow}>Add</Text>
           <Text style={styles.title}>New transaction</Text>
-          <Text style={styles.subtitle}>Capture income or expenses directly in the CLI app.</Text>
+          <Text style={styles.subtitle}>Capture income or expenses directly in MoneyKai.</Text>
         </View>
 
         <View style={styles.panel}>
@@ -112,6 +123,7 @@ export function AddTransactionScreen() {
             keyboardType="decimal-pad"
             inputMode="decimal"
             icon="currency-inr"
+            prefix={currencySymbol}
           />
           <Input
             label="Description"
@@ -120,22 +132,53 @@ export function AddTransactionScreen() {
             onChangeText={setDescription}
             icon="text"
           />
-          <Input
-            label="Date"
-            placeholder="YYYY-MM-DD"
-            value={date}
-            onChangeText={setDate}
-            icon="calendar-outline"
-            keyboardType="number-pad"
-          />
+          <View style={{ marginBottom: Spacing.base }}>
+            <Text style={styles.muted}>Date</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Choose transaction date"
+              activeOpacity={0.75}
+              onPress={() => setShowDatePicker(true)}
+              style={{
+                alignItems: 'center',
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderRadius: BorderRadius.md,
+                borderWidth: 1.5,
+                flexDirection: 'row',
+                gap: Spacing.sm,
+                minHeight: 52,
+                paddingHorizontal: Spacing.md,
+                marginTop: Spacing.xs,
+              }}
+            >
+              <MaterialCommunityIcons name="calendar-month-outline" size={22} color={colors.primary} />
+              <Text style={[styles.value, { flex: 1 }]}>{displayDate}</Text>
+              <MaterialCommunityIcons name="chevron-down" size={22} color={colors.textTertiary} />
+            </TouchableOpacity>
+          </View>
+          {showDatePicker && (
+            <DateTimePicker
+              value={Number.isFinite(selectedDate.getTime()) ? selectedDate : new Date()}
+              mode="date"
+              display="calendar"
+              onChange={onDateChange}
+            />
+          )}
 
           <Text style={styles.sectionTitle}>Category</Text>
           <View style={styles.chipRow}>
             {categories.map((item) => {
-              const active = category === item;
+              const active = category === item.id;
               return (
-                <TouchableOpacity key={item} onPress={() => setCategory(item)} style={[styles.chip, active && styles.chipActive]}>
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{item}</Text>
+                <TouchableOpacity key={item.id} onPress={() => setCategory(item.id)} style={[styles.chip, active && styles.chipActive]}>
+                  <MaterialCommunityIcons
+                    name={item.icon}
+                    size={16}
+                    color={active ? colors.textInverse : colors.textSecondary}
+                    style={{ marginRight: Spacing.xs }}
+                  />
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -144,10 +187,16 @@ export function AddTransactionScreen() {
           <Text style={styles.sectionTitle}>Payment method</Text>
           <View style={styles.chipRow}>
             {PAYMENT_METHODS.map((item) => {
-              const active = paymentMethod === item;
+              const active = paymentMethod === item.id;
               return (
-                <TouchableOpacity key={item} onPress={() => setPaymentMethod(item)} style={[styles.chip, active && styles.chipActive]}>
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{item}</Text>
+                <TouchableOpacity key={item.id} onPress={() => setPaymentMethod(item.id)} style={[styles.chip, active && styles.chipActive]}>
+                  <MaterialCommunityIcons
+                    name={item.icon}
+                    size={16}
+                    color={active ? colors.textInverse : colors.textSecondary}
+                    style={{ marginRight: Spacing.xs }}
+                  />
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
                 </TouchableOpacity>
               );
             })}

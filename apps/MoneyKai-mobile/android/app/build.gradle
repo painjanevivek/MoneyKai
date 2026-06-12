@@ -86,6 +86,8 @@ def moneyKaiUploadStorePassword = findProperty('MONEYKAI_UPLOAD_STORE_PASSWORD')
 def moneyKaiUploadKeyAlias = findProperty('MONEYKAI_UPLOAD_KEY_ALIAS') ?: System.getenv('MONEYKAI_UPLOAD_KEY_ALIAS')
 def moneyKaiUploadKeyPassword = findProperty('MONEYKAI_UPLOAD_KEY_PASSWORD') ?: System.getenv('MONEYKAI_UPLOAD_KEY_PASSWORD')
 def hasMoneyKaiUploadSigning = moneyKaiUploadStoreFile && moneyKaiUploadStorePassword && moneyKaiUploadKeyAlias && moneyKaiUploadKeyPassword
+def moneyKaiSmsResearchBuild = ((findProperty('MONEYKAI_SMS_RESEARCH_BUILD') ?: System.getenv('MONEYKAI_SMS_RESEARCH_BUILD')) ?: 'false').toBoolean()
+def moneyKaiNativeSmsResearchBuild = ((findProperty('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD') ?: System.getenv('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD')) ?: 'false').toBoolean()
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -102,6 +104,8 @@ android {
         versionName "1.0.1"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        buildConfigField "boolean", "MONEYKAI_SMS_RESEARCH_BUILD", moneyKaiSmsResearchBuild.toString()
+        buildConfigField "boolean", "MONEYKAI_NATIVE_SMS_RESEARCH_BUILD", moneyKaiNativeSmsResearchBuild.toString()
     }
     signingConfigs {
         debug {
@@ -131,6 +135,11 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'
             crunchPngs enablePngCrunchInRelease.toBoolean()
+        }
+        original {
+            initWith release
+            matchingFallbacks = ['release']
+            signingConfig hasMoneyKaiUploadSigning ? signingConfigs.release : signingConfigs.debug
         }
     }
     packagingOptions {

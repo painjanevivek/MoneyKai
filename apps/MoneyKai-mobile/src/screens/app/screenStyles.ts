@@ -36,7 +36,7 @@ export const createAppScreenStyles = (colors: {
     },
     title: {
       color: colors.textPrimary,
-      fontFamily: Typography.fontFamily.display,
+      fontFamily: Typography.fontFamily.bold,
       fontSize: Typography.fontSize['2xl'],
     },
     subtitle: {
@@ -48,7 +48,7 @@ export const createAppScreenStyles = (colors: {
     },
     sectionTitle: {
       color: colors.textPrimary,
-      fontFamily: Typography.fontFamily.semiBold,
+      fontFamily: Typography.fontFamily.bold,
       fontSize: Typography.fontSize.lg,
       marginBottom: Spacing.md,
     },
