@@ -19,21 +19,25 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: 'view-dashboard-outline' },
+  { href: '/reports', label: 'Reports', icon: 'chart-bar' },
+  { href: '/reports', label: 'Import Center', icon: 'database-import-outline' },
   { href: '/transactions', label: 'Transactions', icon: 'swap-horizontal' },
+  { href: '/analytics', label: 'AI Insights', icon: 'creation-outline' },
+  { href: '/savings', label: 'Portfolio', icon: 'briefcase-variant-outline' },
   { href: '/budgets', label: 'Budgets', icon: 'wallet-outline' },
   { href: '/goals', label: 'Goals', icon: 'target' },
-  { href: '/reports', label: 'Reports', icon: 'chart-bar' },
   { href: '/accounts', label: 'Accounts', icon: 'credit-card-outline' },
-  { href: '/categories', label: 'Categories', icon: 'shape-outline' },
   { href: '/settings', label: 'Settings', icon: 'cog-outline' },
 ] as const;
 
 const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
-  { href: '/', title: 'Dashboard', subtitle: 'A clear overview of your money' },
-  { href: '/transactions', title: 'Transactions', subtitle: 'Track income, expenses, and history' },
+  { href: '/', title: 'Dashboard', subtitle: 'AI reports first, raw records second' },
+  { href: '/transactions', title: 'Transactions', subtitle: 'Review imported and manually entered history' },
   { href: '/budgets', title: 'Budgets', subtitle: 'Review monthly limits and budget health' },
   { href: '/goals', title: 'Goals', subtitle: 'Stay focused on savings progress' },
-  { href: '/reports', title: 'Reports', subtitle: 'Import bank statements and reconcile spending' },
+  { href: '/reports', title: 'Reports', subtitle: 'Import statements, review rows, and generate reports' },
+  { href: '/analytics', title: 'AI Insights', subtitle: 'Analyze user-provided data and explain what changed' },
+  { href: '/savings', title: 'Portfolio', subtitle: 'Track goals, holdings, exposure, and financial horizons' },
   { href: '/accounts', title: 'Accounts', subtitle: 'Profile and account-related preferences' },
   { href: '/categories', title: 'Categories', subtitle: 'See where money goes by category' },
   { href: '/settings', title: 'Settings', subtitle: 'Profile, privacy, and backups' },
@@ -44,9 +48,6 @@ const normalizePath = (pathname: string) => pathname.replace('/(tabs)', '') || '
 const isRouteActive = (pathname: string, href: string) => {
   const normalized = normalizePath(pathname);
   if (href === '/') return normalized === '/';
-  if (href === '/reports' && (normalized === '/savings' || normalized === '/analytics')) {
-    return true;
-  }
   return normalized === href || normalized.startsWith(`${href}/`);
 };
 
@@ -279,7 +280,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 const active = isRouteActive(pathname, item.href);
                 return (
                   <Pressable
-                    key={item.href}
+                    key={`${item.href}-${item.label}`}
                     onPress={() => router.push(item.href as any)}
                     style={({ hovered, pressed }: any) => ({
                       flexDirection: 'row',
@@ -392,7 +393,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 const active = isRouteActive(pathname, item.href);
                 return (
                   <Pressable
-                    key={item.href}
+                    key={`${item.href}-${item.label}`}
                     onPress={() => router.push(item.href as any)}
                     style={({ hovered, pressed }: any) => ({
                       flexDirection: 'row',

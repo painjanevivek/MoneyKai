@@ -24,7 +24,7 @@ export const PUBLIC_FEATURES: PublicFeature[] = [
     heroDescription:
       'MoneyKai makes everyday spending easier to log, review, and understand so users can stay closer to reality instead of relying on guesswork.',
     benefits: [
-      'Capture daily spending in one place',
+      'Record daily spending in one place',
       'Review transaction history without scattered notes',
       'See where money is actually going',
       'Build awareness before overspending becomes a pattern',
