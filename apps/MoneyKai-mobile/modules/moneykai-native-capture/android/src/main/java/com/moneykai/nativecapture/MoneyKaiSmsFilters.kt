@@ -111,8 +111,8 @@ object MoneyKaiSmsFilters {
       .replace(Regex("""\b(?:xx|x{2,})\d+\b""", RegexOption.IGNORE_CASE), "[masked]")
       .replace(Regex("""[a-z0-9._%+-]+@[a-z0-9.-]+\b""", RegexOption.IGNORE_CASE), "[vpa]")
       .replace(
-        Regex("""\b((?:upi\s*)?(?:ref(?:erence)?|rrn|utr|transaction id|txn id|order id|imps)\s*(?:no\.?|number|id)?\s*[:#-]?)\s*[a-z0-9/-]{6,}""", RegexOption.IGNORE_CASE),
-        "$1 [ref]"
+        Regex("""\b((?:upi\s*)?(?:ref(?:erence)?|refno|rrn|utr|transaction id|txn id|order id|imps(?:\s*ref)?)\s*(?:no\.?|number|id)?\s*[:#-]?)\s*[a-z0-9/-]{6,}""", RegexOption.IGNORE_CASE),
+        "$1[ref]"
       )
       .replace(Regex("""\b\d{8,}\b"""), "[number]")
       .take(MAX_SMS_FIELD_LENGTH)

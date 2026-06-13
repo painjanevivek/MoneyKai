@@ -69,7 +69,7 @@
     "generate:icons": "node ./scripts/generate-app-icons.mjs",
     "lint": "expo lint --no-cache",
     "typecheck": "tsc --noEmit",
-    "test:capture": "vitest run src/services/captureParser.test.ts src/services/captureDedupe.test.ts src/services/captureReviewPolicy.test.ts src/services/aiSmsAssist.test.ts src/services/smsPrivacy.test.ts src/services/backupPrivacy.test.ts src/services/autoCaptureService.test.ts src/services/diagnosticsService.test.ts src/services/diagnosticsUploadService.test.ts src/stores/useCaptureStore.test.ts src/config/smsPolicyConfig.test.ts"
+    "test:capture": "vitest run src/services/captureParser.test.ts src/services/captureParserEval.test.ts src/services/captureDedupe.test.ts src/services/captureReviewPolicy.test.ts src/services/aiSmsAssist.test.ts src/services/smsPrivacy.test.ts src/services/backupPrivacy.test.ts src/services/autoCaptureService.test.ts src/services/diagnosticsService.test.ts src/services/diagnosticsUploadService.test.ts src/stores/useCaptureStore.test.ts src/config/smsPolicyConfig.test.ts"
   },
   "engines": {
     "node": ">=22.13.0"
