@@ -22,7 +22,19 @@ import type {
   GmailSyncStatus,
   GmailSyncSummary,
 } from '@/types/gmail';
-import type { PortfolioAccount, ProviderConnectionDraft } from '@/types/portfolio';
+import type {
+  AccountAggregatorExplorationStatus,
+  PortfolioAccount,
+  PortfolioHolding,
+  PortfolioHoldingDraft,
+  PortfolioHoldingUpdate,
+  PortfolioStateResponse,
+  ProviderConnectionDraft,
+  ProviderConnectionUpdate,
+  ProviderSyncResponse,
+  WealthSnapshot,
+  ZerodhaConnectStartResponse,
+} from '@/types/portfolio';
 
 const backendBaseUrl = getBackendBaseUrl();
 
@@ -150,11 +162,45 @@ export const backendApi = {
   getParsedStatementReview: async (documentId: string) =>
     request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/review`),
   listPortfolioConnections: async () => request<{ items: PortfolioAccount[] }>('/v1/portfolio/connections'),
+  getPortfolioState: async () => request<PortfolioStateResponse>('/v1/portfolio/state'),
   createPortfolioConnection: async (payload: ProviderConnectionDraft) =>
     request<{ item: PortfolioAccount }>('/v1/portfolio/connections', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  updatePortfolioConnection: async (accountId: string, payload: ProviderConnectionUpdate) =>
+    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  pausePortfolioConnection: async (accountId: string) =>
+    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}/pause`, { method: 'POST' }),
+  disconnectPortfolioConnection: async (accountId: string) =>
+    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}/disconnect`, { method: 'POST' }),
+  syncPortfolioConnection: async (accountId: string) =>
+    request<ProviderSyncResponse>(`/v1/portfolio/connections/${accountId}/sync`, { method: 'POST' }),
+  listPortfolioHoldings: async () => request<{ items: PortfolioHolding[] }>('/v1/portfolio/holdings'),
+  createPortfolioHolding: async (payload: PortfolioHoldingDraft) =>
+    request<{ item: PortfolioHolding }>('/v1/portfolio/holdings', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updatePortfolioHolding: async (holdingId: string, payload: PortfolioHoldingUpdate) =>
+    request<{ item: PortfolioHolding }>(`/v1/portfolio/holdings/${holdingId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deletePortfolioHolding: async (holdingId: string) =>
+    request<{ deleted: boolean }>(`/v1/portfolio/holdings/${holdingId}`, { method: 'DELETE' }),
+  createWealthSnapshot: async () => request<WealthSnapshot>('/v1/portfolio/snapshots', { method: 'POST' }),
+  importParsedDocumentHoldings: async (documentId: string) =>
+    request<{ items: PortfolioHolding[]; importedCount: number }>(`/v1/portfolio/imports/parsed-document/${documentId}`, {
+      method: 'POST',
+    }),
+  startZerodhaConnect: async () =>
+    request<ZerodhaConnectStartResponse>('/v1/portfolio/providers/zerodha/start', { method: 'POST' }),
+  getAccountAggregatorExploration: async () =>
+    request<AccountAggregatorExplorationStatus>('/v1/portfolio/providers/account-aggregator/exploration'),
   updateResource: async <T>(
     resource: 'transactions' | 'notes' | 'badges' | 'notifications',
     itemId: string,

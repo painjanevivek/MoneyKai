@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
@@ -10,9 +11,11 @@ import { formatPercent, getHoldingPnl, getHoldingPnlPercent } from '@/utils/port
 interface HoldingsListProps {
   holdings: PortfolioHolding[];
   currencySymbol: string;
+  busyHoldingId?: string;
+  onDelete?: (holding: PortfolioHolding) => void;
 }
 
-export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currencySymbol }) => {
+export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currencySymbol, busyHoldingId, onDelete }) => {
   const { colors } = useTheme();
 
   return (
@@ -48,6 +51,17 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currencySy
                     </Text>
                   </View>
                 </View>
+                {onDelete ? (
+                  <Button
+                    title="Remove"
+                    icon="trash-can-outline"
+                    size="sm"
+                    variant="ghost"
+                    loading={busyHoldingId === holding.id}
+                    onPress={() => onDelete(holding)}
+                    style={{ alignSelf: 'flex-start', marginTop: Spacing.xs }}
+                  />
+                ) : null}
               </View>
             );
           })}

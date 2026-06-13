@@ -11,7 +11,9 @@ import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { isPdfStatementParsingEnabled } from '@/config/environment';
 import { useTheme } from '@/hooks/useTheme';
 import { financialDocumentApi } from '@/services/financialDocumentApi';
+import { portfolioApi } from '@/services/portfolioApi';
 import { useFinancialDocumentStore } from '@/stores/useFinancialDocumentStore';
+import { usePortfolioStore } from '@/stores/usePortfolioStore';
 import type { FinancialDocument } from '@/types/financialDocument';
 
 export const FinancialDocumentReviewCard: React.FC = () => {
@@ -21,7 +23,7 @@ export const FinancialDocumentReviewCard: React.FC = () => {
   const [showDocuments, setShowDocuments] = React.useState(false);
   const [passwordDocument, setPasswordDocument] = React.useState<FinancialDocument | undefined>();
   const [reviewDocument, setReviewDocument] = React.useState<FinancialDocument | undefined>();
-  const [busy, setBusy] = React.useState<'refresh' | 'parse' | 'password' | null>(null);
+  const [busy, setBusy] = React.useState<'refresh' | 'parse' | 'password' | 'import' | null>(null);
   const documents = useFinancialDocumentStore((state) => state.documents);
   const reviewsByDocumentId = useFinancialDocumentStore((state) => state.reviewsByDocumentId);
   const status = useFinancialDocumentStore((state) => state.status);
@@ -31,6 +33,8 @@ export const FinancialDocumentReviewCard: React.FC = () => {
   const setDocuments = useFinancialDocumentStore((state) => state.setDocuments);
   const addOrUpdateDocument = useFinancialDocumentStore((state) => state.addOrUpdateDocument);
   const setReview = useFinancialDocumentStore((state) => state.setReview);
+  const upsertHolding = usePortfolioStore((state) => state.upsertHolding);
+  const setPortfolioState = usePortfolioStore((state) => state.setPortfolioState);
 
   const refreshDocuments = React.useCallback(async () => {
     if (!enabled) {
@@ -123,6 +127,23 @@ export const FinancialDocumentReviewCard: React.FC = () => {
       setReviewDocument(response.document);
     } catch (error) {
       Alert.alert('Review unavailable', error instanceof Error ? error.message : 'Could not load parsed review.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleImportHoldings = async () => {
+    if (!reviewDocument) {
+      return;
+    }
+    setBusy('import');
+    try {
+      const response = await portfolioApi.importParsedDocumentHoldings(reviewDocument.id);
+      response.items.forEach(upsertHolding);
+      setPortfolioState(await portfolioApi.getState());
+      Alert.alert('Holdings imported', `${response.importedCount} holding rows were added to Wealth.`);
+    } catch (error) {
+      Alert.alert('Import failed', error instanceof Error ? error.message : 'Could not import parsed holdings.');
     } finally {
       setBusy(null);
     }
@@ -253,6 +274,8 @@ export const FinancialDocumentReviewCard: React.FC = () => {
         visible={Boolean(reviewDocument)}
         document={reviewDocument}
         review={reviewDocument ? reviewsByDocumentId[reviewDocument.id] : undefined}
+        importingHoldings={busy === 'import'}
+        onImportHoldings={handleImportHoldings}
         onClose={() => setReviewDocument(undefined)}
       />
     </>

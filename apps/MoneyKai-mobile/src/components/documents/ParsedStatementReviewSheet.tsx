@@ -11,16 +11,21 @@ interface ParsedStatementReviewSheetProps {
   document?: FinancialDocument;
   review?: ParsedStatementReview;
   visible: boolean;
+  importingHoldings?: boolean;
   onClose: () => void;
+  onImportHoldings?: () => void;
 }
 
 export const ParsedStatementReviewSheet: React.FC<ParsedStatementReviewSheetProps> = ({
   document,
   review,
   visible,
+  importingHoldings = false,
   onClose,
+  onImportHoldings,
 }) => {
   const { colors } = useTheme();
+  const hasHoldingRows = Boolean(review?.rows.some((row) => row.rowType === 'holding'));
 
   return (
     <ModalSheet
@@ -28,7 +33,14 @@ export const ParsedStatementReviewSheet: React.FC<ParsedStatementReviewSheetProp
       title="Parsed statement"
       subtitle={document?.filename ?? 'Review extracted rows before importing in a later phase.'}
       onClose={onClose}
-      footer={<Button title="Close" onPress={onClose} variant="outline" />}
+      footer={
+        <View style={{ gap: Spacing.sm }}>
+          {hasHoldingRows && onImportHoldings ? (
+            <Button title="Import Holdings" icon="database-import-outline" loading={importingHoldings} onPress={onImportHoldings} />
+          ) : null}
+          <Button title="Close" onPress={onClose} variant="outline" />
+        </View>
+      }
     >
       <View style={{ gap: Spacing.md }}>
         {!review || review.rows.length === 0 ? (

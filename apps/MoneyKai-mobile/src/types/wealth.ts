@@ -1,18 +1,6 @@
-import type { PortfolioAssetType, PortfolioHolding } from './portfolio';
+import type { PortfolioAssetType, PortfolioHolding, WealthSnapshot } from './portfolio';
 
-export interface WealthSnapshot {
-  id: string;
-  userId: string;
-  date: string;
-  totalAssets: number;
-  totalLiabilities: number;
-  netWorth: number;
-  totalInvested: number;
-  currentPortfolioValue: number;
-  totalPnl: number;
-  cashBalance?: number;
-  sourceAccountCount: number;
-}
+export type { WealthSnapshot } from './portfolio';
 
 export interface AssetAllocationSlice {
   assetType: PortfolioAssetType;

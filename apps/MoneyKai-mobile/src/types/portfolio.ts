@@ -34,6 +34,20 @@ export interface PortfolioAccount {
   createdAt: string;
 }
 
+export interface WealthSnapshot {
+  id: string;
+  userId: string;
+  date: string;
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+  totalInvested: number;
+  currentPortfolioValue: number;
+  totalPnl: number;
+  cashBalance?: number;
+  sourceAccountCount: number;
+}
+
 export interface PortfolioHolding {
   id: string;
   userId: string;
@@ -88,4 +102,60 @@ export interface ProviderConnectionDraft {
   accountType: PortfolioAccountType;
   displayName: string;
   maskedAccountId?: string;
+}
+
+export interface ProviderConnectionUpdate {
+  displayName?: string;
+  maskedAccountId?: string;
+  status?: PortfolioAccount['status'];
+}
+
+export interface PortfolioHoldingDraft {
+  accountId?: string;
+  assetType: PortfolioAssetType;
+  symbol?: string;
+  isin?: string;
+  name: string;
+  quantity: number;
+  averagePrice?: number;
+  lastPrice?: number;
+  investedValue?: number;
+  currentValue: number;
+  dayChange?: number;
+  asOfDate?: string;
+  source?: string;
+  sourceDocumentId?: string;
+}
+
+export type PortfolioHoldingUpdate = Partial<Omit<PortfolioHoldingDraft, 'accountId' | 'source' | 'sourceDocumentId'>>;
+
+export interface PortfolioStateResponse {
+  enabled: boolean;
+  accounts: PortfolioAccount[];
+  holdings: PortfolioHolding[];
+  transactions: PortfolioTransaction[];
+  snapshot: WealthSnapshot;
+}
+
+export interface ProviderSyncResponse {
+  account: PortfolioAccount;
+  holdings: PortfolioHolding[];
+  transactions: PortfolioTransaction[];
+  snapshot: WealthSnapshot;
+  message: string;
+}
+
+export interface ZerodhaConnectStartResponse {
+  enabled: boolean;
+  authorizationUrl?: string | null;
+  message: string;
+}
+
+export interface AccountAggregatorExplorationStatus {
+  providerKey: 'account_aggregator';
+  productionReady: boolean;
+  buildVsPartnerDecision: 'partner_required' | 'build_after_fiu_onboarding';
+  partnerName?: string | null;
+  partnerUrl?: string | null;
+  checklist: string[];
 }
