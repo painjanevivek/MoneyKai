@@ -290,6 +290,7 @@ export default function TabLayout() {
         <Tabs.Screen name="notes" options={hiddenTabOptions('Notes')} />
         <Tabs.Screen name="notifications" options={hiddenTabOptions('Notifications')} />
         <Tabs.Screen name="auto-capture" options={hiddenTabOptions('Transaction Capture')} />
+        <Tabs.Screen name="wealth" options={hiddenTabOptions('Wealth')} />
       </Tabs>
       {isComposerVisible ? (
         <TransactionComposerSheet visible onClose={() => setIsComposerVisible(false)} />

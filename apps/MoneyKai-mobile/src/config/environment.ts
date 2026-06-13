@@ -28,6 +28,9 @@ const storeReviewEnv = {
 const backendBaseUrl = readEnv('EXPO_PUBLIC_BACKEND_BASE_URL').replace(/\/$/, '');
 const isDevRuntime = (): boolean => typeof __DEV__ !== 'undefined' && __DEV__;
 const smsResearchBuildValue = readEnv('EXPO_PUBLIC_SMS_RESEARCH_BUILD');
+const gmailSyncEnabledValue = readEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
+const pdfStatementParsingEnabledValue = readEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
+const wealthTabEnabledValue = readEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
 
 export const appEnvironment = {
   firebase: firebaseEnv,
@@ -38,6 +41,9 @@ export const appEnvironment = {
   demoMode: readEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
   smsResearchBuild: smsResearchBuildValue === '' ? true : smsResearchBuildValue === 'true',
   nativeSmsResearchBuild: readEnv('EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD') === 'true',
+  gmailSyncEnabled: gmailSyncEnabledValue === 'true',
+  pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
+  wealthTabEnabled: wealthTabEnabledValue === 'true',
 };
 
 export const hasFirebaseEnvironment = (): boolean =>
@@ -56,6 +62,15 @@ export const isSmsResearchBuildEnabled = (): boolean =>
 
 export const isNativeSmsResearchBuildEnabled = (): boolean =>
   appEnvironment.nativeSmsResearchBuild;
+
+export const isGmailSyncEnabled = (): boolean =>
+  appEnvironment.gmailSyncEnabled;
+
+export const isPdfStatementParsingEnabled = (): boolean =>
+  appEnvironment.pdfStatementParsingEnabled;
+
+export const isWealthTabEnabled = (): boolean =>
+  appEnvironment.wealthTabEnabled;
 
 export const getBackendBaseUrl = (): string => {
   if (appEnvironment.backendBaseUrl.length > 0) {

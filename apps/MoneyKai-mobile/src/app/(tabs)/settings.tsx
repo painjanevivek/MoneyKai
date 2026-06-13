@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { FinancialDocumentReviewCard } from '@/components/documents/FinancialDocumentReviewCard';
+import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
@@ -756,6 +758,10 @@ export default function SettingsScreen() {
           />
         </Card>
 
+        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Financial Imports</Text>
+        <GmailConnectionCard />
+        <FinancialDocumentReviewCard />
+
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Maintenance</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem
@@ -1103,5 +1109,4 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
-
 

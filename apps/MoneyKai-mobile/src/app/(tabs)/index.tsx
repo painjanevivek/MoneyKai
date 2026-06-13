@@ -35,6 +35,7 @@ import { getMonthSummary } from '@/utils/monthAnalytics';
 const MENU_ACTIONS = [
   { label: 'Notifications', icon: 'bell-outline', route: '/(tabs)/notifications' as const },
   { label: 'Transaction Capture', icon: 'text-box-check-outline', route: '/(tabs)/auto-capture' as const },
+  { label: 'Wealth', icon: 'chart-timeline-variant', route: '/(tabs)/wealth' as const },
   { label: 'Notes', icon: 'note-text-outline', route: '/(tabs)/notes' as const },
   { label: 'Groups', icon: 'account-group-outline', route: '/(tabs)/groups' as const },
   { label: 'Settings', icon: 'cog-outline', route: '/(tabs)/settings' as const },

@@ -5,6 +5,24 @@ import type { AiSmsParseCandidate, AiSmsParseInput } from '@/types/capture';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
+import type {
+  FinancialDocument,
+  FinancialDocumentStatusSummary,
+  ParsedStatementReviewResponse,
+  ParseFinancialDocumentRequest,
+  PdfPasswordAttemptRequest,
+  PdfPasswordAttemptResponse,
+  QueueGmailAttachmentsRequest,
+  QueueGmailAttachmentsResponse,
+} from '@/types/financialDocument';
+import type {
+  FinancialEmailListResponse,
+  GmailConnectStartResponse,
+  GmailSyncRequest,
+  GmailSyncStatus,
+  GmailSyncSummary,
+} from '@/types/gmail';
+import type { PortfolioAccount, ProviderConnectionDraft } from '@/types/portfolio';
 
 const backendBaseUrl = getBackendBaseUrl();
 
@@ -90,6 +108,50 @@ export const backendApi = {
     }),
   parseSmsWithAi: async (payload: AiSmsParseInput) =>
     request<{ result: AiSmsParseCandidate; reviewRequired: true; validationReasons: string[] }>('/v1/capture/ai-parse', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getGmailStatus: async () => request<GmailSyncStatus>('/v1/gmail/status'),
+  startGmailConnect: async (metadataScanAcceptedAt: string) =>
+    request<GmailConnectStartResponse>(
+      `/v1/gmail/connect/start?metadataScanAcceptedAt=${encodeURIComponent(metadataScanAcceptedAt)}`
+    ),
+  disconnectGmail: async () => request<{ disconnected: boolean }>('/v1/gmail/disconnect', { method: 'POST' }),
+  syncGmail: async (payload: GmailSyncRequest) =>
+    request<GmailSyncSummary>('/v1/gmail/sync', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  listGmailEmails: async (parseStatus?: string) =>
+    request<FinancialEmailListResponse>(
+      parseStatus ? `/v1/gmail/emails?parseStatus=${encodeURIComponent(parseStatus)}` : '/v1/gmail/emails'
+    ),
+  getFinancialDocumentStatus: async () =>
+    request<FinancialDocumentStatusSummary>('/v1/financial-documents/status'),
+  listFinancialDocuments: async (status?: string) =>
+    request<{ items: FinancialDocument[] }>(
+      status ? `/v1/financial-documents?status=${encodeURIComponent(status)}` : '/v1/financial-documents'
+    ),
+  queueGmailAttachments: async (payload: QueueGmailAttachmentsRequest) =>
+    request<QueueGmailAttachmentsResponse>('/v1/financial-documents/queue-gmail-attachments', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  parseFinancialDocument: async (documentId: string, payload: ParseFinancialDocumentRequest) =>
+    request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/parse`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  submitPdfPassword: async (documentId: string, payload: PdfPasswordAttemptRequest) =>
+    request<PdfPasswordAttemptResponse>(`/v1/financial-documents/${documentId}/password`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getParsedStatementReview: async (documentId: string) =>
+    request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/review`),
+  listPortfolioConnections: async () => request<{ items: PortfolioAccount[] }>('/v1/portfolio/connections'),
+  createPortfolioConnection: async (payload: ProviderConnectionDraft) =>
+    request<{ item: PortfolioAccount }>('/v1/portfolio/connections', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
