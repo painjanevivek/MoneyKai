@@ -1,3 +1,5 @@
+import { redactSensitiveSmsText } from '@/services/smsPrivacy';
+
 export type DiagnosticSeverity = 'info' | 'warning' | 'error' | 'fatal';
 
 export interface DiagnosticEvent {
@@ -90,7 +92,7 @@ const sanitizeMetadataValue = (value: unknown, depth = 0): unknown => {
   }
 
   if (typeof value === 'string') {
-    return truncate(value, MAX_STRING_LENGTH);
+    return truncate(redactSensitiveSmsText(value), MAX_STRING_LENGTH);
   }
 
   if (Array.isArray(value)) {

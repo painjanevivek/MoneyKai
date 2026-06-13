@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, SectionList, Modal, TextInput
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { endOfDay, endOfWeek, format, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
+import { endOfDay, endOfWeek, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
 import { useTheme } from '@/hooks/useTheme';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Button } from '@/components/ui/Button';
@@ -13,12 +13,18 @@ import { getCategoryById, EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatRelativeDate } from '@/utils/dateUtils';
 import { confirmDestructive } from '@/utils/confirmDestructive';
+import {
+  groupTransactionsByMonth,
+  parseTransactionDate,
+  sortTransactionsForHistory,
+  type TransactionHistorySortOption,
+  type TransactionMonthSection,
+} from '@/utils/transactionHistory';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
-import type { Transaction } from '@/types/transaction';
+import type { Transaction, TransactionCaptureSource } from '@/types/transaction';
 
 const FILTER_TABS = ['All', 'Expense', 'Income'] as const;
 const ALL_CATEGORY_OPTIONS = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
-const parseTransactionDate = (value: string) => new Date(`${value}T12:00:00`);
 const DATE_FILTER_OPTIONS = [
   { id: 'all', label: 'All Dates' },
   { id: 'today', label: 'Today' },
@@ -26,6 +32,13 @@ const DATE_FILTER_OPTIONS = [
   { id: 'this_month', label: 'This Month' },
   { id: 'last_30_days', label: 'Last 30 Days' },
 ] as const;
+const CAPTURE_SOURCE_OPTIONS: { id: TransactionCaptureSource; label: string; icon: string }[] = [
+  { id: 'sms', label: 'SMS', icon: 'message-processing-outline' },
+  { id: 'notification', label: 'Notifications', icon: 'bell-badge-outline' },
+  { id: 'aa', label: 'Account Aggregator', icon: 'bank-transfer' },
+] as const;
+const getCaptureSourceLabel = (source?: TransactionCaptureSource) =>
+  source ? CAPTURE_SOURCE_OPTIONS.find((option) => option.id === source)?.label ?? source.toUpperCase() : undefined;
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest First', icon: 'calendar-arrow-down' },
   { id: 'oldest', label: 'Oldest First', icon: 'calendar-arrow-up' },
@@ -35,12 +48,8 @@ const SORT_OPTIONS = [
   { id: 'name_za', label: 'Name Z to A', icon: 'sort-alphabetical-descending' },
 ] as const;
 type DateFilterOption = typeof DATE_FILTER_OPTIONS[number]['id'];
-type SortOption = typeof SORT_OPTIONS[number]['id'];
+type SortOption = TransactionHistorySortOption;
 type FilterValue = 'all' | string;
-type TransactionMonthSection = {
-  title: string;
-  data: Transaction[];
-};
 
 export default function TransactionsScreen() {
   const { colors, isDark } = useTheme();
@@ -57,6 +66,7 @@ export default function TransactionsScreen() {
   const [categoryFilter, setCategoryFilter] = useState<FilterValue>('all');
   const [paymentFilter, setPaymentFilter] = useState<FilterValue>('all');
   const [accountFilter, setAccountFilter] = useState<FilterValue>('all');
+  const [sourceFilter, setSourceFilter] = useState<FilterValue>('all');
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
 
@@ -109,7 +119,16 @@ export default function TransactionsScreen() {
     });
     return Array.from(options, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [allTransactions]);
-  const activeFilterCount = Number(categoryFilter !== 'all') + Number(paymentFilter !== 'all') + Number(accountFilter !== 'all') + Number(dateFilter !== 'all');
+  const sourceOptions = useMemo(() => {
+    const availableSources = new Set(allTransactions.map((transaction) => transaction.captureSource).filter(Boolean));
+    return CAPTURE_SOURCE_OPTIONS.filter((option) => availableSources.has(option.id));
+  }, [allTransactions]);
+  const activeFilterCount =
+    Number(categoryFilter !== 'all') +
+    Number(paymentFilter !== 'all') +
+    Number(accountFilter !== 'all') +
+    Number(sourceFilter !== 'all') +
+    Number(dateFilter !== 'all');
   const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest First';
 
   const displayTransactions = useMemo(() => {
@@ -126,6 +145,10 @@ export default function TransactionsScreen() {
 
     if (accountFilter !== 'all') {
       nextTransactions = nextTransactions.filter((transaction) => transaction.captureAccountId === accountFilter);
+    }
+
+    if (sourceFilter !== 'all') {
+      nextTransactions = nextTransactions.filter((transaction) => transaction.captureSource === sourceFilter);
     }
 
     if (dateFilter !== 'all') {
@@ -150,54 +173,26 @@ export default function TransactionsScreen() {
       });
     }
 
-    switch (sortOption) {
-      case 'oldest':
-        return nextTransactions.sort((a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime());
-      case 'amount_high':
-        return nextTransactions.sort((a, b) => b.amount - a.amount);
-      case 'amount_low':
-        return nextTransactions.sort((a, b) => a.amount - b.amount);
-      case 'name_az':
-        return nextTransactions.sort((a, b) => a.description.localeCompare(b.description));
-      case 'name_za':
-        return nextTransactions.sort((a, b) => b.description.localeCompare(a.description));
-      case 'newest':
-      default:
-        return nextTransactions.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
-    }
-  }, [accountFilter, categoryFilter, dateFilter, filteredTransactions, paymentFilter, sortOption]);
+    return sortTransactionsForHistory(nextTransactions, sortOption);
+  }, [accountFilter, categoryFilter, dateFilter, filteredTransactions, paymentFilter, sortOption, sourceFilter]);
 
-  const transactionSections = useMemo<TransactionMonthSection[]>(() => {
-    const sections = new Map<string, TransactionMonthSection>();
-
-    displayTransactions.forEach((transaction) => {
-      const sectionTitle = format(parseTransactionDate(transaction.transaction_date), 'MMMM yyyy');
-      const existingSection = sections.get(sectionTitle);
-
-      if (existingSection) {
-        existingSection.data.push(transaction);
-        return;
-      }
-
-      sections.set(sectionTitle, {
-        title: sectionTitle,
-        data: [transaction],
-      });
-    });
-
-    return Array.from(sections.values());
-  }, [displayTransactions]);
+  const transactionSections = useMemo<TransactionMonthSection[]>(
+    () => groupTransactionsByMonth(displayTransactions),
+    [displayTransactions]
+  );
 
   const resetAdvancedFilters = () => {
     setCategoryFilter('all');
     setPaymentFilter('all');
     setAccountFilter('all');
+    setSourceFilter('all');
     setDateFilter('all');
   };
 
   const renderTransaction = ({ item: txn }: { item: Transaction }) => {
     const category = getCategoryById(txn.category);
     const isExpense = txn.type === 'expense';
+    const captureSourceLabel = getCaptureSourceLabel(txn.captureSource);
 
     return (
       <TouchableOpacity
@@ -235,6 +230,11 @@ export default function TransactionsScreen() {
           {txn.captureAccountLabel ? (
             <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary, marginTop: 2 }}>
               {txn.captureAccountLabel}
+            </Text>
+          ) : null}
+          {captureSourceLabel ? (
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary, marginTop: 2 }}>
+              {captureSourceLabel}
             </Text>
           ) : null}
         </View>
@@ -597,6 +597,41 @@ export default function TransactionsScreen() {
                 </>
               ) : null}
 
+              {sourceOptions.length > 0 ? (
+                <>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
+                    Capture Source
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base }}>
+                    {[{ id: 'all', label: 'All Sources', icon: 'source-branch' }, ...sourceOptions].map((option) => {
+                      const active = sourceFilter === option.id;
+                      return (
+                        <TouchableOpacity
+                          key={option.id}
+                          onPress={() => setSourceFilter(option.id)}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
+                            paddingHorizontal: Spacing.md,
+                            paddingVertical: Spacing.sm,
+                            borderRadius: BorderRadius.full,
+                            backgroundColor: active ? colors.primaryBg : colors.surface,
+                            borderWidth: 1,
+                            borderColor: active ? colors.primary : colors.border,
+                          }}
+                        >
+                          <MaterialCommunityIcons name={option.icon as any} size={16} color={active ? colors.primary : colors.textTertiary} />
+                          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: active ? colors.primary : colors.textSecondary }}>
+                            {option.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
+
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
                 Date Range
               </Text>
@@ -717,4 +752,3 @@ export default function TransactionsScreen() {
     </SafeAreaView>
   );
 }
-

@@ -104,6 +104,7 @@ export default function SettingsScreen() {
   const setAutoCaptureEnabled = useCaptureStore((s) => s.setAutoCaptureEnabled);
   const setNotificationCaptureEnabled = useCaptureStore((s) => s.setNotificationCaptureEnabled);
   const setSmsResearchModeEnabled = useCaptureStore((s) => s.setSmsResearchModeEnabled);
+  const setAiSmsAssistEnabled = useCaptureStore((s) => s.setAiSmsAssistEnabled);
   const acceptNotificationExplainer = useCaptureStore((s) => s.acceptNotificationExplainer);
   const acceptSmsResearchExplainer = useCaptureStore((s) => s.acceptSmsResearchExplainer);
   const setNotificationAccessStatus = useCaptureStore((s) => s.setNotificationAccessStatus);
@@ -725,6 +726,27 @@ export default function SettingsScreen() {
             }
           />
           <SettingItem
+            icon="brain"
+            iconColor={captureSettings.aiSmsAssistEnabled ? colors.primary : '#5A5A5A'}
+            iconBg={captureSettings.aiSmsAssistEnabled ? colors.primaryBg : '#EFEFEF'}
+            title="AI SMS Assist"
+            subtitle={
+              captureSettings.aiSmsAssistEnabled
+                ? 'Feature-flagged fallback for low-confidence SMS, review required'
+                : 'Off by default, deterministic parser stays primary'
+            }
+            right={
+              <Switch
+                value={Boolean(captureSettings.aiSmsAssistEnabled)}
+                onValueChange={setAiSmsAssistEnabled}
+                disabled={!captureSettings.autoCaptureEnabled || !smsResearchBuildEnabled}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
+          />
+          <SettingItem
             icon="inbox-arrow-down-outline"
             iconColor="#8A8A8A"
             iconBg="#F2F2F2"
@@ -1081,6 +1103,5 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
-
 
 

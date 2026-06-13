@@ -24,6 +24,8 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import type { CaptureSource, DraftTransaction } from '@/types/capture';
 import type { SmsImportProgress } from '@/types/smsImport';
 
+const MAX_VISIBLE_DRAFT_CARDS = 100;
+
 const confidenceLabel = (confidence: number) => {
   if (confidence >= 0.8) return 'High confidence';
   if (confidence >= 0.55) return 'Needs a quick check';
@@ -226,6 +228,7 @@ export default function AutoCaptureScreen() {
   const [showSmsImportProgress, setShowSmsImportProgress] = useState(false);
   const [smsImportProgress, setSmsImportProgress] = useState<SmsImportProgress | undefined>();
   const pendingDrafts = useMemo(() => drafts.filter((draft) => draft.status === 'pending'), [drafts]);
+  const visiblePendingDrafts = useMemo(() => pendingDrafts.slice(0, MAX_VISIBLE_DRAFT_CARDS), [pendingDrafts]);
   const recentSignals = useMemo(() => signals.slice(0, 5), [signals]);
   const hiddenNotificationSignals = useMemo(
     () =>
@@ -537,7 +540,19 @@ export default function AutoCaptureScreen() {
             message="Captured transactions will appear here as reviewable drafts."
           />
         ) : (
-          pendingDrafts.map((draft) => <DraftCard key={draft.id} draft={draft} onBudgetRequired={showBudgetRequired} />)
+          <>
+            {pendingDrafts.length > MAX_VISIBLE_DRAFT_CARDS ? (
+              <Card variant="outlined" borderRadius="md" padding="md" style={{ marginBottom: Spacing.md, backgroundColor: colors.surface }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  Showing first {MAX_VISIBLE_DRAFT_CARDS} drafts
+                </Text>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18, marginTop: 3 }}>
+                  Confirm or ignore these to reveal the remaining {pendingDrafts.length - MAX_VISIBLE_DRAFT_CARDS} captured drafts.
+                </Text>
+              </Card>
+            ) : null}
+            {visiblePendingDrafts.map((draft) => <DraftCard key={draft.id} draft={draft} onBudgetRequired={showBudgetRequired} />)}
+          </>
         )}
 
         {recentSignals.length > 0 ? (

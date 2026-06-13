@@ -1,6 +1,7 @@
 import { firebaseAuth } from './firebase';
 import { getBackendBaseUrl } from '@/config/environment';
 import type { DiagnosticEvent } from '@/services/diagnosticsService';
+import type { AiSmsParseCandidate, AiSmsParseInput } from '@/types/capture';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
@@ -86,6 +87,11 @@ export const backendApi = {
     request<{ accepted: boolean; id: string }>('/v1/diagnostics/events', {
       method: 'POST',
       body: JSON.stringify(event),
+    }),
+  parseSmsWithAi: async (payload: AiSmsParseInput) =>
+    request<{ result: AiSmsParseCandidate; reviewRequired: true; validationReasons: string[] }>('/v1/capture/ai-parse', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
   updateResource: async <T>(
     resource: 'transactions' | 'notes' | 'badges' | 'notifications',

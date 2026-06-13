@@ -46,6 +46,7 @@ const emptySmsInboxImportSummary = (
 });
 
 const yieldToUi = () => new Promise((resolve) => setTimeout(resolve, 0));
+const JS_INGESTION_BATCH_SIZE = 25;
 
 export const ingestCapturedTransactionSignal = (input: CaptureSignalInput): CaptureIngestionResult => {
   if (useBudgetStore.getState().settings.monthly_allowance <= 0) {
@@ -207,26 +208,34 @@ export const importRecentSmsTransactionsFromInbox = async (
       return summary;
     }
 
-    nativeResult.signals.filter((signal) => useCaptureStore.getState().isSignalAccountApproved(signal)).forEach((signal) => {
+    const approvedSignals = nativeResult.signals.filter((signal) => useCaptureStore.getState().isSignalAccountApproved(signal));
+    for (let index = 0; index < approvedSignals.length; index += 1) {
+      const signal = approvedSignals[index];
       const result = ingestCapturedTransactionSignal(signal);
 
       if (result.status === 'duplicate') {
         summary.duplicateCount += 1;
-        return;
-      }
-
-      if (result.status === 'ignored') {
+      } else if (result.status === 'ignored') {
         summary.parserIgnoredCount += 1;
-        return;
+      } else if (result.status === 'drafted' && result.draftId) {
+        summary.draftedCount += 1;
+        summary.pendingReviewCount += 1;
       }
 
-      if (result.status !== 'drafted' || !result.draftId) {
-        return;
+      if ((index + 1) % JS_INGESTION_BATCH_SIZE === 0) {
+        onProgress?.({
+          phase: 'importing_transactions',
+          scannedCount: summary.scannedCount,
+          eligibleCount: summary.nativeImportedCount,
+          draftedCount: summary.draftedCount,
+          duplicateCount: summary.duplicateCount,
+          parserIgnoredCount: summary.parserIgnoredCount,
+          pageCount: importPageCount,
+          message: `Reviewing SMS batch ${index + 1} of ${approvedSignals.length}`,
+        });
+        await yieldToUi();
       }
-
-      summary.draftedCount += 1;
-      summary.pendingReviewCount += 1;
-    });
+    }
 
     onProgress?.({
       phase: 'importing_transactions',

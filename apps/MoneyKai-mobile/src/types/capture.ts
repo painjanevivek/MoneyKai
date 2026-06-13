@@ -25,6 +25,8 @@ export interface CaptureParseExplanation {
   matchedAmount?: string;
   matchedAmountPattern?: string;
   matchedDirectionTerms: string[];
+  matchedTransactionDate?: string;
+  matchedTransactionDatePattern?: string;
   matchedMerchantPattern?: string;
   matchedPaymentMethod?: string;
   matchedCategoryRule?: string;
@@ -145,6 +147,7 @@ export interface CaptureParseResult {
   merchantKey?: string;
   category?: string;
   paymentMethod?: string;
+  transactionDate?: string;
   parseStatus: CaptureParseStatus;
   ignoreReason?: string;
   transactionReference?: string;
@@ -158,6 +161,7 @@ export interface CaptureSettings {
   notificationCaptureEnabled: boolean;
   reviewNotificationsEnabled: boolean;
   smsResearchModeEnabled: boolean;
+  aiSmsAssistEnabled: boolean;
   notificationExplainerAcceptedAt?: string;
   smsResearchExplainerAcceptedAt?: string;
   notificationAccessStatus: CapturePermissionState;
@@ -172,4 +176,35 @@ export interface CaptureIngestionResult {
   draftId?: string;
   status: CaptureProcessingStatus;
   reason: string;
+}
+
+export type AiSmsParseStatus = 'transaction' | 'ignore' | 'unsure';
+
+export type AiSmsParseType = 'expense' | 'income' | 'transfer' | 'refund' | 'reversal' | 'unknown';
+
+export interface AiSmsParseInput {
+  sender?: string;
+  receivedAt: string;
+  body: string;
+  locale: 'en-IN';
+  currency: 'INR';
+}
+
+export interface AiSmsParseCandidate {
+  status: AiSmsParseStatus;
+  type: AiSmsParseType;
+  amount?: number;
+  currency: 'INR';
+  merchantOrCounterparty?: string;
+  paymentMethod?: string;
+  categorySuggestion?: string;
+  transactionReferencePresent: boolean;
+  confidence: number;
+  reason: string;
+}
+
+export interface AiSmsValidationResult {
+  accepted: boolean;
+  reviewRequired: true;
+  reasons: string[];
 }

@@ -1,6 +1,7 @@
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { getAutomaticExpenseCategory } from '@/services/captureCategoryRules';
 import { buildCaptureDedupeKeys } from '@/services/captureDedupe';
+import { format, isValid, parse } from 'date-fns';
 import type {
   CaptureParseExplanation,
   CaptureParseResult,
@@ -39,6 +40,12 @@ type AmountMatch = {
 type PaymentMethodMatch = {
   id: PaymentMethodId;
   label: string;
+};
+
+type TransactionDateMatch = {
+  value?: string;
+  raw?: string;
+  pattern?: string;
 };
 
 const EXPENSE_KEYWORDS: KeywordRule[] = [
@@ -105,6 +112,8 @@ const AMOUNT_PATTERNS: { name: string; regex: RegExp }[] = [
 ];
 
 const MERCHANT_PATTERNS: { name: string; regex: RegExp }[] = [
+  { name: 'to merchant via method', regex: /\bto\s+([a-z0-9][a-z0-9 &.'/-]{2,80}?)\s+(?:via|through|using)\s+(?:upi|imps|neft|rtgs|card|wallet)\b/i },
+  { name: 'transfer to', regex: /\b(?:trf|transfer|transferred)\s+to\s+([a-z0-9][a-z0-9 &.'/-]{2,80}?)(?=\s+(?:ref|refno|rrn|utr|if not|on date)|$)/i },
   { name: 'upi slash merchant', regex: /\bupi\/p2[am]\/(?:[a-z0-9/-]{6,}|\[(?:number|ref)\])\/([a-z0-9][a-z0-9 &.'-]{2,80}?)(?=\s+(?:not you\?|sms blockupi\b|axis bank\b)|$)/i },
   { name: 'upi payment to', regex: /\b(?:upi\s+)?payment(?:\s+of\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+(?:to|at)\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
   { name: 'paid to', regex: /\bpaid(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+(?:from\s+[a-z ]+\s+)?to\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
@@ -243,11 +252,68 @@ const extractAmount = (text: string): AmountMatch => {
   return {};
 };
 
+const parseDateWithFormats = (raw: string, formats: string[], baseDate: Date) => {
+  for (const dateFormat of formats) {
+    const parsed = parse(raw, dateFormat, baseDate);
+    if (isValid(parsed)) return parsed;
+  }
+
+  return undefined;
+};
+
+const isNotFutureDated = (candidate: Date, receivedAt?: string) => {
+  const received = new Date(receivedAt ?? Date.now());
+  const validReceived = Number.isFinite(received.getTime()) ? received : new Date();
+  const candidateDay = new Date(`${format(candidate, 'yyyy-MM-dd')}T12:00:00`);
+  const receivedDayEnd = new Date(`${format(validReceived, 'yyyy-MM-dd')}T23:59:59`);
+  return candidateDay.getTime() <= receivedDayEnd.getTime();
+};
+
+const extractReliableTransactionDate = (text: string, receivedAt?: string): TransactionDateMatch => {
+  const received = new Date(receivedAt ?? Date.now());
+  const baseDate = Number.isFinite(received.getTime()) ? received : new Date();
+  const patterns: { name: string; regex: RegExp; formats: string[]; normalize?: (value: string) => string }[] = [
+    { name: 'dd-mm-yy transaction date', regex: /\b(\d{1,2}-\d{1,2}-\d{2,4})(?:,\s*\d{1,2}:\d{2}(?::\d{2})?)?\b/gi, formats: ['dd-MM-yy', 'dd-MM-yyyy'] },
+    { name: 'dd/mm/yy transaction date', regex: /\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/gi, formats: ['dd/MM/yy', 'dd/MM/yyyy'] },
+    {
+      name: 'compact bank transaction date',
+      regex: /\b(\d{1,2}\s?[a-z]{3}\s?\d{2,4})\b/gi,
+      formats: ['ddMMMyy', 'ddMMMyyyy'],
+      normalize: (value) => value.replace(/\s+/g, ''),
+    },
+    {
+      name: 'day month transaction date',
+      regex: /\b(\d{1,2}-[a-z]{3})(?![a-z])\b/gi,
+      formats: ['dd-MMM-yyyy'],
+      normalize: (value) => `${value}-${format(baseDate, 'yyyy')}`,
+    },
+  ];
+
+  for (const pattern of patterns) {
+    const matches = [...text.matchAll(pattern.regex)];
+    for (const match of matches) {
+      const raw = match[1];
+      const normalized = pattern.normalize ? pattern.normalize(raw) : raw;
+      const parsed = parseDateWithFormats(normalized, pattern.formats, baseDate);
+      if (parsed && isNotFutureDated(parsed, receivedAt)) {
+        return {
+          value: format(parsed, 'yyyy-MM-dd'),
+          raw,
+          pattern: pattern.name,
+        };
+      }
+    }
+  }
+
+  return {};
+};
+
 const cleanMerchantLabel = (value: string) => {
   const withoutSensitiveParts = value
     .replace(/\b[a-z0-9._%+-]+@[a-z0-9.-]+\b/gi, '')
     .replace(/\b(?:upi|txn|transaction|ref|rrn|utr|order|id|no)\b\s*[:#-]?\s*[a-z0-9/-]+.*$/i, '')
     .replace(/\b(?:on|via|using|approved|has been|was|is|as|for)\b.*$/i, '')
+    .replace(/\s+from\s+(?:kotak|hdfc|icici|axis|sbi|bank)\b.*$/i, '')
     .replace(/\b(?:a\/c|acct|account|card|ending|xx|x{2,})\b.*$/i, '')
     .trim()
     .replace(/[.:-]+$/g, '')
@@ -276,6 +342,10 @@ const detectPaymentMethod = (text: string, input: CaptureSignalInput): PaymentMe
     return { id: 'wallet', label: 'wallet' };
   }
 
+  if (/\b(?:phonepe|google pay|gpay|bhim)\b/i.test(combined)) {
+    return { id: 'upi', label: 'UPI app' };
+  }
+
   const matched = PAYMENT_KEYWORDS.find((method) => method.terms.some((term) => term.test(combined)));
 
   return matched ? { id: matched.id, label: matched.label } : { id: 'bank', label: 'bank fallback' };
@@ -283,7 +353,7 @@ const detectPaymentMethod = (text: string, input: CaptureSignalInput): PaymentMe
 
 const extractTransactionReference = (text: string) => {
   const match =
-    text.match(/\b(?:upi\s*)?(?:ref(?:erence)?|rrn|utr|transaction id|txn id|order id|imps)\s*(?:no\.?|number|id)?\s*[:#-]?\s*([a-z0-9/-]{6,})/i) ??
+    text.match(/\b(?:upi\s*)?(?:ref(?:erence)?(?:\s*no)?|refno|rrn|utr|transaction id|txn id|order id|imps(?:\s*ref)?)\s*(?:no\.?|number|id)?\s*[:#-]?\s*([a-z0-9/-]{6,})/i) ??
     text.match(/\bupi\/p2[am]\/([a-z0-9/-]{6,})\//i);
   return match?.[1]?.toLowerCase();
 };
@@ -294,6 +364,7 @@ const createExplanation = (params: {
   direction: DirectionMatch;
   merchant: MerchantMatch;
   paymentMethod: PaymentMethodMatch;
+  transactionDate: TransactionDateMatch;
   category?: string;
   learnedRule?: MerchantCategoryRule;
   ignoreReason?: string;
@@ -303,6 +374,8 @@ const createExplanation = (params: {
   matchedAmount: params.amount.raw,
   matchedAmountPattern: params.amount.pattern,
   matchedDirectionTerms: params.direction.terms,
+  matchedTransactionDate: params.transactionDate.raw,
+  matchedTransactionDatePattern: params.transactionDate.pattern,
   matchedMerchantPattern: params.merchant.pattern,
   matchedPaymentMethod: params.paymentMethod.label,
   matchedCategoryRule: params.learnedRule
@@ -325,6 +398,7 @@ const calculateConfidence = (params: {
   category?: string;
   paymentMethod?: string;
   reference?: string;
+  transactionDate?: string;
   status: CaptureParseStatus;
 }) => {
   const factors: string[] = [];
@@ -361,6 +435,11 @@ const calculateConfidence = (params: {
   if (params.reference) {
     confidence += 0.05;
     factors.push('transaction reference found');
+  }
+
+  if (params.transactionDate) {
+    confidence += 0.03;
+    factors.push('reliable transaction date found');
   }
 
   if (params.status === 'review') {
@@ -411,6 +490,7 @@ export const parseCapturedSignal = (
   const ignoreReason = detectIgnoreReason(lowered, amount.value);
   const direction = detectDirection(text);
   const merchant = extractMerchant(text, input);
+  const transactionDate = extractReliableTransactionDate(text, input.receivedAt);
   const merchantKey = merchant.label ? normalizeMerchantKey(merchant.label) : undefined;
   const paymentMethod = detectPaymentMethod(text, input);
   const learnedRule = merchantKey
@@ -453,6 +533,7 @@ export const parseCapturedSignal = (
     category: isValidCategory ? category : undefined,
     paymentMethod: normalizedPaymentMethod,
     reference,
+    transactionDate: transactionDate.value,
     status: parseStatus,
   });
   const explanation = createExplanation({
@@ -461,6 +542,7 @@ export const parseCapturedSignal = (
     direction,
     merchant,
     paymentMethod,
+    transactionDate,
     category: isValidCategory ? category : undefined,
     learnedRule,
     ignoreReason: finalIgnoreReason,
@@ -475,6 +557,7 @@ export const parseCapturedSignal = (
     merchantKey,
     category: isValidCategory ? category : undefined,
     paymentMethod: normalizedPaymentMethod,
+    transactionDate: transactionDate.value,
     parseStatus,
     ignoreReason: finalIgnoreReason,
     transactionReference: reference,

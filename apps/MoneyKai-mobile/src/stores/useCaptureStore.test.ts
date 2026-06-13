@@ -63,6 +63,7 @@ const resetCaptureStore = () => {
       notificationCaptureEnabled: true,
       reviewNotificationsEnabled: false,
       smsResearchModeEnabled: false,
+      aiSmsAssistEnabled: false,
       notificationAccessStatus: 'unknown',
       smsAccessStatus: 'unknown',
       smsImportRangeId: '1_month',
@@ -168,7 +169,7 @@ describe('useCaptureStore production safety controls', () => {
     const input = {
       source: 'sms',
       sender: 'HDFCBK',
-      body: 'Rs 321.00 debited from account for UPI payment to SMS TEST CAFE. UPI Ref 555566667777.',
+      body: 'Rs 321.00 debited from account on 08-06-26 for UPI payment to SMS TEST CAFE. UPI Ref 555566667777.',
       receivedAt: '2026-06-09T10:00:00.000Z',
       rawPayload: { body: 'should not be used by the manual import path' },
     } as const;
@@ -182,6 +183,7 @@ describe('useCaptureStore production safety controls', () => {
       expect.objectContaining({
         captureSource: 'sms',
         sourceApp: 'HDFCBK',
+        transaction_date: '2026-06-08',
         status: 'pending',
       }),
     ]);
@@ -191,6 +193,14 @@ describe('useCaptureStore production safety controls', () => {
         body: expect.not.stringContaining('555566667777'),
       }),
     ]);
+
+    expect(useCaptureStore.getState().confirmDraft(result.draftId as string, 'food')).toBe(true);
+    expect(mocks.addTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transaction_date: '2026-06-08',
+        captureSource: 'sms',
+      })
+    );
   });
 
   it('requires SMS bank account approval before creating SMS drafts', () => {

@@ -35,6 +35,7 @@ const DEFAULT_CAPTURE_SETTINGS: CaptureSettings = {
   notificationCaptureEnabled: true,
   reviewNotificationsEnabled: true,
   smsResearchModeEnabled: false,
+  aiSmsAssistEnabled: false,
   notificationAccessStatus: 'unknown',
   smsAccessStatus: 'unknown',
   smsImportRangeId: DEFAULT_SMS_IMPORT_RANGE_ID,
@@ -111,6 +112,7 @@ interface CaptureState {
   setNotificationCaptureEnabled: (enabled: boolean) => void;
   setReviewNotificationsEnabled: (enabled: boolean) => void;
   setSmsResearchModeEnabled: (enabled: boolean) => void;
+  setAiSmsAssistEnabled: (enabled: boolean) => void;
   setSmsImportRangeId: (rangeId: SmsImportRangeId) => void;
   acceptNotificationExplainer: () => void;
   acceptSmsResearchExplainer: () => void;
@@ -210,6 +212,9 @@ export const useCaptureStore = create<CaptureState>()(
 
       setSmsResearchModeEnabled: (enabled) =>
         set((state) => ({ settings: { ...state.settings, smsResearchModeEnabled: enabled } })),
+
+      setAiSmsAssistEnabled: (enabled) =>
+        set((state) => ({ settings: { ...state.settings, aiSmsAssistEnabled: enabled } })),
 
       setSmsImportRangeId: (rangeId) =>
         set((state) => ({ settings: { ...state.settings, smsImportRangeId: rangeId } })),
@@ -526,7 +531,7 @@ export const useCaptureStore = create<CaptureState>()(
           captureAccountLabel: monitoredAccount ? formatMonitoredAccountLabel(monitoredAccount) : undefined,
           captureBankLabel: monitoredAccount?.bankLabel,
           captureAccountHint: monitoredAccount?.accountHint,
-          transaction_date: new Date(input.receivedAt ?? now).toISOString().split('T')[0],
+          transaction_date: parsed.transactionDate ?? new Date(input.receivedAt ?? now).toISOString().split('T')[0],
           confidence: parsed.confidence,
           captureSource: input.source,
           sourceApp: input.sourceApp ?? input.sender,
@@ -571,6 +576,7 @@ export const useCaptureStore = create<CaptureState>()(
           captureAccountLabel: draft.captureAccountLabel,
           captureBankLabel: draft.captureBankLabel,
           captureAccountHint: draft.captureAccountHint,
+          captureSource: draft.captureSource,
           canonicalTransactionKey: draft.canonicalTransactionKey,
           sourceFingerprint: draft.sourceFingerprint,
           transaction_date: draft.transaction_date,

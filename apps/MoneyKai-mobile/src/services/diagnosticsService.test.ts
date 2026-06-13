@@ -36,6 +36,16 @@ describe('diagnosticsService', () => {
     });
   });
 
+  it('scrubs sensitive SMS identifiers from non-sensitive metadata strings', () => {
+    expect(
+      sanitizeMetadata({
+        reason: 'Parser failed for UPI Ref 412345678901 from user@upi and account XX4321',
+      })
+    ).toEqual({
+      reason: 'Parser failed for UPI Ref [ref] from [vpa] and account [masked]',
+    });
+  });
+
   it('keeps a bounded recent event history and calls an optional sink', () => {
     const sink = vi.fn();
     setDiagnosticEventSink(sink);

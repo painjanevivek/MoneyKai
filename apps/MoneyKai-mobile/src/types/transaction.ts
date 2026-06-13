@@ -1,4 +1,5 @@
 export type TransactionType = 'income' | 'expense';
+export type TransactionCaptureSource = 'notification' | 'sms' | 'aa';
 
 export interface Transaction {
   id: string;
@@ -12,6 +13,7 @@ export interface Transaction {
   captureAccountLabel?: string;
   captureBankLabel?: string;
   captureAccountHint?: string;
+  captureSource?: TransactionCaptureSource;
   canonicalTransactionKey?: string;
   sourceFingerprint?: string;
   receipt_url?: string;
