@@ -2,6 +2,7 @@ import { firebaseAuth } from './firebase';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
+import type { AiChatRequest, AiChatResponse, AiModelStatusResponse, AiProviderStatus } from '@/features/ai/types';
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL?.trim() || '';
 const backendBaseUrl = rawBaseUrl.replace(/\/$/, '');
@@ -46,7 +47,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     let message = `Backend request failed with ${response.status}.`;
     try {
       const payload = await response.json();
-      message = payload?.detail || payload?.message || message;
+      const detail = payload?.detail;
+      message =
+        (typeof detail === 'string' ? detail : detail?.message) ||
+        payload?.message ||
+        payload?.error?.message ||
+        message;
     } catch {
       const text = await response.text();
       if (text) {
@@ -64,6 +70,13 @@ export const backendApi = {
   createBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups', { method: 'POST' }),
   getLatestBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups/latest'),
   restoreLatestBackup: async () => request<{ item: BackendSnapshot }>('/v1/backups/restore-latest', { method: 'POST' }),
+  getAiProviderStatus: async () => request<AiProviderStatus>('/v1/ai/providers/status'),
+  getAiModelStatus: async () => request<AiModelStatusResponse>('/v1/ai/models/status'),
+  chatWithAi: async (payload: AiChatRequest) =>
+    request<AiChatResponse>('/v1/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   updateAppSettings: async (payload: Record<string, unknown>) =>
     request<{ app: Record<string, unknown> }>('/v1/settings/app', {
       method: 'PUT',

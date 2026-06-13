@@ -5,9 +5,13 @@ import type { AiSmsParseCandidate, AiSmsParseInput } from '@/types/capture';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
+import type { AiChatRequest, AiChatResponse, AiModelStatusResponse, AiProviderStatus } from '@/features/ai/types';
 import type {
   FinancialDocument,
+  PdfPasswordProfile,
   FinancialDocumentStatusSummary,
+  ParsedStatementImportRequest,
+  ParsedStatementReviewActionResponse,
   ParsedStatementReviewResponse,
   ParseFinancialDocumentRequest,
   PdfPasswordAttemptRequest,
@@ -33,6 +37,8 @@ import type {
   ProviderConnectionUpdate,
   ProviderSyncResponse,
   WealthSnapshot,
+  ZerodhaConnectCallbackRequest,
+  ZerodhaConnectCallbackResponse,
   ZerodhaConnectStartResponse,
 } from '@/types/portfolio';
 import type {
@@ -100,7 +106,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     let message = `Backend request failed with ${response.status}.`;
     try {
       const payload = await response.json();
-      message = payload?.detail || payload?.message || message;
+      const detail = payload?.detail;
+      message =
+        (typeof detail === 'string' ? detail : detail?.message) ||
+        payload?.message ||
+        payload?.error?.message ||
+        message;
     } catch {
       const text = await response.text();
       if (text) {
@@ -139,6 +150,13 @@ export const backendApi = {
     request<{ accepted: boolean; id: string }>('/v1/diagnostics/events', {
       method: 'POST',
       body: JSON.stringify(event),
+    }),
+  getAiProviderStatus: async () => request<AiProviderStatus>('/v1/ai/providers/status'),
+  getAiModelStatus: async () => request<AiModelStatusResponse>('/v1/ai/models/status'),
+  chatWithAi: async (payload: AiChatRequest) =>
+    request<AiChatResponse>('/v1/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
   parseSmsWithAi: async (payload: AiSmsParseInput) =>
     request<{ result: AiSmsParseCandidate; reviewRequired: true; validationReasons: string[] }>('/v1/capture/ai-parse', {
@@ -183,6 +201,25 @@ export const backendApi = {
     }),
   getParsedStatementReview: async (documentId: string) =>
     request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/review`),
+  approveParsedStatementReview: async (documentId: string) =>
+    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/approve`, {
+      method: 'POST',
+    }),
+  ignoreParsedStatementReview: async (documentId: string) =>
+    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/ignore`, {
+      method: 'POST',
+    }),
+  importParsedStatementReview: async (documentId: string, payload: ParsedStatementImportRequest) =>
+    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/import`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  listPdfPasswordProfiles: async () =>
+    request<{ items: PdfPasswordProfile[] }>('/v1/financial-documents/password-profiles'),
+  deletePdfPasswordProfile: async (profileId: string) =>
+    request<{ deleted: boolean }>(`/v1/financial-documents/password-profiles/${profileId}`, {
+      method: 'DELETE',
+    }),
   listPortfolioConnections: async () => request<{ items: PortfolioAccount[] }>('/v1/portfolio/connections'),
   getPortfolioState: async () => request<PortfolioStateResponse>('/v1/portfolio/state'),
   createPortfolioConnection: async (payload: ProviderConnectionDraft) =>
@@ -266,6 +303,11 @@ export const backendApi = {
     }),
   startZerodhaConnect: async () =>
     request<ZerodhaConnectStartResponse>('/v1/portfolio/providers/zerodha/start', { method: 'POST' }),
+  completeZerodhaConnect: async (payload: ZerodhaConnectCallbackRequest) =>
+    request<ZerodhaConnectCallbackResponse>('/v1/portfolio/providers/zerodha/callback', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   getAccountAggregatorExploration: async () =>
     request<AccountAggregatorExplorationStatus>('/v1/portfolio/providers/account-aggregator/exploration'),
   updateResource: async <T>(
