@@ -49,6 +49,7 @@ interface TransactionState {
 
   // Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at'>) => boolean;
+  upsertBackendTransaction: (transaction: Transaction) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   setFilter: (filter: Partial<TransactionFilter>) => void;
@@ -252,6 +253,15 @@ export const useTransactionStore = create<TransactionState>()(
           return true;
         },
 
+        upsertBackendTransaction: (transaction) => {
+          set((state) => ({
+            transactions: [
+              transaction,
+              ...state.transactions.filter((existing) => existing.id !== transaction.id),
+            ],
+          }));
+        },
+
         updateTransaction: (id, updates) => {
           set((state) => ({
             transactions: state.transactions.map(t =>
@@ -306,5 +316,4 @@ export const useTransactionStore = create<TransactionState>()(
     }
   )
 );
-
 

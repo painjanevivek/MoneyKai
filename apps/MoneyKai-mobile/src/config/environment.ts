@@ -31,6 +31,7 @@ const smsResearchBuildValue = readEnv('EXPO_PUBLIC_SMS_RESEARCH_BUILD');
 const gmailSyncEnabledValue = readEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
 const pdfStatementParsingEnabledValue = readEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
 const wealthTabEnabledValue = readEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
+const financialAiEnabledValue = readEnv('EXPO_PUBLIC_FINANCIAL_AI_ENABLED');
 
 export const appEnvironment = {
   firebase: firebaseEnv,
@@ -44,6 +45,7 @@ export const appEnvironment = {
   gmailSyncEnabled: gmailSyncEnabledValue === 'true',
   pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
   wealthTabEnabled: wealthTabEnabledValue === 'true',
+  financialAiEnabled: financialAiEnabledValue === 'true',
 };
 
 export const hasFirebaseEnvironment = (): boolean =>
@@ -71,6 +73,9 @@ export const isPdfStatementParsingEnabled = (): boolean =>
 
 export const isWealthTabEnabled = (): boolean =>
   appEnvironment.wealthTabEnabled;
+
+export const isFinancialAiEnabled = (): boolean =>
+  appEnvironment.financialAiEnabled;
 
 export const getBackendBaseUrl = (): string => {
   if (appEnvironment.backendBaseUrl.length > 0) {

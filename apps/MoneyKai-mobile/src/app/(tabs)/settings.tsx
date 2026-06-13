@@ -17,6 +17,8 @@ import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { FinancialDocumentReviewCard } from '@/components/documents/FinancialDocumentReviewCard';
 import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
+import { ReconciliationReviewCard } from '@/components/reconciliation/ReconciliationReviewCard';
+import { SecurityHardeningCard } from '@/components/security/SecurityHardeningCard';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { isBackendConfigured } from '@/services/backendApi';
@@ -761,6 +763,8 @@ export default function SettingsScreen() {
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Financial Imports</Text>
         <GmailConnectionCard />
         <FinancialDocumentReviewCard />
+        <ReconciliationReviewCard />
+        <SecurityHardeningCard />
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Maintenance</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
@@ -1109,4 +1113,3 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
-

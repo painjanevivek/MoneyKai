@@ -14,30 +14,38 @@ import { ModalSheet } from '@/components/ui/ModalSheet';
 import { isWealthTabEnabled } from '@/config/environment';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
+import { financialAiApi } from '@/services/financialAiApi';
 import { portfolioApi } from '@/services/portfolioApi';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { usePortfolioStore } from '@/stores/usePortfolioStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import type { AccountAggregatorExplorationStatus, PortfolioAccount, PortfolioHolding, PortfolioHoldingDraft } from '@/types/portfolio';
+import type { WealthInsight } from '@/types/wealth';
+import { buildWealthOverview } from '@/utils/wealthAnalytics';
 
 export default function WealthScreen() {
   const { colors } = useTheme();
   const enabled = isWealthTabEnabled();
   const [showManualEntry, setShowManualEntry] = React.useState(false);
   const [aaStatus, setAaStatus] = React.useState<AccountAggregatorExplorationStatus | null>(null);
-  const [busy, setBusy] = React.useState<'refresh' | 'manual' | 'snapshot' | null>(null);
+  const [busy, setBusy] = React.useState<'refresh' | 'manual' | 'snapshot' | 'ai' | null>(null);
+  const [aiInsights, setAiInsights] = React.useState<WealthInsight[]>([]);
   const [busyAccountId, setBusyAccountId] = React.useState<string | undefined>();
   const [busyHoldingId, setBusyHoldingId] = React.useState<string | undefined>();
   const user = useAuthStore((state) => state.user);
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const accounts = usePortfolioStore((state) => state.accounts);
+  const holdings = usePortfolioStore((state) => state.holdings);
   const lastUpdatedAt = usePortfolioStore((state) => state.lastUpdatedAt);
   const setPortfolioState = usePortfolioStore((state) => state.setPortfolioState);
   const upsertAccount = usePortfolioStore((state) => state.upsertAccount);
   const upsertHolding = usePortfolioStore((state) => state.upsertHolding);
   const removeHolding = usePortfolioStore((state) => state.removeHolding);
   const setSnapshot = usePortfolioStore((state) => state.setSnapshot);
-  const overview = usePortfolioStore((state) => state.getWealthOverview(user?.id ?? 'local'));
+  const overview = React.useMemo(
+    () => buildWealthOverview(user?.id ?? 'local', accounts, holdings),
+    [accounts, holdings, user?.id]
+  );
 
   const refreshPortfolio = React.useCallback(async () => {
     if (!enabled) {
@@ -147,6 +155,24 @@ export default function WealthScreen() {
     }
   };
 
+  const handleGenerateAiInsights = async () => {
+    setBusy('ai');
+    try {
+      const response = await financialAiApi.generateWealthInsights({
+        snapshot: overview.snapshot,
+        holdings: holdings.slice(0, 25),
+      });
+      setAiInsights(response.insights);
+      if (!response.enabled) {
+        Alert.alert('AI insights', 'Financial AI is disabled on the backend, so MoneyKai returned deterministic review-required insights.');
+      }
+    } catch (error) {
+      Alert.alert('AI insights failed', error instanceof Error ? error.message : 'Could not generate wealth insights.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const handleStartZerodha = async () => {
     try {
       const response = await portfolioApi.startZerodhaConnect();
@@ -234,7 +260,12 @@ export default function WealthScreen() {
           onPause={handlePauseAccount}
           onDisconnect={handleDisconnectAccount}
         />
-        <PortfolioInsightCard insights={overview.insights} />
+        <PortfolioInsightCard
+          insights={overview.insights}
+          aiInsights={aiInsights}
+          loadingAiInsights={busy === 'ai'}
+          onGenerateAiInsights={enabled ? handleGenerateAiInsights : undefined}
+        />
       </ScrollView>
       <ManualHoldingSheet
         visible={showManualEntry}

@@ -35,6 +35,28 @@ import type {
   WealthSnapshot,
   ZerodhaConnectStartResponse,
 } from '@/types/portfolio';
+import type {
+  AiEmailClassificationRequest,
+  AiEmailClassificationResult,
+  AiStatementRowsRequest,
+  AiStatementRowsResponse,
+  AiWealthInsightRequest,
+  AiWealthInsightResponse,
+} from '@/types/financialAi';
+import type {
+  NormalizedFinancialEvent,
+  ParsedDocumentReconciliationRequest,
+  ReconciliationApprovalResponse,
+  ReconciliationCandidate,
+  ReconciliationRunRequest,
+  ReconciliationRunResponse,
+} from '@/types/reconciliation';
+import type {
+  AuditEvent,
+  DeleteFinancialDataRequest,
+  DeleteFinancialDataResponse,
+  SecurityHardeningStatus,
+} from '@/types/security';
 
 const backendBaseUrl = getBackendBaseUrl();
 
@@ -196,6 +218,51 @@ export const backendApi = {
   importParsedDocumentHoldings: async (documentId: string) =>
     request<{ items: PortfolioHolding[]; importedCount: number }>(`/v1/portfolio/imports/parsed-document/${documentId}`, {
       method: 'POST',
+    }),
+  listReconciliationReviews: async (status?: string) =>
+    request<{ items: ReconciliationCandidate[] }>(
+      status ? `/v1/reconciliation/reviews?status=${encodeURIComponent(status)}` : '/v1/reconciliation/reviews'
+    ),
+  runReconciliation: async (payload: ReconciliationRunRequest | { events: NormalizedFinancialEvent[] }) =>
+    request<ReconciliationRunResponse>('/v1/reconciliation/run', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  reconcileParsedDocument: async (payload: ParsedDocumentReconciliationRequest) =>
+    request<ReconciliationRunResponse>('/v1/reconciliation/parsed-document', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  approveReconciliationReview: async (reviewId: string) =>
+    request<ReconciliationApprovalResponse>(`/v1/reconciliation/reviews/${reviewId}/approve`, {
+      method: 'POST',
+    }),
+  ignoreReconciliationReview: async (reviewId: string) =>
+    request<{ item: ReconciliationCandidate }>(`/v1/reconciliation/reviews/${reviewId}/ignore`, {
+      method: 'POST',
+    }),
+  classifyFinancialEmailWithAi: async (payload: AiEmailClassificationRequest) =>
+    request<AiEmailClassificationResult>('/v1/financial-ai/email-classification', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  interpretStatementRowsWithAi: async (payload: AiStatementRowsRequest) =>
+    request<AiStatementRowsResponse>('/v1/financial-ai/statement-rows', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  generateAiWealthInsights: async (payload: AiWealthInsightRequest) =>
+    request<AiWealthInsightResponse>('/v1/financial-ai/wealth-insights', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getSecurityHardeningStatus: async () =>
+    request<SecurityHardeningStatus>('/v1/security/hardening-status'),
+  listAuditEvents: async () => request<{ items: AuditEvent[] }>('/v1/security/audit-events'),
+  deleteFinancialData: async (payload: DeleteFinancialDataRequest) =>
+    request<DeleteFinancialDataResponse>('/v1/security/delete-financial-data', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
   startZerodhaConnect: async () =>
     request<ZerodhaConnectStartResponse>('/v1/portfolio/providers/zerodha/start', { method: 'POST' }),

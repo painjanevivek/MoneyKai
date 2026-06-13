@@ -36,6 +36,10 @@ const CAPTURE_SOURCE_OPTIONS: { id: TransactionCaptureSource; label: string; ico
   { id: 'sms', label: 'SMS', icon: 'message-processing-outline' },
   { id: 'notification', label: 'Notifications', icon: 'bell-badge-outline' },
   { id: 'aa', label: 'Account Aggregator', icon: 'bank-transfer' },
+  { id: 'gmail', label: 'Gmail', icon: 'gmail' },
+  { id: 'pdf', label: 'PDF Statements', icon: 'file-document-outline' },
+  { id: 'portfolio', label: 'Portfolio', icon: 'chart-timeline-variant' },
+  { id: 'manual', label: 'Manual', icon: 'pencil-outline' },
 ] as const;
 const getCaptureSourceLabel = (source?: TransactionCaptureSource) =>
   source ? CAPTURE_SOURCE_OPTIONS.find((option) => option.id === source)?.label ?? source.toUpperCase() : undefined;

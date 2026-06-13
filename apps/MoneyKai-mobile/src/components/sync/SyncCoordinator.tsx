@@ -5,22 +5,32 @@ import { flushSyncQueue } from '@/services/syncQueue';
 
 export function SyncCoordinator() {
   useEffect(() => {
-    void flushSyncQueue();
+    let mounted = true;
 
-    const networkSubscription = Network.addNetworkStateListener((state) => {
-      if (state.isConnected && state.isInternetReachable !== false) {
+    const flushWhenOnline = async () => {
+      const state = await Network.getNetworkStateAsync().catch(() => undefined);
+      if (!mounted) {
+        return;
+      }
+      if (!state || (state.isConnected && state.isInternetReachable !== false)) {
         void flushSyncQueue();
       }
-    });
+    };
+
+    void flushWhenOnline();
+    const intervalId = setInterval(() => {
+      void flushWhenOnline();
+    }, 30000);
 
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        void flushSyncQueue();
+        void flushWhenOnline();
       }
     });
 
     return () => {
-      networkSubscription.remove();
+      mounted = false;
+      clearInterval(intervalId);
       appStateSubscription.remove();
     };
   }, []);

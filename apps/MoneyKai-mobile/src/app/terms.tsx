@@ -5,7 +5,7 @@ import { SeoHead } from '@/components/marketing/SeoHead';
 import { Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
-const LAST_UPDATED = 'June 7, 2026';
+const LAST_UPDATED = 'June 13, 2026';
 
 const TERMS_SECTIONS = [
   {
@@ -30,7 +30,19 @@ const TERMS_SECTIONS = [
   },
   {
     title: 'Data responsibility',
-    body: 'Users are responsible for reviewing the accuracy of the information they enter before relying on it for important decisions.',
+    body: 'Users are responsible for reviewing the accuracy of information they enter, import, parse, reconcile, or approve before relying on it for important decisions.',
+  },
+  {
+    title: 'Imported financial data',
+    body: 'Gmail metadata sync, PDF statement parsing, wealth monitoring, broker or Account Aggregator integrations, and reconciliation workflows are optional feature-gated capabilities that require user consent and may depend on third-party providers.',
+  },
+  {
+    title: 'AI-assisted features',
+    body: 'AI-assisted classification, parsing support, and wealth insights are review-required product aids. They may be inaccurate or incomplete and must not be treated as professional financial, legal, investment, or tax advice.',
+  },
+  {
+    title: 'Security and deletion controls',
+    body: 'Users may request deletion of imported financial data through available product controls. Some security, consent, deletion, and audit events may be retained to protect account integrity and meet operational requirements.',
   },
 ];
 

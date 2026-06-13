@@ -12,8 +12,10 @@ import { isPdfStatementParsingEnabled } from '@/config/environment';
 import { useTheme } from '@/hooks/useTheme';
 import { financialDocumentApi } from '@/services/financialDocumentApi';
 import { portfolioApi } from '@/services/portfolioApi';
+import { reconciliationApi } from '@/services/reconciliationApi';
 import { useFinancialDocumentStore } from '@/stores/useFinancialDocumentStore';
 import { usePortfolioStore } from '@/stores/usePortfolioStore';
+import { useReconciliationStore } from '@/stores/useReconciliationStore';
 import type { FinancialDocument } from '@/types/financialDocument';
 
 export const FinancialDocumentReviewCard: React.FC = () => {
@@ -23,7 +25,7 @@ export const FinancialDocumentReviewCard: React.FC = () => {
   const [showDocuments, setShowDocuments] = React.useState(false);
   const [passwordDocument, setPasswordDocument] = React.useState<FinancialDocument | undefined>();
   const [reviewDocument, setReviewDocument] = React.useState<FinancialDocument | undefined>();
-  const [busy, setBusy] = React.useState<'refresh' | 'parse' | 'password' | 'import' | null>(null);
+  const [busy, setBusy] = React.useState<'refresh' | 'parse' | 'password' | 'import' | 'reconcile' | null>(null);
   const documents = useFinancialDocumentStore((state) => state.documents);
   const reviewsByDocumentId = useFinancialDocumentStore((state) => state.reviewsByDocumentId);
   const status = useFinancialDocumentStore((state) => state.status);
@@ -35,6 +37,7 @@ export const FinancialDocumentReviewCard: React.FC = () => {
   const setReview = useFinancialDocumentStore((state) => state.setReview);
   const upsertHolding = usePortfolioStore((state) => state.upsertHolding);
   const setPortfolioState = usePortfolioStore((state) => state.setPortfolioState);
+  const upsertReviews = useReconciliationStore((state) => state.upsertReviews);
 
   const refreshDocuments = React.useCallback(async () => {
     if (!enabled) {
@@ -144,6 +147,25 @@ export const FinancialDocumentReviewCard: React.FC = () => {
       Alert.alert('Holdings imported', `${response.importedCount} holding rows were added to Wealth.`);
     } catch (error) {
       Alert.alert('Import failed', error instanceof Error ? error.message : 'Could not import parsed holdings.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleReconcileTransactions = async () => {
+    if (!reviewDocument) {
+      return;
+    }
+    setBusy('reconcile');
+    try {
+      const response = await reconciliationApi.reconcileParsedDocument(reviewDocument.id);
+      upsertReviews(response.items);
+      Alert.alert(
+        'Reconciliation queued',
+        `${response.newCount} new, ${response.enrichCount} enrichments, ${response.duplicateCount} duplicates, ${response.conflictCount} conflicts.`
+      );
+    } catch (error) {
+      Alert.alert('Reconciliation failed', error instanceof Error ? error.message : 'Could not reconcile parsed transactions.');
     } finally {
       setBusy(null);
     }
@@ -275,7 +297,9 @@ export const FinancialDocumentReviewCard: React.FC = () => {
         document={reviewDocument}
         review={reviewDocument ? reviewsByDocumentId[reviewDocument.id] : undefined}
         importingHoldings={busy === 'import'}
+        reconcilingTransactions={busy === 'reconcile'}
         onImportHoldings={handleImportHoldings}
+        onReconcileTransactions={handleReconcileTransactions}
         onClose={() => setReviewDocument(undefined)}
       />
     </>

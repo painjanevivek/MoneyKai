@@ -53,6 +53,18 @@ export default function PrivacyPolicyScreen() {
               body: 'SMS Research Mode is experimental, disabled by default, and creates reviewable drafts from SMS text you paste into MoneyKai. Release builds do not request restricted SMS permissions or read your SMS inbox. Internal native research builds may test direct SMS access separately, but that path is excluded from Play-safe release builds.',
             },
             {
+              title: 'Gmail and statements',
+              body: 'Gmail sync, attachment import, PDF parsing, and wealth monitoring are optional feature-gated flows. MoneyKai stores metadata and extracted financial rows only after user consent, and parsed rows remain reviewable before they become transactions or holdings.',
+            },
+            {
+              title: 'Financial AI',
+              body: 'Financial AI features are off by default and use redacted, bounded inputs where enabled. AI-generated classifications or wealth insights are review-required and should not be treated as financial, investment, tax, or legal advice.',
+            },
+            {
+              title: 'Deletion and audits',
+              body: 'MoneyKai provides backend controls for deleting imported financial data such as Gmail metadata, parsed documents, portfolio records, reconciliation reviews, and related financial imports. Security-sensitive actions may be logged in an audit trail.',
+            },
+            {
               title: 'Sharing and selling',
               body: 'MoneyKai does not sell your personal finance data. Backup data is intended to remain accessible only to the authenticated account connected to that environment.',
             },

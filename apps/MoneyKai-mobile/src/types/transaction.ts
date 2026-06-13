@@ -1,5 +1,5 @@
 export type TransactionType = 'income' | 'expense';
-export type TransactionCaptureSource = 'notification' | 'sms' | 'aa';
+export type TransactionCaptureSource = 'notification' | 'sms' | 'aa' | 'gmail' | 'pdf' | 'portfolio' | 'manual';
 
 export interface Transaction {
   id: string;

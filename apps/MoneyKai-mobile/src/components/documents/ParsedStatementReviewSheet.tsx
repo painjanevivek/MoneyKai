@@ -12,8 +12,10 @@ interface ParsedStatementReviewSheetProps {
   review?: ParsedStatementReview;
   visible: boolean;
   importingHoldings?: boolean;
+  reconcilingTransactions?: boolean;
   onClose: () => void;
   onImportHoldings?: () => void;
+  onReconcileTransactions?: () => void;
 }
 
 export const ParsedStatementReviewSheet: React.FC<ParsedStatementReviewSheetProps> = ({
@@ -21,11 +23,14 @@ export const ParsedStatementReviewSheet: React.FC<ParsedStatementReviewSheetProp
   review,
   visible,
   importingHoldings = false,
+  reconcilingTransactions = false,
   onClose,
   onImportHoldings,
+  onReconcileTransactions,
 }) => {
   const { colors } = useTheme();
   const hasHoldingRows = Boolean(review?.rows.some((row) => row.rowType === 'holding'));
+  const hasTransactionRows = Boolean(review?.rows.some((row) => row.rowType === 'transaction'));
 
   return (
     <ModalSheet
@@ -37,6 +42,15 @@ export const ParsedStatementReviewSheet: React.FC<ParsedStatementReviewSheetProp
         <View style={{ gap: Spacing.sm }}>
           {hasHoldingRows && onImportHoldings ? (
             <Button title="Import Holdings" icon="database-import-outline" loading={importingHoldings} onPress={onImportHoldings} />
+          ) : null}
+          {hasTransactionRows && onReconcileTransactions ? (
+            <Button
+              title="Reconcile Transactions"
+              icon="source-merge"
+              loading={reconcilingTransactions}
+              onPress={onReconcileTransactions}
+              variant="outline"
+            />
           ) : null}
           <Button title="Close" onPress={onClose} variant="outline" />
         </View>
