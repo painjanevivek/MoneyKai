@@ -2,7 +2,17 @@ import { firebaseAuth } from './firebase';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
-import type { AiChatRequest, AiChatResponse, AiModelStatusResponse, AiProviderStatus } from '@/features/ai/types';
+import type {
+  AiAttachmentAnalyzeRequest,
+  AiAttachmentAnalyzeResponse,
+  AiAttachmentUploadResponse,
+  AiChatRequest,
+  AiChatResponse,
+  AiDocumentSummarizeRequest,
+  AiDocumentSummaryResponse,
+  AiModelStatusResponse,
+  AiProviderStatus,
+} from '@/features/ai/types';
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL?.trim() || '';
 const backendBaseUrl = rawBaseUrl.replace(/\/$/, '');
@@ -34,13 +44,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   const token = await getAuthToken();
+  const headers = new Headers(init.headers);
+  const isFormDataBody = typeof FormData !== 'undefined' && init.body instanceof FormData;
+  headers.set('Authorization', `Bearer ${token}`);
+  if (!isFormDataBody && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   const response = await fetch(`${backendBaseUrl}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(init.headers || {}),
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -74,6 +86,21 @@ export const backendApi = {
   getAiModelStatus: async () => request<AiModelStatusResponse>('/v1/ai/models/status'),
   chatWithAi: async (payload: AiChatRequest) =>
     request<AiChatResponse>('/v1/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  uploadAiAttachment: async (formData: FormData) =>
+    request<AiAttachmentUploadResponse>('/v1/ai/attachments/upload', {
+      method: 'POST',
+      body: formData,
+    }),
+  analyzeAiAttachment: async (payload: AiAttachmentAnalyzeRequest) =>
+    request<AiAttachmentAnalyzeResponse>('/v1/ai/attachments/analyze', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  summarizeAiDocument: async (payload: AiDocumentSummarizeRequest) =>
+    request<AiDocumentSummaryResponse>('/v1/ai/documents/summarize', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
