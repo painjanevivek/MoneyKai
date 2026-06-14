@@ -4,7 +4,7 @@ Last reviewed: 2026-06-11
 
 ## Current status
 
-Phase 5B is partially validated on one physical Android device. The current release APK installs, launches, survives background/relaunch checks, appears in Android's Notification Access list, and has a live notification-listener service after notification access is enabled. Phase 5B is not complete yet because it still needs more Android versions/OEMs plus capture behavior checks for background, reboot, and battery-saver conditions.
+Phase 5B is partially validated on one physical Android device. The current release APK installs, launches, survives background/relaunch checks, appears in Android's Notification Access list, and has a live notification-listener service after notification access is enabled. For Phase 5 internal testing, this one-device validation is accepted with known risk. Phase 5B is not broad-market complete because it still needs more Android versions/OEMs plus capture behavior checks for background, reboot, and battery-saver conditions.
 
 ## Validated device
 
@@ -25,9 +25,11 @@ Phase 5B is partially validated on one physical Android device. The current rele
 
 - APK: `artifacts/phase5a/moneykai-phase5-release-no-devclient-arm64.apk`
 - Package: `com.moneykai.mobile`
+- App label: `MoneyKai`
 - Version: `1.0.0`
 - Version code: `1`
 - Target SDK: `36`
+- SHA-256: `42158627EE2918DF3FC5BC419F5ECFF13ABBB56DFA8220A177692A9FFD022AE3`
 
 ## Checks passed
 
@@ -40,7 +42,7 @@ Phase 5B is partially validated on one physical Android device. The current rele
 - Android package inspection shows no SMS receiver and no SMS permissions.
 - Android package inspection shows no dev-client/dev-menu components.
 - Android Notification Access settings open successfully through the system action.
-- Android Notification Access UI lists `MoneyKai Mobile`.
+- Android Notification Access UI lists MoneyKai. Older validation screenshots/logs may show `MoneyKai Mobile` before the app label was updated.
 - `enabled_notification_listeners` contains `com.moneykai.mobile/com.moneykai.nativecapture.MoneyKaiNotificationListenerService` after notification access is enabled on the device.
 - `dumpsys notification listeners` lists `com.moneykai.mobile/com.moneykai.nativecapture.MoneyKaiNotificationListenerService` under live notification listeners.
 - Current denied notification-access state does not crash app launch or relaunch.
@@ -79,7 +81,7 @@ For each physical device:
 3. Confirm the app process is running with `adb shell pidof com.moneykai.mobile`.
 4. Confirm `MainActivity` is focused with `adb shell dumpsys window`.
 5. Open Android Notification Access settings from MoneyKai Settings or with `adb shell am start -a android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS`.
-6. Confirm `MoneyKai Mobile` appears in the system Notification Access list.
+6. Confirm `MoneyKai` appears in the system Notification Access list.
 7. Manually grant notification access on the device.
 8. Confirm `enabled_notification_listeners` contains `com.moneykai.mobile/com.moneykai.nativecapture.MoneyKaiNotificationListenerService`.
 9. Post or receive a transaction-like notification and confirm it becomes a reviewable Auto Capture draft.
@@ -91,4 +93,4 @@ For each physical device:
 
 ## Current conclusion
 
-The Phase 5A release APK is viable on one Android 16 Nothing device for install, launch, settings visibility, listener grant/live state, and denied-state stability. Phase 5B remains open until notification capture behavior is tested under background/reboot/battery-saver conditions and at least two more Android/OEM environments are validated.
+The Phase 5A release APK is viable on one Android 16 Nothing device for install, launch, settings visibility, listener grant/live state, and denied-state stability. This is enough for controlled internal testing with documented risk. Phase 5B remains externally open for broader market confidence until notification capture behavior is tested under background/reboot/battery-saver conditions and at least two more Android/OEM environments are validated.

@@ -35,25 +35,9 @@
       "expo-secure-store",
       "expo-sqlite",
       [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#0D8C4C",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "MoneyKai needs access to photos to upload receipt images."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "color": "#0D8C4C"
         }
       ],
       [

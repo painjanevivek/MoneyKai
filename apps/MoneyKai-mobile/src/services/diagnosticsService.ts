@@ -48,7 +48,7 @@ const getRuntimePlatform = () => {
     return diagnosticContext.platform;
   }
 
-  const navigatorProduct = globalThis.navigator?.product;
+  const navigatorProduct = (globalThis.navigator as { product?: unknown } | undefined)?.product;
   if (typeof navigatorProduct === 'string' && navigatorProduct.length > 0) {
     return navigatorProduct;
   }

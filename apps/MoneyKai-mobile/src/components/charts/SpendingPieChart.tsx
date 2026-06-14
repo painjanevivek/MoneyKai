@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { PieChart } from 'react-native-gifted-charts';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Svg, { Circle } from 'react-native-svg';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useTransactionStore } from '../../stores/useTransactionStore';
@@ -23,11 +23,12 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
   onPressViewMore,
   actionLabel = 'View budget details',
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const storeCategoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const storeTotalSpent = useTransactionStore((s) => s.getTotalSpent());
   const categoryTotals = categoryTotalsProp ?? storeCategoryTotals;
   const totalSpent = totalSpentProp ?? storeTotalSpent;
+  const circumference = 2 * Math.PI * 58;
 
   const chartColors = React.useMemo(
     () => [colors.chart1, colors.chart2, colors.chart3, colors.chart4, colors.chart5, colors.chart6, colors.chart7, colors.chart8],
@@ -81,39 +82,49 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
       }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-        <Text
-          style={{
-            fontSize: Typography.fontSize.md,
-            lineHeight: 22,
-            fontFamily: Typography.fontFamily.semiBold,
-            color: colors.textPrimary,
-          }}
-        >
+        <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 22, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
           Spending Overview
         </Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.base }}>
-        <View
-          style={{
-            width: 156,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: Spacing.xs,
-          }}
-        >
+        <View style={{ width: 156, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs }}>
           {pieData.length > 0 ? (
-            <PieChart
-              data={pieData}
-              donut
-              radius={68}
-              innerRadius={44}
-              innerCircleColor={isDark ? colors.surface : colors.card}
-              centerLabelComponent={renderCenterLabel}
-              showGradient
-              focusOnPress
-              strokeColor={colors.card}
-              strokeWidth={2}
-            />
+            <View style={{ width: 136, height: 136, alignItems: 'center', justifyContent: 'center' }}>
+              <Svg width={136} height={136} viewBox="0 0 136 136" style={{ position: 'absolute' }}>
+                <Circle cx={68} cy={68} r={58} stroke={colors.borderLight} strokeWidth={18} fill="none" />
+                {pieData.reduce<{ nodes: React.ReactNode[]; offset: number }>(
+                  (acc, cat, index) => {
+                    const dash = (cat.total / Math.max(1, totalSpent)) * circumference;
+                    acc.nodes.push(
+                      <Circle
+                        key={cat.category}
+                        cx={68}
+                        cy={68}
+                        r={58}
+                        stroke={chartColors[index % chartColors.length]}
+                        strokeWidth={18}
+                        fill="none"
+                        strokeDasharray={`${dash} ${circumference - dash}`}
+                        strokeDashoffset={-acc.offset}
+                        strokeLinecap="round"
+                        rotation={-90}
+                        originX={68}
+                        originY={68}
+                      />
+                    );
+                    acc.offset += dash;
+                    return acc;
+                  },
+                  { nodes: [], offset: 0 }
+                ).nodes}
+              </Svg>
+              <View style={{ alignItems: 'center', width: 88 }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>Total Spent</Text>
+                <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary, textAlign: 'center' }}>
+                  {formatCurrency(totalSpent)}
+                </Text>
+              </View>
+            </View>
           ) : (
             <View
               style={{
@@ -138,45 +149,12 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
           {categoryTotals.slice(0, 6).map((cat, index) => {
             const category = getCategoryById(cat.category);
             return (
-              <View
-                key={cat.category}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  minHeight: 24,
-                  gap: Spacing.sm,
-                }}
-              >
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: chartColors[index % chartColors.length],
-                  }}
-                />
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    flex: 1,
-                    fontSize: Typography.fontSize.xs,
-                    lineHeight: 16,
-                    fontFamily: Typography.fontFamily.medium,
-                    color: colors.textPrimary,
-                  }}
-                >
+              <View key={cat.category} style={{ flexDirection: 'row', alignItems: 'center', minHeight: 24, gap: Spacing.sm }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: chartColors[index % chartColors.length] }} />
+                <Text numberOfLines={1} style={{ flex: 1, fontSize: Typography.fontSize.xs, lineHeight: 16, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
                   {category?.name?.split(' ')[0] || cat.category}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: Typography.fontSize.xs,
-                    lineHeight: 16,
-                    fontFamily: Typography.fontFamily.semiBold,
-                    color: colors.textSecondary,
-                    textAlign: 'right',
-                    minWidth: 34,
-                  }}
-                >
+                <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 16, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary, textAlign: 'right', minWidth: 34 }}>
                   {Math.round(cat.percentage)}%
                 </Text>
               </View>

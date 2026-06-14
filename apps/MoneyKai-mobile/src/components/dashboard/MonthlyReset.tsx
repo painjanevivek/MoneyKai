@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useBudgetStore } from '../../stores/useBudgetStore';
@@ -13,7 +13,6 @@ export const MonthlyReset: React.FC = () => {
   const { colors, isDark } = useTheme();
   const { settings, updateSettings, addAdjustment } = useBudgetStore();
   const nextReset = getNextResetDate(settings.reset_day);
-  const resetDateInputValue = formatDate(nextReset, 'yyyy-MM-dd');
 
   const [amount, setAmount] = useState('');
   const [adjustType, setAdjustType] = useState<'add' | 'subtract'>('add');
@@ -121,34 +120,20 @@ export const MonthlyReset: React.FC = () => {
           <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
             Choose the date your allowance arrives. MoneyKai will repeat this reset day every month.
           </Text>
-          {Platform.OS === 'web' ? (
-            <input
-              type="date"
-              value={resetDateInputValue}
-              min={formatDate(new Date(), 'yyyy-MM-dd')}
-              onChange={(event) => handleResetDateChange(new Date(`${event.currentTarget.value}T12:00:00`))}
-              style={{
-                width: '100%',
-                border: `1px solid ${colors.border}`,
-                borderRadius: 8,
-                background: colors.card,
-                color: colors.textPrimary,
-                fontSize: Typography.fontSize.sm,
-                fontFamily: Typography.fontFamily.regular,
-                padding: '10px 12px',
-                outline: 'none',
-              }}
-            />
-          ) : (
-            <ExpoDateTimePicker
-              value={nextReset}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'default'}
-              minimumDate={new Date()}
-              onDismiss={() => setShowResetPicker(false)}
-              onValueChange={(_, date) => handleResetDateChange(date)}
-            />
-          )}
+          <DateTimePicker
+            value={nextReset}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            minimumDate={new Date()}
+            onChange={(_, date) => {
+              if (Platform.OS !== 'ios') {
+                setShowResetPicker(false);
+              }
+              if (date) {
+                handleResetDateChange(date);
+              }
+            }}
+          />
         </View>
       ) : null}
 

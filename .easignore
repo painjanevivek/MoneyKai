@@ -30,9 +30,22 @@ yarn-error.*
 !.env*.sample
 *.tsbuildinfo
 coverage/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
 .idea/
 apps/*/ios/
 apps/*/android/
+apps/*/artifacts/**
+!apps/*/artifacts/
+!apps/*/artifacts/README.md
+!apps/*/artifacts/*/
+!apps/*/artifacts/*/.gitkeep
+RKStorage.device
+device-screen.png
+window.xml
 
 # Build-irrelevant local assistant/editor metadata
 .claude/

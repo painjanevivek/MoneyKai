@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Network from 'expo-network';
+import NetInfo from '@react-native-community/netinfo';
 import { backendApi, BackendApiError } from './backendApi';
 import type { PersistedAppSettings } from '@/stores/useSettingsStore';
 import { useSyncStore } from '@/stores/useSyncStore';
@@ -222,7 +222,7 @@ export const queueSyncOperation = async (operation: QueueOperation) => {
 };
 
 export const flushSyncQueue = async () => {
-  const networkState = await Network.getNetworkStateAsync().catch(() => null);
+  const networkState = await NetInfo.fetch().catch(() => null);
   if (networkState && (networkState.isConnected === false || networkState.isInternetReachable === false)) {
     return;
   }

@@ -8,7 +8,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '../../constants/theme';
 
@@ -18,7 +18,7 @@ interface InputProps {
   value: string;
   onChangeText: (text: string) => void;
   error?: string;
-  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon?: string;
   secureTextEntry?: boolean;
   keyboardType?: 'default' | 'numeric' | 'number-pad' | 'decimal-pad' | 'email-address' | 'phone-pad';
   inputMode?: TextInputProps['inputMode'];

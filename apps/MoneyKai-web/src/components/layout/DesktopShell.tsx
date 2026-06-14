@@ -19,6 +19,8 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: 'view-dashboard-outline' },
+  { href: '/reports', label: 'Reports', icon: 'chart-bar' },
+  { href: '/reports', label: 'Import Center', icon: 'database-import-outline' },
   { href: '/transactions', label: 'Transactions', icon: 'swap-horizontal' },
   { href: '/ai-review', label: 'AI Review', icon: 'receipt-text-outline' },
   { href: '/budgets', label: 'Budgets', icon: 'wallet-outline' },
@@ -27,7 +29,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/portfolio', label: 'Portfolio', icon: 'briefcase-outline' },
   { href: '/reports', label: 'Reports', icon: 'chart-bar' },
   { href: '/accounts', label: 'Accounts', icon: 'credit-card-outline' },
-  { href: '/categories', label: 'Categories', icon: 'shape-outline' },
   { href: '/settings', label: 'Settings', icon: 'cog-outline' },
 ] as const;
 
@@ -50,9 +51,6 @@ const normalizePath = (pathname: string) => pathname.replace('/(tabs)', '') || '
 const isRouteActive = (pathname: string, href: string) => {
   const normalized = normalizePath(pathname);
   if (href === '/') return normalized === '/';
-  if (href === '/reports' && (normalized === '/savings' || normalized === '/analytics')) {
-    return true;
-  }
   return normalized === href || normalized.startsWith(`${href}/`);
 };
 
@@ -285,7 +283,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 const active = isRouteActive(pathname, item.href);
                 return (
                   <Pressable
-                    key={item.href}
+                    key={`${item.href}-${item.label}`}
                     onPress={() => router.push(item.href as any)}
                     style={({ hovered, pressed }: any) => ({
                       flexDirection: 'row',
@@ -398,7 +396,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 const active = isRouteActive(pathname, item.href);
                 return (
                   <Pressable
-                    key={item.href}
+                    key={`${item.href}-${item.label}`}
                     onPress={() => router.push(item.href as any)}
                     style={({ hovered, pressed }: any) => ({
                       flexDirection: 'row',

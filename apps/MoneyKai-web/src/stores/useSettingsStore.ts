@@ -50,7 +50,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      theme: 'light',
+      theme: 'dark',
       currency: 'INR',
       currencySymbol: '₹',
       notificationsEnabled: true,

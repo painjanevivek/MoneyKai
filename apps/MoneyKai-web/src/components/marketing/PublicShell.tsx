@@ -16,11 +16,13 @@ type ShellProps = PropsWithChildren<{
 }>;
 
 const PRIMARY_LINKS = [
-  { href: '/features', label: 'Features' },
+  { href: '/', label: 'Home' },
+  { href: '/features/analytics', label: 'Reports' },
+  { href: '/features/analytics', label: 'AI Insights' },
+  { href: '/features/expense-tracking', label: 'Imports' },
+  { href: '/features/savings', label: 'Portfolio' },
   { href: '/pricing', label: 'Pricing' },
-  { href: '/security', label: 'Security' },
-  { href: '/learn', label: 'Learn' },
-  { href: '/news', label: 'News' },
+  { href: '/faq', label: 'FAQ' },
 ] as const;
 
 export function PublicShell({ eyebrow, title, description, children }: ShellProps) {
@@ -32,29 +34,41 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
         <View
           pointerEvents="none"
           style={{
             position: 'absolute',
-            top: -160,
-            right: -100,
-            width: 320,
-            height: 320,
+            top: -180,
+            right: -120,
+            width: 460,
+            height: 460,
             borderRadius: 999,
-            backgroundColor: `${colors.primary}08`,
+            backgroundColor: 'rgba(225, 243, 233, 0.12)',
           }}
         />
         <View
           pointerEvents="none"
           style={{
             position: 'absolute',
-            bottom: 120,
-            left: -120,
-            width: 280,
-            height: 280,
+            bottom: 20,
+            left: -180,
+            width: 420,
+            height: 420,
             borderRadius: 999,
-            backgroundColor: `${colors.accent}10`,
+            backgroundColor: 'rgba(174, 209, 188, 0.11)',
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: '32%',
+            left: '18%',
+            width: 260,
+            height: 260,
+            borderRadius: 999,
+            backgroundColor: 'rgba(245, 250, 247, 0.045)',
           }}
         />
 
@@ -76,6 +90,11 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                   alignItems: isWide ? 'center' : 'stretch',
                   justifyContent: 'space-between',
                   gap: isCompact ? Spacing.sm : Spacing.md,
+                  padding: isCompact ? Spacing.sm : Spacing.md,
+                  borderRadius: 32,
+                  backgroundColor: 'rgba(2, 3, 3, 0.78)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(234, 246, 240, 0.1)',
                 }}
               >
                 <Pressable
@@ -90,18 +109,18 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                     padding: 6,
                     margin: -6,
                     borderRadius: BorderRadius.lg,
-                    backgroundColor: hovered ? `${colors.primary}0D` : 'transparent',
+                    backgroundColor: hovered ? 'rgba(234, 246, 240, 0.08)' : 'transparent',
                     transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                   })}
                 >
                   <View
                     style={{
-                      width: 46,
-                      height: 46,
-                      borderRadius: 16,
-                      backgroundColor: colors.surface,
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      backgroundColor: 'rgba(247, 250, 248, 0.96)',
                       borderWidth: 1,
-                      borderColor: colors.borderLight,
+                      borderColor: 'rgba(255, 255, 255, 0.24)',
                       alignItems: 'center',
                       justifyContent: 'center',
                       ...Shadows.md,
@@ -120,10 +139,47 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       {SITE.name}
                     </Text>
                     <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                      Calm personal finance for real life
+                      AI report engine
                     </Text>
                   </View>
                 </Pressable>
+
+                {!isCompact ? (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: 4,
+                      padding: 4,
+                      borderRadius: BorderRadius.full,
+                      backgroundColor: 'rgba(255, 255, 255, 0.055)',
+                      borderWidth: 1,
+                      borderColor: 'rgba(255, 255, 255, 0.08)',
+                    }}
+                  >
+                    {PRIMARY_LINKS.map((item) => (
+                      <Link key={`${item.href}-${item.label}`} href={item.href as any} asChild>
+                        <Pressable
+                          accessibilityRole="link"
+                          accessibilityLabel={`Open ${item.label}`}
+                          style={({ hovered, pressed }: any) => ({
+                            paddingHorizontal: Spacing.md,
+                            paddingVertical: 9,
+                            borderRadius: BorderRadius.full,
+                            backgroundColor: hovered ? 'rgba(234, 246, 240, 0.12)' : 'transparent',
+                            borderWidth: 1,
+                            borderColor: hovered ? 'rgba(234, 246, 240, 0.18)' : 'transparent',
+                            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                          })}
+                        >
+                          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                            {item.label}
+                          </Text>
+                        </Pressable>
+                      </Link>
+                    ))}
+                  </View>
+                ) : null}
 
                 {!isAuthenticated ? (
                   <View
@@ -136,17 +192,18 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                     <Button
                       title="Sign in"
                       onPress={() => router.push('/(auth)/login')}
-                      variant="outline"
+                      variant="ghost"
                       fullWidth={isCompact}
                     />
                     <Button
                       title="Create account"
                       onPress={() => router.push('/(auth)/signup')}
                       fullWidth={isCompact}
+                      icon="account-plus-outline"
                     />
                   </View>
                 ) : (
-                  <Button title="Open app" onPress={() => router.push('/(tabs)')} />
+                  <Button title="Open app" onPress={() => router.push('/(tabs)')} icon="arrow-top-right" />
                 )}
               </View>
 
@@ -157,7 +214,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                   contentContainerStyle={{ gap: Spacing.xs, paddingRight: Spacing.base }}
                 >
                   {PRIMARY_LINKS.map((item) => (
-                    <Link key={item.href} href={item.href as any} asChild>
+                    <Link key={`${item.href}-${item.label}`} href={item.href as any} asChild>
                       <Pressable
                         accessibilityRole="link"
                         accessibilityLabel={`Open ${item.label}`}
@@ -165,9 +222,9 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                           paddingHorizontal: Spacing.md,
                           paddingVertical: 10,
                           borderRadius: BorderRadius.full,
-                          backgroundColor: hovered ? `${colors.primary}12` : colors.surface,
+                          backgroundColor: hovered ? 'rgba(234, 246, 240, 0.12)' : 'rgba(255, 255, 255, 0.055)',
                           borderWidth: 1,
-                          borderColor: hovered ? `${colors.primary}35` : colors.borderLight,
+                          borderColor: hovered ? 'rgba(234, 246, 240, 0.18)' : 'rgba(255, 255, 255, 0.08)',
                           transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                         })}
                       >
@@ -178,31 +235,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                     </Link>
                   ))}
                 </ScrollView>
-              ) : (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs }}>
-                  {PRIMARY_LINKS.map((item) => (
-                    <Link key={item.href} href={item.href as any} asChild>
-                      <Pressable
-                        accessibilityRole="link"
-                        accessibilityLabel={`Open ${item.label}`}
-                        style={({ hovered, pressed }: any) => ({
-                          paddingHorizontal: Spacing.md,
-                          paddingVertical: 10,
-                          borderRadius: BorderRadius.full,
-                          backgroundColor: hovered ? `${colors.primary}12` : colors.surface,
-                          borderWidth: 1,
-                          borderColor: hovered ? `${colors.primary}35` : colors.borderLight,
-                          transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-                        })}
-                      >
-                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                          {item.label}
-                        </Text>
-                      </Pressable>
-                    </Link>
-                  ))}
-                </View>
-              )}
+              ) : null}
             </View>
 
             {(title || description) ? (
@@ -271,8 +304,8 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
               }}
             >
               <View style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'space-between', gap: Spacing.sm }}>
-                <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, maxWidth: 520 }}>
-                  MoneyKai helps people understand spending, savings, shared costs, notes, backup and restore, and financial first-aid decisions from one place.
+                <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, maxWidth: 560 }}>
+                  MoneyKai turns user-provided statements, pasted records, portfolios, and manual entries into AI-powered financial reports. No hidden SMS reading. No background transaction capture.
                 </Text>
                 <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textTertiary }}>
                   Contact: {SITE.supportEmail}

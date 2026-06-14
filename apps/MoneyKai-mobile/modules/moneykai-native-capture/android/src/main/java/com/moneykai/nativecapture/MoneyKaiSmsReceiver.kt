@@ -38,6 +38,7 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
           if (accountApproved) "android_sms_receiver" else "android_sms_account_discovery"
         )
         putString("rawBodyStored", "false")
+        putString("smsFingerprint", MoneyKaiNativeCaptureModule.buildSmsFingerprint(sender, body, receivedAt))
         MoneyKaiSmsFilters.extractAccountHint(body)?.let { putString("smsAccountHint", it) }
         putString("smsSubscriptionId", readIntentExtra(intent, "subscription"))
         putString("smsSlot", readIntentExtra(intent, "slot"))

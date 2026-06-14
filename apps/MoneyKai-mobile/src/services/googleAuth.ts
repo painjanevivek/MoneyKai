@@ -1,49 +1,82 @@
-import * as AuthSession from 'expo-auth-session';
-import { GoogleAuthProvider, signInWithCredential, type User } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Platform } from 'react-native';
-import { firebaseAuth } from './firebase';
-import { appEnvironment, hasGoogleClientIds } from '@/config/environment';
+import { appEnvironment } from '@/config/environment';
+import { bundledGoogleWebClientId } from '@/config/googleOAuthClient';
+import { getNativeGoogleWebClientId } from './nativeCaptureBridge';
+import type { NativeFirebaseUser } from './authService';
 
-const GOOGLE_ISSUER = 'https://accounts.google.com';
+let configured = false;
 
-const getRedirectUri = () =>
-  AuthSession.makeRedirectUri({
-    scheme: 'moneykai-mobile',
-  });
+const getGoogleWebClientId = async (): Promise<string> => {
+  if (appEnvironment.google.webClientId) {
+    return appEnvironment.google.webClientId;
+  }
 
-const buildAuthConfig = () =>
-  ({
-    clientId:
-      Platform.OS === 'ios'
-        ? appEnvironment.google.iosClientId || appEnvironment.google.webClientId
-        : Platform.OS === 'android'
-          ? appEnvironment.google.androidClientId || appEnvironment.google.webClientId
-          : appEnvironment.google.webClientId,
-    responseType: AuthSession.ResponseType.IdToken,
-    scopes: ['openid', 'profile', 'email'] as string[],
-    redirectUri: getRedirectUri(),
-    webClientId: appEnvironment.google.webClientId || undefined,
+  if (bundledGoogleWebClientId) {
+    return bundledGoogleWebClientId;
+  }
+
+  if (Platform.OS === 'android') {
+    return getNativeGoogleWebClientId();
+  }
+
+  return '';
+};
+
+const configureGoogleSignIn = async () => {
+  if (configured) {
+    return;
+  }
+
+  const webClientId = await getGoogleWebClientId();
+  GoogleSignin.configure({
+    webClientId: webClientId || undefined,
     iosClientId: appEnvironment.google.iosClientId || undefined,
-    androidClientId: appEnvironment.google.androidClientId || undefined,
-    selectAccount: true,
-  }) as const;
+    offlineAccess: false,
+  });
+  configured = true;
+};
 
-export const signInWithGoogleAsync = async (): Promise<User> => {
-  if (!hasGoogleClientIds()) {
+const readIdToken = (response: unknown): string | undefined => {
+  if (!response || typeof response !== 'object') {
+    return undefined;
+  }
+
+  if ('idToken' in response && typeof response.idToken === 'string') {
+    return response.idToken;
+  }
+
+  if ('data' in response && response.data && typeof response.data === 'object') {
+    const data = response.data as { idToken?: unknown };
+    return typeof data.idToken === 'string' ? data.idToken : undefined;
+  }
+
+  return undefined;
+};
+
+export const signInWithGoogleAsync = async (): Promise<NativeFirebaseUser> => {
+  const webClientId = await getGoogleWebClientId();
+  const hasPlatformClientId = Platform.OS !== 'ios' || Boolean(appEnvironment.google.iosClientId);
+  if (!webClientId || !hasPlatformClientId) {
     throw new Error(
-      'Google sign-in is not configured yet. Add the EXPO_PUBLIC_GOOGLE_* client IDs to .env to enable it on web and mobile.'
+      'Google sign-in is not configured yet. Add a Web OAuth client to Firebase, download the latest android/app/google-services.json, and add SHA fingerprints in Firebase Console.'
     );
   }
 
-  const discovery = await AuthSession.fetchDiscoveryAsync(GOOGLE_ISSUER);
-  const request = await AuthSession.loadAsync(buildAuthConfig(), discovery);
-  const result = await request.promptAsync(discovery);
+  await configureGoogleSignIn();
 
-  if (result.type !== 'success' || !result.authentication?.idToken) {
+  if (Platform.OS === 'android') {
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  }
+
+  const response = await GoogleSignin.signIn();
+  const idToken = readIdToken(response);
+  if (!idToken) {
     throw new Error('Google sign-in was cancelled or did not return an ID token.');
   }
 
-  const credential = GoogleAuthProvider.credential(result.authentication.idToken);
-  const credentials = await signInWithCredential(firebaseAuth, credential);
+  const credential = auth.GoogleAuthProvider.credential(idToken);
+  const credentials = await auth().signInWithCredential(credential);
   return credentials.user;
 };

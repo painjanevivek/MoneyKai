@@ -1,7 +1,14 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "../../node_modules/@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
     "strict": true,
+    "ignoreDeprecations": "6.0",
+    "types": [
+      "react",
+      "react-native",
+      "node"
+    ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
@@ -12,9 +19,25 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "App.tsx",
+    "index.js",
+    "src/config/environment.ts",
+    "src/constants/**/*.ts",
+    "src/hooks/useTheme.ts",
+    "src/navigation/**/*.ts",
+    "src/navigation/**/*.tsx",
+    "src/screens/**/*.tsx",
+    "src/stores/useAuthStore.ts",
+    "src/stores/useSettingsStore.ts",
+    "declarations.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "android",
+    "ios",
+    "src/app/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

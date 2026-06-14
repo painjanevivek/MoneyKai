@@ -1,0 +1,31 @@
+pluginManagement {
+  def reactNativeGradlePluginPath = new File(
+    providers.exec {
+      workingDir(rootDir)
+      commandLine("node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
+    }.standardOutput.asText.get().trim()
+  ).getParentFile().absolutePath
+  includeBuild(reactNativeGradlePluginPath)
+}
+
+plugins {
+  id("com.facebook.react.settings")
+}
+
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+  ex.autolinkLibrariesFromCommand()
+}
+
+rootProject.name = "MoneyKai"
+
+include ":app"
+include ":moneykai-native-capture"
+project(":moneykai-native-capture").projectDir = new File(rootDir, "../modules/moneykai-native-capture/android")
+
+def reactNativeGradlePluginPath = new File(
+  providers.exec {
+    workingDir(rootDir)
+    commandLine("node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
+  }.standardOutput.asText.get().trim()
+).getParentFile().absolutePath
+includeBuild(reactNativeGradlePluginPath)

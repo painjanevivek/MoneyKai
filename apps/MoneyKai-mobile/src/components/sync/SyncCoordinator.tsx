@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import * as Network from 'expo-network';
+import NetInfo from '@react-native-community/netinfo';
 import { AppState } from 'react-native';
 import { flushSyncQueue } from '@/services/syncQueue';
 

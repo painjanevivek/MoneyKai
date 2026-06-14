@@ -1,102 +1,55 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 
-const requireConfig = createRequire(import.meta.url);
-
-const readJson = <T>(path: string): T =>
-  JSON.parse(readFileSync(join(process.cwd(), path), 'utf8')) as T;
+const readText = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
+const readJson = <T>(path: string): T => JSON.parse(readText(path)) as T;
 
 describe('SMS research build policy config', () => {
-  it('keeps Play release SMS research manual and native SMS access in the separate local build only', () => {
-    const eas = readJson<{
-      build: Record<string, { env?: Record<string, string> }>;
-    }>('eas.json');
+  it('blocks restricted SMS permissions in the native Android app manifest', () => {
+    const manifest = readText('android/app/src/main/AndroidManifest.xml');
 
-    expect(eas.build.development.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
-    expect(eas.build.development.env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('true');
-    expect(eas.build.preview.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
-    expect(eas.build.preview.env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('false');
-    expect(eas.build.production.env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
-    expect(eas.build.production.env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('false');
-    expect(eas.build['sms-research-local'].env?.EXPO_PUBLIC_SMS_RESEARCH_BUILD).toBe('true');
-    expect(eas.build['sms-research-local'].env?.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD).toBe('true');
+    [
+      'android.permission.READ_SMS',
+      'android.permission.RECEIVE_SMS',
+      'android.permission.RECEIVE_MMS',
+      'android.permission.RECEIVE_WAP_PUSH',
+      'android.permission.SEND_SMS',
+      'android.permission.WRITE_SMS',
+    ].forEach((permission) => {
+      expect(manifest).toContain(`android:name="${permission}" tools:node="remove"`);
+    });
   });
 
-  it('blocks restricted SMS permissions in release app config', () => {
-    const appConfig = readJson<{
-      expo: {
-        android?: {
-          permissions?: string[];
-          blockedPermissions?: string[];
-        };
-      };
-    }>('app.json');
+  it('keeps native capture limited to notification listening in the CLI module manifest', () => {
+    const manifest = readText('modules/moneykai-native-capture/android/src/main/AndroidManifest.xml');
 
-    const permissions = appConfig.expo.android?.permissions ?? [];
-    const blockedPermissions = appConfig.expo.android?.blockedPermissions ?? [];
-    expect(permissions).not.toContain('android.permission.READ_SMS');
-    expect(permissions).not.toContain('android.permission.RECEIVE_SMS');
-    expect(permissions).not.toContain('android.permission.RECEIVE_MMS');
-    expect(permissions).not.toContain('android.permission.RECEIVE_WAP_PUSH');
-    expect(permissions).not.toContain('android.permission.SEND_SMS');
-    expect(permissions).not.toContain('android.permission.WRITE_SMS');
-    expect(blockedPermissions).toContain('android.permission.READ_SMS');
-    expect(blockedPermissions).toContain('android.permission.RECEIVE_SMS');
-    expect(blockedPermissions).toContain('android.permission.RECEIVE_MMS');
-    expect(blockedPermissions).toContain('android.permission.RECEIVE_WAP_PUSH');
-    expect(blockedPermissions).toContain('android.permission.SEND_SMS');
-    expect(blockedPermissions).toContain('android.permission.WRITE_SMS');
+    expect(manifest).toContain('android.service.notification.NotificationListenerService');
+    expect(manifest).not.toContain('android.provider.Telephony.SMS_RECEIVED');
+    expect(manifest).not.toContain('MoneyKaiSmsReceiver');
   });
 
-  it('loads the SMS research manifest plugin only for non-Play native SMS builds', () => {
-    const previousNativeValue = process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD;
-    const previousProfileValue = process.env.EAS_BUILD_PROFILE;
-    const configPath = join(process.cwd(), 'app.config.js');
-    const configModulePath = requireConfig.resolve(configPath);
+  it('uses React Native CLI scripts and package dependencies instead of Expo build tooling', () => {
+    const packageJson = readJson<{
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      scripts?: Record<string, string>;
+    }>('package.json');
+    const dependencies = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    };
 
-    try {
-      delete requireConfig.cache[configModulePath];
-      process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = 'false';
-      process.env.EAS_BUILD_PROFILE = 'production';
-      const productionConfig = requireConfig(configPath) as { plugins?: unknown[] };
-      expect(JSON.stringify(productionConfig.plugins)).not.toContain('withMoneyKaiSmsResearch');
-
-      delete requireConfig.cache[configModulePath];
-      process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = 'true';
-      process.env.EAS_BUILD_PROFILE = 'preview';
-      const previewConfig = requireConfig(configPath) as { plugins?: unknown[] };
-      expect(JSON.stringify(previewConfig.plugins)).not.toContain('withMoneyKaiSmsResearch');
-
-      delete requireConfig.cache[configModulePath];
-      process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = 'true';
-      process.env.EAS_BUILD_PROFILE = 'development';
-      const researchConfig = requireConfig(configPath) as { plugins?: unknown[] };
-      expect(JSON.stringify(researchConfig.plugins)).toContain('withMoneyKaiSmsResearch');
-
-      delete requireConfig.cache[configModulePath];
-      process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = 'true';
-      process.env.EAS_BUILD_PROFILE = 'sms-research-local';
-      const localResearchConfig = requireConfig(configPath) as { plugins?: unknown[] };
-      expect(JSON.stringify(localResearchConfig.plugins)).toContain('withMoneyKaiSmsResearch');
-    } finally {
-      if (previousNativeValue === undefined) {
-        delete process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD;
-      } else {
-        process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD = previousNativeValue;
-      }
-      if (previousProfileValue === undefined) {
-        delete process.env.EAS_BUILD_PROFILE;
-      } else {
-        process.env.EAS_BUILD_PROFILE = previousProfileValue;
-      }
-      delete requireConfig.cache[configModulePath];
-    }
+    expect(packageJson.scripts?.start).toBe('react-native start');
+    expect(packageJson.scripts?.android).toBe('react-native run-android');
+    expect(packageJson.scripts?.['android:bundle:release']).toBe('cd android && gradlew.bat :app:bundleRelease');
+    expect(dependencies).not.toHaveProperty('expo');
+    expect(dependencies).not.toHaveProperty('expo-router');
+    expect(dependencies).not.toHaveProperty('eas-cli');
   });
 
   it('keeps capture inbox and raw SMS bodies out of the cloud backup snapshot contract', () => {
-    const backupService = readFileSync(join(process.cwd(), 'src/services/backupService.ts'), 'utf8');
+    const backupService = readText('src/services/backupService.ts');
 
     expect(backupService).not.toContain('useCaptureStore');
     expect(backupService).not.toContain('CapturedSignal');

@@ -6,6 +6,20 @@ import { useCaptureStore } from '@/stores/useCaptureStore';
 import type { CaptureIngestionResult, CaptureSignalInput } from '@/types/capture';
 import type { SmsImportProgress, SmsImportRangeId } from '@/types/smsImport';
 
+export type SmsImportRangeId = '15d' | '1m' | '3m' | '6m' | '1y' | 'all';
+
+export const SMS_IMPORT_RANGES: Array<{ id: SmsImportRangeId; label: string; days: number; maxMessages: number }> = [
+  { id: '15d', label: '15 days', days: 15, maxMessages: 500 },
+  { id: '1m', label: '1 month', days: 30, maxMessages: 1000 },
+  { id: '3m', label: '3 months', days: 90, maxMessages: 3000 },
+  { id: '6m', label: '6 months', days: 180, maxMessages: 6000 },
+  { id: '1y', label: '1 year', days: 365, maxMessages: 12000 },
+  { id: 'all', label: 'ALL', days: 0, maxMessages: 50000 },
+];
+
+const getSmsImportRange = (rangeId: SmsImportRangeId = '1m') =>
+  SMS_IMPORT_RANGES.find((range) => range.id === rangeId) ?? SMS_IMPORT_RANGES[1];
+
 export interface SmsInboxImportSummary {
   status: 'imported' | 'needs_account_approval' | 'permission_denied' | 'unsupported' | 'error' | 'ignored';
   scannedCount: number;

@@ -6,7 +6,7 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, Typography } from '../../constants/theme';
 
@@ -15,7 +15,7 @@ interface ButtonProps {
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
-  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon?: string;
   iconPosition?: 'left' | 'right';
   loading?: boolean;
   disabled?: boolean;

@@ -93,6 +93,29 @@ const syncTransactionDelete = (id: string) => {
   });
 };
 
+const normalizeDuplicateText = (value?: string) =>
+  value?.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() ?? '';
+
+const isDuplicateCapturedTransaction = (
+  existing: Transaction,
+  incoming: Omit<Transaction, 'id' | 'created_at'>
+) => {
+  const hasCaptureAccount = Boolean(incoming.captureAccountId || incoming.captureBankLabel || incoming.captureAccountHint);
+  if (!hasCaptureAccount) return false;
+
+  const sameAccount =
+    existing.captureAccountId === incoming.captureAccountId ||
+    Boolean(existing.captureAccountHint && incoming.captureAccountHint && existing.captureAccountHint === incoming.captureAccountHint);
+
+  return (
+    sameAccount &&
+    existing.type === incoming.type &&
+    existing.transaction_date === incoming.transaction_date &&
+    Math.abs(existing.amount - incoming.amount) < 0.01 &&
+    normalizeDuplicateText(existing.description) === normalizeDuplicateText(incoming.description)
+  );
+};
+
 export const useTransactionStore = create<TransactionState>()(
   persist(
     (set, get) => {

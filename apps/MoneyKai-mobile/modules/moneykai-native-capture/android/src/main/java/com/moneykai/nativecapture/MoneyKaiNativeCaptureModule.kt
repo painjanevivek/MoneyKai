@@ -14,43 +14,67 @@ import android.os.Looper
 import android.provider.Settings
 import android.provider.Telephony
 import android.text.TextUtils
-import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.modules.ModuleDefinition
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import org.json.JSONArray
 import org.json.JSONObject
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
-class MoneyKaiNativeCaptureModule : Module() {
-  override fun definition() = ModuleDefinition {
-    Name("MoneyKaiNativeCapture")
+class MoneyKaiNativeCaptureModule(
+  private val reactContext: ReactApplicationContext
+) : ReactContextBaseJavaModule(reactContext) {
+  override fun getName(): String = "MoneyKaiNativeCapture"
 
-    Events("onNotificationSignal")
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun startListening(): Boolean {
+    activeModule = this
+    flushPendingSignals(reactContext)
+    return true
+  }
 
-    Function("startListening") {
-      activeModule = this@MoneyKaiNativeCaptureModule
-      flushPendingSignals(requireContext())
-      true
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun stopListening(): Boolean {
+    if (activeModule === this) {
+      activeModule = null
     }
+    return true
+  }
 
-    Function("stopListening") {
-      if (activeModule === this@MoneyKaiNativeCaptureModule) {
-        activeModule = null
-      }
-      true
-    }
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun clearPendingSignals(): Boolean {
+    clearPendingSignals(reactContext)
+    return true
+  }
 
-    Function("clearPendingSignals") {
-      clearPendingSignals(requireContext())
-      true
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun setCaptureEnabled(enabled: Boolean): Boolean {
+    setCaptureEnabled(reactContext, enabled)
+    if (!enabled) {
+      clearPendingSignals(reactContext)
     }
+    return true
+  }
 
-    Function("setCaptureEnabled") { enabled: Boolean ->
-      setCaptureEnabled(requireContext(), enabled)
-      if (!enabled) {
-        clearPendingSignals(requireContext())
-      }
-      true
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun setCaptureSourcesEnabled(notificationEnabled: Boolean, smsEnabled: Boolean): Boolean {
+    setCaptureSourcesEnabled(reactContext, notificationEnabled, smsEnabled)
+    if (!notificationEnabled && !smsEnabled) {
+      clearPendingSignals(reactContext)
     }
+    return true
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun setApprovedSmsAccounts(approvedAccountIdsJson: String): Boolean {
+    setApprovedSmsAccounts(reactContext, approvedAccountIdsJson)
+    return true
+  }
 
     Function("setCaptureSourcesEnabled") { notificationEnabled: Boolean, smsEnabled: Boolean ->
       setCaptureSourcesEnabled(requireContext(), notificationEnabled, smsEnabled)
@@ -106,7 +130,54 @@ class MoneyKaiNativeCaptureModule : Module() {
     }
   }
 
-  private fun requireContext(): Context = requireNotNull(appContext.reactContext)
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun discoverRecentSmsAccounts(days: Int, maxMessages: Int): String =
+    discoverRecentSmsAccounts(reactContext, days, maxMessages)
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun importRecentSmsTransactions(days: Int, maxMessages: Int, approvedAccountIdsJson: String): String =
+    importRecentSmsTransactions(reactContext, days, maxMessages, approvedAccountIdsJson)
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun openNotificationListenerSettings(): Boolean {
+    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    return try {
+      reactContext.startActivity(intent)
+      true
+    } catch (_: ActivityNotFoundException) {
+      false
+    }
+  }
+
+  @ReactMethod
+  fun getDefaultWebClientId(promise: Promise) {
+    val resourceId = reactContext.resources.getIdentifier(
+      "default_web_client_id",
+      "string",
+      reactContext.packageName
+    )
+    if (resourceId == 0) {
+      promise.resolve("")
+      return
+    }
+
+    val webClientId = runCatching { reactContext.getString(resourceId) }.getOrDefault("")
+    promise.resolve(webClientId)
+  }
+
+  @ReactMethod
+  fun addListener(eventName: String) = Unit
+
+  @ReactMethod
+  fun removeListeners(count: Int) = Unit
+
+  private fun sendEvent(eventName: String, event: Bundle) {
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit(eventName, Arguments.fromBundle(event))
+  }
 
   companion object {
     private const val MAX_PENDING_SIGNALS = 50
@@ -397,6 +468,7 @@ class MoneyKaiNativeCaptureModule : Module() {
               MoneyKaiSmsFilters.extractAccountHint(body)?.let { value ->
                 account.put("smsAccountHint", value)
               }
+              account.put("smsSampleSnippet", MoneyKaiSmsFilters.sanitizeSmsText(body))
               accountsById[accountId] = account
             } else {
               existing.put("sampleCount", existing.optInt("sampleCount", 1) + 1)
@@ -482,6 +554,7 @@ class MoneyKaiNativeCaptureModule : Module() {
               .put("receivedAt", MoneyKaiSmsFilters.toIsoUtc(receivedAt))
               .put("captureOrigin", "android_sms_inbox_import")
               .put("rawBodyStored", "false")
+              .put("smsFingerprint", buildSmsFingerprint(sender, body, receivedAt))
 
             MoneyKaiSmsFilters.extractAccountHint(body)?.let { value ->
               signal.put("smsAccountHint", value)
@@ -617,6 +690,12 @@ class MoneyKaiNativeCaptureModule : Module() {
         bankKey.contains("federal") -> "federal"
         else -> bankKey
       }
+
+    fun buildSmsFingerprint(sender: String, body: String, receivedAt: Long): String {
+      val value = "${sender.trim().lowercase()}|${body.trim()}|$receivedAt"
+      val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
+      return digest.joinToString("") { byte -> "%02x".format(byte) }.take(32)
+    }
 
     private fun Cursor.getStringOrBlank(index: Int): String =
       getStringOrNull(index).orEmpty()

@@ -296,6 +296,7 @@ export const useCaptureStore = create<CaptureState>()(
                     bankLabel: identity.bankLabel,
                     accountHint: identity.accountHint ?? account.accountHint,
                     sender: identity.sender ?? account.sender,
+                    sampleMessage: identity.sampleMessage ?? account.sampleMessage,
                     sampleCount: account.sampleCount + identities.filter((item) => item.id === identity.id).length,
                     lastSeenAt: now,
                     discoverySample: identity.discoverySample ?? account.discoverySample,
@@ -418,6 +419,15 @@ export const useCaptureStore = create<CaptureState>()(
         }));
         get().syncApprovedAccountsToNative();
       },
+
+      unselectMonitoredAccount: (accountId) =>
+        set((state) => ({
+          monitoredAccounts: state.monitoredAccounts.map((account) =>
+            account.id === accountId
+              ? { ...account, status: 'declined', declinedAt: new Date().toISOString(), approvedAt: undefined }
+              : account
+          ),
+        })),
 
       ingestSignal: (input) => {
         const { settings, signals, merchantRules } = get();

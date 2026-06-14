@@ -150,6 +150,7 @@ describe('autoCaptureService SMS research gate', () => {
       approvedCount: 0,
       declinedCount: 0,
     });
+    mocks.isSignalAccountApproved.mockReturnValue(false);
 
     const summary = await importRecentSmsTransactionsFromInbox();
 
