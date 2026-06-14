@@ -6,12 +6,16 @@ import type {
   AiAttachmentAnalyzeRequest,
   AiAttachmentAnalyzeResponse,
   AiAttachmentUploadResponse,
+  AiBudgetCoachRequest,
+  AiBudgetCoachResponse,
   AiChatRequest,
   AiChatResponse,
   AiDocumentSummarizeRequest,
   AiDocumentSummaryResponse,
   AiModelStatusResponse,
   AiProviderStatus,
+  AiTransactionInsightsRequest,
+  AiTransactionInsightsResponse,
 } from '@/features/ai/types';
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL?.trim() || '';
@@ -101,6 +105,16 @@ export const backendApi = {
     }),
   summarizeAiDocument: async (payload: AiDocumentSummarizeRequest) =>
     request<AiDocumentSummaryResponse>('/v1/ai/documents/summarize', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getAiTransactionInsights: async (payload: AiTransactionInsightsRequest) =>
+    request<AiTransactionInsightsResponse>('/v1/ai/transactions/insights', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getAiBudgetCoach: async (payload: AiBudgetCoachRequest) =>
+    request<AiBudgetCoachResponse>('/v1/ai/budgets/coach', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

@@ -6,6 +6,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { BudgetHealth } from '@/components/dashboard/BudgetHealth';
+import { BudgetCoachPanel } from '@/components/budgets/BudgetCoachPanel';
 import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -69,6 +70,7 @@ export default function BudgetsScreen() {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl, alignItems: 'flex-start' }}>
             <View style={{ flex: 1, minWidth: 360, gap: Spacing.xl }}>
               <BudgetHealth />
+              <BudgetCoachPanel />
               <Card>
                 <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
                   Budget adjustments

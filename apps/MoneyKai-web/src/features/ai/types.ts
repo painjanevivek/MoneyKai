@@ -1,6 +1,7 @@
 export type AiChatTask = 'general_chat' | 'transaction_insights' | 'budget_coach' | 'portfolio_explainer';
 export type AiAttachmentAnalyzeTask = 'receipt_extract' | 'image_analysis';
 export type AiDocumentSummaryType = 'financial_statement' | 'general';
+export type AiInsightTone = 'info' | 'warning' | 'success';
 
 export interface AiChatMessage {
   role: 'user' | 'assistant';
@@ -120,6 +121,65 @@ export interface AiDocumentSummaryResponse {
   warnings: string[];
   reviewRequired: true;
   model: string;
+}
+
+export interface AiCategoryTotalInput {
+  category: string;
+  total: number;
+  count?: number;
+  percentage?: number | null;
+}
+
+export interface AiInsightCard {
+  id: string;
+  tone: AiInsightTone;
+  title: string;
+  body: string;
+  actionLabel?: string | null;
+  metricLabel?: string | null;
+  metricValue?: string | null;
+}
+
+export interface AiTransactionInsightsRequest {
+  month: string;
+  currency?: string;
+  totalSpent: number;
+  totalIncome: number;
+  categoryTotals: AiCategoryTotalInput[];
+  previousMonthSpent?: number | null;
+  previousMonthCategoryTotals?: AiCategoryTotalInput[];
+  context?: Record<string, unknown>;
+}
+
+export interface AiTransactionInsightsResponse {
+  requestId: string;
+  cards: AiInsightCard[];
+  reviewRequired: true;
+  source: 'ai' | 'deterministic';
+  cached: boolean;
+  model?: string | null;
+}
+
+export interface AiBudgetCoachRequest {
+  month: string;
+  currency?: string;
+  monthlyAllowance: number;
+  totalSpent: number;
+  daysElapsed: number;
+  daysRemaining: number;
+  categoryTotals: AiCategoryTotalInput[];
+  emergencyMode?: boolean;
+  targetSavings?: number | null;
+  context?: Record<string, unknown>;
+}
+
+export interface AiBudgetCoachResponse {
+  requestId: string;
+  cards: AiInsightCard[];
+  reviewRequired: true;
+  source: 'ai' | 'deterministic';
+  cached: boolean;
+  model?: string | null;
 }
 
 export interface AiErrorPayload {
