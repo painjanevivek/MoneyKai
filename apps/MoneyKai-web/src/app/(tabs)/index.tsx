@@ -144,6 +144,7 @@ export default function DashboardScreen() {
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.sm }}>
               <Button title="Open Transactions" onPress={() => router.push('/transactions' as any)} />
               <Button title="Review Receipt" onPress={() => router.push('/ai-review' as any)} variant="outline" icon="receipt-text-outline" />
+              <Button title="Add Holding" onPress={() => router.push('/portfolio' as any)} variant="outline" icon="briefcase-plus-outline" />
               <Button title="Open Groups" onPress={() => router.push('/groups' as any)} variant="outline" />
             </View>
           </View>

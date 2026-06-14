@@ -1,4 +1,5 @@
 import { firebaseAuth } from './firebase';
+import { getBackendBaseUrl } from '@/config/environment';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
@@ -20,9 +21,53 @@ import type {
   AiTransactionInsightsRequest,
   AiTransactionInsightsResponse,
 } from '@/features/ai/types';
+import type {
+  FinancialDocument,
+  FinancialDocumentAiSummaryRequest,
+  FinancialDocumentAiSummaryResult,
+  FinancialDocumentStatusSummary,
+  ParsedStatementImportRequest,
+  ParsedStatementReviewActionResponse,
+  ParsedStatementReviewResponse,
+  ParseFinancialDocumentRequest,
+  PdfPasswordAttemptRequest,
+  PdfPasswordAttemptResponse,
+  PdfPasswordProfile,
+  QueueGmailAttachmentsRequest,
+  QueueGmailAttachmentsResponse,
+} from '@/types/financialDocument';
+import type {
+  FinancialEmailListResponse,
+  GmailConnectStartResponse,
+  GmailSyncRequest,
+  GmailSyncStatus,
+  GmailSyncSummary,
+} from '@/types/gmail';
+import type {
+  AccountAggregatorExplorationStatus,
+  PortfolioAccount,
+  PortfolioHolding,
+  PortfolioHoldingDraft,
+  PortfolioHoldingUpdate,
+  PortfolioStateResponse,
+  ProviderConnectionDraft,
+  ProviderConnectionUpdate,
+  ProviderSyncResponse,
+  WealthSnapshot,
+  ZerodhaConnectCallbackRequest,
+  ZerodhaConnectCallbackResponse,
+  ZerodhaConnectStartResponse,
+} from '@/types/portfolio';
+import type {
+  AiEmailClassificationRequest,
+  AiEmailClassificationResult,
+  AiStatementRowsRequest,
+  AiStatementRowsResponse,
+  AiWealthInsightRequest,
+  AiWealthInsightResponse,
+} from '@/types/financialAi';
 
-const rawBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL?.trim() || '';
-const backendBaseUrl = rawBaseUrl.replace(/\/$/, '');
+const backendBaseUrl = getBackendBaseUrl();
 
 export const isBackendConfigured = (): boolean => backendBaseUrl.length > 0;
 
@@ -258,6 +303,128 @@ export const backendApi = {
     }),
   getAiBudgetCoach: async (payload: AiBudgetCoachRequest) =>
     request<AiBudgetCoachResponse>('/v1/ai/budgets/coach', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getGmailStatus: async () => request<GmailSyncStatus>('/v1/gmail/status'),
+  startGmailConnect: async (metadataScanAcceptedAt: string) =>
+    request<GmailConnectStartResponse>(
+      `/v1/gmail/connect/start?metadataScanAcceptedAt=${encodeURIComponent(metadataScanAcceptedAt)}`
+    ),
+  disconnectGmail: async () => request<{ disconnected: boolean }>('/v1/gmail/disconnect', { method: 'POST' }),
+  syncGmail: async (payload: GmailSyncRequest) =>
+    request<GmailSyncSummary>('/v1/gmail/sync', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  listGmailEmails: async (parseStatus?: string) =>
+    request<FinancialEmailListResponse>(
+      parseStatus ? `/v1/gmail/emails?parseStatus=${encodeURIComponent(parseStatus)}` : '/v1/gmail/emails'
+    ),
+  getFinancialDocumentStatus: async () =>
+    request<FinancialDocumentStatusSummary>('/v1/financial-documents/status'),
+  listFinancialDocuments: async (status?: string) =>
+    request<{ items: FinancialDocument[] }>(
+      status ? `/v1/financial-documents?status=${encodeURIComponent(status)}` : '/v1/financial-documents'
+    ),
+  queueGmailAttachments: async (payload: QueueGmailAttachmentsRequest) =>
+    request<QueueGmailAttachmentsResponse>('/v1/financial-documents/queue-gmail-attachments', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  parseFinancialDocument: async (documentId: string, payload: ParseFinancialDocumentRequest) =>
+    request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/parse`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  summarizeFinancialDocumentAi: async (documentId: string, payload: FinancialDocumentAiSummaryRequest) =>
+    request<FinancialDocumentAiSummaryResult>(`/v1/financial-documents/${documentId}/ai-summary`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  submitPdfPassword: async (documentId: string, payload: PdfPasswordAttemptRequest) =>
+    request<PdfPasswordAttemptResponse>(`/v1/financial-documents/${documentId}/password`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getParsedStatementReview: async (documentId: string) =>
+    request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/review`),
+  approveParsedStatementReview: async (documentId: string) =>
+    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/approve`, {
+      method: 'POST',
+    }),
+  ignoreParsedStatementReview: async (documentId: string) =>
+    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/ignore`, {
+      method: 'POST',
+    }),
+  importParsedStatementReview: async (documentId: string, payload: ParsedStatementImportRequest) =>
+    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/import`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  listPdfPasswordProfiles: async () =>
+    request<{ items: PdfPasswordProfile[] }>('/v1/financial-documents/password-profiles'),
+  deletePdfPasswordProfile: async (profileId: string) =>
+    request<{ deleted: boolean }>(`/v1/financial-documents/password-profiles/${profileId}`, {
+      method: 'DELETE',
+    }),
+  listPortfolioConnections: async () => request<{ items: PortfolioAccount[] }>('/v1/portfolio/connections'),
+  getPortfolioState: async () => request<PortfolioStateResponse>('/v1/portfolio/state'),
+  createPortfolioConnection: async (payload: ProviderConnectionDraft) =>
+    request<{ item: PortfolioAccount }>('/v1/portfolio/connections', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updatePortfolioConnection: async (accountId: string, payload: ProviderConnectionUpdate) =>
+    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  pausePortfolioConnection: async (accountId: string) =>
+    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}/pause`, { method: 'POST' }),
+  disconnectPortfolioConnection: async (accountId: string) =>
+    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}/disconnect`, { method: 'POST' }),
+  syncPortfolioConnection: async (accountId: string) =>
+    request<ProviderSyncResponse>(`/v1/portfolio/connections/${accountId}/sync`, { method: 'POST' }),
+  listPortfolioHoldings: async () => request<{ items: PortfolioHolding[] }>('/v1/portfolio/holdings'),
+  createPortfolioHolding: async (payload: PortfolioHoldingDraft) =>
+    request<{ item: PortfolioHolding }>('/v1/portfolio/holdings', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updatePortfolioHolding: async (holdingId: string, payload: PortfolioHoldingUpdate) =>
+    request<{ item: PortfolioHolding }>(`/v1/portfolio/holdings/${holdingId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deletePortfolioHolding: async (holdingId: string) =>
+    request<{ deleted: boolean }>(`/v1/portfolio/holdings/${holdingId}`, { method: 'DELETE' }),
+  createWealthSnapshot: async () => request<WealthSnapshot>('/v1/portfolio/snapshots', { method: 'POST' }),
+  importParsedDocumentHoldings: async (documentId: string) =>
+    request<{ items: PortfolioHolding[]; importedCount: number }>(`/v1/portfolio/imports/parsed-document/${documentId}`, {
+      method: 'POST',
+    }),
+  startZerodhaConnect: async () =>
+    request<ZerodhaConnectStartResponse>('/v1/portfolio/providers/zerodha/start', { method: 'POST' }),
+  completeZerodhaConnect: async (payload: ZerodhaConnectCallbackRequest) =>
+    request<ZerodhaConnectCallbackResponse>('/v1/portfolio/providers/zerodha/callback', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getAccountAggregatorExploration: async () =>
+    request<AccountAggregatorExplorationStatus>('/v1/portfolio/providers/account-aggregator/exploration'),
+  classifyFinancialEmailWithAi: async (payload: AiEmailClassificationRequest) =>
+    request<AiEmailClassificationResult>('/v1/financial-ai/email-classification', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  interpretStatementRowsWithAi: async (payload: AiStatementRowsRequest) =>
+    request<AiStatementRowsResponse>('/v1/financial-ai/statement-rows', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  generateAiWealthInsights: async (payload: AiWealthInsightRequest) =>
+    request<AiWealthInsightResponse>('/v1/financial-ai/wealth-insights', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
+import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
 import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
@@ -373,6 +374,7 @@ export default function SettingsScreen() {
         </Card>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Data & Privacy</Text>
+        <GmailConnectionCard />
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem
             icon="download-outline"
