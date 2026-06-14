@@ -23,6 +23,8 @@ import type {
 } from '@/features/ai/types';
 import type {
   FinancialDocument,
+  FinancialDocumentAiSummaryRequest,
+  FinancialDocumentAiSummaryResult,
   PdfPasswordProfile,
   FinancialDocumentStatusSummary,
   ParsedStatementImportRequest,
@@ -234,6 +236,11 @@ export const backendApi = {
     }),
   parseFinancialDocument: async (documentId: string, payload: ParseFinancialDocumentRequest) =>
     request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/parse`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  summarizeFinancialDocumentAi: async (documentId: string, payload: FinancialDocumentAiSummaryRequest) =>
+    request<FinancialDocumentAiSummaryResult>(`/v1/financial-documents/${documentId}/ai-summary`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

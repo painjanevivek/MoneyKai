@@ -23,11 +23,17 @@ export const FinancialDocumentReviewCard: React.FC = () => {
   const enabled = isPdfStatementParsingEnabled();
   const [showConsent, setShowConsent] = React.useState(false);
   const [showDocuments, setShowDocuments] = React.useState(false);
+  const [showProfiles, setShowProfiles] = React.useState(false);
   const [passwordDocument, setPasswordDocument] = React.useState<FinancialDocument | undefined>();
   const [reviewDocument, setReviewDocument] = React.useState<FinancialDocument | undefined>();
-  const [busy, setBusy] = React.useState<'refresh' | 'parse' | 'password' | 'import' | 'reconcile' | null>(null);
+  const [busy, setBusy] = React.useState<
+    'refresh' | 'parse' | 'ai_summary' | 'password' | 'import' | 'reconcile' | 'approve' | 'ignore' | 'import_review' | 'delete_profile' | null
+  >(null);
+  const [busyProfileId, setBusyProfileId] = React.useState<string | undefined>();
   const documents = useFinancialDocumentStore((state) => state.documents);
   const reviewsByDocumentId = useFinancialDocumentStore((state) => state.reviewsByDocumentId);
+  const aiSummariesByDocumentId = useFinancialDocumentStore((state) => state.aiSummariesByDocumentId);
+  const passwordProfiles = useFinancialDocumentStore((state) => state.passwordProfiles);
   const status = useFinancialDocumentStore((state) => state.status);
   const consentAcceptedAt = useFinancialDocumentStore((state) => state.parsingConsentAcceptedAt);
   const acceptParsingConsent = useFinancialDocumentStore((state) => state.acceptParsingConsent);
@@ -35,34 +41,45 @@ export const FinancialDocumentReviewCard: React.FC = () => {
   const setDocuments = useFinancialDocumentStore((state) => state.setDocuments);
   const addOrUpdateDocument = useFinancialDocumentStore((state) => state.addOrUpdateDocument);
   const setReview = useFinancialDocumentStore((state) => state.setReview);
+  const setAiSummary = useFinancialDocumentStore((state) => state.setAiSummary);
+  const setPasswordProfiles = useFinancialDocumentStore((state) => state.setPasswordProfiles);
+  const removePasswordProfile = useFinancialDocumentStore((state) => state.removePasswordProfile);
   const upsertHolding = usePortfolioStore((state) => state.upsertHolding);
   const setPortfolioState = usePortfolioStore((state) => state.setPortfolioState);
   const upsertReviews = useReconciliationStore((state) => state.upsertReviews);
 
-  const refreshDocuments = React.useCallback(async () => {
+  const hydrateDocuments = React.useCallback(async () => {
     if (!enabled) {
       return;
     }
-    setBusy('refresh');
     try {
-      const [nextStatus, nextDocuments] = await Promise.all([
+      const [nextStatus, nextDocuments, nextProfiles] = await Promise.all([
         financialDocumentApi.getStatus(),
         financialDocumentApi.listDocuments(),
+        financialDocumentApi.listPasswordProfiles(),
       ]);
       setStatus(nextStatus);
       setDocuments(nextDocuments);
+      setPasswordProfiles(nextProfiles);
     } catch (error) {
       Alert.alert('Document refresh failed', error instanceof Error ? error.message : 'Could not refresh documents.');
+    }
+  }, [enabled, setDocuments, setPasswordProfiles, setStatus]);
+
+  const refreshDocuments = React.useCallback(async () => {
+    setBusy('refresh');
+    try {
+      await hydrateDocuments();
     } finally {
       setBusy(null);
     }
-  }, [enabled, setDocuments, setStatus]);
+  }, [hydrateDocuments]);
 
   React.useEffect(() => {
     if (enabled && consentAcceptedAt) {
-      void refreshDocuments();
+      void hydrateDocuments();
     }
-  }, [enabled, consentAcceptedAt, refreshDocuments]);
+  }, [consentAcceptedAt, enabled, hydrateDocuments]);
 
   const handleAccept = () => {
     acceptParsingConsent();
@@ -86,7 +103,7 @@ export const FinancialDocumentReviewCard: React.FC = () => {
         setReview(response.review);
         setReviewDocument(response.document);
       }
-      await refreshDocuments();
+      await hydrateDocuments();
     } catch (error) {
       Alert.alert('Parse failed', error instanceof Error ? error.message : 'Could not parse this statement.');
     } finally {
@@ -111,7 +128,7 @@ export const FinancialDocumentReviewCard: React.FC = () => {
         setReviewDocument(response.document);
       }
       setPasswordDocument(undefined);
-      await refreshDocuments();
+      await hydrateDocuments();
     } catch (error) {
       Alert.alert('Password failed', error instanceof Error ? error.message : 'Could not unlock this statement.');
     } finally {
@@ -130,6 +147,25 @@ export const FinancialDocumentReviewCard: React.FC = () => {
       setReviewDocument(response.document);
     } catch (error) {
       Alert.alert('Review unavailable', error instanceof Error ? error.message : 'Could not load parsed review.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleGenerateAiSummary = async () => {
+    if (!reviewDocument || !consentAcceptedAt) {
+      return;
+    }
+    setBusy('ai_summary');
+    try {
+      const response = await financialDocumentApi.summarizeDocumentAi(reviewDocument.id, {
+        userConsentAcceptedAt: consentAcceptedAt,
+      });
+      addOrUpdateDocument(response.document);
+      setAiSummary(response.document.id, response.aiSummary);
+      setReviewDocument(response.document);
+    } catch (error) {
+      Alert.alert('AI summary failed', error instanceof Error ? error.message : 'Could not summarize this financial document.');
     } finally {
       setBusy(null);
     }
@@ -168,6 +204,81 @@ export const FinancialDocumentReviewCard: React.FC = () => {
       Alert.alert('Reconciliation failed', error instanceof Error ? error.message : 'Could not reconcile parsed transactions.');
     } finally {
       setBusy(null);
+    }
+  };
+
+  const handleApproveReview = async () => {
+    if (!reviewDocument) {
+      return;
+    }
+    setBusy('approve');
+    try {
+      const response = await financialDocumentApi.approveReview(reviewDocument.id);
+      addOrUpdateDocument(response.document);
+      setReview(response.review);
+      Alert.alert('Review approved', 'The parsed statement review was approved without importing rows.');
+      await hydrateDocuments();
+    } catch (error) {
+      Alert.alert('Approval failed', error instanceof Error ? error.message : 'Could not approve this statement review.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleIgnoreReview = async () => {
+    if (!reviewDocument) {
+      return;
+    }
+    setBusy('ignore');
+    try {
+      const response = await financialDocumentApi.ignoreReview(reviewDocument.id);
+      addOrUpdateDocument(response.document);
+      setReview(response.review);
+      Alert.alert('Review ignored', 'This parsed statement review was marked ignored.');
+      await hydrateDocuments();
+    } catch (error) {
+      Alert.alert('Ignore failed', error instanceof Error ? error.message : 'Could not ignore this statement review.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleImportReview = async () => {
+    if (!reviewDocument) {
+      return;
+    }
+    setBusy('import_review');
+    try {
+      const response = await financialDocumentApi.importReview(reviewDocument.id, {
+        approveTransactions: true,
+        approveHoldings: true,
+      });
+      addOrUpdateDocument(response.document);
+      setReview(response.review);
+      setPortfolioState(await portfolioApi.getState());
+      Alert.alert(
+        'Rows imported',
+        `${response.importedTransactionCount} transactions and ${response.importedHoldingCount} holdings were imported.`
+      );
+      await hydrateDocuments();
+    } catch (error) {
+      Alert.alert('Import failed', error instanceof Error ? error.message : 'Could not import this statement review.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleDeletePasswordProfile = async (profileId: string) => {
+    setBusy('delete_profile');
+    setBusyProfileId(profileId);
+    try {
+      await financialDocumentApi.deletePasswordProfile(profileId);
+      removePasswordProfile(profileId);
+    } catch (error) {
+      Alert.alert('Delete failed', error instanceof Error ? error.message : 'Could not delete this password profile.');
+    } finally {
+      setBusy(null);
+      setBusyProfileId(undefined);
     }
   };
 
@@ -223,6 +334,14 @@ export const FinancialDocumentReviewCard: React.FC = () => {
             icon="file-search-outline"
             onPress={() => setShowDocuments(true)}
             disabled={documents.length === 0}
+            style={{ flexGrow: 1 }}
+          />
+          <Button
+            title="Saved Passwords"
+            icon="lock-check-outline"
+            onPress={() => setShowProfiles(true)}
+            disabled={!enabled}
+            variant="outline"
             style={{ flexGrow: 1 }}
           />
         </View>
@@ -284,22 +403,72 @@ export const FinancialDocumentReviewCard: React.FC = () => {
         </View>
       </ModalSheet>
 
-      <PdfPasswordPromptSheet
-        visible={Boolean(passwordDocument)}
-        document={passwordDocument}
-        loading={busy === 'password'}
-        onClose={() => setPasswordDocument(undefined)}
-        onSubmit={handleSubmitPassword}
-      />
+      <ModalSheet
+        visible={showProfiles}
+        title="Saved PDF passwords"
+        subtitle="Provider-linked password profiles are encrypted server-side and can be removed here."
+        onClose={() => setShowProfiles(false)}
+        footer={<Button title="Close" onPress={() => setShowProfiles(false)} variant="outline" />}
+      >
+        <View style={{ gap: Spacing.sm }}>
+          {passwordProfiles.length === 0 ? (
+            <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
+              No saved provider password profiles yet.
+            </Text>
+          ) : (
+            passwordProfiles.map((profile) => (
+              <View key={profile.id} style={{ paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: Spacing.sm }}>
+                <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                      {profile.label}
+                    </Text>
+                    <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
+                      {profile.providerKey} | {profile.mode}
+                    </Text>
+                  </View>
+                  <Button
+                    title="Delete"
+                    icon="trash-can-outline"
+                    size="sm"
+                    variant="outline"
+                    loading={busy === 'delete_profile' && busyProfileId === profile.id}
+                    onPress={() => handleDeletePasswordProfile(profile.id)}
+                  />
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      </ModalSheet>
+
+      {passwordDocument ? (
+        <PdfPasswordPromptSheet
+          visible
+          document={passwordDocument}
+          loading={busy === 'password'}
+          onClose={() => setPasswordDocument(undefined)}
+          onSubmit={handleSubmitPassword}
+        />
+      ) : null}
 
       <ParsedStatementReviewSheet
         visible={Boolean(reviewDocument)}
         document={reviewDocument}
         review={reviewDocument ? reviewsByDocumentId[reviewDocument.id] : undefined}
+        aiSummary={reviewDocument ? aiSummariesByDocumentId[reviewDocument.id] : undefined}
+        summarizingAiSummary={busy === 'ai_summary'}
         importingHoldings={busy === 'import'}
         reconcilingTransactions={busy === 'reconcile'}
+        approvingReview={busy === 'approve'}
+        ignoringReview={busy === 'ignore'}
+        importingReview={busy === 'import_review'}
         onImportHoldings={handleImportHoldings}
         onReconcileTransactions={handleReconcileTransactions}
+        onApproveReview={handleApproveReview}
+        onIgnoreReview={handleIgnoreReview}
+        onImportReview={handleImportReview}
+        onGenerateAiSummary={handleGenerateAiSummary}
         onClose={() => setReviewDocument(undefined)}
       />
     </>

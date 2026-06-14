@@ -2,9 +2,14 @@ import { isPdfStatementParsingEnabled } from '@/config/environment';
 import { backendApi } from './backendApi';
 import type {
   FinancialDocument,
+  FinancialDocumentAiSummaryRequest,
+  FinancialDocumentAiSummaryResult,
   FinancialDocumentStatusSummary,
+  ParsedStatementImportRequest,
+  ParsedStatementReviewActionResponse,
   ParsedStatementReviewResponse,
   ParseFinancialDocumentRequest,
+  PdfPasswordProfile,
   PdfPasswordAttemptRequest,
   PdfPasswordAttemptResponse,
   QueueGmailAttachmentsRequest,
@@ -48,6 +53,13 @@ export const financialDocumentApi = {
     return backendApi.parseFinancialDocument(documentId, payload);
   },
 
+  summarizeDocumentAi: async (documentId: string, payload: FinancialDocumentAiSummaryRequest): Promise<FinancialDocumentAiSummaryResult> => {
+    if (!isPdfStatementParsingEnabled()) {
+      throw new Error('PDF statement parsing is disabled for this build.');
+    }
+    return backendApi.summarizeFinancialDocumentAi(documentId, payload);
+  },
+
   submitPassword: async (documentId: string, payload: PdfPasswordAttemptRequest): Promise<PdfPasswordAttemptResponse> => {
     if (!isPdfStatementParsingEnabled()) {
       throw new Error('PDF statement parsing is disabled for this build.');
@@ -60,5 +72,41 @@ export const financialDocumentApi = {
       throw new Error('PDF statement parsing is disabled for this build.');
     }
     return backendApi.getParsedStatementReview(documentId);
+  },
+
+  approveReview: async (documentId: string): Promise<ParsedStatementReviewActionResponse> => {
+    if (!isPdfStatementParsingEnabled()) {
+      throw new Error('PDF statement parsing is disabled for this build.');
+    }
+    return backendApi.approveParsedStatementReview(documentId);
+  },
+
+  ignoreReview: async (documentId: string): Promise<ParsedStatementReviewActionResponse> => {
+    if (!isPdfStatementParsingEnabled()) {
+      throw new Error('PDF statement parsing is disabled for this build.');
+    }
+    return backendApi.ignoreParsedStatementReview(documentId);
+  },
+
+  importReview: async (documentId: string, payload: ParsedStatementImportRequest): Promise<ParsedStatementReviewActionResponse> => {
+    if (!isPdfStatementParsingEnabled()) {
+      throw new Error('PDF statement parsing is disabled for this build.');
+    }
+    return backendApi.importParsedStatementReview(documentId, payload);
+  },
+
+  listPasswordProfiles: async (): Promise<PdfPasswordProfile[]> => {
+    if (!isPdfStatementParsingEnabled()) {
+      return [];
+    }
+    const response = await backendApi.listPdfPasswordProfiles();
+    return response.items;
+  },
+
+  deletePasswordProfile: async (profileId: string): Promise<void> => {
+    if (!isPdfStatementParsingEnabled()) {
+      throw new Error('PDF statement parsing is disabled for this build.');
+    }
+    await backendApi.deletePdfPasswordProfile(profileId);
   },
 };

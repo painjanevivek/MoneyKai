@@ -1,3 +1,5 @@
+import type { AiDocumentSummaryResponse } from '@/features/ai/types';
+
 export type FinancialDocumentSource = 'gmail' | 'manual_upload' | 'broker_api' | 'account_aggregator';
 
 export type FinancialDocumentType =
@@ -69,6 +71,18 @@ export interface ParsedStatementReview {
   createdAt: string;
 }
 
+export interface ParsedStatementImportRequest {
+  approveTransactions: boolean;
+  approveHoldings: boolean;
+}
+
+export interface ParsedStatementReviewActionResponse {
+  document: FinancialDocument;
+  review: ParsedStatementReview;
+  importedTransactionCount: number;
+  importedHoldingCount: number;
+}
+
 export interface ParsedStatementRow {
   id: string;
   rowType: 'transaction' | 'holding' | 'summary';
@@ -113,9 +127,22 @@ export interface ParseFinancialDocumentRequest {
   parsingConsentAcceptedAt: string;
 }
 
+export interface FinancialDocumentAiSummaryRequest {
+  userConsentAcceptedAt: string;
+}
+
 export interface ParsedStatementReviewResponse {
   document: FinancialDocument;
   review?: ParsedStatementReview | null;
 }
 
 export type PdfPasswordAttemptResponse = ParsedStatementReviewResponse;
+
+export interface FinancialDocumentAiSummaryResult {
+  document: FinancialDocument;
+  aiSummary: AiDocumentSummaryResponse;
+}
+
+export interface PdfPasswordProfileListResponse {
+  items: PdfPasswordProfile[];
+}
