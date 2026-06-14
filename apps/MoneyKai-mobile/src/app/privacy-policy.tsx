@@ -49,8 +49,8 @@ export default function PrivacyPolicyScreen() {
               body: 'You can disable Auto Capture, turn notification capture off, revoke Android notification access in system settings, ignore drafts, or clear pending capture history without deleting confirmed transactions.',
             },
             {
-              title: 'SMS Research Mode',
-              body: 'SMS Research Mode is experimental, disabled by default, and creates reviewable drafts from SMS text you paste into MoneyKai. Release builds do not request restricted SMS permissions or read your SMS inbox. Internal native research builds may test direct SMS access separately, but that path is excluded from Play-safe release builds.',
+              title: 'SMS Capture',
+              body: 'SMS Capture is optional, disabled by default, and creates reviewable drafts from SMS text you paste or permit MoneyKai to read on your device. Android asks before SMS access is granted, drafts stay review-only, and raw SMS bodies are not included in cloud backups.',
             },
             {
               title: 'Gmail and statements',

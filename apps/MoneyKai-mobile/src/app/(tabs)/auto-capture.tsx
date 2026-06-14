@@ -6,8 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Button } from '@/components/ui/Button';
-import { BudgetRequiredDialog } from '@/components/ui/BudgetRequiredDialog';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
@@ -217,6 +217,8 @@ export default function AutoCaptureScreen() {
   const setSmsImportRangeId = useCaptureStore((state) => state.setSmsImportRangeId);
   const smsResearchModeEnabled = useCaptureStore((state) => state.settings.smsResearchModeEnabled);
   const monthlyAllowance = useBudgetStore((state) => state.settings.monthly_allowance);
+  const updateBudgetSettings = useBudgetStore((state) => state.updateSettings);
+  const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const smsResearchBuildEnabled = isSmsResearchBuildEnabled();
   const nativeSmsResearchBuildEnabled = isNativeSmsResearchBuildEnabled();
   const [showSmsImport, setShowSmsImport] = useState(false);
@@ -224,6 +226,7 @@ export default function AutoCaptureScreen() {
   const [smsBody, setSmsBody] = useState('');
   const [smsImportError, setSmsImportError] = useState<string | undefined>();
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
+  const [budgetValue, setBudgetValue] = useState(monthlyAllowance > 0 ? String(monthlyAllowance) : '');
   const [isSmsInboxImporting, setIsSmsInboxImporting] = useState(false);
   const [showSmsImportProgress, setShowSmsImportProgress] = useState(false);
   const [smsImportProgress, setSmsImportProgress] = useState<SmsImportProgress | undefined>();
@@ -255,12 +258,21 @@ export default function AutoCaptureScreen() {
   };
 
   const showBudgetRequired = () => {
+    setBudgetValue(monthlyAllowance > 0 ? String(monthlyAllowance) : '');
     setShowBudgetDialog(true);
   };
 
   const handleSetBudget = () => {
+    const parsedBudget = Number(budgetValue);
+    const isValidBudget = /^\d+(\.\d{1,2})?$/.test(budgetValue.trim()) && Number.isFinite(parsedBudget) && parsedBudget > 0;
+
+    if (!isValidBudget) {
+      Alert.alert('Invalid budget', 'Enter a monthly budget greater than zero.');
+      return;
+    }
+
+    updateBudgetSettings({ monthly_allowance: Math.round(parsedBudget) });
     setShowBudgetDialog(false);
-    router.push('/(tabs)/budget');
   };
 
   const handleOpenSmsImport = () => {
@@ -270,7 +282,7 @@ export default function AutoCaptureScreen() {
     }
 
     if (!canPasteSms) {
-      Alert.alert('SMS Research Mode is off', 'Enable SMS Research Mode in Settings before importing pasted SMS text.');
+      Alert.alert('SMS Capture is off', 'Enable SMS Capture in Settings before importing pasted SMS text.');
       return;
     }
 
@@ -320,12 +332,12 @@ export default function AutoCaptureScreen() {
     }
 
     if (!nativeSmsResearchBuildEnabled) {
-      Alert.alert('Manual SMS only', 'This release build is Play-safe and does not read your SMS inbox. Paste a transaction SMS here to create a reviewable draft.');
+      Alert.alert('Manual SMS only', 'This build does not read your SMS inbox. Paste a transaction SMS here to create a reviewable draft.');
       return;
     }
 
     if (!smsResearchBuildEnabled || !smsResearchModeEnabled) {
-      Alert.alert('SMS Research Mode is off', 'Enable SMS Research Mode in Settings before importing recent SMS transactions.');
+      Alert.alert('SMS Capture is off', 'Enable SMS Capture in Settings before importing recent SMS transactions.');
       return;
     }
 
@@ -588,7 +600,7 @@ export default function AutoCaptureScreen() {
         <ModalSheet
           visible={showSmsImport}
           title="Paste SMS"
-          subtitle="Play-safe SMS research. MoneyKai creates reviewable drafts from pasted text and stores only sanitized capture fields."
+          subtitle="MoneyKai creates reviewable drafts from pasted text and stores only sanitized capture fields."
           onClose={() => {
             resetSmsImport();
             setShowSmsImport(false);
@@ -645,12 +657,58 @@ export default function AutoCaptureScreen() {
           </View>
         </ModalSheet>
       ) : null}
-      <BudgetRequiredDialog
+      <ModalSheet
         visible={showBudgetDialog}
-        message="Set a monthly budget before confirming captured transactions or importing SMS drafts."
-        onCancel={() => setShowBudgetDialog(false)}
-        onSetBudget={handleSetBudget}
-      />
+        title="Set Monthly Budget"
+        subtitle="Add a monthly budget here before importing or confirming captured transactions."
+        onClose={() => setShowBudgetDialog(false)}
+        footer={
+          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm }}>
+            <Button
+              title="Cancel"
+              onPress={() => setShowBudgetDialog(false)}
+              variant="outline"
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Save Budget"
+              icon="content-save-outline"
+              onPress={handleSetBudget}
+              style={{ flex: 1 }}
+            />
+          </View>
+        }
+      >
+        <View style={{ gap: Spacing.md }}>
+          <Input
+            label="Monthly budget"
+            placeholder="50000"
+            value={budgetValue}
+            onChangeText={(value) => setBudgetValue(value.replace(/[^0-9.]/g, ''))}
+            keyboardType="numeric"
+            inputMode="decimal"
+            prefix={currencySymbol}
+            icon="wallet-outline"
+          />
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: Spacing.sm,
+              alignItems: 'flex-start',
+              padding: Spacing.md,
+              borderRadius: BorderRadius.md,
+              backgroundColor: colors.primaryBg,
+              borderWidth: 1,
+              borderColor: `${colors.primary}22`,
+            }}
+          >
+            <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
+            <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
+              This keeps capture setup in place and unlocks reviewable transaction drafts right away.
+            </Text>
+          </View>
+        </View>
+      </ModalSheet>
       <SmsImportProgressSheet
         visible={showSmsImportProgress}
         progress={smsImportProgress}

@@ -78,7 +78,166 @@ export const Colors = {
     glassBg: 'rgba(18, 18, 18, 0.9)',
     glassBorder: 'rgba(48, 48, 48, 0.65)',
   },
+  emerald: {
+    primary: '#047857',
+    primaryLight: '#10B981',
+    primaryDark: '#064E3B',
+    primaryBg: '#D1FAE5',
+    accent: '#0F766E',
+    accentLight: '#CCFBF1',
+    emergency: '#DC2626',
+    emergencyBg: '#FEE2E2',
+    background: '#F7FBF7',
+    surface: '#FFFFFF',
+    surfaceElevated: '#F0FDF4',
+    card: '#FFFFFF',
+    border: '#B7D7CA',
+    borderLight: '#DDEFE8',
+    textPrimary: '#10251D',
+    textSecondary: '#36574A',
+    textTertiary: '#6A8177',
+    textInverse: '#FFFFFF',
+    success: '#059669',
+    warning: '#D97706',
+    error: '#DC2626',
+    info: '#0284C7',
+    chart1: '#047857',
+    chart2: '#0284C7',
+    chart3: '#D97706',
+    chart4: '#7C3AED',
+    chart5: '#DC2626',
+    chart6: '#0D9488',
+    chart7: '#64748B',
+    chart8: '#65A30D',
+    shadowColor: '#0F2F25',
+    overlay: 'rgba(5, 46, 35, 0.52)',
+    glassBg: 'rgba(255, 255, 255, 0.88)',
+    glassBorder: 'rgba(16, 185, 129, 0.26)',
+  },
+  sunset: {
+    primary: '#B45309',
+    primaryLight: '#F59E0B',
+    primaryDark: '#78350F',
+    primaryBg: '#FEF3C7',
+    accent: '#C2410C',
+    accentLight: '#FFEDD5',
+    emergency: '#BE123C',
+    emergencyBg: '#FFE4E6',
+    background: '#FFF8F0',
+    surface: '#FFFFFF',
+    surfaceElevated: '#FFFBEB',
+    card: '#FFFFFF',
+    border: '#E6C9A8',
+    borderLight: '#F4DFC6',
+    textPrimary: '#29160A',
+    textSecondary: '#67452D',
+    textTertiary: '#96745A',
+    textInverse: '#FFFFFF',
+    success: '#15803D',
+    warning: '#D97706',
+    error: '#BE123C',
+    info: '#2563EB',
+    chart1: '#C2410C',
+    chart2: '#2563EB',
+    chart3: '#D97706',
+    chart4: '#9333EA',
+    chart5: '#BE123C',
+    chart6: '#15803D',
+    chart7: '#64748B',
+    chart8: '#0891B2',
+    shadowColor: '#3A1D0A',
+    overlay: 'rgba(64, 28, 7, 0.52)',
+    glassBg: 'rgba(255, 250, 240, 0.88)',
+    glassBorder: 'rgba(245, 158, 11, 0.26)',
+  },
+  ocean: {
+    primary: '#0369A1',
+    primaryLight: '#38BDF8',
+    primaryDark: '#0C4A6E',
+    primaryBg: '#E0F2FE',
+    accent: '#0F766E',
+    accentLight: '#CCFBF1',
+    emergency: '#E11D48',
+    emergencyBg: '#FFE4E6',
+    background: '#F5FAFC',
+    surface: '#FFFFFF',
+    surfaceElevated: '#F0F9FF',
+    card: '#FFFFFF',
+    border: '#B8D7E4',
+    borderLight: '#D9ECF3',
+    textPrimary: '#0A2230',
+    textSecondary: '#345464',
+    textTertiary: '#6A8390',
+    textInverse: '#FFFFFF',
+    success: '#059669',
+    warning: '#B45309',
+    error: '#E11D48',
+    info: '#0284C7',
+    chart1: '#0369A1',
+    chart2: '#0F766E',
+    chart3: '#D97706',
+    chart4: '#7C3AED',
+    chart5: '#E11D48',
+    chart6: '#16A34A',
+    chart7: '#64748B',
+    chart8: '#0891B2',
+    shadowColor: '#082F49',
+    overlay: 'rgba(8, 47, 73, 0.52)',
+    glassBg: 'rgba(255, 255, 255, 0.88)',
+    glassBorder: 'rgba(56, 189, 248, 0.26)',
+  },
 } as const;
+
+export type ThemeMode = keyof typeof Colors;
+export type ColorScheme = {
+  [Key in keyof typeof Colors.light]: string;
+};
+
+type ThemeOption = {
+  id: ThemeMode;
+  label: string;
+  description: string;
+  icon: string;
+  swatches: readonly string[];
+};
+
+export const THEME_OPTIONS: readonly ThemeOption[] = [
+  {
+    id: 'light',
+    label: 'Classic',
+    description: 'Clean monochrome focus',
+    icon: 'brightness-6',
+    swatches: ['#111111', '#FFFFFF', '#2563EB'],
+  },
+  {
+    id: 'dark',
+    label: 'Midnight',
+    description: 'Low-light contrast',
+    icon: 'weather-night',
+    swatches: ['#0B0B0B', '#F5F5F5', '#2DD4BF'],
+  },
+  {
+    id: 'emerald',
+    label: 'Emerald',
+    description: 'Fresh and calm',
+    icon: 'leaf',
+    swatches: ['#047857', '#D1FAE5', '#0284C7'],
+  },
+  {
+    id: 'sunset',
+    label: 'Sunset',
+    description: 'Warm and expressive',
+    icon: 'weather-sunset',
+    swatches: ['#B45309', '#FEF3C7', '#2563EB'],
+  },
+  {
+    id: 'ocean',
+    label: 'Ocean',
+    description: 'Clear and cool',
+    icon: 'waves',
+    swatches: ['#0369A1', '#E0F2FE', '#0F766E'],
+  },
+] as const;
 
 // ─── Typography ──────────────────────────────────────────────────────────────
 export const Typography = {
@@ -182,6 +341,3 @@ export const Layout = {
   tabBarHeight: 80,
   headerHeight: 56,
 } as const;
-
-export type ThemeMode = 'light' | 'dark';
-export type ColorScheme = typeof Colors.light;

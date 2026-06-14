@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Animated, Dimensions, Easing, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Button } from '@/components/ui/Button';
-import { BudgetRequiredDialog } from '@/components/ui/BudgetRequiredDialog';
 import { Input } from '@/components/ui/Input';
+import { ModalSheet } from '@/components/ui/ModalSheet';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { formatDate } from '@/utils/dateUtils';
@@ -19,7 +20,6 @@ type TransactionComposerSheetProps = {
   visible: boolean;
   editingTransaction?: Transaction | null;
   onClose: () => void;
-  onSetBudget?: () => void;
 };
 
 const sanitizeAmount = (value: string) => value.replace(/[^0-9]/g, '');
@@ -31,11 +31,12 @@ export function TransactionComposerSheet({
   visible,
   editingTransaction = null,
   onClose,
-  onSetBudget,
 }: TransactionComposerSheetProps) {
   const { colors } = useTheme();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const monthlyAllowance = useBudgetStore((s) => s.settings.monthly_allowance);
+  const updateBudgetSettings = useBudgetStore((s) => s.updateSettings);
+  const currencySymbol = useSettingsStore((s) => s.currencySymbol);
   const { addTransaction, updateTransaction, deleteTransaction } = useTransactionStore();
   const isEditing = editingTransaction !== null;
 
@@ -47,6 +48,7 @@ export function TransactionComposerSheet({
   const [txnDate, setTxnDate] = useState(editingTransaction?.transaction_date ?? getTodayDate());
   const [showMobileDatePicker, setShowMobileDatePicker] = useState(false);
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
+  const [budgetValue, setBudgetValue] = useState(monthlyAllowance > 0 ? String(monthlyAllowance) : '');
   const [sheetTranslateY] = useState(() => new Animated.Value(SHEET_INITIAL_OFFSET));
   const [backdropOpacity] = useState(() => new Animated.Value(0));
 
@@ -75,6 +77,7 @@ export function TransactionComposerSheet({
 
   const handleClose = () => {
     setShowMobileDatePicker(false);
+    setShowBudgetDialog(false);
     onClose();
   };
 
@@ -87,13 +90,21 @@ export function TransactionComposerSheet({
   };
 
   const showBudgetRequiredAlert = () => {
+    setBudgetValue(monthlyAllowance > 0 ? String(monthlyAllowance) : '');
     setShowBudgetDialog(true);
   };
 
-  const handleSetBudgetFromDialog = () => {
+  const handleSaveBudgetFromDialog = () => {
+    const parsedBudget = Number(budgetValue);
+    const isValidBudget = /^\d+(\.\d{1,2})?$/.test(budgetValue.trim()) && Number.isFinite(parsedBudget) && parsedBudget > 0;
+
+    if (!isValidBudget) {
+      Alert.alert('Invalid budget', 'Enter a monthly budget greater than zero.');
+      return;
+    }
+
+    updateBudgetSettings({ monthly_allowance: Math.round(parsedBudget) });
     setShowBudgetDialog(false);
-    handleClose();
-    onSetBudget?.();
   };
 
   const handleSubmitTransaction = () => {
@@ -130,7 +141,11 @@ export function TransactionComposerSheet({
     } else {
       const didAddTransaction = addTransaction(transactionPayload);
       if (!didAddTransaction) {
-        showBudgetRequiredAlert();
+        if (useBudgetStore.getState().settings.monthly_allowance <= 0) {
+          showBudgetRequiredAlert();
+        } else {
+          Alert.alert('Already added', 'This transaction appears to be saved already.');
+        }
         return;
       }
     }
@@ -335,12 +350,12 @@ export function TransactionComposerSheet({
                       padding: Spacing.sm,
                     }}
                   >
-                    <DateTimePicker
+                    <ExpoDateTimePicker
                       value={parseTransactionDate(txnDate)}
                       mode="date"
                       display="inline"
                       maximumDate={new Date()}
-                      onChange={(_, date) => {
+                      onValueChange={(_, date) => {
                         if (date) {
                           handleDateChange(formatDate(date, 'yyyy-MM-dd'));
                         }
@@ -357,12 +372,13 @@ export function TransactionComposerSheet({
                   </View>
                 ) : null}
                 {Platform.OS === 'android' && showMobileDatePicker ? (
-                  <DateTimePicker
+                  <ExpoDateTimePicker
                     value={parseTransactionDate(txnDate)}
                     mode="date"
-                    display="default"
+                    presentation="dialog"
                     maximumDate={new Date()}
-                    onChange={(_, date) => {
+                    onDismiss={() => setShowMobileDatePicker(false)}
+                    onValueChange={(_, date) => {
                       if (date) {
                         handleDateChange(formatDate(date, 'yyyy-MM-dd'));
                       }
@@ -499,12 +515,58 @@ export function TransactionComposerSheet({
           </Animated.View>
         </View>
       </Modal>
-      <BudgetRequiredDialog
+      <ModalSheet
         visible={showBudgetDialog}
-        message="Set a monthly budget before adding transactions."
-        onCancel={() => setShowBudgetDialog(false)}
-        onSetBudget={handleSetBudgetFromDialog}
-      />
+        title="Set Monthly Budget"
+        subtitle="Add a monthly budget here and your transaction form will stay open."
+        onClose={() => setShowBudgetDialog(false)}
+        footer={
+          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm }}>
+            <Button
+              title="Cancel"
+              onPress={() => setShowBudgetDialog(false)}
+              variant="outline"
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Save Budget"
+              onPress={handleSaveBudgetFromDialog}
+              icon="content-save-outline"
+              style={{ flex: 1 }}
+            />
+          </View>
+        }
+      >
+        <View style={{ gap: Spacing.md }}>
+          <Input
+            label="Monthly budget"
+            placeholder="50000"
+            value={budgetValue}
+            onChangeText={(value) => setBudgetValue(value.replace(/[^0-9.]/g, ''))}
+            keyboardType="numeric"
+            inputMode="decimal"
+            prefix={currencySymbol}
+            icon="wallet-outline"
+          />
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: Spacing.sm,
+              alignItems: 'flex-start',
+              padding: Spacing.md,
+              borderRadius: BorderRadius.md,
+              backgroundColor: colors.primaryBg,
+              borderWidth: 1,
+              borderColor: `${colors.primary}22`,
+            }}
+          >
+            <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
+            <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
+              MoneyKai needs one monthly budget before it can compare spending, but you will stay right here after saving it.
+            </Text>
+          </View>
+        </View>
+      </ModalSheet>
     </>
   );
 }

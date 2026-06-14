@@ -81,6 +81,29 @@ class BackendApiError extends Error {
   }
 }
 
+const messageFromPayload = (payload: any, fallback: string): string => {
+  const detail = payload?.detail;
+  return (
+    (typeof detail === 'string' ? detail : detail?.message) ||
+    payload?.message ||
+    payload?.error?.message ||
+    fallback
+  );
+};
+
+const parseErrorMessage = async (response: Response, fallback: string): Promise<string> => {
+  const text = await response.text().catch(() => '');
+  if (!text) {
+    return fallback;
+  }
+
+  try {
+    return messageFromPayload(JSON.parse(text), fallback);
+  } catch {
+    return text;
+  }
+};
+
 async function getAuthToken(): Promise<string> {
   const currentUser = firebaseAuth.currentUser;
   if (!currentUser) {
@@ -108,21 +131,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
 
   if (!response.ok) {
-    let message = `Backend request failed with ${response.status}.`;
-    try {
-      const payload = await response.json();
-      const detail = payload?.detail;
-      message =
-        (typeof detail === 'string' ? detail : detail?.message) ||
-        payload?.message ||
-        payload?.error?.message ||
-        message;
-    } catch {
-      const text = await response.text();
-      if (text) {
-        message = text;
-      }
-    }
+    const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
     throw new BackendApiError(message, response.status);
   }
 
@@ -152,21 +161,7 @@ async function streamRequest<TCompleted extends AiChatStreamCompletedEvent>(
   });
 
   if (!response.ok) {
-    let message = `Backend request failed with ${response.status}.`;
-    try {
-      const payload = await response.json();
-      const detail = payload?.detail;
-      message =
-        (typeof detail === 'string' ? detail : detail?.message) ||
-        payload?.message ||
-        payload?.error?.message ||
-        message;
-    } catch {
-      const text = await response.text();
-      if (text) {
-        message = text;
-      }
-    }
+    const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
     throw new BackendApiError(message, response.status);
   }
 

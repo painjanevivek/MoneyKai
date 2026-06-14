@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, PanResponder } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,11 +17,7 @@ import { SavingsGoalCard } from '@/components/dashboard/SavingsGoalCard';
 import { CategoryBudgetRail } from '@/components/dashboard/CategoryBudgetRail';
 import { MonthYearPickerSheet } from '@/components/calendar/MonthYearPickerSheet';
 import { DashboardCalendarButton } from '@/components/dashboard/DashboardCalendarButton';
-import { ModalSheet } from '@/components/ui/ModalSheet';
-import { Button } from '@/components/ui/Button';
-import { UserAvatar } from '@/components/ui/UserAvatar';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
-import { isWealthTabEnabled } from '@/config/environment';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import {
   buildCategoryBudgetCards,
@@ -33,23 +29,10 @@ import {
 } from '@/utils/dashboard';
 import { getMonthSummary } from '@/utils/monthAnalytics';
 
-const MENU_ACTIONS = [
-  { label: 'Notifications', icon: 'bell-outline', route: '/(tabs)/notifications' as const },
-  { label: 'Transaction Capture', icon: 'text-box-check-outline', route: '/(tabs)/auto-capture' as const },
-  { label: 'AI Review', icon: 'receipt-text-outline', route: '/(tabs)/ai-review' as const },
-  { label: 'Wealth', icon: 'chart-timeline-variant', route: '/(tabs)/wealth' as const },
-  { label: 'Portfolio', icon: 'briefcase-outline', route: '/(tabs)/portfolio' as const },
-  { label: 'Notes', icon: 'note-text-outline', route: '/(tabs)/notes' as const },
-  { label: 'Groups', icon: 'account-group-outline', route: '/(tabs)/groups' as const },
-  { label: 'Settings', icon: 'cog-outline', route: '/(tabs)/settings' as const },
-  { label: 'Support', icon: 'help-circle-outline', route: '/contact' as const },
-];
-
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const user = useAuthStore((s) => s.user);
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
-  const signOut = useAuthStore((s) => s.signOut);
   const tourCompleted = useSettingsStore((s) => s.tourCompleted);
   const tourCompletedByUserId = useSettingsStore((s) => s.tourCompletedByUserId);
   const setTourCompletedForUser = useSettingsStore((s) => s.setTourCompletedForUser);
@@ -59,36 +42,11 @@ export default function DashboardScreen() {
   const setSelectedMonthKey = useCalendarStore((s) => s.setSelectedMonthKey);
   const resetToCurrentMonth = useCalendarStore((s) => s.resetToCurrentMonth);
   const activeChallenges = useChallengeStore((s) => s.getActiveChallenges());
-  const wealthEnabled = isWealthTabEnabled();
 
   const [showMonthMenu, setShowMonthMenu] = useState(false);
-  const [showMenuSheet, setShowMenuSheet] = useState(false);
-  const openMenuFromSwipe = React.useCallback(() => {
-    setShowMenuSheet(true);
-  }, []);
-  const homeMenuPanResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (event, gestureState) => {
-          const startedNearLeftEdge = event.nativeEvent.pageX <= 72;
-          const isRightSwipe = gestureState.dx > 18 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.4;
-          return startedNearLeftEdge && isRightSwipe && !showMenuSheet && !showMonthMenu;
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          if (gestureState.dx > 72 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.2) {
-            openMenuFromSwipe();
-          }
-        },
-      }),
-    [openMenuFromSwipe, showMenuSheet, showMonthMenu]
-  );
 
   const tourCompletedForUser = user?.id ? (tourCompletedByUserId[user.id] ?? tourCompleted) : false;
   const showTour = Boolean(user?.id && !isHydratingSession && !tourCompletedForUser);
-  const menuActions = useMemo(
-    () => MENU_ACTIONS.filter((action) => wealthEnabled || !['/(tabs)/wealth', '/(tabs)/portfolio'].includes(action.route)),
-    [wealthEnabled]
-  );
 
   const selectedMonthLabel = useMemo(() => getMonthLabel(selectedMonthKey), [selectedMonthKey]);
 
@@ -135,14 +93,8 @@ export default function DashboardScreen() {
     }
   };
 
-  const handleSignOut = async () => {
-    setShowMenuSheet(false);
-    await signOut();
-    router.replace('/login');
-  };
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']} {...homeMenuPanResponder.panHandlers}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: Spacing['2xl'] }}
@@ -156,24 +108,6 @@ export default function DashboardScreen() {
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-            <TouchableOpacity
-              onPress={() => setShowMenuSheet(true)}
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                backgroundColor: colors.card,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: colors.border,
-                ...Shadows.sm,
-                shadowColor: colors.shadowColor,
-              }}
-            >
-              <MaterialCommunityIcons name="menu" size={22} color={colors.textPrimary} />
-            </TouchableOpacity>
-
             <View style={{ flex: 1 }}>
               <Text
                 style={{
@@ -311,85 +245,6 @@ export default function DashboardScreen() {
         onSelect={setSelectedMonthKey}
         onResetToCurrentMonth={resetToCurrentMonth}
       />
-
-      <ModalSheet
-        visible={showMenuSheet}
-        title="MoneyKai Menu"
-        subtitle={user?.email || 'Account and quick actions'}
-        onClose={() => setShowMenuSheet(false)}
-        presentation="side"
-        footer={
-          <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
-            <Button title="Sign Out" onPress={handleSignOut} variant="danger" fullWidth />
-          </View>
-        }
-      >
-        <View style={{ gap: Spacing.base }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: Spacing.md,
-              padding: Spacing.md,
-              borderRadius: BorderRadius.lg,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-            }}
-          >
-            <UserAvatar name={user?.full_name} email={user?.email} avatarUrl={user?.avatar_url} size={52} />
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: Typography.fontSize.base,
-                  fontFamily: Typography.fontFamily.semiBold,
-                  color: colors.textPrimary,
-                }}
-              >
-                {user?.full_name || 'Your profile'}
-              </Text>
-              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                {user?.email || 'No email available'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-            {menuActions.map((action) => (
-              <TouchableOpacity
-                key={action.route}
-                onPress={() => {
-                  setShowMenuSheet(false);
-                  router.push(action.route as never);
-                }}
-                style={{
-                  flexBasis: '48%',
-                  flexGrow: 1,
-                  minHeight: 70,
-                  padding: Spacing.md,
-                  borderRadius: BorderRadius.lg,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  justifyContent: 'center',
-                  gap: 6,
-                }}
-              >
-                <MaterialCommunityIcons name={action.icon as any} size={20} color={colors.primary} />
-                <Text
-                  style={{
-                    fontSize: Typography.fontSize.sm,
-                    fontFamily: Typography.fontFamily.medium,
-                    color: colors.textPrimary,
-                  }}
-                >
-                  {action.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      </ModalSheet>
 
       <FirstLoginTour
         key={`${user?.id ?? 'guest'}-${showTour ? 'open' : 'closed'}`}

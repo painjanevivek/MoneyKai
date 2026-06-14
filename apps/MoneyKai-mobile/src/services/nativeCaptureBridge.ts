@@ -222,9 +222,9 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
     receiveResult = receiveGranted
       ? PermissionsAndroid.RESULTS.GRANTED
       : await PermissionsAndroid.request(receivePermission, {
-          title: 'Allow SMS Research Mode',
+          title: 'Allow SMS Capture',
           message:
-            'MoneyKai needs SMS receive access only in this internal research build to capture real bank transaction SMS.',
+            'MoneyKai needs SMS receive access to create reviewable drafts from bank transaction SMS.',
           buttonPositive: 'Allow',
           buttonNegative: 'Not now',
         });
@@ -233,7 +233,7 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
       : await PermissionsAndroid.request(readPermission, {
           title: 'Import Recent Bank SMS',
           message:
-            'MoneyKai needs one-time SMS inbox access only in this internal research build to import bank and payment transaction SMS for your selected range.',
+            'MoneyKai needs one-time SMS inbox access to import bank and payment transaction SMS for your selected range.',
           buttonPositive: 'Allow',
           buttonNegative: 'Not now',
         });

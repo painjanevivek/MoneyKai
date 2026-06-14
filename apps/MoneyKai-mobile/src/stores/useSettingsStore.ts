@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ThemeMode } from '../constants/theme';
+import { THEME_OPTIONS, type ThemeMode } from '../constants/theme';
 import { saveUserAppSettings } from '@/services/firestoreData';
 import { useAuthStore } from './useAuthStore';
 import { requestAutomaticBackup } from '@/services/backupService';
@@ -67,7 +67,9 @@ export const useSettingsStore = create<SettingsState>()(
 
       toggleTheme: () =>
         set((state) => {
-          const theme: ThemeMode = state.theme === 'light' ? 'dark' : 'light';
+          const currentIndex = THEME_OPTIONS.findIndex((option) => option.id === state.theme);
+          const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % THEME_OPTIONS.length : 0;
+          const theme = THEME_OPTIONS[nextIndex].id;
           const next: PersistedAppSettings = {
             theme,
             currency: state.currency,

@@ -10,6 +10,20 @@ class NewsApiError extends Error {
   }
 }
 
+const parseNewsErrorMessage = async (response: Response, fallback: string): Promise<string> => {
+  const text = await response.text().catch(() => '');
+  if (!text) {
+    return fallback;
+  }
+
+  try {
+    const payload = JSON.parse(text);
+    return payload?.detail || payload?.message || fallback;
+  } catch {
+    return text;
+  }
+};
+
 export async function fetchLiveNews(category: NewsCategory = 'all', refresh = false): Promise<NewsFeedResponse> {
   const url = new URL('/v1/news', backendBaseUrl);
   url.searchParams.set('limit', '18');
@@ -32,16 +46,7 @@ export async function fetchLiveNews(category: NewsCategory = 'all', refresh = fa
     });
 
     if (!response.ok) {
-      let message = `Unable to load news (${response.status}).`;
-      try {
-        const payload = await response.json();
-        message = payload?.detail || payload?.message || message;
-      } catch {
-        const text = await response.text();
-        if (text) {
-          message = text;
-        }
-      }
+      const message = await parseNewsErrorMessage(response, `Unable to load news (${response.status}).`);
       throw new NewsApiError(message, response.status);
     }
 

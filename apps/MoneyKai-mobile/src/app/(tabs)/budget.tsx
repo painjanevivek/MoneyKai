@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { Alert, View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -7,15 +7,16 @@ import { useTheme } from '@/hooks/useTheme';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useCalendarStore } from '@/stores/useCalendarStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
 import { BudgetHealth } from '@/components/dashboard/BudgetHealth';
 import { MonthlyBudgetSummaryCard } from '@/components/dashboard/MonthlyBudgetSummaryCard';
 import { CategoryBudgetRail } from '@/components/dashboard/CategoryBudgetRail';
-import { SpendingPieChart } from '@/components/charts/SpendingPieChart';
 import { MonthYearPickerSheet } from '@/components/calendar/MonthYearPickerSheet';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ModalSheet } from '@/components/ui/ModalSheet';
 import { EXPENSE_CATEGORIES } from '@/constants/categories';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { buildCategoryBudgetCards } from '@/utils/dashboard';
@@ -32,12 +33,16 @@ const buildCategoryLimitInputs = (limits: Record<string, number> = {}) =>
 export default function BudgetScreen() {
   const { colors } = useTheme();
   const { settings, updateSettings } = useBudgetStore();
+  const currencySymbol = useSettingsStore((s) => s.currencySymbol);
   const transactions = useTransactionStore((s) => s.transactions);
   const selectedMonthKey = useCalendarStore((s) => s.selectedMonthKey);
   const setSelectedMonthKey = useCalendarStore((s) => s.setSelectedMonthKey);
   const resetToCurrentMonth = useCalendarStore((s) => s.resetToCurrentMonth);
   const [categoryLimitDrafts, setCategoryLimitDrafts] = useState<Record<string, string>>({});
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showAllowanceEditor, setShowAllowanceEditor] = useState(false);
+  const [allowanceValue, setAllowanceValue] = useState(String(settings.monthly_allowance));
+  const [savingAllowance, setSavingAllowance] = useState(false);
 
   const monthSummary = useMemo(() => getMonthSummary(transactions, selectedMonthKey), [transactions, selectedMonthKey]);
   const monthLabel = monthSummary.monthLabel;
@@ -58,6 +63,24 @@ export default function BudgetScreen() {
   const hasSavedCategoryLimits = Object.values(settings.category_limits ?? {}).some((value) => value > 0);
   const savedCategoryLimitInputs = useMemo(() => buildCategoryLimitInputs(settings.category_limits), [settings.category_limits]);
   const getCategoryLimitInput = (categoryId: string) => categoryLimitDrafts[categoryId] ?? savedCategoryLimitInputs[categoryId] ?? '';
+  const switchTrack = { false: colors.border, true: colors.primary } as const;
+  const switchThumb = colors.textInverse;
+
+  const saveAllowance = () => {
+    const parsed = Number(allowanceValue.replace(/,/g, '').trim());
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      Alert.alert('Invalid amount', 'Enter a positive monthly budget.');
+      return;
+    }
+
+    setSavingAllowance(true);
+    try {
+      updateSettings({ monthly_allowance: Math.round(parsed) });
+      setShowAllowanceEditor(false);
+    } finally {
+      setSavingAllowance(false);
+    }
+  };
 
   const handleSaveCategoryLimits = () => {
     const nextLimits: Record<string, number> = {};
@@ -128,6 +151,100 @@ export default function BudgetScreen() {
           remaining={monthRemaining}
           progress={monthProgress}
         />
+
+        <Card
+          style={{
+            gap: Spacing.md,
+            borderRadius: BorderRadius['2xl'],
+            borderWidth: 1,
+            borderColor: colors.borderLight,
+            ...Shadows.md,
+            shadowColor: colors.shadowColor,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.md }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 22, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Budget Settings
+              </Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                Monthly budget controls for this app
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="wallet-outline" size={22} color={colors.primary} />
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.82}
+            onPress={() => {
+              setAllowanceValue(String(settings.monthly_allowance));
+              setShowAllowanceEditor(true);
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: Spacing.md,
+              minHeight: 58,
+              paddingVertical: Spacing.sm,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderLight,
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: BorderRadius.sm,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.primaryBg,
+              }}
+            >
+              <MaterialCommunityIcons name="cash-multiple" size={19} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Monthly Budget
+              </Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                {currencySymbol} {settings.monthly_allowance.toLocaleString('en-IN')}
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textTertiary} />
+          </TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, minHeight: 58 }}>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: BorderRadius.sm,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}
+            >
+              <MaterialCommunityIcons name="transfer" size={19} color={colors.textSecondary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Carry Forward
+              </Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                Move unused balance to the next month
+              </Text>
+            </View>
+            <Switch
+              value={settings.carry_forward}
+              onValueChange={(value) => updateSettings({ carry_forward: value })}
+              trackColor={switchTrack}
+              thumbColor={switchThumb}
+              ios_backgroundColor={colors.borderLight}
+            />
+          </View>
+        </Card>
 
         <BudgetHealth totalSpent={monthExpenses} />
 
@@ -219,13 +336,6 @@ export default function BudgetScreen() {
           </View>
         </Card>
 
-        <SpendingPieChart
-          categoryTotals={monthCategoryTotals}
-          totalSpent={monthExpenses}
-          onPressViewMore={() => router.push('/(tabs)/analytics')}
-          actionLabel="View analytics"
-        />
-
         <Card
           style={{
             gap: Spacing.md,
@@ -262,6 +372,27 @@ export default function BudgetScreen() {
         onClose={() => setShowMonthPicker(false)}
         onResetToCurrentMonth={resetToCurrentMonth}
       />
+      <ModalSheet
+        visible={showAllowanceEditor}
+        title="Edit Monthly Budget"
+        subtitle="Update the budget used across your dashboard, budget, and savings calculations."
+        onClose={() => setShowAllowanceEditor(false)}
+        footer={
+          <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
+            <Button title="Cancel" onPress={() => setShowAllowanceEditor(false)} variant="outline" style={{ flex: 1 }} />
+            <Button title="Save" onPress={saveAllowance} loading={savingAllowance} style={{ flex: 1 }} />
+          </View>
+        }
+      >
+        <Input
+          label="Monthly budget"
+          placeholder="15000"
+          value={allowanceValue}
+          onChangeText={(value) => setAllowanceValue(value.replace(/[^0-9]/g, ''))}
+          keyboardType="numeric"
+          prefix={currencySymbol}
+        />
+      </ModalSheet>
     </SafeAreaView>
   );
 }

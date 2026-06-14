@@ -7,8 +7,6 @@ import { useTheme } from '@/hooks/useTheme';
 import { Typography, Shadows } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TransactionComposerSheet } from '@/components/ui/TransactionComposerSheet';
-import { BudgetRequiredDialog } from '@/components/ui/BudgetRequiredDialog';
-import { useBudgetStore } from '@/stores/useBudgetStore';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -128,23 +126,8 @@ export default function TabLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [isComposerVisible, setIsComposerVisible] = React.useState(false);
-  const [isBudgetDialogVisible, setIsBudgetDialogVisible] = React.useState(false);
-  const monthlyAllowance = useBudgetStore((state) => state.settings.monthly_allowance);
   const addButtonBackground = colors.textPrimary;
   const addButtonForeground = colors.background;
-  const requireMonthlyBudget = React.useCallback(() => {
-    if (monthlyAllowance > 0) {
-      return true;
-    }
-
-    setIsBudgetDialogVisible(true);
-    return false;
-  }, [monthlyAllowance]);
-
-  const handleSetBudget = React.useCallback(() => {
-    setIsBudgetDialogVisible(false);
-    router.push('/(tabs)/budget');
-  }, []);
   const goBackFromHiddenTab = React.useCallback(() => {
     if (router.canGoBack()) {
       router.back();
@@ -257,11 +240,7 @@ export default function TabLayout() {
                 backgroundColor={addButtonBackground}
                 foregroundColor={addButtonForeground}
                 borderColor={colors.background}
-                onPress={() => {
-                  if (requireMonthlyBudget()) {
-                    setIsComposerVisible(true);
-                  }
-                }}
+                onPress={() => setIsComposerVisible(true)}
               />
             ),
           }}
@@ -275,14 +254,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="savings"
+          name="more"
           options={{
-            title: 'Savings',
-            tabBarLabel: ({ color, focused }) => <TabLabel label="Savings" color={color} focused={focused} />,
-            tabBarIcon: ({ color, focused }) => <TabIcon name="piggy-bank-outline" color={color} focused={focused} />,
+            title: 'More',
+            tabBarLabel: ({ color, focused }) => <TabLabel label="More" color={color} focused={focused} />,
+            tabBarIcon: ({ color, focused }) => <TabIcon name="dots-horizontal-circle-outline" color={color} focused={focused} />,
           }}
         />
 
+        <Tabs.Screen name="savings" options={hiddenTabOptions('Savings')} />
         <Tabs.Screen name="groups" options={hiddenTabOptions('Groups')} />
         <Tabs.Screen name="learn-center" options={hiddenTabOptions('Learn Center')} />
         <Tabs.Screen name="settings" options={hiddenTabOptions('Settings')} />
@@ -297,11 +277,6 @@ export default function TabLayout() {
       {isComposerVisible ? (
         <TransactionComposerSheet visible onClose={() => setIsComposerVisible(false)} />
       ) : null}
-      <BudgetRequiredDialog
-        visible={isBudgetDialogVisible}
-        onCancel={() => setIsBudgetDialogVisible(false)}
-        onSetBudget={handleSetBudget}
-      />
     </>
   );
 }
