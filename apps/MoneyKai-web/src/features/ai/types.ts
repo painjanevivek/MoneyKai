@@ -98,11 +98,14 @@ export interface AiProviderStatus {
 export interface AiConfiguredModelStatus {
   key: 'text' | 'vision' | 'file' | 'reasoning' | 'sms_parse';
   model: string | null;
+  canonicalSlug?: string | null;
   configured: boolean;
   available: boolean;
   inputModalities: string[];
   outputModalities: string[];
   supportedParameters: string[];
+  expirationDate?: string | null;
+  deprecationState?: 'active' | 'scheduled' | 'expired';
   reason?: string | null;
 }
 

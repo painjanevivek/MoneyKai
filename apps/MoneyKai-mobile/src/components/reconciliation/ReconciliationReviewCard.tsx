@@ -32,20 +32,26 @@ export const ReconciliationReviewCard: React.FC = () => {
     [reviews]
   );
 
-  const refreshReviews = React.useCallback(async () => {
-    setBusy('refresh');
+  const hydrateReviews = React.useCallback(async () => {
     try {
       setReviews(await reconciliationApi.listReviews('pending'));
     } catch (error) {
       Alert.alert('Reconciliation unavailable', error instanceof Error ? error.message : 'Could not load pending reviews.');
-    } finally {
-      setBusy(null);
     }
   }, [setReviews]);
 
+  const refreshReviews = React.useCallback(async () => {
+    setBusy('refresh');
+    try {
+      await hydrateReviews();
+    } finally {
+      setBusy(null);
+    }
+  }, [hydrateReviews]);
+
   React.useEffect(() => {
-    void refreshReviews();
-  }, [refreshReviews]);
+    void hydrateReviews();
+  }, [hydrateReviews]);
 
   const approveReview = async (review: ReconciliationCandidate) => {
     setBusy('approve');

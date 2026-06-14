@@ -896,6 +896,77 @@ export const CAPTURE_FIXTURES: CaptureFixture[] = [
     },
   },
   {
+    id: 'sms-adib-card-approved-aed',
+    label: 'ADIB card approved message in AED',
+    input: {
+      source: 'sms',
+      sender: 'ADIB',
+      body: 'Trx. of AED45.00 on your card ending *510 at GLOBAL VILLAGE D, UAE is Approved. Avl. card bal is 1955.00. Trx Date: 28/01/23 18:54',
+      receivedAt: '2023-01-28T18:54:00.000Z',
+    },
+    expected: {
+      amount: 45,
+      merchant: 'GLOBAL VILLAGE D',
+      type: 'expense',
+      paymentMethod: 'card',
+      status: 'draft',
+      shouldDraft: true,
+      category: 'entertainment',
+    },
+  },
+  {
+    id: 'sms-adib-account-pos-aed',
+    label: 'ADIB account POS transaction in AED',
+    input: {
+      source: 'sms',
+      sender: 'ADIB',
+      body: 'Trx. of AED 48.00 on your a/c ****6111 at NAJD PALACE RESTAURANT ABU DHABI AE. Avl Bal is AED 8593.24',
+      receivedAt: '2017-09-08T10:30:21.000Z',
+    },
+    expected: {
+      amount: 48,
+      merchant: 'NAJD PALACE RESTAURANT ABU DHABI AE',
+      type: 'expense',
+      paymentMethod: 'bank',
+      status: 'draft',
+      shouldDraft: true,
+      category: 'food',
+    },
+  },
+  {
+    id: 'sms-adib-account-credit-review',
+    label: 'ADIB account credit in AED',
+    input: {
+      source: 'sms',
+      sender: 'ADIB',
+      body: 'Dear Customer, AED 3000.00 was credited to your account ****2486. Your available account balance is AED 3000.00',
+      receivedAt: '2019-05-30T05:58:43.000Z',
+    },
+    expected: {
+      amount: 3000,
+      merchant: 'ADIB',
+      type: 'income',
+      paymentMethod: 'bank',
+      status: 'review',
+      shouldDraft: true,
+    },
+  },
+  {
+    id: 'sms-adib-card-payment-credited-ignore',
+    label: 'ADIB card payment credit confirmation',
+    input: {
+      source: 'sms',
+      sender: 'ADIB',
+      body: 'Dear Customer, your payment of AED 100.00 on 7/29/2020 for card ending with **0121 has been credited. Thank you.',
+      receivedAt: '2020-07-29T19:31:00.000Z',
+    },
+    expected: {
+      status: 'ignore',
+      shouldDraft: false,
+      ignoreReasonIncludes: 'card payment',
+    },
+  },
+  {
     id: 'notification-phonepe-upi-person',
     label: 'PhonePe UPI notification without UPI word',
     input: {

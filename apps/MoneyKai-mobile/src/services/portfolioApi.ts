@@ -11,6 +11,8 @@ import type {
   ProviderConnectionUpdate,
   ProviderSyncResponse,
   WealthSnapshot,
+  ZerodhaConnectCallbackRequest,
+  ZerodhaConnectCallbackResponse,
   ZerodhaConnectStartResponse,
 } from '@/types/portfolio';
 
@@ -130,9 +132,16 @@ export const portfolioApi = {
 
   startZerodhaConnect: async (): Promise<ZerodhaConnectStartResponse> => {
     if (!isWealthTabEnabled()) {
-      return { enabled: false, authorizationUrl: null, message: 'Wealth monitoring is disabled for this build.' };
+      return { enabled: false, authorizationUrl: null, state: null, expiresAt: null, message: 'Wealth monitoring is disabled for this build.' };
     }
     return backendApi.startZerodhaConnect();
+  },
+
+  completeZerodhaConnect: async (payload: ZerodhaConnectCallbackRequest): Promise<ZerodhaConnectCallbackResponse> => {
+    if (!isWealthTabEnabled()) {
+      return { enabled: false, account: null, message: 'Wealth monitoring is disabled for this build.' };
+    }
+    return backendApi.completeZerodhaConnect(payload);
   },
 
   getAccountAggregatorExploration: async (): Promise<AccountAggregatorExplorationStatus> => {

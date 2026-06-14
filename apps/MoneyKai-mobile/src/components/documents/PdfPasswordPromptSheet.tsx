@@ -26,13 +26,6 @@ export const PdfPasswordPromptSheet: React.FC<PdfPasswordPromptSheetProps> = ({
   const [password, setPassword] = React.useState('');
   const [saveForProvider, setSaveForProvider] = React.useState(false);
 
-  React.useEffect(() => {
-    if (visible) {
-      setPassword('');
-      setSaveForProvider(false);
-    }
-  }, [visible]);
-
   return (
     <ModalSheet
       visible={visible}

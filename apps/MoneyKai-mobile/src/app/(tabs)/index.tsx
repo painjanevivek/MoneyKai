@@ -21,6 +21,7 @@ import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Button } from '@/components/ui/Button';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
+import { isWealthTabEnabled } from '@/config/environment';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import {
   buildCategoryBudgetCards,
@@ -35,7 +36,9 @@ import { getMonthSummary } from '@/utils/monthAnalytics';
 const MENU_ACTIONS = [
   { label: 'Notifications', icon: 'bell-outline', route: '/(tabs)/notifications' as const },
   { label: 'Transaction Capture', icon: 'text-box-check-outline', route: '/(tabs)/auto-capture' as const },
+  { label: 'AI Review', icon: 'receipt-text-outline', route: '/(tabs)/ai-review' as const },
   { label: 'Wealth', icon: 'chart-timeline-variant', route: '/(tabs)/wealth' as const },
+  { label: 'Portfolio', icon: 'briefcase-outline', route: '/(tabs)/portfolio' as const },
   { label: 'Notes', icon: 'note-text-outline', route: '/(tabs)/notes' as const },
   { label: 'Groups', icon: 'account-group-outline', route: '/(tabs)/groups' as const },
   { label: 'Settings', icon: 'cog-outline', route: '/(tabs)/settings' as const },
@@ -56,6 +59,7 @@ export default function DashboardScreen() {
   const setSelectedMonthKey = useCalendarStore((s) => s.setSelectedMonthKey);
   const resetToCurrentMonth = useCalendarStore((s) => s.resetToCurrentMonth);
   const activeChallenges = useChallengeStore((s) => s.getActiveChallenges());
+  const wealthEnabled = isWealthTabEnabled();
 
   const [showMonthMenu, setShowMonthMenu] = useState(false);
   const [showMenuSheet, setShowMenuSheet] = useState(false);
@@ -81,6 +85,10 @@ export default function DashboardScreen() {
 
   const tourCompletedForUser = user?.id ? (tourCompletedByUserId[user.id] ?? tourCompleted) : false;
   const showTour = Boolean(user?.id && !isHydratingSession && !tourCompletedForUser);
+  const menuActions = useMemo(
+    () => MENU_ACTIONS.filter((action) => wealthEnabled || !['/(tabs)/wealth', '/(tabs)/portfolio'].includes(action.route)),
+    [wealthEnabled]
+  );
 
   const selectedMonthLabel = useMemo(() => getMonthLabel(selectedMonthKey), [selectedMonthKey]);
 
@@ -347,7 +355,7 @@ export default function DashboardScreen() {
           </View>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-            {MENU_ACTIONS.map((action) => (
+            {menuActions.map((action) => (
               <TouchableOpacity
                 key={action.route}
                 onPress={() => {

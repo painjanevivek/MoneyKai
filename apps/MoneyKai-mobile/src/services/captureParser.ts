@@ -1,4 +1,5 @@
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
+import { hasKnownIndianBankSignal } from '@/constants/indiaBankAliases';
 import { getAutomaticExpenseCategory } from '@/services/captureCategoryRules';
 import { buildCaptureDedupeKeys } from '@/services/captureDedupe';
 import { format, isValid, parse } from 'date-fns';
@@ -50,12 +51,15 @@ type TransactionDateMatch = {
 
 const EXPENSE_KEYWORDS: KeywordRule[] = [
   { category: 'food', terms: ['swiggy', 'zomato', 'restaurant', 'cafe', 'coffee', 'pizza', 'food', 'dining'] },
-  { category: 'shopping', terms: ['amazon', 'flipkart', 'myntra', 'store', 'mart', 'basket', 'pantry', 'mall', 'shopping', 'retail', 'reliance fresh'] },
-  { category: 'transport', terms: ['uber', 'ola', 'metro', 'fuel', 'petrol', 'diesel', 'taxi', 'bus', 'train', 'rail'] },
+  {
+    category: 'shopping',
+    terms: ['amazon', 'flipkart', 'myntra', 'store', 'mart', 'basket', 'pantry', 'mall', 'shopping', 'retail', 'reliance fresh', 'carrefour', 'lulu', 'hypermarket', 'iherb'],
+  },
+  { category: 'transport', terms: ['uber', 'ola', 'metro', 'fuel', 'petrol', 'diesel', 'taxi', 'bus', 'train', 'rail', 'adnoc'] },
   { category: 'rent', terms: ['rent', 'housing', 'landlord', 'room'] },
-  { category: 'entertainment', terms: ['netflix', 'spotify', 'bookmyshow', 'movie', 'game', 'entertainment'] },
+  { category: 'entertainment', terms: ['netflix', 'spotify', 'bookmyshow', 'movie', 'game', 'entertainment', 'global village'] },
   { category: 'education', terms: ['course', 'school', 'college', 'udemy', 'book', 'tuition'] },
-  { category: 'bills', terms: ['recharge', 'electricity', 'bill', 'bescom', 'broadband', 'mobile', 'utility', 'gas'] },
+  { category: 'bills', terms: ['recharge', 'electricity', 'bill', 'bescom', 'broadband', 'mobile', 'utility', 'gas', 'etisalat', 'du'] },
   { category: 'healthcare', terms: ['pharmacy', 'hospital', 'clinic', 'doctor', 'medical', 'medicine'] },
 ];
 
@@ -81,8 +85,11 @@ const IGNORE_RULES: IgnoreRule[] = [
   { reason: 'bank feedback or survey message', patterns: [/\bshare your experience\b/i, /\bfeedback\b/i, /\bthank you for the transaction done today\b/i] },
   { reason: 'credential or password reminder', patterns: [/\bpassword\b/i, /\bcredential\b/i] },
   { reason: 'deposit instrument setup message', patterns: [/\btdr\/stdr\b/i] },
-  { reason: 'cheque payment message', patterns: [/\bcheque\b/i, /\bchq\b/i] },
+  { reason: 'pending cheque clearing message', patterns: [/\b(?:cheque|chq)\b.+\bsent for clearing\b/i, /\bdeposit will be confirmed after successful cheque clearing\b/i] },
   { reason: 'GST or tax message', patterns: [/\bgst(?:in)?\b/i, /\bcgst\b/i, /\bsgst\b/i, /\bigst\b/i, /\btax invoice\b/i] },
+  { reason: 'card payment confirmation', patterns: [/\byour payment of\b.+\bfor card ending\b.+\bhas been credited\b/i] },
+  { reason: 'account or card service message', patterns: [/\baccount\b.+\bcreated for you\b/i, /\bopening a new\b.+\baccount\b/i, /\bcard ending\b.+\bhas been added\b/i] },
+  { reason: 'scam or suspicious link message', patterns: [/\b(?:kyc|blocked|suspended|verify|urgent)\b.+\b(?:http|https|bit\.ly|tinyurl|click|link)\b/i, /\b(?:reward points?|prize)\b.+\b(?:expire|claim|click)\b/i] },
 ];
 
 const PAYMENT_KEYWORDS: { id: PaymentMethodId; label: string; terms: RegExp[] }[] = [
@@ -95,11 +102,11 @@ const PAYMENT_KEYWORDS: { id: PaymentMethodId; label: string; terms: RegExp[] }[
 const AMOUNT_PATTERNS: { name: string; regex: RegExp }[] = [
   {
     name: 'currency prefix',
-    regex: /(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/gi,
+    regex: /(?:\b(?:rupees?)\b|rs\.?|\u20b9|â‚¹|\b(?:inr|aed|usd|eur|gbp|sar|qar|omr|bhd|kwd)\.?)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/gi,
   },
   {
     name: 'currency suffix',
-    regex: /([0-9][0-9,]*(?:\.[0-9]{1,2})?)\s*(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)/gi,
+    regex: /([0-9][0-9,]*(?:\.[0-9]{1,2})?)\s*(?:\b(?:inr|aed|usd|eur|gbp|sar|qar|omr|bhd|kwd|rupees?)\b|rs\.?|\u20b9|â‚¹)/gi,
   },
   {
     name: 'amount after completed action',
@@ -112,6 +119,14 @@ const AMOUNT_PATTERNS: { name: string; regex: RegExp }[] = [
 ];
 
 const MERCHANT_PATTERNS: { name: string; regex: RegExp }[] = [
+  { name: 'cash withdrawal label', regex: /\b((?:atm\s+)?cash withdrawal)\b/i },
+  { name: 'cheque withdrawal label', regex: /\b(withdrawal by cheque)\b/i },
+  { name: 'cheque deposit label', regex: /\b((?:cheque|chq)\s+(?:cleared|deposit|deposited))\b/i },
+  {
+    name: 'trx approved merchant',
+    regex:
+      /\btrx\.\s+of\s+(?:(?:\b[a-z]{3}\b|rs\.?|\u20b9|â‚¹)\s*)?[0-9][0-9,]*(?:\.[0-9]{1,2})?\s+on\s+your\s+(?:card\b[^.]*?|a\/c\b[^.]*?|account\b[^.]*?)\s+at\s+([a-z0-9][a-z0-9 &.'/-]{2,80}?)(?=(?:\s+in\b|,\s*(?:uae|united [a-z ]+|abu dhabi|dubai|shj|auh|united states)\b|\s+is\s+approved\b|\.?\s*avl\b|\.?\s*trx date\b|$))/i,
+  },
   { name: 'to merchant via method', regex: /\bto\s+([a-z0-9][a-z0-9 &.'/-]{2,80}?)\s+(?:via|through|using)\s+(?:upi|imps|neft|rtgs|card|wallet)\b/i },
   { name: 'transfer to', regex: /\b(?:trf|transfer|transferred)\s+to\s+([a-z0-9][a-z0-9 &.'/-]{2,80}?)(?=\s+(?:ref|refno|rrn|utr|if not|on date)|$)/i },
   { name: 'upi slash merchant', regex: /\bupi\/p2[am]\/(?:[a-z0-9/-]{6,}|\[(?:number|ref)\])\/([a-z0-9][a-z0-9 &.'-]{2,80}?)(?=\s+(?:not you\?|sms blockupi\b|axis bank\b)|$)/i },
@@ -190,6 +205,7 @@ const detectDirection = (text: string): DirectionMatch => {
     [/\bcredited\b/i, 'credited'],
     [/\breceived\b/i, 'received'],
     [/\bdeposited\b/i, 'deposited'],
+    [/\b(?:cheque|chq)\b.+\bcleared\b/i, 'cheque cleared'],
     [/\bsalary\b/i, 'salary'],
     [/\brefund\b/i, 'refund'],
     [/\bcashback\b/i, 'cashback'],
@@ -202,8 +218,10 @@ const detectDirection = (text: string): DirectionMatch => {
     [/\btransferred\b/i, 'transferred'],
     [/\bwithdrawn\b/i, 'withdrawn'],
     [/\bwithdrawal\b/i, 'withdrawal'],
+    [/\bwithdrawal by cheque\b/i, 'withdrawal by cheque'],
     [/\bdebit\b/i, 'debit'],
     [/\bpurchase\b/i, 'purchase'],
+    [/\btrx\.\s+of\b/i, 'trx. of'],
     [/\bcharged\b/i, 'charged'],
     [/\bsuccessful\b/i, 'successful'],
     [/\bcompleted\b/i, 'completed'],
@@ -313,6 +331,8 @@ const cleanMerchantLabel = (value: string) => {
     .replace(/\b[a-z0-9._%+-]+@[a-z0-9.-]+\b/gi, '')
     .replace(/\b(?:upi|txn|transaction|ref|rrn|utr|order|id|no)\b\s*[:#-]?\s*[a-z0-9/-]+.*$/i, '')
     .replace(/\b(?:on|via|using|approved|has been|was|is|as|for)\b.*$/i, '')
+    .replace(/\bavl\.?\s+(?:card\s+)?bal(?:ance)?\b.*$/i, '')
+    .replace(/\btrx\s+date\b.*$/i, '')
     .replace(/\s+from\s+(?:kotak|hdfc|icici|axis|sbi|bank)\b.*$/i, '')
     .replace(/\b(?:a\/c|acct|account|card|ending|xx|x{2,})\b.*$/i, '')
     .trim()
@@ -348,12 +368,16 @@ const detectPaymentMethod = (text: string, input: CaptureSignalInput): PaymentMe
 
   const matched = PAYMENT_KEYWORDS.find((method) => method.terms.some((term) => term.test(combined)));
 
-  return matched ? { id: matched.id, label: matched.label } : { id: 'bank', label: 'bank fallback' };
+  if (matched) return { id: matched.id, label: matched.label };
+  if (hasKnownIndianBankSignal(combined)) return { id: 'bank', label: 'known bank' };
+
+  return { id: 'bank', label: 'bank fallback' };
 };
 
 const extractTransactionReference = (text: string) => {
   const match =
     text.match(/\b(?:upi\s*)?(?:ref(?:erence)?(?:\s*no)?|refno|rrn|utr|transaction id|txn id|order id|imps(?:\s*ref)?)\s*(?:no\.?|number|id)?\s*[:#-]?\s*([a-z0-9/-]{6,})/i) ??
+    text.match(/\b(?:cheque|chq)\s*no\.?\s*[:#-]?\s*([a-z0-9/-]{4,})/i) ??
     text.match(/\bupi\/p2[am]\/([a-z0-9/-]{6,})\//i);
   return match?.[1]?.toLowerCase();
 };

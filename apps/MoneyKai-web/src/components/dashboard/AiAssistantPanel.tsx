@@ -18,7 +18,7 @@ export const AiAssistantPanel: React.FC = () => {
   const { settings } = useBudgetStore();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
-  const { send, loading, error, partialMessage } = useAiStreamingChat();
+  const { send, cancel, loading, error, partialMessage, aborted } = useAiStreamingChat();
 
   const context = useMemo(
     () => ({
@@ -169,8 +169,8 @@ export const AiAssistantPanel: React.FC = () => {
             Answers are advisory and do not change records automatically.
           </Text>
           <TouchableOpacity
-            onPress={submit}
-            disabled={loading || !draft.trim()}
+            onPress={loading ? cancel : submit}
+            disabled={!loading && !draft.trim()}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -178,22 +178,22 @@ export const AiAssistantPanel: React.FC = () => {
               borderRadius: BorderRadius.full,
               paddingHorizontal: Spacing.md,
               paddingVertical: 10,
-              backgroundColor: loading || !draft.trim() ? colors.borderLight : colors.primary,
+              backgroundColor: loading ? colors.accent : !draft.trim() ? colors.borderLight : colors.primary,
             }}
           >
             <MaterialCommunityIcons
-              name={loading ? 'progress-clock' : 'send-outline'}
+              name={loading ? 'stop-circle-outline' : 'send-outline'}
               size={16}
-              color={loading || !draft.trim() ? colors.textSecondary : colors.textInverse}
+              color={loading ? colors.textInverse : !draft.trim() ? colors.textSecondary : colors.textInverse}
             />
             <Text
               style={{
                 fontSize: Typography.fontSize.xs,
                 fontFamily: Typography.fontFamily.semiBold,
-                color: loading || !draft.trim() ? colors.textSecondary : colors.textInverse,
+                color: loading ? colors.textInverse : !draft.trim() ? colors.textSecondary : colors.textInverse,
               }}
             >
-              {loading ? 'Streaming...' : 'Ask'}
+              {loading ? 'Stop' : 'Ask'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -202,6 +202,10 @@ export const AiAssistantPanel: React.FC = () => {
       {error ? (
         <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
           {error}
+        </Text>
+      ) : aborted ? (
+        <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+          Streaming stopped. You can revise the question or ask again.
         </Text>
       ) : null}
     </Card>

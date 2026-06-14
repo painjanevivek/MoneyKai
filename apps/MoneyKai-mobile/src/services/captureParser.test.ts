@@ -191,7 +191,7 @@ describe('real bank SMS variants', () => {
     expect(parsed.amount).toBeUndefined();
   });
 
-  it('ignores cheque withdrawal SMS instead of drafting a transaction', () => {
+  it('parses completed cheque withdrawal SMS as a bank transaction', () => {
     const parsed = parseCapturedSignal({
       source: 'sms',
       sender: 'JK-CBSSBI-S',
@@ -199,8 +199,50 @@ describe('real bank SMS variants', () => {
       receivedAt: '2026-05-16T10:00:00.000Z',
     });
 
+    expect(parsed.parseStatus).toBe('draft');
+    expect(parsed.type).toBe('expense');
+    expect(parsed.amount).toBeCloseTo(72466.72);
+    expect(parsed.paymentMethod).toBe('bank');
+    expect(parsed.merchantLabel).toBe('withdrawal by Cheque');
+  });
+
+  it('ignores pending cheque clearing messages until the bank confirms clearing', () => {
+    const parsed = parseCapturedSignal({
+      source: 'sms',
+      sender: 'ADIB',
+      body: 'Dear Customer, Chq No. 047568 for INR 3500.00 received for a/c ****0535 and sent for clearing. We will inform you once the Chq is cleared. Thank you',
+      receivedAt: '2022-05-20T08:07:48.000Z',
+    });
+
     expect(parsed.parseStatus).toBe('ignore');
-    expect(parsed.ignoreReason?.toLowerCase()).toContain('cheque');
+    expect(parsed.ignoreReason?.toLowerCase()).toContain('pending cheque');
+  });
+
+  it('parses cleared cheque deposits as bank income', () => {
+    const parsed = parseCapturedSignal({
+      source: 'sms',
+      sender: 'ADIB',
+      body: 'Dear Customer, Chq No.047568 has been cleared. INR. 3500.00 deposited to a/c. ****0535',
+      receivedAt: '2022-05-21T08:07:48.000Z',
+    });
+
+    expect(parsed.parseStatus).toBe('review');
+    expect(parsed.type).toBe('income');
+    expect(parsed.amount).toBeCloseTo(3500);
+    expect(parsed.paymentMethod).toBe('bank');
+    expect(parsed.transactionReference).toBe('047568');
+  });
+
+  it('ignores suspicious KYC or blocked-account link messages with amounts', () => {
+    const parsed = parseCapturedSignal({
+      source: 'sms',
+      sender: 'VM-HDFCBK',
+      body: 'Urgent: HDFC Bank KYC blocked. Verify account at https://bit.ly/bank-now to release Rs 5000 reward points before expiry.',
+      receivedAt: '2026-06-05T10:00:00.000Z',
+    });
+
+    expect(parsed.parseStatus).toBe('ignore');
+    expect(parsed.ignoreReason?.toLowerCase()).toContain('scam');
   });
 
   it('ignores GST and tax messages instead of drafting a transaction', () => {
@@ -226,6 +268,19 @@ describe('real bank SMS variants', () => {
     expect(['draft', 'review']).toContain(parsed.parseStatus);
     expect(parsed.type).toBe('expense');
     expect(parsed.amount).toBeCloseTo(23000);
+  });
+
+  it('reads approved card transaction dates from ADIB-style SMS messages', () => {
+    const parsed = parseCapturedSignal({
+      source: 'sms',
+      sender: 'ADIB',
+      body: 'Trx. of AED45.00 on your card ending *510 at GLOBAL VILLAGE D, UAE is Approved. Avl. card bal is 1955.00. Trx Date: 28/01/23 18:54',
+      receivedAt: '2023-01-28T18:54:00.000Z',
+    });
+
+    expect(parsed.parseStatus).toBe('draft');
+    expect(parsed.transactionDate).toBe('2023-01-28');
+    expect(parsed.explanation.matchedTransactionDatePattern).toContain('dd/mm/yy');
   });
 });
 

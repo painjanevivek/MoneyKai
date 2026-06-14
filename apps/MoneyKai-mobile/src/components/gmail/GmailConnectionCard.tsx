@@ -39,11 +39,10 @@ export const GmailConnectionCard: React.FC = () => {
   const attachmentDownloadsAccepted = Boolean(consent.attachmentDownloadAcceptedAt);
   const isConnected = connection?.status === 'connected';
 
-  const refreshStatus = React.useCallback(async () => {
+  const hydrateStatus = React.useCallback(async () => {
     if (!enabled) {
       return;
     }
-    setBusy('refresh');
     try {
       const nextStatus = await gmailSyncApi.getStatus();
       setStatus(nextStatus);
@@ -51,16 +50,23 @@ export const GmailConnectionCard: React.FC = () => {
       setEmails(nextEmails);
     } catch (error) {
       Alert.alert('Gmail status failed', error instanceof Error ? error.message : 'Could not refresh Gmail status.');
-    } finally {
-      setBusy(null);
     }
   }, [enabled, setEmails, setStatus]);
 
+  const refreshStatus = React.useCallback(async () => {
+    setBusy('refresh');
+    try {
+      await hydrateStatus();
+    } finally {
+      setBusy(null);
+    }
+  }, [hydrateStatus]);
+
   React.useEffect(() => {
     if (enabled && metadataAccepted) {
-      void refreshStatus();
+      void hydrateStatus();
     }
-  }, [enabled, metadataAccepted, refreshStatus]);
+  }, [enabled, hydrateStatus, metadataAccepted]);
 
   const toggleCategory = (category: FinancialEmailCategory, selected: boolean) => {
     const next = selected
@@ -119,7 +125,7 @@ export const GmailConnectionCard: React.FC = () => {
       });
       setLastSyncSummary(summary);
       setEmails(summary.items);
-      await refreshStatus();
+      await hydrateStatus();
       Alert.alert('Gmail sync complete', `${summary.financialEmailCount} financial emails need review.`);
     } catch (error) {
       Alert.alert('Gmail sync failed', error instanceof Error ? error.message : 'Could not sync Gmail metadata.');

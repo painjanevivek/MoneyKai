@@ -20,6 +20,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: 'view-dashboard-outline' },
   { href: '/transactions', label: 'Transactions', icon: 'swap-horizontal' },
+  { href: '/ai-review', label: 'AI Review', icon: 'receipt-text-outline' },
   { href: '/budgets', label: 'Budgets', icon: 'wallet-outline' },
   { href: '/goals', label: 'Goals', icon: 'target' },
   { href: '/reports', label: 'Reports', icon: 'chart-bar' },
@@ -31,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
 const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
   { href: '/', title: 'Dashboard', subtitle: 'A clear overview of your money' },
   { href: '/transactions', title: 'Transactions', subtitle: 'Track income, expenses, and history' },
+  { href: '/ai-review', title: 'AI Review', subtitle: 'Review receipt and image analysis before using it' },
   { href: '/budgets', title: 'Budgets', subtitle: 'Review monthly limits and budget health' },
   { href: '/goals', title: 'Goals', subtitle: 'Stay focused on savings progress' },
   { href: '/reports', title: 'Reports', subtitle: 'Spot patterns in your spending' },

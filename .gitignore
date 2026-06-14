@@ -65,6 +65,12 @@ apps/*/artifacts/**
 !apps/*/artifacts/*/
 !apps/*/artifacts/*/.gitkeep
 
+# local build/cache scratch
+.gradle-codex-build/
+.gradle-codex-isolated/
+.gradle-project-cache/
+apps/*/credentials/
+
 # editors
 .idea/
 

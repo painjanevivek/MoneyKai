@@ -57,14 +57,32 @@ Required before production SMS permission reconsideration:
 
 | Gate | Owner | Status | Evidence |
 | --- | --- | --- | --- |
-| Production AAB manifest has no restricted SMS permission | Engineering | Pending | |
-| Real-device QA matrix complete | QA | Pending | `docs/sms-capture-real-device-qa.md` |
+| Production APK manifest has no restricted SMS permission | Engineering | Passed for local ignored APK artifact | `aapt dump permissions apps/MoneyKai-mobile/android/app/build/outputs/apk/release/app-release.apk` reported no `READ_SMS`, `RECEIVE_SMS`, `SEND_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH`, or `WRITE_SMS` |
+| Production AAB manifest has no restricted SMS permission | Engineering | Pending | Local `apkanalyzer`/`aapt` could not decode the AAB manifest directly; verify with bundletool, EAS artifact inspection, or Play Console before upload |
+| Research APK declares restricted SMS permission only for research use | Engineering | Passed for installed device build | Fresh local debug research APK `com.moneykai.mobile` `versionCode=1`, `versionName=1.0.0` requested `READ_SMS` and `RECEIVE_SMS`, and both were granted on the physical Android 16 device; treat as internal research-only evidence, not production release evidence |
+| Real-device QA matrix complete | QA | In progress | `docs/sms-capture-real-device-qa.md` has one Android 16 source-matched debug run; range controls and native discovery are verified, while approval/unselect/resume/retry matrix completion remains pending |
 | Privacy policy reviewed for SMS and AI handling | Privacy/legal | Pending | |
 | Play Console SMS declaration drafted, if production SMS is pursued | Release owner | Pending | |
 | Data Safety form reviewed for SMS-derived data | Release owner | Pending | |
 | Backend logs reviewed for raw SMS exclusion | Engineering | Pending | |
-| Diagnostics and backup raw SMS exclusion verified | Engineering | Pending | |
+| Diagnostics and backup raw SMS exclusion verified | Engineering | Partially passed | Automated mobile capture suite passed, including diagnostics and backup privacy tests; formal production logging review remains pending |
 | AI provider data handling reviewed, if AI Assist is enabled | Privacy/legal | Pending | |
+
+## Artifact Inspection - 2026-06-13
+
+The generated `android/` directory is ignored by Git, so local build outputs are not treated as source of truth. Still, the local release APK was inspected as a concrete release-safety sample.
+
+Observed local APK permissions:
+
+- No restricted SMS permissions were present in the release APK.
+- Present non-SMS permissions included contacts, notifications, network, biometric, foreground service, exact alarm, and storage permissions with Android SDK caps where applicable.
+- The installed physical-device debug build was intentionally different from the local release APK: it was an internal/research SMS-enabled build with `READ_SMS` and `RECEIVE_SMS` granted.
+
+Known limitation:
+
+- The local manifest-merger text report still contains restricted SMS permission lines, but the actual APK manifest inspected with `aapt` does not. Treat the text report as stale or not representative until a fresh production build is generated and inspected.
+- The AAB remains the production upload artifact and still needs final manifest inspection with a tool that can decode Android App Bundle manifests.
+- The installed research build should not be used as Play policy evidence except to validate internal SMS behavior, permission gating, redaction, and source-matched QA behavior.
 
 ## Release Rule
 

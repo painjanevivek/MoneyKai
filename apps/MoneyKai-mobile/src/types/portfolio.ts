@@ -148,6 +148,19 @@ export interface ProviderSyncResponse {
 export interface ZerodhaConnectStartResponse {
   enabled: boolean;
   authorizationUrl?: string | null;
+  state?: string | null;
+  expiresAt?: string | null;
+  message: string;
+}
+
+export interface ZerodhaConnectCallbackRequest {
+  requestToken: string;
+  state: string;
+}
+
+export interface ZerodhaConnectCallbackResponse {
+  enabled: boolean;
+  account?: PortfolioAccount | null;
   message: string;
 }
 
@@ -157,5 +170,6 @@ export interface AccountAggregatorExplorationStatus {
   buildVsPartnerDecision: 'partner_required' | 'build_after_fiu_onboarding';
   partnerName?: string | null;
   partnerUrl?: string | null;
+  decisionLockedAt?: string | null;
   checklist: string[];
 }

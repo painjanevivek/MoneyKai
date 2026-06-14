@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useState } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 
 import { aiClient } from '@/services/aiClient';
 import type {
@@ -234,6 +234,7 @@ interface StreamingChatState {
   requestId: string | null;
   model: string | null;
   provider: string | null;
+  aborted: boolean;
 }
 
 const idleStreamingState = (): StreamingChatState => ({
@@ -244,12 +245,17 @@ const idleStreamingState = (): StreamingChatState => ({
   requestId: null,
   model: null,
   provider: null,
+  aborted: false,
 });
 
 export function useAiStreamingChat() {
   const [state, setState] = useState<StreamingChatState>(idleStreamingState);
+  const activeControllerRef = useRef<AbortController | null>(null);
 
   const send = async (payload: AiChatRequest) => {
+    activeControllerRef.current?.abort();
+    const controller = new AbortController();
+    activeControllerRef.current = controller;
     startTransition(() => {
       setState({
         data: null,
@@ -259,11 +265,12 @@ export function useAiStreamingChat() {
         requestId: null,
         model: null,
         provider: null,
+        aborted: false,
       });
     });
 
     try {
-      const completed = await aiClient.streamChat(payload, (event: AiChatStreamEvent) => {
+      const completed = await aiClient.streamChat(payload, controller.signal, (event: AiChatStreamEvent) => {
         startTransition(() => {
           setState((current) => applyStreamingEvent(current, event));
         });
@@ -279,19 +286,40 @@ export function useAiStreamingChat() {
           requestId: response.requestId,
           model: response.model,
           provider: response.provider,
+          aborted: false,
         });
       });
       return response;
     } catch (error) {
+      if (controller.signal.aborted && activeControllerRef.current === controller) {
+        startTransition(() => {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            aborted: true,
+          }));
+        });
+        throw error;
+      }
       const message = toErrorMessage(error);
       startTransition(() => {
-        setState((current) => ({ ...current, error: message, loading: false }));
+        setState((current) => ({ ...current, error: message, loading: false, aborted: false }));
       });
       throw error;
+    } finally {
+      if (activeControllerRef.current === controller) {
+        activeControllerRef.current = null;
+      }
     }
   };
 
+  const cancel = () => {
+    activeControllerRef.current?.abort();
+  };
+
   const reset = () => {
+    activeControllerRef.current?.abort();
+    activeControllerRef.current = null;
     startTransition(() => {
       setState(idleStreamingState());
     });
@@ -300,6 +328,7 @@ export function useAiStreamingChat() {
   return {
     ...state,
     send,
+    cancel,
     reset,
   };
 }
@@ -343,6 +372,7 @@ function applyStreamingEvent(state: StreamingChatState, event: AiChatStreamEvent
       requestId: event.requestId,
       model: event.model ?? state.model,
       provider: event.provider ?? state.provider,
+      aborted: false,
     };
   }
 
@@ -353,6 +383,7 @@ function applyStreamingEvent(state: StreamingChatState, event: AiChatStreamEvent
       model: event.model ?? state.model,
       provider: event.provider ?? state.provider,
       partialMessage: `${state.partialMessage}${event.delta}`,
+      aborted: false,
     };
   }
 
@@ -366,6 +397,7 @@ function applyStreamingEvent(state: StreamingChatState, event: AiChatStreamEvent
       requestId: response.requestId,
       model: response.model,
       provider: response.provider,
+      aborted: false,
     };
   }
 
@@ -374,6 +406,7 @@ function applyStreamingEvent(state: StreamingChatState, event: AiChatStreamEvent
     loading: false,
     error: event.error.message,
     requestId: event.requestId ?? state.requestId,
+    aborted: false,
   };
 }
 

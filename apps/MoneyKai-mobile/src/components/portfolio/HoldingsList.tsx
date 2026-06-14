@@ -11,17 +11,24 @@ import { formatPercent, getHoldingPnl, getHoldingPnlPercent } from '@/utils/port
 interface HoldingsListProps {
   holdings: PortfolioHolding[];
   currencySymbol: string;
+  title?: string;
   busyHoldingId?: string;
   onDelete?: (holding: PortfolioHolding) => void;
 }
 
-export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currencySymbol, busyHoldingId, onDelete }) => {
+export const HoldingsList: React.FC<HoldingsListProps> = ({
+  holdings,
+  currencySymbol,
+  title = 'Top holdings',
+  busyHoldingId,
+  onDelete,
+}) => {
   const { colors } = useTheme();
 
   return (
     <Card style={{ gap: Spacing.md }}>
       <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-        Top holdings
+        {title}
       </Text>
       {holdings.length === 0 ? (
         <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>

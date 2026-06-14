@@ -197,6 +197,10 @@ export interface AiSmsParseCandidate {
   currency: 'INR';
   merchantOrCounterparty?: string;
   paymentMethod?: string;
+  instrument?: 'upi' | 'debit_card' | 'credit_card' | 'bank_transfer' | 'cheque' | 'wallet' | 'cash' | 'unknown';
+  bankRail?: 'imps' | 'neft' | 'rtgs' | 'upi' | 'card' | 'cheque' | 'wallet' | 'unknown';
+  cardDirection?: 'debit' | 'credit' | 'unknown';
+  bankName?: string;
   categorySuggestion?: string;
   transactionReferencePresent: boolean;
   confidence: number;

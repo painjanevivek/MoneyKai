@@ -7,7 +7,7 @@ import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { PortfolioAssetType, PortfolioHoldingDraft } from '@/types/portfolio';
 
-const ASSET_OPTIONS: Array<{ value: PortfolioAssetType; label: string }> = [
+const ASSET_OPTIONS: { value: PortfolioAssetType; label: string }[] = [
   { value: 'equity', label: 'Equity' },
   { value: 'mutual_fund', label: 'Fund' },
   { value: 'fd', label: 'FD' },
@@ -40,17 +40,6 @@ export const ManualHoldingSheet: React.FC<ManualHoldingSheetProps> = ({
   const [quantity, setQuantity] = React.useState('1');
   const [investedValue, setInvestedValue] = React.useState('');
   const [currentValue, setCurrentValue] = React.useState('');
-
-  React.useEffect(() => {
-    if (!visible) {
-      setAssetType('equity');
-      setName('');
-      setSymbol('');
-      setQuantity('1');
-      setInvestedValue('');
-      setCurrentValue('');
-    }
-  }, [visible]);
 
   const handleSubmit = async () => {
     const parsedQuantity = Number(quantity || '1');

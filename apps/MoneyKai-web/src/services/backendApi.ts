@@ -87,6 +87,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 async function streamRequest<TCompleted extends AiChatStreamCompletedEvent>(
   path: string,
   init: RequestInit,
+  signal?: AbortSignal,
   onEvent?: (event: AiChatStreamEvent) => void,
 ): Promise<TCompleted> {
   if (!isBackendConfigured()) {
@@ -102,6 +103,7 @@ async function streamRequest<TCompleted extends AiChatStreamCompletedEvent>(
   const response = await fetch(`${backendBaseUrl}${path}`, {
     ...init,
     headers,
+    signal,
   });
 
   if (!response.ok) {
@@ -146,21 +148,25 @@ async function streamRequest<TCompleted extends AiChatStreamCompletedEvent>(
     }
   };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
 
-    let boundaryIndex = buffer.indexOf('\n\n');
-    while (boundaryIndex >= 0) {
-      const frame = buffer.slice(0, boundaryIndex);
-      buffer = buffer.slice(boundaryIndex + 2);
-      flushFrame(frame);
-      boundaryIndex = buffer.indexOf('\n\n');
-    }
+      let boundaryIndex = buffer.indexOf('\n\n');
+      while (boundaryIndex >= 0) {
+        const frame = buffer.slice(0, boundaryIndex);
+        buffer = buffer.slice(boundaryIndex + 2);
+        flushFrame(frame);
+        boundaryIndex = buffer.indexOf('\n\n');
+      }
 
-    if (done) {
-      break;
+      if (done) {
+        break;
+      }
     }
+  } finally {
+    reader.releaseLock();
   }
 
   if (buffer.trim()) {
@@ -216,13 +222,18 @@ export const backendApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-  streamAiChat: async (payload: AiChatRequest, onEvent?: (event: AiChatStreamEvent) => void) =>
+  streamAiChat: async (
+    payload: AiChatRequest,
+    signal?: AbortSignal,
+    onEvent?: (event: AiChatStreamEvent) => void,
+  ) =>
     streamRequest<AiChatStreamCompletedEvent>(
       '/v1/ai/chat/stream',
       {
         method: 'POST',
         body: JSON.stringify(payload),
       },
+      signal,
       onEvent
     ),
   uploadAiAttachment: async (formData: FormData) =>

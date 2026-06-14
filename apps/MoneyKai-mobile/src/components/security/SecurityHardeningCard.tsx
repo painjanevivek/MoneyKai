@@ -28,23 +28,52 @@ export const SecurityHardeningCard: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = React.useState('');
 
-  const refreshStatus = React.useCallback(async () => {
+  const hydrateStatus = React.useCallback(async () => {
     if (!backendConfigured) {
       return;
     }
-    setBusy('status');
     try {
       setStatus(await securityApi.getHardeningStatus());
     } catch (error) {
       Alert.alert('Security status unavailable', error instanceof Error ? error.message : 'Could not load hardening status.');
-    } finally {
-      setBusy(null);
     }
   }, [backendConfigured]);
 
+  const refreshStatus = React.useCallback(async () => {
+    setBusy('status');
+    try {
+      await hydrateStatus();
+    } finally {
+      setBusy(null);
+    }
+  }, [hydrateStatus]);
+
   React.useEffect(() => {
-    void refreshStatus();
-  }, [refreshStatus]);
+    if (!backendConfigured) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadInitialStatus() {
+      try {
+        const nextStatus = await securityApi.getHardeningStatus();
+        if (!cancelled) {
+          setStatus(nextStatus);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          Alert.alert('Security status unavailable', error instanceof Error ? error.message : 'Could not load hardening status.');
+        }
+      }
+    }
+
+    void loadInitialStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [backendConfigured]);
 
   const loadAuditEvents = async () => {
     setBusy('audit');
@@ -67,7 +96,7 @@ export const SecurityHardeningCard: React.FC = () => {
       const response = await securityApi.deleteFinancialData();
       setShowDeleteConfirm(false);
       setDeleteConfirmText('');
-      await refreshStatus();
+      await hydrateStatus();
       Alert.alert('Financial data deleted', `${response.collectionsCleared.length} financial collections were cleared.`);
     } catch (error) {
       Alert.alert('Delete failed', error instanceof Error ? error.message : 'Could not delete financial data.');

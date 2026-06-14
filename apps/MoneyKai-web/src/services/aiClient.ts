@@ -47,10 +47,11 @@ export const aiClient = {
 
   streamChat: async (
     payload: AiChatRequest,
+    signal?: AbortSignal,
     onEvent?: (event: AiChatStreamEvent) => void,
   ): Promise<AiChatStreamCompletedEvent> => {
     assertAiBackendConfigured();
-    return backendApi.streamAiChat(payload, onEvent);
+    return backendApi.streamAiChat(payload, signal, onEvent);
   },
 
   uploadAttachment: async (formData: FormData): Promise<AiAttachmentUploadResponse> => {
