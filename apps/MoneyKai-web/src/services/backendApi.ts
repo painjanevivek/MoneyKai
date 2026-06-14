@@ -10,9 +10,12 @@ import type {
   AiBudgetCoachResponse,
   AiChatRequest,
   AiChatResponse,
+  AiChatStreamCompletedEvent,
+  AiChatStreamEvent,
   AiDocumentSummarizeRequest,
   AiDocumentSummaryResponse,
   AiModelStatusResponse,
+  AiOpsStatusResponse,
   AiProviderStatus,
   AiTransactionInsightsRequest,
   AiTransactionInsightsResponse,
@@ -81,6 +84,125 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function streamRequest<TCompleted extends AiChatStreamCompletedEvent>(
+  path: string,
+  init: RequestInit,
+  onEvent?: (event: AiChatStreamEvent) => void,
+): Promise<TCompleted> {
+  if (!isBackendConfigured()) {
+    throw new Error('Backend API is not configured.');
+  }
+
+  const token = await getAuthToken();
+  const headers = new Headers(init.headers);
+  headers.set('Authorization', `Bearer ${token}`);
+  headers.set('Content-Type', 'application/json');
+  headers.set('Accept', 'text/event-stream');
+
+  const response = await fetch(`${backendBaseUrl}${path}`, {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    let message = `Backend request failed with ${response.status}.`;
+    try {
+      const payload = await response.json();
+      const detail = payload?.detail;
+      message =
+        (typeof detail === 'string' ? detail : detail?.message) ||
+        payload?.message ||
+        payload?.error?.message ||
+        message;
+    } catch {
+      const text = await response.text();
+      if (text) {
+        message = text;
+      }
+    }
+    throw new BackendApiError(message, response.status);
+  }
+
+  if (!response.body) {
+    throw new Error('Streaming is not available in this browser session.');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let completedEvent: TCompleted | null = null;
+
+  const flushFrame = (frame: string) => {
+    const parsed = parseSseFrame(frame);
+    if (!parsed) {
+      return;
+    }
+    onEvent?.(parsed);
+    if (parsed.type === 'error') {
+      throw new BackendApiError(parsed.error.message, 500);
+    }
+    if (parsed.type === 'completed') {
+      completedEvent = parsed as TCompleted;
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+
+    let boundaryIndex = buffer.indexOf('\n\n');
+    while (boundaryIndex >= 0) {
+      const frame = buffer.slice(0, boundaryIndex);
+      buffer = buffer.slice(boundaryIndex + 2);
+      flushFrame(frame);
+      boundaryIndex = buffer.indexOf('\n\n');
+    }
+
+    if (done) {
+      break;
+    }
+  }
+
+  if (buffer.trim()) {
+    flushFrame(buffer.trim());
+  }
+
+  if (!completedEvent) {
+    throw new Error('Streaming response ended before completion.');
+  }
+
+  return completedEvent;
+}
+
+function parseSseFrame(frame: string): AiChatStreamEvent | null {
+  const lines = frame.split(/\r?\n/);
+  let eventName = 'message';
+  const dataLines: string[] = [];
+
+  for (const line of lines) {
+    if (!line || line.startsWith(':')) {
+      continue;
+    }
+    if (line.startsWith('event:')) {
+      eventName = line.slice(6).trim();
+      continue;
+    }
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice(5).trimStart());
+    }
+  }
+
+  if (!dataLines.length) {
+    return null;
+  }
+
+  const payload = JSON.parse(dataLines.join('\n')) as AiChatStreamEvent;
+  if (eventName !== 'message' && payload.type !== eventName) {
+    payload.type = eventName as AiChatStreamEvent['type'];
+  }
+  return payload;
+}
+
 export const backendApi = {
   getBootstrap: async () => request<BackendSnapshot>('/v1/bootstrap'),
   createBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups', { method: 'POST' }),
@@ -88,11 +210,21 @@ export const backendApi = {
   restoreLatestBackup: async () => request<{ item: BackendSnapshot }>('/v1/backups/restore-latest', { method: 'POST' }),
   getAiProviderStatus: async () => request<AiProviderStatus>('/v1/ai/providers/status'),
   getAiModelStatus: async () => request<AiModelStatusResponse>('/v1/ai/models/status'),
+  getAiOpsStatus: async () => request<AiOpsStatusResponse>('/v1/ai/ops/status'),
   chatWithAi: async (payload: AiChatRequest) =>
     request<AiChatResponse>('/v1/ai/chat', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  streamAiChat: async (payload: AiChatRequest, onEvent?: (event: AiChatStreamEvent) => void) =>
+    streamRequest<AiChatStreamCompletedEvent>(
+      '/v1/ai/chat/stream',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      onEvent
+    ),
   uploadAiAttachment: async (formData: FormData) =>
     request<AiAttachmentUploadResponse>('/v1/ai/attachments/upload', {
       method: 'POST',

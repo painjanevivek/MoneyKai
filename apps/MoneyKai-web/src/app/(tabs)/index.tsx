@@ -19,6 +19,7 @@ import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { QuickNotes } from '@/components/dashboard/QuickNotes';
 import { NoteModal } from '@/components/dashboard/NoteModal';
 import { AIInsights } from '@/components/dashboard/AIInsights';
+import { AiAssistantPanel } from '@/components/dashboard/AiAssistantPanel';
 import { EmergencyWidget } from '@/components/dashboard/EmergencyWidget';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
@@ -267,6 +268,8 @@ export default function DashboardScreen() {
           </Card>
 
           <AIInsights />
+
+          <AiAssistantPanel />
 
           <QuickNotes
             onViewAll={() => router.push('/notes' as any)}

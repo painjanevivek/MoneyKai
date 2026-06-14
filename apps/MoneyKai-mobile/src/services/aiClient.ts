@@ -3,12 +3,17 @@ import type {
   AiAttachmentAnalyzeRequest,
   AiAttachmentAnalyzeResponse,
   AiAttachmentUploadResponse,
+  AiBudgetCoachRequest,
+  AiBudgetCoachResponse,
   AiChatRequest,
   AiChatResponse,
   AiDocumentSummarizeRequest,
   AiDocumentSummaryResponse,
   AiModelStatusResponse,
+  AiOpsStatusResponse,
   AiProviderStatus,
+  AiTransactionInsightsRequest,
+  AiTransactionInsightsResponse,
 } from '@/features/ai/types';
 
 function assertAiBackendConfigured(): void {
@@ -26,6 +31,11 @@ export const aiClient = {
   getModelStatus: async (): Promise<AiModelStatusResponse> => {
     assertAiBackendConfigured();
     return backendApi.getAiModelStatus();
+  },
+
+  getOpsStatus: async (): Promise<AiOpsStatusResponse> => {
+    assertAiBackendConfigured();
+    return backendApi.getAiOpsStatus();
   },
 
   chat: async (payload: AiChatRequest): Promise<AiChatResponse> => {
@@ -46,5 +56,15 @@ export const aiClient = {
   summarizeDocument: async (payload: AiDocumentSummarizeRequest): Promise<AiDocumentSummaryResponse> => {
     assertAiBackendConfigured();
     return backendApi.summarizeAiDocument(payload);
+  },
+
+  getTransactionInsights: async (payload: AiTransactionInsightsRequest): Promise<AiTransactionInsightsResponse> => {
+    assertAiBackendConfigured();
+    return backendApi.getAiTransactionInsights(payload);
+  },
+
+  getBudgetCoach: async (payload: AiBudgetCoachRequest): Promise<AiBudgetCoachResponse> => {
+    assertAiBackendConfigured();
+    return backendApi.getAiBudgetCoach(payload);
   },
 };

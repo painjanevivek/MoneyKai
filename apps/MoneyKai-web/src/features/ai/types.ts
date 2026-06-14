@@ -36,6 +36,53 @@ export interface AiChatResponse {
   };
 }
 
+export interface AiChatStreamErrorPayload {
+  code: string;
+  message: string;
+  requestId?: string | null;
+}
+
+export interface AiChatStreamMetaEvent {
+  type: 'meta';
+  requestId: string;
+  provider?: string | null;
+  model?: string | null;
+  providerMetadata: Record<string, unknown>;
+  safety: Record<string, unknown>;
+}
+
+export interface AiChatStreamDeltaEvent {
+  type: 'delta';
+  requestId: string;
+  provider?: string | null;
+  model?: string | null;
+  delta: string;
+}
+
+export interface AiChatStreamCompletedEvent {
+  type: 'completed';
+  requestId: string;
+  provider?: string | null;
+  model?: string | null;
+  message: string;
+  finishReason?: string | null;
+  usage?: AiUsage | null;
+  providerMetadata: Record<string, unknown>;
+  safety: Record<string, unknown>;
+}
+
+export interface AiChatStreamErrorEvent {
+  type: 'error';
+  requestId?: string | null;
+  error: AiChatStreamErrorPayload;
+}
+
+export type AiChatStreamEvent =
+  | AiChatStreamMetaEvent
+  | AiChatStreamDeltaEvent
+  | AiChatStreamCompletedEvent
+  | AiChatStreamErrorEvent;
+
 export interface AiProviderStatus {
   enabled: boolean;
   provider: string;
@@ -180,6 +227,41 @@ export interface AiBudgetCoachResponse {
   source: 'ai' | 'deterministic';
   cached: boolean;
   model?: string | null;
+}
+
+export interface AiRuntimeCounters {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  quotaRejectedRequests: number;
+  activeStreamRequests: number;
+}
+
+export interface AiAttachmentCleanupStatus {
+  lastRunAt?: string | null;
+  deletedAttachments: number;
+  failedRuns: number;
+}
+
+export interface AiOpsAlert {
+  code: string;
+  severity: 'info' | 'warning' | 'critical';
+  message: string;
+}
+
+export interface AiOpsStatusResponse {
+  generatedAt: string;
+  limiterBackend: string;
+  counters: AiRuntimeCounters;
+  recentErrorCodes: Record<string, number>;
+  recentQuotaRejections: number;
+  lastErrorCode?: string | null;
+  attachmentCleanup: AiAttachmentCleanupStatus;
+  alerts: AiOpsAlert[];
+  models: AiConfiguredModelStatus[];
+  discoveryOk: boolean;
+  discoverySource: 'openrouter' | 'fallback';
+  discoveryError?: string | null;
 }
 
 export interface AiErrorPayload {

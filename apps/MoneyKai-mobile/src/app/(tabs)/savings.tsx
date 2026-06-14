@@ -10,6 +10,7 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { BudgetCoachPanel } from '@/components/budgets/BudgetCoachPanel';
 import { SavingsAnalyticsSnapshot } from '@/components/charts/SavingsAnalyticsSnapshot';
 import { getCategoryById } from '@/constants/categories';
 import { CHALLENGE_TEMPLATES } from '@/types/challenge';
@@ -81,6 +82,8 @@ export default function SavingsScreen() {
 
   const renderSavingsPredictor = () => (
     <>
+      <BudgetCoachPanel />
+
       <View
         style={{
           flexDirection: isWide ? 'row' : 'column',
@@ -571,5 +574,4 @@ export default function SavingsScreen() {
     </SafeAreaView>
   );
 }
-
 

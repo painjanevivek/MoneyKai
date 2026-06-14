@@ -7,9 +7,12 @@ import type {
   AiBudgetCoachResponse,
   AiChatRequest,
   AiChatResponse,
+  AiChatStreamCompletedEvent,
+  AiChatStreamEvent,
   AiDocumentSummarizeRequest,
   AiDocumentSummaryResponse,
   AiModelStatusResponse,
+  AiOpsStatusResponse,
   AiProviderStatus,
   AiTransactionInsightsRequest,
   AiTransactionInsightsResponse,
@@ -32,9 +35,22 @@ export const aiClient = {
     return backendApi.getAiModelStatus();
   },
 
+  getOpsStatus: async (): Promise<AiOpsStatusResponse> => {
+    assertAiBackendConfigured();
+    return backendApi.getAiOpsStatus();
+  },
+
   chat: async (payload: AiChatRequest): Promise<AiChatResponse> => {
     assertAiBackendConfigured();
     return backendApi.chatWithAi(payload);
+  },
+
+  streamChat: async (
+    payload: AiChatRequest,
+    onEvent?: (event: AiChatStreamEvent) => void,
+  ): Promise<AiChatStreamCompletedEvent> => {
+    assertAiBackendConfigured();
+    return backendApi.streamAiChat(payload, onEvent);
   },
 
   uploadAttachment: async (formData: FormData): Promise<AiAttachmentUploadResponse> => {

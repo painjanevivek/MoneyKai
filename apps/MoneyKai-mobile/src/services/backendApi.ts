@@ -9,12 +9,17 @@ import type {
   AiAttachmentAnalyzeRequest,
   AiAttachmentAnalyzeResponse,
   AiAttachmentUploadResponse,
+  AiBudgetCoachRequest,
+  AiBudgetCoachResponse,
   AiChatRequest,
   AiChatResponse,
   AiDocumentSummarizeRequest,
   AiDocumentSummaryResponse,
   AiModelStatusResponse,
+  AiOpsStatusResponse,
   AiProviderStatus,
+  AiTransactionInsightsRequest,
+  AiTransactionInsightsResponse,
 } from '@/features/ai/types';
 import type {
   FinancialDocument,
@@ -165,6 +170,7 @@ export const backendApi = {
     }),
   getAiProviderStatus: async () => request<AiProviderStatus>('/v1/ai/providers/status'),
   getAiModelStatus: async () => request<AiModelStatusResponse>('/v1/ai/models/status'),
+  getAiOpsStatus: async () => request<AiOpsStatusResponse>('/v1/ai/ops/status'),
   chatWithAi: async (payload: AiChatRequest) =>
     request<AiChatResponse>('/v1/ai/chat', {
       method: 'POST',
@@ -182,6 +188,16 @@ export const backendApi = {
     }),
   summarizeAiDocument: async (payload: AiDocumentSummarizeRequest) =>
     request<AiDocumentSummaryResponse>('/v1/ai/documents/summarize', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getAiTransactionInsights: async (payload: AiTransactionInsightsRequest) =>
+    request<AiTransactionInsightsResponse>('/v1/ai/transactions/insights', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getAiBudgetCoach: async (payload: AiBudgetCoachRequest) =>
+    request<AiBudgetCoachResponse>('/v1/ai/budgets/coach', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
