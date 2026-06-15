@@ -1,8 +1,122 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // OAuth state documents are backend-only. Firebase Admin SDK bypasses
+    // security rules, so explicit client denial protects these collections.
+    match /gmail_oauth_states/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /provider_oauth_states/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId} {
+      allow read, create, update: if isOwner(userId);
+      allow delete: if false;
+
+      // Temporary client-owned collections kept open during the backend-first
+      // persistence migration.
+      match /transactions/{document} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /notes/{document} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /savings/{document} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /badges/{document} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /notifications/{document} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /groups/{groupId} {
+        allow read, write: if isOwner(userId);
+
+        match /expenses/{expenseId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+
+      match /settings/{document} {
+        allow read, write: if isOwner(userId) && document == "app";
+      }
+
+      match /budgets/{document} {
+        allow read, write: if isOwner(userId) && document == "current";
+      }
+
+      match /backups/{document} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Backend-owned financial, provider, AI, audit, and diagnostic data.
+      match /provider_connections/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /provider_secrets/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /portfolio_holdings/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /portfolio_transactions/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /wealth_snapshots/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /reconciliation_reviews/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /audit_events/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /diagnostics/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /gmail_connections/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /financial_emails/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /financial_documents/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /pdf_password_profiles/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /parsed_statement_reviews/{document=**} {
+        allow read, write: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
     }
   }
 }

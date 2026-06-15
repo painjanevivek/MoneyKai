@@ -17,7 +17,7 @@ import {
 } from '@/features/ai/attachmentReview';
 import {
   useAiAttachmentAnalysis,
-  useAiAttachmentUpload,
+  useAiAttachmentFileUpload,
   useAiProviderStatus,
 } from '@/features/ai/hooks';
 import type { AiAttachmentAnalyzeTask } from '@/features/ai/types';
@@ -60,7 +60,7 @@ export default function AiReviewScreen() {
   const [pickerError, setPickerError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const { data: providerStatus, error: providerError, loading: loadingProviderStatus } = useAiProviderStatus();
-  const uploadState = useAiAttachmentUpload();
+  const uploadState = useAiAttachmentFileUpload();
   const analyzeState = useAiAttachmentAnalysis();
 
   const attachmentsReady = providerStatus?.enabled && providerStatus.attachmentsEnabled;
@@ -126,10 +126,7 @@ export default function AiReviewScreen() {
     }
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedAsset.file, selectedAsset.filename);
-
-      const uploaded = await uploadState.upload(formData);
+      const uploaded = await uploadState.uploadFile(selectedAsset.file);
       const response = await analyzeState.analyze({
         task,
         message: prompt.trim() || buildDefaultAttachmentPrompt(task),

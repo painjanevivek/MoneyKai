@@ -1,39 +1,62 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { Platform, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { endOfWeek, format, isWithinInterval, startOfWeek, subWeeks } from 'date-fns';
-import Svg, { Circle, Line, Polygon, Polyline, Text as SvgText } from 'react-native-svg';
+import { LineChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
-import { Typography, Spacing } from '../../constants/theme';
+import { BorderRadius, Shadows, Spacing, Typography } from '../../constants/theme';
 import { useTransactionStore } from '../../stores/useTransactionStore';
+import { formatCurrency } from '../../utils/formatCurrency';
+import type { Transaction } from '../../types/transaction';
 
 type ChartPoint = {
   value: number;
   label: string;
+  customDataPoint?: () => React.ReactNode;
+};
+
+type TrendLineChartProps = {
+  transactions?: Transaction[];
+  title?: string;
+  subtitle?: string;
 };
 
 const WEEK_START_OPTIONS = { weekStartsOn: 1 } as const;
 
-const sumForWeek = (transactions: { amount: number; transaction_date: string; type: string }[], weekStart: Date): number => {
+const sumForWeek = (transactions: Pick<Transaction, 'amount' | 'transaction_date' | 'type'>[], weekStart: Date): number => {
   const weekEnd = endOfWeek(weekStart, WEEK_START_OPTIONS);
   return transactions.reduce((sum, transaction) => {
     if (transaction.type !== 'expense') {
       return sum;
     }
+
     const date = new Date(transaction.transaction_date);
     return isWithinInterval(date, { start: weekStart, end: weekEnd }) ? sum + transaction.amount : sum;
   }, 0);
 };
 
-const makeDataPoints = (transactions: { amount: number; transaction_date: string; type: string }[], weekStarts: Date[], labels?: string[]): ChartPoint[] =>
+const makeDataPoints = (
+  transactions: Pick<Transaction, 'amount' | 'transaction_date' | 'type'>[],
+  weekStarts: Date[],
+  labels?: string[]
+): ChartPoint[] =>
   weekStarts.map((weekStart, index) => ({
     value: sumForWeek(transactions, weekStart),
     label: labels?.[index] ?? format(weekStart, 'd MMM'),
   }));
 
-export const TrendLineChart: React.FC = () => {
-  const { colors } = useTheme();
-  const transactions = useTransactionStore((s) => s.transactions);
+export const TrendLineChart: React.FC<TrendLineChartProps> = ({
+  transactions: transactionsProp,
+  title = 'Spending Trend',
+  subtitle = 'Last 5 Weeks',
+}) => {
+  const { colors, isDark } = useTheme();
+  const storeTransactions = useTransactionStore((s) => s.transactions);
+  const transactions = transactionsProp ?? storeTransactions;
+  const { width: screenWidth } = useWindowDimensions();
+  const isWeb = Platform.OS === 'web';
+  const chartWidth = Math.min(Math.max(screenWidth - 80, 260), 342);
+  const chartSpacing = Math.max(54, (chartWidth - 34) / 4);
 
   const weeklyTrend = React.useMemo(() => {
     const now = new Date();
@@ -43,55 +66,115 @@ export const TrendLineChart: React.FC = () => {
     const previousWeekStarts = Array.from({ length: 5 }, (_, index) =>
       startOfWeek(subWeeks(now, 9 - index), WEEK_START_OPTIONS)
     );
+
     const current = makeDataPoints(transactions, currentWeekStarts);
     const previous = makeDataPoints(transactions, previousWeekStarts, current.map((point) => point.label));
-    const hasData = current.some((point) => point.value > 0) || previous.some((point) => point.value > 0);
-    return { current, previous, hasData };
+    const currentTotal = current.reduce((sum, point) => sum + point.value, 0);
+    const previousTotal = previous.reduce((sum, point) => sum + point.value, 0);
+
+    return {
+      current,
+      previous,
+      currentTotal,
+      previousTotal,
+      hasData: currentTotal > 0 || previousTotal > 0,
+    };
   }, [transactions]);
 
-  const chartWidth = 300;
-  const chartHeight = 170;
-  const padding = { top: 12, right: 12, bottom: 28, left: 42 };
-  const plotWidth = chartWidth - padding.left - padding.right;
-  const plotHeight = chartHeight - padding.top - padding.bottom;
-  const maxValue = Math.max(1, ...weeklyTrend.current.map((point) => point.value), ...weeklyTrend.previous.map((point) => point.value));
+  const currentData = weeklyTrend.current.map((item) => ({
+    ...item,
+    customDataPoint: isWeb
+      ? () => (
+          <View
+            style={{
+              width: 9,
+              height: 9,
+              borderRadius: 5,
+              backgroundColor: colors.primary,
+              borderWidth: 2,
+              borderColor: isDark ? '#0D1210' : colors.card,
+            }}
+          />
+        )
+      : undefined,
+  }));
 
-  const toPoint = (point: ChartPoint, index: number) => {
-    const x = padding.left + (plotWidth / Math.max(1, weeklyTrend.current.length - 1)) * index;
-    const y = padding.top + plotHeight - (point.value / maxValue) * plotHeight;
-    return { x, y };
-  };
+  const previousData = weeklyTrend.previous.map((item) => ({
+    ...item,
+    customDataPoint: isWeb
+      ? () => (
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: colors.textTertiary,
+              borderWidth: 2,
+              borderColor: isDark ? '#0D1210' : colors.card,
+            }}
+          />
+        )
+      : undefined,
+  }));
 
-  const buildPolyline = (points: ChartPoint[]) =>
-    points.map((point, index) => {
-      const position = toPoint(point, index);
-      return `${position.x},${position.y}`;
-    }).join(' ');
-
-  const currentPolyline = buildPolyline(weeklyTrend.current);
-  const previousPolyline = buildPolyline(weeklyTrend.previous);
-  const currentArea = `${padding.left},${padding.top + plotHeight} ${currentPolyline} ${padding.left + plotWidth},${padding.top + plotHeight}`;
+  const comparison = weeklyTrend.currentTotal - weeklyTrend.previousTotal;
+  const comparisonLabel =
+    weeklyTrend.previousTotal <= 0
+      ? 'New spending pattern'
+      : comparison <= 0
+        ? `${formatCurrency(Math.abs(comparison))} lower than previous period`
+        : `${formatCurrency(comparison)} higher than previous period`;
 
   return (
-    <Card>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-          Spending Trend
-        </Text>
+    <Card
+      variant="outlined"
+      borderRadius="xl"
+      style={{
+        backgroundColor: isDark ? '#0D1210' : colors.card,
+        borderColor: isDark ? '#26302B' : colors.borderLight,
+        ...Shadows.md,
+        shadowColor: colors.shadowColor,
+      }}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.md, marginBottom: Spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: Typography.fontSize.xl,
+              lineHeight: 28,
+              fontFamily: Typography.fontFamily.display,
+              color: colors.textPrimary,
+            }}
+          >
+            {title}
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>
+            {comparisonLabel}
+          </Text>
+        </View>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={`${subtitle} spending trend`}
+          activeOpacity={0.82}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.surface,
-            borderRadius: 6,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
+            backgroundColor: isDark ? '#0A0E0C' : colors.surface,
+            borderRadius: BorderRadius.sm,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
             borderWidth: 1,
             borderColor: colors.border,
           }}
         >
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-            Last 5 Weeks
+          <Text
+            style={{
+              fontSize: Typography.fontSize.xs,
+              fontFamily: Typography.fontFamily.medium,
+              color: colors.textSecondary,
+            }}
+          >
+            {subtitle}
           </Text>
         </TouchableOpacity>
       </View>
@@ -99,66 +182,86 @@ export const TrendLineChart: React.FC = () => {
       {!weeklyTrend.hasData ? (
         <View
           style={{
-            minHeight: 160,
+            minHeight: 176,
             alignItems: 'center',
             justifyContent: 'center',
             paddingVertical: Spacing.lg,
-            borderRadius: 20,
+            borderRadius: BorderRadius.lg,
             backgroundColor: colors.surface,
             borderWidth: 1,
             borderColor: colors.borderLight,
           }}
         >
-          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+          <Text
+            style={{
+              fontSize: Typography.fontSize.sm,
+              fontFamily: Typography.fontFamily.semiBold,
+              color: colors.textPrimary,
+            }}
+          >
             No spending history yet
           </Text>
-          <Text style={{ marginTop: 4, fontSize: Typography.fontSize.xs, color: colors.textSecondary, textAlign: 'center', maxWidth: 240 }}>
+          <Text
+            style={{
+              marginTop: 4,
+              fontSize: Typography.fontSize.xs,
+              color: colors.textSecondary,
+              textAlign: 'center',
+              maxWidth: 240,
+            }}
+          >
             Add your first transaction to see a real trend here.
           </Text>
         </View>
       ) : (
         <>
-          <View style={{ flexDirection: 'row', gap: 16, marginBottom: Spacing.sm }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: Spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={{ width: 16, height: 2, backgroundColor: colors.primary, borderRadius: 1 }} />
+              <View style={{ width: 24, height: 3, backgroundColor: colors.primary, borderRadius: 2 }} />
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, fontFamily: Typography.fontFamily.medium }}>This Period</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={{ width: 16, height: 2, backgroundColor: colors.textTertiary, borderRadius: 1, opacity: 0.5 }} />
+              <View style={{ width: 24, height: 3, backgroundColor: colors.textTertiary, borderRadius: 2, opacity: 0.55 }} />
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, fontFamily: Typography.fontFamily.medium }}>Previous Period</Text>
             </View>
           </View>
 
-          <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
-            {[0, 1, 2, 3].map((section) => {
-              const y = padding.top + (plotHeight / 3) * section;
-              const label = Math.round(maxValue - (maxValue / 3) * section);
-              return (
-                <React.Fragment key={section}>
-                  <Line x1={padding.left} y1={y} x2={padding.left + plotWidth} y2={y} stroke={colors.borderLight} strokeWidth={1} />
-                  <SvgText x={padding.left - 8} y={y + 4} fill={colors.textTertiary} fontSize={9} textAnchor="end">
-                    {label}
-                  </SvgText>
-                </React.Fragment>
-              );
-            })}
-            <Polygon points={currentArea} fill={`${colors.primary}18`} />
-            <Polyline points={previousPolyline} fill="none" stroke={colors.textTertiary} strokeWidth={2} strokeDasharray="5 4" />
-            <Polyline points={currentPolyline} fill="none" stroke={colors.primary} strokeWidth={2.5} />
-            {weeklyTrend.current.map((point, index) => {
-              const current = toPoint(point, index);
-              const previous = toPoint(weeklyTrend.previous[index], index);
-              return (
-                <React.Fragment key={point.label}>
-                  <Circle cx={previous.x} cy={previous.y} r={3} fill={colors.textTertiary} />
-                  <Circle cx={current.x} cy={current.y} r={4} fill={colors.primary} stroke={colors.card} strokeWidth={2} />
-                  <SvgText x={current.x} y={chartHeight - 8} fill={colors.textTertiary} fontSize={9} textAnchor="middle">
-                    {point.label}
-                  </SvgText>
-                </React.Fragment>
-              );
-            })}
-          </Svg>
+          <LineChart
+            data={currentData}
+            data2={previousData}
+            height={176}
+            width={chartWidth}
+            spacing={chartSpacing}
+            initialSpacing={10}
+            color1={colors.primary}
+            color2={colors.textTertiary}
+            dataPointsColor1={colors.primary}
+            dataPointsColor2={colors.textTertiary}
+            dataPointsRadius={4}
+            thickness={3}
+            thickness2={2}
+            hideRules
+            yAxisColor="transparent"
+            xAxisColor={colors.borderLight}
+            yAxisTextStyle={{
+              fontSize: 10,
+              color: colors.textTertiary,
+              fontFamily: Typography.fontFamily.regular,
+            }}
+            xAxisLabelTextStyle={{
+              fontSize: 10,
+              color: colors.textTertiary,
+              fontFamily: Typography.fontFamily.regular,
+            }}
+            curved
+            areaChart
+            startFillColor1={`${colors.primary}24`}
+            endFillColor1={`${colors.primary}04`}
+            startFillColor2={`${colors.textTertiary}12`}
+            endFillColor2={`${colors.textTertiary}02`}
+            noOfSections={3}
+            yAxisLabelPrefix="₹ "
+          />
         </>
       )}
     </Card>

@@ -32,6 +32,12 @@ const getFriendlyAuthMessage = (error: unknown) => {
   if (lower.includes('too-many-requests')) {
     return 'Too many attempts. Please wait a moment before trying again.';
   }
+  if (lower.includes('popup') || lower.includes('blocked') || lower.includes('cancelled')) {
+    return 'Google sign-in needs a popup in this browser. Allow popups for localhost and try again, or use email login.';
+  }
+  if (lower.includes('unauthorized-domain')) {
+    return 'Add localhost to Firebase Authentication authorized domains, then retry Google sign-in.';
+  }
 
   return 'Please check your details and try again.';
 };

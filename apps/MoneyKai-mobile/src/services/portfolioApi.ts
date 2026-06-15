@@ -1,5 +1,6 @@
 import { isWealthTabEnabled } from '@/config/environment';
 import { backendApi } from './backendApi';
+import { localPortfolioApi } from './localPortfolioApi';
 import type {
   AccountAggregatorExplorationStatus,
   PortfolioAccount,
@@ -36,12 +37,33 @@ const disabledState = (): PortfolioStateResponse => ({
   },
 });
 
+const shouldUseLocalFallback = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  return (
+    message.includes('backend api is not configured') ||
+    message.includes('you need to be signed in') ||
+    message.includes('failed to fetch') ||
+    message.includes('network request failed')
+  );
+};
+
+const remoteOrLocal = async <T>(remote: () => Promise<T>, local: () => Promise<T>): Promise<T> => {
+  try {
+    return await remote();
+  } catch (error) {
+    if (shouldUseLocalFallback(error)) {
+      return local();
+    }
+    throw error;
+  }
+};
+
 export const portfolioApi = {
   getState: async (): Promise<PortfolioStateResponse> => {
     if (!isWealthTabEnabled()) {
       return disabledState();
     }
-    return backendApi.getPortfolioState();
+    return remoteOrLocal(() => backendApi.getPortfolioState(), () => localPortfolioApi.getState());
   },
 
   listConnections: async (): Promise<PortfolioAccount[]> => {
@@ -49,7 +71,10 @@ export const portfolioApi = {
       return [];
     }
 
-    const response = await backendApi.listPortfolioConnections();
+    const response = await remoteOrLocal(
+      () => backendApi.listPortfolioConnections(),
+      async () => ({ items: await localPortfolioApi.listConnections() })
+    );
     return response.items;
   },
 
@@ -58,90 +83,116 @@ export const portfolioApi = {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
 
-    const response = await backendApi.createPortfolioConnection(payload);
-    return response.item;
+    return remoteOrLocal(
+      async () => (await backendApi.createPortfolioConnection(payload)).item,
+      () => localPortfolioApi.createConnectionMetadata(payload)
+    );
   },
 
   updateConnection: async (accountId: string, payload: ProviderConnectionUpdate): Promise<PortfolioAccount> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    const response = await backendApi.updatePortfolioConnection(accountId, payload);
-    return response.item;
+    return remoteOrLocal(
+      async () => (await backendApi.updatePortfolioConnection(accountId, payload)).item,
+      () => localPortfolioApi.updateConnection(accountId, payload)
+    );
   },
 
   pauseConnection: async (accountId: string): Promise<PortfolioAccount> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    const response = await backendApi.pausePortfolioConnection(accountId);
-    return response.item;
+    return remoteOrLocal(
+      async () => (await backendApi.pausePortfolioConnection(accountId)).item,
+      () => localPortfolioApi.pauseConnection(accountId)
+    );
   },
 
   disconnectConnection: async (accountId: string): Promise<PortfolioAccount> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    const response = await backendApi.disconnectPortfolioConnection(accountId);
-    return response.item;
+    return remoteOrLocal(
+      async () => (await backendApi.disconnectPortfolioConnection(accountId)).item,
+      () => localPortfolioApi.disconnectConnection(accountId)
+    );
   },
 
   syncConnection: async (accountId: string): Promise<ProviderSyncResponse> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return backendApi.syncPortfolioConnection(accountId);
+    return remoteOrLocal(
+      () => backendApi.syncPortfolioConnection(accountId),
+      () => localPortfolioApi.syncConnection(accountId)
+    );
   },
 
   createHolding: async (payload: PortfolioHoldingDraft): Promise<PortfolioHolding> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    const response = await backendApi.createPortfolioHolding(payload);
-    return response.item;
+    return remoteOrLocal(
+      async () => (await backendApi.createPortfolioHolding(payload)).item,
+      () => localPortfolioApi.createHolding(payload)
+    );
   },
 
   updateHolding: async (holdingId: string, payload: PortfolioHoldingUpdate): Promise<PortfolioHolding> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    const response = await backendApi.updatePortfolioHolding(holdingId, payload);
-    return response.item;
+    return remoteOrLocal(
+      async () => (await backendApi.updatePortfolioHolding(holdingId, payload)).item,
+      () => localPortfolioApi.updateHolding(holdingId, payload)
+    );
   },
 
   deleteHolding: async (holdingId: string): Promise<void> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    await backendApi.deletePortfolioHolding(holdingId);
+    await remoteOrLocal(
+      async () => {
+        await backendApi.deletePortfolioHolding(holdingId);
+      },
+      () => localPortfolioApi.deleteHolding(holdingId)
+    );
   },
 
   createSnapshot: async (): Promise<WealthSnapshot> => {
     if (!isWealthTabEnabled()) {
       return disabledState().snapshot;
     }
-    return backendApi.createWealthSnapshot();
+    return remoteOrLocal(() => backendApi.createWealthSnapshot(), () => localPortfolioApi.createSnapshot());
   },
 
   importParsedDocumentHoldings: async (documentId: string): Promise<{ items: PortfolioHolding[]; importedCount: number }> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return backendApi.importParsedDocumentHoldings(documentId);
+    return remoteOrLocal(
+      () => backendApi.importParsedDocumentHoldings(documentId),
+      () => localPortfolioApi.importParsedDocumentHoldings()
+    );
   },
 
   startZerodhaConnect: async (): Promise<ZerodhaConnectStartResponse> => {
     if (!isWealthTabEnabled()) {
       return { enabled: false, authorizationUrl: null, state: null, expiresAt: null, message: 'Wealth monitoring is disabled for this build.' };
     }
-    return backendApi.startZerodhaConnect();
+    return remoteOrLocal(() => backendApi.startZerodhaConnect(), () => localPortfolioApi.startZerodhaConnect());
   },
 
   completeZerodhaConnect: async (payload: ZerodhaConnectCallbackRequest): Promise<ZerodhaConnectCallbackResponse> => {
     if (!isWealthTabEnabled()) {
       return { enabled: false, account: null, message: 'Wealth monitoring is disabled for this build.' };
     }
-    return backendApi.completeZerodhaConnect(payload);
+    return remoteOrLocal(
+      () => backendApi.completeZerodhaConnect(payload),
+      () => localPortfolioApi.completeZerodhaConnect()
+    );
   },
 
   getAccountAggregatorExploration: async (): Promise<AccountAggregatorExplorationStatus> => {
@@ -155,6 +206,9 @@ export const portfolioApi = {
         checklist: ['Enable the wealth feature flag before exploring Account Aggregator integrations.'],
       };
     }
-    return backendApi.getAccountAggregatorExploration();
+    return remoteOrLocal(
+      () => backendApi.getAccountAggregatorExploration(),
+      () => localPortfolioApi.getAccountAggregatorExploration()
+    );
   },
 };

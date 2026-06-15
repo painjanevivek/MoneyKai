@@ -5,10 +5,8 @@ import { Platform } from 'react-native';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  getRedirectResult,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInWithRedirect,
   signOut as firebaseSignOut,
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
@@ -82,16 +80,6 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          if (Platform.OS === 'web') {
-            const redirectResult = await getRedirectResult(firebaseAuth).catch(() => null);
-            if (redirectResult?.user) {
-              set({ user: toAppUser(redirectResult.user), isAuthenticated: true });
-              const { syncRemoteState } = await import('@/services/remoteSync');
-              await syncRemoteState();
-              return;
-            }
-          }
-
           const sessionUser = await waitForAuthState();
           if (sessionUser) {
             set({ user: toAppUser(sessionUser), isAuthenticated: true });
@@ -185,9 +173,9 @@ export const useAuthStore = create<AuthState>()(
           } catch (error) {
             const code = getAuthErrorCode(error);
             if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-              await signInWithRedirect(firebaseAuth, provider);
-              set({ isLoading: false });
-              return;
+              throw new Error(
+                'Google sign-in was blocked or cancelled. Allow popups for this local MoneyKai tab, then try again, or use email login.'
+              );
             }
 
             if (code === 'auth/unauthorized-domain') {

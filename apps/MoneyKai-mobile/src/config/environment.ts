@@ -45,7 +45,7 @@ export const appEnvironment = {
   nativeSmsResearchBuild: nativeSmsResearchBuildValue === '' ? true : nativeSmsResearchBuildValue === 'true',
   gmailSyncEnabled: gmailSyncEnabledValue === 'true',
   pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
-  wealthTabEnabled: wealthTabEnabledValue === 'true',
+  wealthTabEnabled: wealthTabEnabledValue === '' ? true : wealthTabEnabledValue === 'true',
   financialAiEnabled: financialAiEnabledValue === 'true',
 };
 

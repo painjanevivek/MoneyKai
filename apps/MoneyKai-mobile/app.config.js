@@ -8,6 +8,12 @@ const nativeSmsResearchBuildEnabled =
 const devClientBuildEnabled =
   process.env.EXPO_PUBLIC_DEV_CLIENT_BUILD === 'true' ||
   process.env.EAS_BUILD_PROFILE === 'development';
+const devClientLaunchURL =
+  process.env.EXPO_PUBLIC_DEV_CLIENT_LAUNCH_URL ||
+  process.env.EXPO_DEV_CLIENT_LAUNCH_URL ||
+  (process.env.REACT_NATIVE_PACKAGER_HOSTNAME
+    ? `http://${process.env.REACT_NATIVE_PACKAGER_HOSTNAME}:8081`
+    : undefined);
 
 const config = {
   ...appJson.expo,
@@ -32,19 +38,24 @@ if (nativeSmsResearchBuildEnabled && config.android?.blockedPermissions) {
 }
 
 if (devClientBuildEnabled) {
+  const devClientPluginOptions = {
+    launchMode: devClientLaunchURL ? 'most-recent' : 'launcher',
+    skipOnboarding: true,
+    showMenuAtLaunch: !devClientLaunchURL,
+  };
+
+  if (devClientLaunchURL) {
+    devClientPluginOptions.defaultLaunchURL = devClientLaunchURL;
+    devClientPluginOptions.android = {
+      defaultLaunchURL: devClientLaunchURL,
+    };
+  }
+
   config.plugins = [
     ...config.plugins,
     [
       'expo-dev-client',
-      {
-        launchMode: 'most-recent',
-        defaultLaunchURL: 'http://localhost:8081',
-        android: {
-          defaultLaunchURL: 'http://10.0.2.2:8081',
-        },
-        skipOnboarding: true,
-        showMenuAtLaunch: false,
-      },
+      devClientPluginOptions,
     ],
   ];
 }

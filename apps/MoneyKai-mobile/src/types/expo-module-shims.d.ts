@@ -8,10 +8,10 @@ declare module 'expo-auth-session' {
     responseType: ResponseType;
     scopes: string[];
     redirectUri: string;
+    extraParams?: Record<string, string>;
     webClientId?: string;
     iosClientId?: string;
     androidClientId?: string;
-    selectAccount?: boolean;
   }
 
   export interface DiscoveryDocument {
@@ -22,6 +22,10 @@ declare module 'expo-auth-session' {
 
   export interface AuthSessionResult {
     type: string;
+    params?: Record<string, string>;
+    error?: {
+      message?: string;
+    } | null;
     authentication?: {
       idToken?: string;
     };
@@ -31,7 +35,14 @@ declare module 'expo-auth-session' {
     promptAsync(discovery: DiscoveryDocument): Promise<AuthSessionResult>;
   }
 
-  export function makeRedirectUri(options?: { scheme?: string }): string;
+  export function makeRedirectUri(options?: {
+    isTripleSlashed?: boolean;
+    native?: string;
+    path?: string;
+    preferLocalhost?: boolean;
+    queryParams?: Record<string, string | undefined>;
+    scheme?: string;
+  }): string;
   export function fetchDiscoveryAsync(issuerOrDiscovery: string): Promise<DiscoveryDocument>;
   export function loadAsync(config: AuthRequestConfig, discovery: DiscoveryDocument): Promise<AuthRequest>;
 }

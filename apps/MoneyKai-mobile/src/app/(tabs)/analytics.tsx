@@ -9,7 +9,10 @@ import { useCalendarStore } from '@/stores/useCalendarStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { MonthYearPickerSheet } from '@/components/calendar/MonthYearPickerSheet';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
+import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
+import { SpendingInsightGraphs } from '@/components/charts/SpendingInsightGraphs';
 import { SpendingPieChart } from '@/components/charts/SpendingPieChart';
+import { TrendLineChart } from '@/components/charts/TrendLineChart';
 import { Card } from '@/components/ui/Card';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -103,6 +106,8 @@ export default function AnalyticsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'], gap: Spacing.base }}
       >
+        <TrendLineChart transactions={transactions} title="Spending Overview" subtitle="Last 5 Weeks" />
+
         <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
           <StatCard label="Income" amount={monthSummary.income} icon="arrow-down-circle-outline" tone="income" />
           <StatCard label="Expenses" amount={monthSummary.expenses} icon="arrow-up-circle-outline" tone="expense" />
@@ -141,6 +146,18 @@ export default function AnalyticsScreen() {
           categoryTotals={monthSummary.categoryTotals}
           totalSpent={monthSummary.expenses}
           onPressViewMore={() => router.push('/(tabs)/budget')}
+        />
+
+        <CategoryBarChart
+          categoryTotals={monthSummary.categoryTotals}
+          onViewAll={() => router.push('/(tabs)/budget')}
+        />
+
+        <SpendingInsightGraphs
+          transactions={monthSummary.transactions}
+          monthlyAllowance={monthlyAllowance}
+          totalIncome={monthSummary.income}
+          totalSpent={monthSummary.expenses}
         />
 
         <RecentTransactions

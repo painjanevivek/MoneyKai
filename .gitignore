@@ -53,8 +53,13 @@ yarn-error.*
 # test output
 coverage/
 .pytest_cache/
+**/.pytest_cache/
 __pycache__/
+**/__pycache__/
 *.py[cod]
+**/*.py[cod]
+*.pyo
+**/*.pyo
 
 # local virtual environments
 .venv/

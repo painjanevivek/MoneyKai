@@ -134,7 +134,7 @@ export const syncRemoteState = async () => {
 
   useNotificationStore.getState().replaceNotifications((snapshot.data.notifications ?? []) as never[]);
   useSyncStore.getState().startSync();
-  useSyncStore.getState().finishSync(snapshot.profile.id);
+  useSyncStore.getState().finishSync();
 };
 
 export const clearTransientSessionState = async () => {

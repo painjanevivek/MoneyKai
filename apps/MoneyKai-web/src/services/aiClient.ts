@@ -59,6 +59,13 @@ export const aiClient = {
     return backendApi.uploadAiAttachment(formData);
   },
 
+  uploadAttachmentFile: async (file: File, filename = file.name): Promise<AiAttachmentUploadResponse> => {
+    assertAiBackendConfigured();
+    const formData = new FormData();
+    formData.append('file', file, filename);
+    return backendApi.uploadAiAttachment(formData);
+  },
+
   analyzeAttachment: async (payload: AiAttachmentAnalyzeRequest): Promise<AiAttachmentAnalyzeResponse> => {
     assertAiBackendConfigured();
     return backendApi.analyzeAiAttachment(payload);

@@ -5,10 +5,15 @@ import { firebaseAuth } from './firebase';
 import { appEnvironment, hasGoogleClientIds } from '@/config/environment';
 
 const GOOGLE_ISSUER = 'https://accounts.google.com';
+const APP_SCHEME = 'moneykai-mobile';
+const AUTH_REDIRECT_PATH = 'oauthredirect';
+const NATIVE_REDIRECT_URI = `${APP_SCHEME}://${AUTH_REDIRECT_PATH}`;
 
 const getRedirectUri = () =>
   AuthSession.makeRedirectUri({
-    scheme: 'moneykai-mobile',
+    native: NATIVE_REDIRECT_URI,
+    path: AUTH_REDIRECT_PATH,
+    scheme: APP_SCHEME,
   });
 
 const buildAuthConfig = () =>
@@ -22,10 +27,12 @@ const buildAuthConfig = () =>
     responseType: AuthSession.ResponseType.IdToken,
     scopes: ['openid', 'profile', 'email'] as string[],
     redirectUri: getRedirectUri(),
+    extraParams: {
+      prompt: 'select_account',
+    },
     webClientId: appEnvironment.google.webClientId || undefined,
     iosClientId: appEnvironment.google.iosClientId || undefined,
     androidClientId: appEnvironment.google.androidClientId || undefined,
-    selectAccount: true,
   }) as const;
 
 export const signInWithGoogleAsync = async (): Promise<User> => {
@@ -39,11 +46,17 @@ export const signInWithGoogleAsync = async (): Promise<User> => {
   const request = await AuthSession.loadAsync(buildAuthConfig(), discovery);
   const result = await request.promptAsync(discovery);
 
-  if (result.type !== 'success' || !result.authentication?.idToken) {
+  if (result.type === 'error') {
+    throw new Error(result.error?.message || result.params?.error_description || 'Google sign-in failed.');
+  }
+
+  const idToken = result.authentication?.idToken ?? result.params?.id_token;
+
+  if (result.type !== 'success' || !idToken) {
     throw new Error('Google sign-in was cancelled or did not return an ID token.');
   }
 
-  const credential = GoogleAuthProvider.credential(result.authentication.idToken);
+  const credential = GoogleAuthProvider.credential(idToken);
   const credentials = await signInWithCredential(firebaseAuth, credential);
   return credentials.user;
 };

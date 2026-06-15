@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { Colors } from '@/constants/theme';
+import { Colors, type ColorScheme } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
 import { AutoBackupCoordinator } from '@/components/backup/AutoBackupCoordinator';
@@ -33,7 +33,7 @@ interface ErrorBoundaryState {
 }
 
 class AppErrorBoundary extends React.Component<
-  { children: React.ReactNode; colors: typeof Colors.light | typeof Colors.dark },
+  { children: React.ReactNode; colors: ColorScheme },
   ErrorBoundaryState
 > {
   state: ErrorBoundaryState = { hasError: false, error: null };
@@ -74,7 +74,7 @@ class AppErrorBoundary extends React.Component<
 
 export default function RootLayout() {
   const theme = useSettingsStore((s) => s.theme);
-  const colors = Colors[theme];
+  const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
 

@@ -10,6 +10,7 @@ import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
+import GroupsScreen from '@/app/(tabs)/groups';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { formatDate } from '@/utils/dateUtils';
@@ -22,10 +23,13 @@ type TransactionComposerSheetProps = {
   onClose: () => void;
 };
 
+type ComposerMode = 'transaction' | 'groups';
+
 const sanitizeAmount = (value: string) => value.replace(/[^0-9]/g, '');
 const getTodayDate = () => formatDate(new Date(), 'yyyy-MM-dd');
 const parseTransactionDate = (value: string) => new Date(`${value}T12:00:00`);
 const SHEET_INITIAL_OFFSET = Dimensions.get('window').height;
+const GROUPS_PANEL_HEIGHT = Math.min(Dimensions.get('window').height * 0.68, 680);
 
 export function TransactionComposerSheet({
   visible,
@@ -49,6 +53,7 @@ export function TransactionComposerSheet({
   const [showMobileDatePicker, setShowMobileDatePicker] = useState(false);
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
   const [budgetValue, setBudgetValue] = useState(monthlyAllowance > 0 ? String(monthlyAllowance) : '');
+  const [composerMode, setComposerMode] = useState<ComposerMode>('transaction');
   const [sheetTranslateY] = useState(() => new Animated.Value(SHEET_INITIAL_OFFSET));
   const [backdropOpacity] = useState(() => new Animated.Value(0));
 
@@ -78,6 +83,7 @@ export function TransactionComposerSheet({
   const handleClose = () => {
     setShowMobileDatePicker(false);
     setShowBudgetDialog(false);
+    setComposerMode('transaction');
     onClose();
   };
 
@@ -199,14 +205,71 @@ export function TransactionComposerSheet({
               transform: [{ translateY: sheetTranslateY }],
             }}
           >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
-            <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              {isEditing ? 'Edit Transaction' : 'Add Transaction'}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.xl }}>
+            {isEditing ? (
+              <Text style={{ flex: 1, fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+                Edit Transaction
+              </Text>
+            ) : (
+              <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+                  Add
+                </Text>
+                <View
+                  style={{
+                    flex: 1,
+                    minHeight: 42,
+                    flexDirection: 'row',
+                    padding: 4,
+                    borderRadius: BorderRadius.full,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  {(['transaction', 'groups'] as const).map((mode) => {
+                    const isSelected = composerMode === mode;
+                    return (
+                      <TouchableOpacity
+                        key={mode}
+                        onPress={() => setComposerMode(mode)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isSelected }}
+                        accessibilityLabel={`Show add ${mode}`}
+                        activeOpacity={0.85}
+                        style={{
+                          flex: 1,
+                          minHeight: 34,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: BorderRadius.full,
+                          backgroundColor: isSelected ? colors.primary : 'transparent',
+                          paddingHorizontal: Spacing.sm,
+                        }}
+                      >
+                        <Text
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.82}
+                          style={{
+                            fontSize: Typography.fontSize.sm,
+                            fontFamily: Typography.fontFamily.semiBold,
+                            color: isSelected ? colors.textInverse : colors.textSecondary,
+                            textAlign: 'center',
+                          }}
+                        >
+                          {mode === 'transaction' ? 'Transaction' : 'Groups'}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
             <TouchableOpacity
               onPress={handleClose}
               accessibilityRole="button"
-              accessibilityLabel="Close add transaction"
+              accessibilityLabel="Close add sheet"
               style={{
                 width: 36,
                 height: 36,
@@ -219,6 +282,18 @@ export function TransactionComposerSheet({
             </TouchableOpacity>
           </View>
 
+          {composerMode === 'groups' && !isEditing ? (
+            <View
+              style={{
+                height: GROUPS_PANEL_HEIGHT,
+                marginHorizontal: -Spacing.xl,
+                marginBottom: -Spacing.xl,
+                overflow: 'hidden',
+              }}
+            >
+              <GroupsScreen />
+            </View>
+          ) : (
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: Spacing.sm }}>
             <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg }}>
               {(['expense', 'income'] as const).map((type) => (
@@ -512,6 +587,7 @@ export function TransactionComposerSheet({
               <Button title="Add Transaction" onPress={handleSubmitTransaction} fullWidth size="lg" icon="check" />
             )}
           </ScrollView>
+          )}
           </Animated.View>
         </View>
       </Modal>

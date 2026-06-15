@@ -1,4 +1,5 @@
-import { getCurrentFirebaseIdToken } from './authService';
+import { firebaseAuth } from './firebase';
+import { financialFeatureEndpoints } from '@/contracts/financialFeatureContracts';
 import { getBackendBaseUrl } from '@/config/environment';
 import type { DiagnosticEvent } from '@/services/diagnosticsService';
 import type { AiSmsParseCandidate, AiSmsParseInput } from '@/types/capture';
@@ -119,7 +120,12 @@ const parseErrorMessage = async (response: Response, fallback: string): Promise<
 };
 
 async function getAuthToken(): Promise<string> {
-  return getCurrentFirebaseIdToken();
+  const currentUser = firebaseAuth.currentUser;
+  if (!currentUser) {
+    throw new Error('You need to be signed in to call the backend.');
+  }
+
+  return currentUser.getIdToken();
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -212,102 +218,98 @@ export const backendApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-  getGmailStatus: async () => request<GmailSyncStatus>('/v1/gmail/status'),
+  getGmailStatus: async () => request<GmailSyncStatus>(financialFeatureEndpoints.gmail.status),
   startGmailConnect: async (metadataScanAcceptedAt: string) =>
     request<GmailConnectStartResponse>(
-      `/v1/gmail/connect/start?metadataScanAcceptedAt=${encodeURIComponent(metadataScanAcceptedAt)}`
+      financialFeatureEndpoints.gmail.connectStart(metadataScanAcceptedAt)
     ),
-  disconnectGmail: async () => request<{ disconnected: boolean }>('/v1/gmail/disconnect', { method: 'POST' }),
+  disconnectGmail: async () => request<{ disconnected: boolean }>(financialFeatureEndpoints.gmail.disconnect, { method: 'POST' }),
   syncGmail: async (payload: GmailSyncRequest) =>
-    request<GmailSyncSummary>('/v1/gmail/sync', {
+    request<GmailSyncSummary>(financialFeatureEndpoints.gmail.sync, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   listGmailEmails: async (parseStatus?: string) =>
-    request<FinancialEmailListResponse>(
-      parseStatus ? `/v1/gmail/emails?parseStatus=${encodeURIComponent(parseStatus)}` : '/v1/gmail/emails'
-    ),
+    request<FinancialEmailListResponse>(financialFeatureEndpoints.gmail.emails(parseStatus)),
   getFinancialDocumentStatus: async () =>
-    request<FinancialDocumentStatusSummary>('/v1/financial-documents/status'),
+    request<FinancialDocumentStatusSummary>(financialFeatureEndpoints.financialDocuments.status),
   listFinancialDocuments: async (status?: string) =>
-    request<{ items: FinancialDocument[] }>(
-      status ? `/v1/financial-documents?status=${encodeURIComponent(status)}` : '/v1/financial-documents'
-    ),
+    request<{ items: FinancialDocument[] }>(financialFeatureEndpoints.financialDocuments.list(status)),
   queueGmailAttachments: async (payload: QueueGmailAttachmentsRequest) =>
-    request<QueueGmailAttachmentsResponse>('/v1/financial-documents/queue-gmail-attachments', {
+    request<QueueGmailAttachmentsResponse>(financialFeatureEndpoints.financialDocuments.queueGmailAttachments, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   parseFinancialDocument: async (documentId: string, payload: ParseFinancialDocumentRequest) =>
-    request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/parse`, {
+    request<ParsedStatementReviewResponse>(financialFeatureEndpoints.financialDocuments.parse(documentId), {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   summarizeFinancialDocumentAi: async (documentId: string, payload: FinancialDocumentAiSummaryRequest) =>
-    request<FinancialDocumentAiSummaryResult>(`/v1/financial-documents/${documentId}/ai-summary`, {
+    request<FinancialDocumentAiSummaryResult>(financialFeatureEndpoints.financialDocuments.aiSummary(documentId), {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   submitPdfPassword: async (documentId: string, payload: PdfPasswordAttemptRequest) =>
-    request<PdfPasswordAttemptResponse>(`/v1/financial-documents/${documentId}/password`, {
+    request<PdfPasswordAttemptResponse>(financialFeatureEndpoints.financialDocuments.password(documentId), {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   getParsedStatementReview: async (documentId: string) =>
-    request<ParsedStatementReviewResponse>(`/v1/financial-documents/${documentId}/review`),
+    request<ParsedStatementReviewResponse>(financialFeatureEndpoints.financialDocuments.review(documentId)),
   approveParsedStatementReview: async (documentId: string) =>
-    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/approve`, {
+    request<ParsedStatementReviewActionResponse>(financialFeatureEndpoints.financialDocuments.approveReview(documentId), {
       method: 'POST',
     }),
   ignoreParsedStatementReview: async (documentId: string) =>
-    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/ignore`, {
+    request<ParsedStatementReviewActionResponse>(financialFeatureEndpoints.financialDocuments.ignoreReview(documentId), {
       method: 'POST',
     }),
   importParsedStatementReview: async (documentId: string, payload: ParsedStatementImportRequest) =>
-    request<ParsedStatementReviewActionResponse>(`/v1/financial-documents/${documentId}/review/import`, {
+    request<ParsedStatementReviewActionResponse>(financialFeatureEndpoints.financialDocuments.importReview(documentId), {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   listPdfPasswordProfiles: async () =>
-    request<{ items: PdfPasswordProfile[] }>('/v1/financial-documents/password-profiles'),
+    request<{ items: PdfPasswordProfile[] }>(financialFeatureEndpoints.financialDocuments.passwordProfiles),
   deletePdfPasswordProfile: async (profileId: string) =>
-    request<{ deleted: boolean }>(`/v1/financial-documents/password-profiles/${profileId}`, {
+    request<{ deleted: boolean }>(financialFeatureEndpoints.financialDocuments.passwordProfile(profileId), {
       method: 'DELETE',
     }),
-  listPortfolioConnections: async () => request<{ items: PortfolioAccount[] }>('/v1/portfolio/connections'),
-  getPortfolioState: async () => request<PortfolioStateResponse>('/v1/portfolio/state'),
+  listPortfolioConnections: async () => request<{ items: PortfolioAccount[] }>(financialFeatureEndpoints.portfolio.connections),
+  getPortfolioState: async () => request<PortfolioStateResponse>(financialFeatureEndpoints.portfolio.state),
   createPortfolioConnection: async (payload: ProviderConnectionDraft) =>
-    request<{ item: PortfolioAccount }>('/v1/portfolio/connections', {
+    request<{ item: PortfolioAccount }>(financialFeatureEndpoints.portfolio.connections, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   updatePortfolioConnection: async (accountId: string, payload: ProviderConnectionUpdate) =>
-    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}`, {
+    request<{ item: PortfolioAccount }>(financialFeatureEndpoints.portfolio.connection(accountId), {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
   pausePortfolioConnection: async (accountId: string) =>
-    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}/pause`, { method: 'POST' }),
+    request<{ item: PortfolioAccount }>(financialFeatureEndpoints.portfolio.pauseConnection(accountId), { method: 'POST' }),
   disconnectPortfolioConnection: async (accountId: string) =>
-    request<{ item: PortfolioAccount }>(`/v1/portfolio/connections/${accountId}/disconnect`, { method: 'POST' }),
+    request<{ item: PortfolioAccount }>(financialFeatureEndpoints.portfolio.disconnectConnection(accountId), { method: 'POST' }),
   syncPortfolioConnection: async (accountId: string) =>
-    request<ProviderSyncResponse>(`/v1/portfolio/connections/${accountId}/sync`, { method: 'POST' }),
-  listPortfolioHoldings: async () => request<{ items: PortfolioHolding[] }>('/v1/portfolio/holdings'),
+    request<ProviderSyncResponse>(financialFeatureEndpoints.portfolio.syncConnection(accountId), { method: 'POST' }),
+  listPortfolioHoldings: async () => request<{ items: PortfolioHolding[] }>(financialFeatureEndpoints.portfolio.holdings),
   createPortfolioHolding: async (payload: PortfolioHoldingDraft) =>
-    request<{ item: PortfolioHolding }>('/v1/portfolio/holdings', {
+    request<{ item: PortfolioHolding }>(financialFeatureEndpoints.portfolio.holdings, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   updatePortfolioHolding: async (holdingId: string, payload: PortfolioHoldingUpdate) =>
-    request<{ item: PortfolioHolding }>(`/v1/portfolio/holdings/${holdingId}`, {
+    request<{ item: PortfolioHolding }>(financialFeatureEndpoints.portfolio.holding(holdingId), {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
   deletePortfolioHolding: async (holdingId: string) =>
-    request<{ deleted: boolean }>(`/v1/portfolio/holdings/${holdingId}`, { method: 'DELETE' }),
-  createWealthSnapshot: async () => request<WealthSnapshot>('/v1/portfolio/snapshots', { method: 'POST' }),
+    request<{ deleted: boolean }>(financialFeatureEndpoints.portfolio.holding(holdingId), { method: 'DELETE' }),
+  createWealthSnapshot: async () => request<WealthSnapshot>(financialFeatureEndpoints.portfolio.snapshots, { method: 'POST' }),
   importParsedDocumentHoldings: async (documentId: string) =>
-    request<{ items: PortfolioHolding[]; importedCount: number }>(`/v1/portfolio/imports/parsed-document/${documentId}`, {
+    request<{ items: PortfolioHolding[]; importedCount: number }>(financialFeatureEndpoints.portfolio.importParsedDocumentHoldings(documentId), {
       method: 'POST',
     }),
   listReconciliationReviews: async (status?: string) =>
@@ -333,17 +335,17 @@ export const backendApi = {
       method: 'POST',
     }),
   classifyFinancialEmailWithAi: async (payload: AiEmailClassificationRequest) =>
-    request<AiEmailClassificationResult>('/v1/financial-ai/email-classification', {
+    request<AiEmailClassificationResult>(financialFeatureEndpoints.financialAi.emailClassification, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   interpretStatementRowsWithAi: async (payload: AiStatementRowsRequest) =>
-    request<AiStatementRowsResponse>('/v1/financial-ai/statement-rows', {
+    request<AiStatementRowsResponse>(financialFeatureEndpoints.financialAi.statementRows, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   generateAiWealthInsights: async (payload: AiWealthInsightRequest) =>
-    request<AiWealthInsightResponse>('/v1/financial-ai/wealth-insights', {
+    request<AiWealthInsightResponse>(financialFeatureEndpoints.financialAi.wealthInsights, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
@@ -356,14 +358,14 @@ export const backendApi = {
       body: JSON.stringify(payload),
     }),
   startZerodhaConnect: async () =>
-    request<ZerodhaConnectStartResponse>('/v1/portfolio/providers/zerodha/start', { method: 'POST' }),
+    request<ZerodhaConnectStartResponse>(financialFeatureEndpoints.portfolio.zerodhaStart, { method: 'POST' }),
   completeZerodhaConnect: async (payload: ZerodhaConnectCallbackRequest) =>
-    request<ZerodhaConnectCallbackResponse>('/v1/portfolio/providers/zerodha/callback', {
+    request<ZerodhaConnectCallbackResponse>(financialFeatureEndpoints.portfolio.zerodhaCallback, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   getAccountAggregatorExploration: async () =>
-    request<AccountAggregatorExplorationStatus>('/v1/portfolio/providers/account-aggregator/exploration'),
+    request<AccountAggregatorExplorationStatus>(financialFeatureEndpoints.portfolio.accountAggregatorExploration),
   updateResource: async <T>(
     resource: 'transactions' | 'notes' | 'badges' | 'notifications',
     itemId: string,

@@ -15,7 +15,7 @@ import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
 import { MonthlyReset } from '@/components/dashboard/MonthlyReset';
-import { Typography, Spacing, BorderRadius } from '@/constants/theme';
+import { THEME_OPTIONS, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
@@ -75,7 +75,7 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
 };
 
 export default function SettingsScreen() {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, theme, setTheme } = useTheme();
   const { user, signOut } = useAuthStore();
   const { notificationsEnabled, hapticEnabled, toggleHaptic, currency, currencySymbol } = useSettingsStore();
   const { settings, updateSettings } = useBudgetStore();
@@ -312,22 +312,76 @@ export default function SettingsScreen() {
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Appearance</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem
-            icon={isDark ? 'weather-night' : 'weather-sunny'}
-            iconColor="#5A5A5A"
-            iconBg="#EFEFEF"
-            title="Dark Mode"
-            subtitle={isDark ? 'Currently enabled' : 'Currently disabled'}
-            right={
-              <Switch
-                value={isDark}
-                onValueChange={toggleTheme}
-                trackColor={switchTrack}
-                thumbColor={switchThumb}
-                ios_backgroundColor={colors.borderLight}
-              />
-            }
-          />
+          <View style={{ paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: Spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: BorderRadius.sm,
+                  backgroundColor: colors.primaryBg,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <MaterialCommunityIcons name="palette-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>Theme</Text>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>Choose a MoneyKai look</Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+              {THEME_OPTIONS.map((option) => {
+                const active = theme === option.id;
+                return (
+                  <Pressable
+                    key={option.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Use ${option.label} theme`}
+                    onPress={() => setTheme(option.id)}
+                    style={({ hovered, pressed }: any) => ({
+                      width: '30%',
+                      minWidth: 142,
+                      flexGrow: 1,
+                      minHeight: 96,
+                      borderRadius: BorderRadius.md,
+                      borderWidth: active ? 2 : 1,
+                      borderColor: active ? colors.primary : hovered ? `${colors.primary}80` : colors.border,
+                      backgroundColor: active ? colors.primaryBg : hovered ? colors.surfaceElevated : colors.surface,
+                      padding: Spacing.sm,
+                      gap: Spacing.xs,
+                      transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                    })}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
+                      <View style={{ flexDirection: 'row' }}>
+                        {option.swatches.map((swatch) => (
+                          <View
+                            key={swatch}
+                            style={{
+                              width: 18,
+                              height: 18,
+                              borderRadius: 9,
+                              backgroundColor: swatch,
+                              borderWidth: 1,
+                              borderColor: colors.borderLight,
+                              marginRight: -4,
+                            }}
+                          />
+                        ))}
+                      </View>
+                      <MaterialCommunityIcons name={active ? 'check-circle' : (option.icon as any)} size={18} color={active ? colors.primary : colors.textTertiary} />
+                    </View>
+                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{option.label}</Text>
+                    <Text numberOfLines={2} style={{ fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>{option.description}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
           <SettingItem
             icon="currency-inr"
             iconColor="#707070"
@@ -605,6 +659,5 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
-
 
 

@@ -133,13 +133,17 @@ function usePayloadResource<TPayload, TResult>(
   loader: (payload: TPayload) => Promise<TResult>,
   autoLoad = true,
 ) {
+  const payloadRef = useRef<TPayload | null>(payload);
+  const payloadKey = payload === null ? null : stableSerialize(payload);
+  payloadRef.current = payload;
+
   const [state, setState] = useState<AsyncState<TResult>>(() => ({
     ...idleState<TResult>(),
     loading: autoLoad && payload !== null,
   }));
 
   const refresh = useCallback(async (nextPayload?: TPayload | null) => {
-    const activePayload = (nextPayload ?? payload) as TPayload | null;
+    const activePayload = nextPayload === undefined ? payloadRef.current : nextPayload;
     if (activePayload === null) {
       startTransition(() => {
         setState(idleState<TResult>());
@@ -151,7 +155,7 @@ function usePayloadResource<TPayload, TResult>(
       setState((current) => ({ ...current, loading: true, error: null }));
     });
     try {
-      const data = await loader(activePayload as TPayload);
+      const data = await loader(activePayload);
       startTransition(() => {
         setState({ data, error: null, loading: false });
       });
@@ -163,12 +167,12 @@ function usePayloadResource<TPayload, TResult>(
       });
       throw error;
     }
-  }, [loader, payload]);
+  }, [loader]);
 
   useEffect(() => {
-    const activePayload = payload;
+    const activePayload = payloadRef.current;
 
-    if (!autoLoad || activePayload === null) {
+    if (!autoLoad || payloadKey === null || activePayload === null) {
       startTransition(() => {
         setState((current) => ({ ...current, loading: false }));
       });
@@ -201,7 +205,7 @@ function usePayloadResource<TPayload, TResult>(
     return () => {
       cancelled = true;
     };
-  }, [autoLoad, loader, payload]);
+  }, [autoLoad, loader, payloadKey]);
 
   return { ...state, refresh };
 }
@@ -341,6 +345,14 @@ export function useAiAttachmentUpload() {
   };
 }
 
+export function useAiAttachmentFileUpload() {
+  const state = useAsyncAction<File, AiAttachmentUploadResponse>(aiClient.uploadAttachmentFile);
+  return {
+    ...state,
+    uploadFile: state.run,
+  };
+}
+
 export function useAiAttachmentAnalysis() {
   const state = useAsyncAction<AiAttachmentAnalyzeRequest, AiAttachmentAnalyzeResponse>(aiClient.analyzeAttachment);
   return {
@@ -413,7 +425,7 @@ function applyStreamingEvent(state: StreamingChatState, event: AiChatStreamEvent
 function mapCompletedEventToResponse(event: AiChatStreamCompletedEvent): AiChatResponse {
   return {
     requestId: event.requestId,
-    provider: event.provider || 'openrouter',
+    provider: event.provider || 'moneykai-backend',
     model: event.model || '',
     message: event.message,
     finishReason: event.finishReason ?? null,
@@ -422,4 +434,28 @@ function mapCompletedEventToResponse(event: AiChatStreamCompletedEvent): AiChatR
     providerMetadata: event.providerMetadata,
     safety: event.safety,
   };
+}
+
+function stableSerialize(value: unknown): string {
+  if (value === null) {
+    return 'null';
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
+      .join(',')}}`;
+  }
+
+  if (typeof value === 'undefined') {
+    return '"__undefined__"';
+  }
+
+  return JSON.stringify(value);
 }
