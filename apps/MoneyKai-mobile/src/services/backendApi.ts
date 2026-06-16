@@ -1,6 +1,7 @@
 import { firebaseAuth } from './firebase';
 import { financialFeatureEndpoints } from '@/contracts/financialFeatureContracts';
 import { getBackendBaseUrl } from '@/config/environment';
+import { fetchWithRetry, NetworkRequestError, readDataCache, writeDataCache } from './networkClient';
 import type { DiagnosticEvent } from '@/services/diagnosticsService';
 import type { AiSmsParseCandidate, AiSmsParseInput } from '@/types/capture';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
@@ -83,6 +84,7 @@ import type {
 } from '@/types/security';
 
 const backendBaseUrl = getBackendBaseUrl();
+const BACKEND_GET_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export const isBackendConfigured = (): boolean => backendBaseUrl.length > 0;
 
@@ -140,17 +142,51 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!isFormDataBody && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  const response = await fetch(`${backendBaseUrl}${path}`, {
-    ...init,
-    headers,
-  });
 
-  if (!response.ok) {
-    const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
-    throw new BackendApiError(message, response.status);
+  const method = (init.method ?? 'GET').toUpperCase();
+  const isGetRequest = method === 'GET';
+  const cacheKey = isGetRequest ? `backend:${firebaseAuth.currentUser?.uid ?? 'anonymous'}:${path}` : null;
+
+  try {
+    const response = await fetchWithRetry(
+      `${backendBaseUrl}${path}`,
+      {
+        ...init,
+        headers,
+      },
+      {
+        retries: isGetRequest ? 2 : 0,
+        timeoutMs: 20_000,
+      },
+    );
+
+    if (!response.ok) {
+      const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
+      throw new BackendApiError(message, response.status);
+    }
+
+    const payload = (await response.json()) as T;
+    if (cacheKey) {
+      void writeDataCache(cacheKey, payload, BACKEND_GET_CACHE_TTL_MS).catch(() => undefined);
+    }
+    return payload;
+  } catch (error) {
+    if (cacheKey) {
+      const cached = await readDataCache<T>(cacheKey);
+      const canUseCached =
+        error instanceof NetworkRequestError ||
+        (error instanceof BackendApiError && (error.status === 0 || error.status >= 500));
+      if (cached && canUseCached) {
+        return cached.value;
+      }
+    }
+
+    if (error instanceof NetworkRequestError) {
+      throw new BackendApiError(error.message, error.status);
+    }
+
+    throw error;
   }
-
-  return (await response.json()) as T;
 }
 
 export const backendApi = {

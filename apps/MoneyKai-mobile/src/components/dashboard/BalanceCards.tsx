@@ -67,7 +67,7 @@ const StatCard: React.FC<StatCardProps> = ({ icon, iconBg, label, value, subtitl
 export const BalanceCards: React.FC = () => {
   const { colors } = useTheme();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
-  const { settings } = useBudgetStore();
+  const settings = useBudgetStore((s) => s.settings);
   const allowance = settings.monthly_allowance;
   const remaining = allowance - totalSpent;
   const dailyAvg = totalSpent / Math.max(1, new Date().getDate());

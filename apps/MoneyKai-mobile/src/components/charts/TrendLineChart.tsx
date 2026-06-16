@@ -1,6 +1,10 @@
 import React from 'react';
 import { Platform, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import { endOfWeek, format, isWithinInterval, startOfWeek, subWeeks } from 'date-fns';
+import { endOfWeek } from 'date-fns/endOfWeek';
+import { format } from 'date-fns/format';
+import { isWithinInterval } from 'date-fns/isWithinInterval';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { subWeeks } from 'date-fns/subWeeks';
 import { LineChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';

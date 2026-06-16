@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, Typography } from '../../constants/theme';
 
 interface ButtonProps {
   title: string;
@@ -23,6 +23,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
+  testID?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -37,63 +38,74 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   style,
   textStyle,
+  testID,
 }) => {
   const { colors } = useTheme();
 
   const sizeStyles = {
-    sm: { paddingVertical: 8, paddingHorizontal: 16, fontSize: Typography.fontSize.sm, iconSize: 16 },
-    md: { paddingVertical: 12, paddingHorizontal: 20, fontSize: Typography.fontSize.base, iconSize: 18 },
-    lg: { paddingVertical: 16, paddingHorizontal: 28, fontSize: Typography.fontSize.md, iconSize: 20 },
+    sm: { minHeight: ComponentTokens.controlHeight.sm, paddingHorizontal: ComponentTokens.controlPaddingX.sm, fontSize: Typography.fontSize.sm, iconSize: 16 },
+    md: { minHeight: ComponentTokens.controlHeight.md, paddingHorizontal: ComponentTokens.controlPaddingX.md, fontSize: Typography.fontSize.base, iconSize: 18 },
+    lg: { minHeight: ComponentTokens.controlHeight.lg, paddingHorizontal: ComponentTokens.controlPaddingX.lg, fontSize: Typography.fontSize.md, iconSize: 20 },
   };
 
   const variantStyles: Record<string, { bg: string; text: string; border?: string; hoverBg: string; hoverBorder?: string }> = {
-    primary: { bg: colors.primary, text: colors.textInverse, hoverBg: colors.primaryLight, hoverBorder: colors.primaryLight },
+    primary: { bg: colors.primary, text: colors.textInverse, hoverBg: colors.primaryDark, hoverBorder: colors.primaryDark },
     secondary: { bg: colors.primaryBg, text: colors.primary, hoverBg: `${colors.primary}18`, hoverBorder: `${colors.primary}28` },
-    outline: { bg: 'transparent', text: colors.primary, border: colors.primary, hoverBg: `${colors.primary}12`, hoverBorder: colors.primaryLight },
+    outline: { bg: colors.card, text: colors.primary, border: colors.borderLight, hoverBg: `${colors.primary}12`, hoverBorder: colors.primary },
     ghost: { bg: 'transparent', text: colors.textSecondary, hoverBg: `${colors.primary}10`, hoverBorder: `${colors.primary}20` },
     danger: { bg: colors.emergency, text: colors.textInverse, hoverBg: `${colors.emergency}E6`, hoverBorder: colors.emergency },
   };
 
   const s = sizeStyles[size];
   const v = variantStyles[variant];
+  const isUnavailable = disabled || loading;
+  const contentColor = isUnavailable ? colors.textTertiary : v.text;
 
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
+      testID={testID}
+      disabled={isUnavailable}
       accessibilityRole="button"
-      style={({ hovered, pressed }: any) => [
+      accessibilityState={{ busy: loading, disabled: isUnavailable }}
+      style={({ hovered, pressed, focused }: any) => [
         {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: !disabled && hovered ? v.hoverBg : v.bg,
-          paddingVertical: s.paddingVertical,
+          backgroundColor: isUnavailable ? colors.surfaceElevated : !isUnavailable && hovered ? v.hoverBg : v.bg,
+          minHeight: s.minHeight,
           paddingHorizontal: s.paddingHorizontal,
-          borderRadius: BorderRadius.md,
-          opacity: disabled ? 0.5 : 1,
+          borderRadius: BorderRadius.sm,
+          opacity: isUnavailable ? ComponentTokens.disabledOpacity : 1,
           gap: 8,
-          transform: !disabled && hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+          transform: pressed ? [{ scale: ComponentTokens.pressedScale }] : !isUnavailable && hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
           borderWidth: 1.5,
-          borderColor: !disabled && hovered ? (v.hoverBorder ?? 'transparent') : (v.border ?? 'transparent'),
+          borderColor: isUnavailable
+            ? colors.borderLight
+            : focused
+              ? colors.primary
+              : hovered
+                ? (v.hoverBorder ?? 'transparent')
+                : (v.border ?? 'transparent'),
           ...(fullWidth ? { width: '100%' } : {}),
         },
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={v.text} />
+        <ActivityIndicator size="small" color={contentColor} />
       ) : (
         <>
           {icon && iconPosition === 'left' && (
-            <MaterialCommunityIcons name={icon} size={s.iconSize} color={v.text} />
+            <MaterialCommunityIcons name={icon} size={s.iconSize} color={contentColor} />
           )}
           <Text
             style={[
               {
                 fontSize: s.fontSize,
                 fontFamily: Typography.fontFamily.semiBold,
-                color: v.text,
+                color: contentColor,
               },
               textStyle,
             ]}
@@ -101,7 +113,7 @@ export const Button: React.FC<ButtonProps> = ({
             {title}
           </Text>
           {icon && iconPosition === 'right' && (
-            <MaterialCommunityIcons name={icon} size={s.iconSize} color={v.text} />
+            <MaterialCommunityIcons name={icon} size={s.iconSize} color={contentColor} />
           )}
         </>
       )}

@@ -17,6 +17,15 @@ import { buildWealthOverview } from '@/utils/wealthAnalytics';
 
 type WorkspaceBusyState = 'refresh' | 'manual' | 'snapshot' | 'ai' | 'zerodha' | null;
 
+const isZerodhaAuthorizationUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && ['kite.zerodha.com', 'zerodha.com', 'www.zerodha.com'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
 export interface PortfolioWorkspaceController {
   enabled: boolean;
   currencySymbol: string;
@@ -215,6 +224,10 @@ export function usePortfolioWorkspace(): PortfolioWorkspaceController {
     try {
       const response = await portfolioApi.startZerodhaConnect();
       if (response.enabled && response.authorizationUrl) {
+        if (!isZerodhaAuthorizationUrl(response.authorizationUrl)) {
+          Alert.alert('Zerodha unavailable', 'MoneyKai received an unexpected Zerodha authorization URL.');
+          return;
+        }
         setZerodhaState(response.state ?? null);
         setZerodhaExpiresAt(response.expiresAt ?? null);
         setShowZerodhaSheet(true);

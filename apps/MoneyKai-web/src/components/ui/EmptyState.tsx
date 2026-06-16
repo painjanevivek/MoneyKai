@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, type ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { Typography, Spacing } from '../../constants/theme';
+import { BorderRadius, Shadows, Typography, Spacing } from '../../constants/theme';
 
 interface EmptyStateProps {
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
@@ -27,28 +27,36 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         {
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: Spacing['3xl'],
+          backgroundColor: colors.card,
+          borderColor: colors.borderLight,
+          borderRadius: BorderRadius.sm,
+          borderWidth: 1,
+          paddingVertical: Spacing['2xl'],
           paddingHorizontal: Spacing.xl,
+          ...Shadows.sm,
+          shadowColor: colors.shadowColor,
         },
         style,
       ]}
     >
       <View
         style={{
-          width: 80,
-          height: 80,
-          borderRadius: 40,
+          width: 64,
+          height: 64,
+          borderRadius: BorderRadius.full,
           backgroundColor: colors.primaryBg,
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: Spacing.base,
+          marginBottom: Spacing.md,
+          borderWidth: 1,
+          borderColor: `${colors.primary}22`,
         }}
       >
-        <MaterialCommunityIcons name={icon} size={36} color={colors.primary} />
+        <MaterialCommunityIcons name={icon} size={28} color={colors.primary} />
       </View>
       <Text
         style={{
-          fontSize: Typography.fontSize.lg,
+          fontSize: Typography.fontSize.md,
           fontFamily: Typography.fontFamily.semiBold,
           color: colors.textPrimary,
           marginBottom: Spacing.xs,
@@ -64,7 +72,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             fontFamily: Typography.fontFamily.regular,
             color: colors.textSecondary,
             textAlign: 'center',
-            lineHeight: 22,
+            lineHeight: Typography.lineHeight.base,
+            maxWidth: 480,
           }}
         >
           {message}

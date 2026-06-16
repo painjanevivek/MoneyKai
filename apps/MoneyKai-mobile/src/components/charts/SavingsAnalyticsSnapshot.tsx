@@ -2,7 +2,10 @@ import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Svg, { Rect, Text as SvgText } from 'react-native-svg';
-import { addDays, endOfDay, isWithinInterval, startOfWeek } from 'date-fns';
+import { addDays } from 'date-fns/addDays';
+import { endOfDay } from 'date-fns/endOfDay';
+import { isWithinInterval } from 'date-fns/isWithinInterval';
+import { startOfWeek } from 'date-fns/startOfWeek';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -18,7 +21,7 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const transactions = useTransactionStore((s) => s.transactions);
-  const { settings } = useBudgetStore();
+  const settings = useBudgetStore((s) => s.settings);
 
   const health = calculateBudgetHealth(settings.monthly_allowance, totalSpent);
   const healthColor = getBudgetHealthColor(health.level, colors);

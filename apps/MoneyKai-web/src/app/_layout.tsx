@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import '@/services/sentry';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, TouchableOpacity, ActivityIndicator, LogBox } from 'react-native';
+import { View, Text, TouchableOpacity, LogBox, Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
@@ -10,9 +11,19 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, type ColorScheme } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
-import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
-import { AutoBackupCoordinator } from '@/components/backup/AutoBackupCoordinator';
-import { BudgetResetCoordinator } from '@/components/dashboard/BudgetResetCoordinator';
+import { captureSentryException, identifySentryUser } from '@/services/sentry';
+
+const AutoBackupCoordinator = lazy(() =>
+  import('@/components/backup/AutoBackupCoordinator').then((module) => ({
+    default: module.AutoBackupCoordinator,
+  }))
+);
+
+const BudgetResetCoordinator = lazy(() =>
+  import('@/components/dashboard/BudgetResetCoordinator').then((module) => ({
+    default: module.BudgetResetCoordinator,
+  }))
+);
 
 // Suppress known web warnings from react-native-gifted-charts passing RN props to DOM elements
 LogBox.ignoreLogs([
@@ -44,6 +55,16 @@ class AppErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[AppErrorBoundary] Unhandled render error:', error, info);
+    void captureSentryException(error, {
+      level: 'fatal',
+      tags: {
+        boundary: 'root',
+        surface: 'expo-web',
+      },
+      extra: {
+        componentStack: info.componentStack,
+      },
+    });
   }
 
   handleRetry = () => this.setState({ hasError: false, error: null });
@@ -76,7 +97,8 @@ export default function RootLayout() {
   const theme = useSettingsStore((s) => s.theme);
   const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
-  const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
 
   const [fontsLoaded, fontError] = useFonts({
     Poppins_400Regular,
@@ -86,50 +108,59 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      if (__DEV__ && !isFirebaseConfigured()) {
-        console.warn(
-          '[MoneyKai] Firebase is not configured. Configure the EXPO_PUBLIC_FIREBASE_* keys to enable cloud auth and backup.'
-        );
-      }
-
-      hydrateSession().catch((e) => {
-        if (__DEV__) console.warn('[MoneyKai] hydrateSession error:', e);
-      });
+    if (__DEV__ && !isFirebaseConfigured()) {
+      console.warn(
+        '[MoneyKai] Firebase is not configured. Configure the EXPO_PUBLIC_FIREBASE_* keys to enable cloud auth and backup.'
+      );
     }
-  }, [fontsLoaded, fontError, hydrateSession]);
+
+    hydrateSession().catch((e) => {
+      if (__DEV__) console.warn('[MoneyKai] hydrateSession error:', e);
+      void captureSentryException(e, {
+        tags: {
+          operation: 'hydrateSession',
+          surface: 'expo-web',
+        },
+      });
+    });
+  }, [hydrateSession]);
 
   useEffect(() => {
-    if ((fontsLoaded || fontError) && !isHydratingSession) {
+    void identifySentryUser(user);
+  }, [user]);
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, isHydratingSession]);
+  }, [fontsLoaded, fontError]);
 
   useEffect(() => {
-    void initializeNotificationChannel();
-    const uninstall = installNotificationListeners((route) => {
-      if (route) {
-        router.push(route as any);
+    if (!isAuthenticated || Platform.OS === 'web') {
+      return undefined;
+    }
+
+    let uninstall = () => undefined;
+    let mounted = true;
+
+    void import('@/services/notificationService').then(({ initializeNotificationChannel, installNotificationListeners }) => {
+      if (!mounted) {
+        return;
       }
+
+      void initializeNotificationChannel();
+      uninstall = installNotificationListeners((route) => {
+        if (route) {
+          router.push(route as any);
+        }
+      });
     });
-    return uninstall;
-  }, []);
 
-  if (!fontsLoaded && !fontError) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
-  if (isHydratingSession) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+    return () => {
+      mounted = false;
+      uninstall();
+    };
+  }, [isAuthenticated]);
 
   const content = (
     <Stack
@@ -153,10 +184,13 @@ export default function RootLayout() {
   return (
     <AppErrorBoundary colors={colors}>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <AutoBackupCoordinator />
-      <BudgetResetCoordinator />
+      {isAuthenticated ? (
+        <Suspense fallback={null}>
+          <AutoBackupCoordinator />
+          <BudgetResetCoordinator />
+        </Suspense>
+      ) : null}
       <View style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
     </AppErrorBoundary>
   );
 }
-

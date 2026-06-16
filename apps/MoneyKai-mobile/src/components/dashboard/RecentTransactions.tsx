@@ -19,18 +19,23 @@ export const RecentTransactions: React.FC<{ onViewAll?: () => void; transactions
   const recentTxns = transactions ?? storeRecentTxns;
 
   return (
-    <Card>
+    <Card style={{ borderRadius: BorderRadius.xl }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-        <Text
-          style={{
-            fontSize: Typography.fontSize.md,
-            fontFamily: Typography.fontFamily.semiBold,
-            color: colors.textPrimary,
-          }}
-        >
-          Recent Transactions
-        </Text>
-        <TouchableOpacity onPress={onViewAll}>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: Typography.fontSize.md,
+              fontFamily: Typography.fontFamily.semiBold,
+              color: colors.textPrimary,
+            }}
+          >
+            Recent ledger
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+            Latest reviewed money movement
+          </Text>
+        </View>
+        <TouchableOpacity accessibilityRole="button" onPress={onViewAll} style={{ paddingVertical: 6, paddingLeft: Spacing.sm }}>
           <Text
             style={{
               fontSize: Typography.fontSize.sm,
@@ -38,7 +43,7 @@ export const RecentTransactions: React.FC<{ onViewAll?: () => void; transactions
               color: colors.primary,
             }}
           >
-            View All
+            View all
           </Text>
         </TouchableOpacity>
       </View>
@@ -54,7 +59,7 @@ export const RecentTransactions: React.FC<{ onViewAll?: () => void; transactions
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingVertical: Spacing.sm,
+                paddingVertical: 11,
                 borderTopWidth: index > 0 ? 1 : 0,
                 borderTopColor: colors.borderLight,
               }}
@@ -63,7 +68,7 @@ export const RecentTransactions: React.FC<{ onViewAll?: () => void; transactions
                 style={{
                   width: 40,
                   height: 40,
-                  borderRadius: BorderRadius.sm,
+                  borderRadius: BorderRadius.md,
                   backgroundColor: category?.colorLight || '#F3F4F6',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -76,31 +81,38 @@ export const RecentTransactions: React.FC<{ onViewAll?: () => void; transactions
                   color={category?.color || '#6B7280'}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, paddingRight: Spacing.sm }}>
                 <Text
+                  numberOfLines={1}
                   style={{
                     fontSize: Typography.fontSize.base,
-                    fontFamily: Typography.fontFamily.medium,
+                    fontFamily: Typography.fontFamily.semiBold,
                     color: colors.textPrimary,
                   }}
                 >
-                  {txn.description}
+                  {txn.description || category?.name || 'Transaction'}
                 </Text>
                 <Text
+                  numberOfLines={1}
                   style={{
                     fontSize: Typography.fontSize.xs,
                     fontFamily: Typography.fontFamily.regular,
                     color: colors.textTertiary,
                   }}
                 >
-                  {category?.name} • {formatRelativeDate(txn.transaction_date)}
+                  {category?.name || 'Uncategorized'} - {formatRelativeDate(txn.transaction_date)}
                 </Text>
               </View>
               <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.74}
                 style={{
                   fontSize: Typography.fontSize.base,
                   fontFamily: Typography.fontFamily.semiBold,
                   color: isExpense ? colors.emergency : colors.primaryLight,
+                  maxWidth: 116,
+                  textAlign: 'right',
                 }}
               >
                 {isExpense ? '-' : '+'}
@@ -125,7 +137,7 @@ export const RecentTransactions: React.FC<{ onViewAll?: () => void; transactions
               lineHeight: 20,
             }}
           >
-            No recent transactions yet. Add one to start filling out this dashboard.
+            No reviewed transactions yet. Add one to start filling out this ledger.
           </Text>
         </View>
       )}

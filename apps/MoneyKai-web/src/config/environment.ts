@@ -5,6 +5,14 @@ const readEnv = (key: string): string => process.env[key]?.trim() ?? '';
 const isRealValue = (value: string): boolean =>
   value.length > 0 && !PLACEHOLDER_PATTERNS.some((pattern) => value.includes(pattern));
 
+const sanitizeRate = (value: string, fallback: number): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.min(1, Math.max(0, parsed));
+};
+
 const storeReviewEnv = {
   iosUrl: readEnv('EXPO_PUBLIC_APP_STORE_URL'),
   androidUrl: readEnv('EXPO_PUBLIC_PLAY_STORE_URL'),
@@ -16,6 +24,10 @@ const gmailSyncEnabledValue = readEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
 const pdfStatementParsingEnabledValue = readEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
 const wealthTabEnabledValue = readEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
 const financialAiEnabledValue = readEnv('EXPO_PUBLIC_FINANCIAL_AI_ENABLED');
+const sentryTraceSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE');
+const sentryReplaySessionSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE');
+const sentryReplayErrorSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE');
+const sentryDsnValue = readEnv('EXPO_PUBLIC_SENTRY_DSN');
 
 export const appEnvironment = {
   backendBaseUrl,
@@ -23,6 +35,13 @@ export const appEnvironment = {
   pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
   wealthTabEnabled: wealthTabEnabledValue === '' ? true : wealthTabEnabledValue === 'true',
   financialAiEnabled: financialAiEnabledValue === 'true',
+  sentryDsn: isRealValue(sentryDsnValue) ? sentryDsnValue : '',
+  sentryEnvironment: readEnv('EXPO_PUBLIC_SENTRY_ENVIRONMENT'),
+  sentryRelease: readEnv('EXPO_PUBLIC_SENTRY_RELEASE'),
+  sentryTraceSampleRate: sanitizeRate(sentryTraceSampleRateValue, isDevRuntime() ? 1 : 0.1),
+  sentryReplaySessionSampleRate: sanitizeRate(sentryReplaySessionSampleRateValue, isDevRuntime() ? 1 : 0.05),
+  sentryReplayErrorSampleRate: sanitizeRate(sentryReplayErrorSampleRateValue, 1),
+  sentryDebug: readEnv('EXPO_PUBLIC_SENTRY_DEBUG') === 'true',
 };
 
 export const isGmailSyncEnabled = (): boolean =>

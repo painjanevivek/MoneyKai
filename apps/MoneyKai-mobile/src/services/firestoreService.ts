@@ -6,6 +6,8 @@ import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { ThemeMode } from '@/constants/theme';
+import { retryAsync } from './networkClient';
+import { useSyncStore } from '@/stores/useSyncStore';
 
 type FirestoreDocumentData = FirebaseFirestoreTypes.DocumentData;
 
@@ -93,6 +95,20 @@ const userCollection = (uid: string, collectionName: string) =>
 
 export { isFirebaseConfigured };
 
+const runFirestoreMutation = async <T,>(task: () => Promise<T>): Promise<T> => {
+  useSyncStore.getState().startSync();
+  try {
+    const result = await retryAsync(task, { retries: 2, baseDelayMs: 450 });
+    useSyncStore.getState().finishSync();
+    return result;
+  } catch (error) {
+    useSyncStore.getState().failSync(
+      error instanceof Error ? error.message : 'Cloud sync failed. Your local changes are still on this device.',
+    );
+    throw error;
+  }
+};
+
 export const loadUserFirestoreSnapshot = async (
   uid: string,
   profile: FirestoreUserSnapshot['profile']
@@ -154,47 +170,61 @@ export const loadUserFirestoreSnapshot = async (
 };
 
 export const saveUserAppSettings = async (uid: string, data: Partial<AppSettingsDoc>) => {
-  await db().collection('users').doc(uid).collection('settings').doc('app').set(data, { merge: true });
+  await runFirestoreMutation(() =>
+    db().collection('users').doc(uid).collection('settings').doc('app').set(data, { merge: true })
+  );
 };
 
 export const saveUserBudgetSettings = async (uid: string, data: Partial<BudgetSettingsDoc>) => {
-  await db().collection('users').doc(uid).collection('budgets').doc('current').set(data, { merge: true });
+  await runFirestoreMutation(() =>
+    db().collection('users').doc(uid).collection('budgets').doc('current').set(data, { merge: true })
+  );
 };
 
 export const upsertUserDoc = async <T extends { id: string }>(collectionName: string, uid: string, value: T) => {
-  await userCollection(uid, collectionName).doc(value.id).set(value, { merge: true });
+  await runFirestoreMutation(() =>
+    userCollection(uid, collectionName).doc(value.id).set(value, { merge: true })
+  );
 };
 
 export const deleteUserDoc = async (collectionName: string, uid: string, id: string) => {
-  await userCollection(uid, collectionName).doc(id).delete();
+  await runFirestoreMutation(() => userCollection(uid, collectionName).doc(id).delete());
 };
 
 export const upsertUserGroup = async <T extends Group>(uid: string, value: T) => {
-  await userCollection(uid, 'groups').doc(value.id).set(value, { merge: true });
+  await runFirestoreMutation(() => userCollection(uid, 'groups').doc(value.id).set(value, { merge: true }));
 };
 
 export const deleteUserGroup = async (uid: string, id: string) => {
-  const groupRef = userCollection(uid, 'groups').doc(id);
-  const expenses = await groupRef.collection('expenses').get();
-  await Promise.all(expenses.docs.map((expense) => expense.ref.delete()));
-  await groupRef.delete();
+  await runFirestoreMutation(async () => {
+    const groupRef = userCollection(uid, 'groups').doc(id);
+    const expenses = await groupRef.collection('expenses').get();
+    await Promise.all(expenses.docs.map((expense) => expense.ref.delete()));
+    await groupRef.delete();
+  });
 };
 
 export const upsertUserGroupExpense = async <T extends GroupExpense>(uid: string, groupId: string, value: T) => {
-  await userCollection(uid, 'groups').doc(groupId).collection('expenses').doc(value.id).set(value, { merge: true });
+  await runFirestoreMutation(() =>
+    userCollection(uid, 'groups').doc(groupId).collection('expenses').doc(value.id).set(value, { merge: true })
+  );
 };
 
 export const deleteUserGroupExpense = async (uid: string, groupId: string, expenseId: string) => {
-  await userCollection(uid, 'groups').doc(groupId).collection('expenses').doc(expenseId).delete();
+  await runFirestoreMutation(() =>
+    userCollection(uid, 'groups').doc(groupId).collection('expenses').doc(expenseId).delete()
+  );
 };
 
 export const saveUserBackup = async <TSnapshot>(uid: string, snapshot: TSnapshot) => {
-  await userCollection(uid, 'backups').add({
-    backup_name: `Backup ${new Date().toLocaleString()}`,
-    snapshot,
-    createdAt: firestore.FieldValue.serverTimestamp(),
-    createdAtMs: Date.now(),
-  } satisfies FirestoreBackupRecord<TSnapshot>);
+  await runFirestoreMutation(() =>
+    userCollection(uid, 'backups').add({
+      backup_name: `Backup ${new Date().toLocaleString()}`,
+      snapshot,
+      createdAt: firestore.FieldValue.serverTimestamp(),
+      createdAtMs: Date.now(),
+    } satisfies FirestoreBackupRecord<TSnapshot>)
+  );
 };
 
 export const getLatestUserBackup = async <TSnapshot>(uid: string): Promise<TSnapshot | null> => {

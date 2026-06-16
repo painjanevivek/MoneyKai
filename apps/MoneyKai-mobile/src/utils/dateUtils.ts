@@ -1,21 +1,19 @@
-import {
-  format,
-  startOfDay,
-  endOfDay,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  subMonths,
-  addMonths,
-  differenceInDays,
-  isToday,
-  isYesterday,
-  isSameMonth,
-  parseISO,
-  setDate,
-  isBefore,
-} from 'date-fns';
+import { addMonths } from 'date-fns/addMonths';
+import { differenceInDays } from 'date-fns/differenceInDays';
+import { endOfDay } from 'date-fns/endOfDay';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { endOfWeek } from 'date-fns/endOfWeek';
+import { format } from 'date-fns/format';
+import { isBefore } from 'date-fns/isBefore';
+import { isSameMonth } from 'date-fns/isSameMonth';
+import { isToday } from 'date-fns/isToday';
+import { isYesterday } from 'date-fns/isYesterday';
+import { parseISO } from 'date-fns/parseISO';
+import { setDate } from 'date-fns/setDate';
+import { startOfDay } from 'date-fns/startOfDay';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { subMonths } from 'date-fns/subMonths';
 
 export const formatDate = (date: string | Date, fmt: string = 'dd MMM yyyy'): string => {
   const d = typeof date === 'string' ? parseISO(date) : date;

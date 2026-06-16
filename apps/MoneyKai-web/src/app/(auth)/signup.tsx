@@ -6,9 +6,9 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { AuthShell } from '@/components/auth/AuthShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 const getFriendlySignupMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : '';
@@ -26,6 +26,12 @@ const getFriendlySignupMessage = (error: unknown) => {
 
   return 'Please check the form and try again.';
 };
+
+const SETUP_PROMISES = [
+  'Create your private workspace',
+  'Set a budget or add one record',
+  'Review dashboard insights before acting',
+] as const;
 
 export default function SignupScreen() {
   const { colors } = useTheme();
@@ -71,18 +77,19 @@ export default function SignupScreen() {
         path="/signup"
         robots="noindex,nofollow"
       />
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <AuthShell
+        eyebrow="PRIVATE ONBOARDING"
+        title="Start with the records you trust MoneyKai with."
+        subtitle="Create a workspace for budgets, imports, holdings, shared expenses, and calm monthly review."
+      >
+      <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            paddingHorizontal: Spacing.xl,
-            paddingVertical: Spacing['2xl'],
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
           <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: Spacing.lg }}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -101,11 +108,48 @@ export default function SignupScreen() {
             }}>Create a home for your money.</Text>
           </View>
 
-          {/* Form */}
+          <View
+            style={{
+              backgroundColor: colors.primaryBg,
+              borderRadius: BorderRadius.sm,
+              borderWidth: 1,
+              borderColor: `${colors.primary}22`,
+              marginBottom: Spacing.lg,
+              padding: Spacing.md,
+              gap: Spacing.sm,
+            }}
+          >
+            {SETUP_PROMISES.map((promise, index) => (
+              <View key={promise} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <View
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: BorderRadius.full,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: colors.card,
+                    borderWidth: 1,
+                    borderColor: colors.borderLight,
+                  }}
+                >
+                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.bold, color: colors.primary }}>
+                    {index + 1}
+                  </Text>
+                </View>
+                <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: colors.textPrimary }}>
+                  {promise}
+                </Text>
+              </View>
+            ))}
+          </View>
+
           <View style={{
             backgroundColor: colors.card,
             borderRadius: BorderRadius.xl,
             padding: Spacing.xl,
+            borderWidth: 1,
+            borderColor: colors.borderLight,
             ...Shadows.lg,
             shadowColor: colors.shadowColor,
           }}>
@@ -116,6 +160,9 @@ export default function SignupScreen() {
               onChangeText={setFullName}
               error={errors.fullName}
               icon="account-outline"
+              testID="signup-full-name"
+              autoComplete="name"
+              textContentType="name"
             />
             <Input
               label="Email"
@@ -126,6 +173,9 @@ export default function SignupScreen() {
               icon="email-outline"
               keyboardType="email-address"
               autoCapitalize="none"
+              testID="signup-email"
+              autoComplete="email"
+              textContentType="emailAddress"
             />
             <Input
               label="Password"
@@ -135,6 +185,9 @@ export default function SignupScreen() {
               error={errors.password}
               icon="lock-outline"
               secureTextEntry
+              testID="signup-password"
+              autoComplete="new-password"
+              textContentType="newPassword"
             />
             <Input
               label="Confirm Password"
@@ -144,6 +197,9 @@ export default function SignupScreen() {
               error={errors.confirmPassword}
               icon="lock-check-outline"
               secureTextEntry
+              testID="signup-confirm-password"
+              autoComplete="new-password"
+              textContentType="newPassword"
             />
             <Button
               title="Create Account"
@@ -153,6 +209,7 @@ export default function SignupScreen() {
               fullWidth
               size="lg"
               icon="account-plus-outline"
+              testID="signup-submit"
               style={{ marginTop: Spacing.md }}
             />
           </View>
@@ -173,7 +230,7 @@ export default function SignupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      </SafeAreaView>
+      </AuthShell>
     </>
   );
 }

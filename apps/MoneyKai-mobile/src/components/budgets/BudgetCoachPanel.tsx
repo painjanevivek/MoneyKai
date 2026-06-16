@@ -11,7 +11,8 @@ import { Card } from '@/components/ui/Card';
 
 export const BudgetCoachPanel: React.FC = () => {
   const { colors } = useTheme();
-  const { settings, isEmergencyMode } = useBudgetStore();
+  const settings = useBudgetStore((s) => s.settings);
+  const isEmergencyMode = useBudgetStore((s) => s.isEmergencyMode);
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
 

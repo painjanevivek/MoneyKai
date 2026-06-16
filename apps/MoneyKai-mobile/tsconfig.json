@@ -15,6 +15,12 @@
       ],
       "@/assets/*": [
         "./assets/*"
+      ],
+      "@moneykai/domain": [
+        "../../packages/domain/src/index.ts"
+      ],
+      "@moneykai/domain/*": [
+        "../../packages/domain/src/*"
       ]
     }
   },

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { router } from 'expo-router';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
@@ -17,33 +18,39 @@ type TourStep = {
 const TOUR_STEPS: TourStep[] = [
   {
     icon: 'view-dashboard-outline',
-    title: 'Start on the Dashboard',
-    body: 'This is your quick financial snapshot. Check balances, trends, notes, and recent activity here first.',
-    hint: 'Look here for your daily overview.',
+    title: 'Start with the control center',
+    body: 'The dashboard is the calm first read: available money, spend pressure, income, recent records, and the next best place to review.',
+    hint: 'Your daily decision surface.',
   },
   {
     icon: 'receipt-text-outline',
-    title: 'Use Transactions for everyday entries',
-    body: 'Add spending and income from the Transactions tab when you need to record something right away.',
-    hint: 'This is where your history grows.',
+    title: 'Build a reviewed ledger',
+    body: 'Transactions are the source of truth for reports. Add records manually, review imported entries, and keep categories clean.',
+    hint: 'Every report starts here.',
   },
   {
-    icon: 'account-group-outline',
-    title: 'Track shared expenses in Groups',
-    body: 'Rooms, trips, and shared bills belong in Groups so you can split costs without messy calculations.',
-    hint: 'Open Groups when money is shared.',
+    icon: 'database-import-outline',
+    title: 'Import only what you choose',
+    body: 'MoneyKai is built around user-provided records: statements, pasted messages, documents, and manual entries you can review.',
+    hint: 'No hidden capture workflow.',
   },
   {
-    icon: 'chart-line',
-    title: 'Review patterns in Savings',
-    body: 'Savings now contains the analytics and challenge view, so the deeper insights live in one calmer place.',
-    hint: 'Savings is where the analysis lives.',
+    icon: 'briefcase-outline',
+    title: 'Add wealth context',
+    body: 'Portfolio records and holdings help connect day-to-day money decisions with longer-term allocation and exposure.',
+    hint: 'Spending plus wealth context.',
   },
   {
-    icon: 'cog-outline',
-    title: 'Finish in Settings',
-    body: 'Monthly budget, reset controls, backups, privacy, and account actions all live in Settings when you need them.',
-    hint: 'Settings keeps the important controls together.',
+    icon: 'shield-check-outline',
+    title: 'Keep trust visible',
+    body: 'Privacy, backups, budget settings, and account controls stay close to the workflows that depend on them.',
+    hint: 'Trust is a product behavior.',
+  },
+  {
+    icon: 'receipt-text-plus-outline',
+    title: 'Add one record to begin',
+    body: 'Your first useful MoneyKai review starts with a single income or expense. Add one record now, then return to the dashboard to see the loop take shape.',
+    hint: 'First action: one reviewed record.',
   },
 ];
 
@@ -63,17 +70,19 @@ export const FirstLoginTour: React.FC<FirstLoginTourProps> = ({ visible, onFinis
   return (
     <ModalSheet
       visible={visible}
-      title="Welcome to MoneyKai"
-      subtitle="A quick guided tour so the app feels familiar from the first login."
+      title="Set up your MoneyKai workspace"
+      subtitle="A quick tour of the financial review loop, ending with the first record that makes the product useful."
       onClose={onSkip}
       maxHeight={620}
       footer={
         <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>
           <Button
-            title={isLastStep ? 'Finish tour' : 'Next'}
+            title={isLastStep ? 'Add first record' : 'Next'}
+            icon={isLastStep ? 'receipt-text-plus-outline' : undefined}
             onPress={() => {
               if (isLastStep) {
                 onFinish();
+                router.push('/transactions' as any);
                 return;
               }
               setStepIndex((current) => Math.min(current + 1, TOUR_STEPS.length - 1));
@@ -90,11 +99,11 @@ export const FirstLoginTour: React.FC<FirstLoginTourProps> = ({ visible, onFinis
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            backgroundColor: colors.primaryBg,
+            backgroundColor: colors.primaryDark,
             borderRadius: BorderRadius.md,
             padding: Spacing.md,
             borderWidth: 1,
-            borderColor: `${colors.primary}20`,
+            borderColor: `${colors.primary}30`,
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -103,23 +112,25 @@ export const FirstLoginTour: React.FC<FirstLoginTourProps> = ({ visible, onFinis
                 width: 44,
                 height: 44,
                 borderRadius: 22,
-                backgroundColor: colors.primary,
+                backgroundColor: 'rgba(255,255,255,0.14)',
                 alignItems: 'center',
                 justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.16)',
               }}
             >
-              <MaterialCommunityIcons name={step.icon as any} size={22} color={colors.textInverse} />
+              <MaterialCommunityIcons name={step.icon as any} size={22} color="#FFFFFF" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: '#FFFFFF' }}>
                 {step.title}
               </Text>
-              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginTop: 2, lineHeight: 18 }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: 'rgba(255,255,255,0.68)', marginTop: 2, lineHeight: 18 }}>
                 {step.hint}
               </Text>
             </View>
           </View>
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: 'rgba(255,255,255,0.74)' }}>
             {stepIndex + 1}/{TOUR_STEPS.length}
           </Text>
         </View>

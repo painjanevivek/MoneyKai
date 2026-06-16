@@ -12,9 +12,16 @@ import type { AuthStackParamList } from '@/navigation/types';
 
 type SignupScreenProps = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
+const SETUP_PROMISES = [
+  'Create your private workspace',
+  'Set a budget or add one record',
+  'Review dashboard insights before acting',
+] as const;
+
 export function SignupScreen({ navigation }: SignupScreenProps) {
   const { colors } = useTheme();
-  const { signUp, isLoading } = useAuthStore();
+  const signUp = useAuthStore((state) => state.signUp);
+  const isLoading = useAuthStore((state) => state.isLoading);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -91,6 +98,42 @@ export function SignupScreen({ navigation }: SignupScreenProps) {
             >
               Create a home for your money.
             </Text>
+          </View>
+
+          <View
+            style={{
+              backgroundColor: colors.primaryBg,
+              borderColor: `${colors.primary}22`,
+              borderRadius: BorderRadius.sm,
+              borderWidth: 1,
+              gap: Spacing.sm,
+              marginBottom: Spacing.lg,
+              padding: Spacing.md,
+            }}
+          >
+            {SETUP_PROMISES.map((promise, index) => (
+              <View key={promise} style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.sm }}>
+                <View
+                  style={{
+                    alignItems: 'center',
+                    backgroundColor: colors.card,
+                    borderColor: colors.borderLight,
+                    borderRadius: BorderRadius.full,
+                    borderWidth: 1,
+                    height: 24,
+                    justifyContent: 'center',
+                    width: 24,
+                  }}
+                >
+                  <Text style={{ color: colors.primary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.xs }}>
+                    {index + 1}
+                  </Text>
+                </View>
+                <Text style={{ color: colors.textPrimary, flex: 1, fontSize: Typography.fontSize.sm }}>
+                  {promise}
+                </Text>
+              </View>
+            ))}
           </View>
 
           <View

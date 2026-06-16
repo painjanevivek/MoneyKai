@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { endOfDay, endOfWeek, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
 import { useTheme } from '@/hooks/useTheme';
 import { useTransactionStore } from '@/stores/useTransactionStore';
+import { AppScreenHeader } from '@/components/ui/AppScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { TransactionComposerSheet } from '@/components/ui/TransactionComposerSheet';
@@ -56,7 +57,7 @@ type SortOption = TransactionHistorySortOption;
 type FilterValue = 'all' | string;
 
 export default function TransactionsScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { deleteTransaction, setFilter } = useTransactionStore();
   const allTransactions = useTransactionStore((s) => s.transactions);
   const filteredTransactions = useTransactionStore((s) => s.getFilteredTransactions());
@@ -134,6 +135,7 @@ export default function TransactionsScreen() {
     Number(sourceFilter !== 'all') +
     Number(dateFilter !== 'all');
   const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest First';
+  const netFlow = totalIncome - totalSpent;
 
   const displayTransactions = useMemo(() => {
     const now = new Date();
@@ -292,71 +294,32 @@ export default function TransactionsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Transactions</Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Manage your income and expenses</Text>
-        </View>
-        <TouchableOpacity
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel="Open transaction capture"
-          activeOpacity={0.82}
-          onPress={() => router.push('/(tabs)/auto-capture' as never)}
-          style={{
-            minHeight: 44,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            paddingHorizontal: Spacing.md,
-            paddingVertical: Spacing.sm,
-            borderRadius: BorderRadius.full,
-            backgroundColor: colors.primary,
-            borderWidth: 1,
-            borderColor: colors.primary,
-            ...Shadows.sm,
-            shadowColor: colors.shadowColor,
-          }}
-        >
-          <MaterialCommunityIcons name="text-box-check-outline" size={18} color={colors.textInverse} />
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.85}
-            style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}
-          >
-            Capture
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: isDark ? colors.surface : '#F5F5F5',
-            borderRadius: BorderRadius.md,
-            padding: Spacing.md,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Total Spent</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>{formatCurrency(totalSpent)}</Text>
-        </View>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: colors.surface,
-            borderRadius: BorderRadius.md,
-            padding: Spacing.md,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Total Income</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>{formatCurrency(totalIncome)}</Text>
-        </View>
+      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base }}>
+        <AppScreenHeader
+          icon="swap-horizontal"
+          eyebrow="TRANSACTION LEDGER"
+          title="Reviewed money movement"
+          description="Search, filter, and edit the transactions shaping your budget, cashflow, and reports."
+          metrics={[
+            { label: 'Spent', value: formatCurrency(totalSpent), tone: 'danger' },
+            { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
+            { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'warning' : 'positive' },
+          ]}
+          chips={[
+            { icon: 'shield-check-outline', label: 'Review before action' },
+            { icon: 'filter-variant', label: `${activeFilterCount} active filters` },
+          ]}
+          actions={
+            <Button
+              title="Capture"
+              icon="text-box-check-outline"
+              onPress={() => router.push('/(tabs)/auto-capture' as never)}
+              variant="outline"
+              size="sm"
+              style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }}
+            />
+          }
+        />
       </View>
 
       <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.sm }}>

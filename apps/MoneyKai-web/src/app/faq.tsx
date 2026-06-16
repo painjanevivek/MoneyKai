@@ -1,4 +1,3 @@
-import Head from 'expo-router/head';
 import { Link } from 'expo-router';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -11,15 +10,19 @@ import { useTheme } from '@/hooks/useTheme';
 const FAQ_CATEGORIES = [
   {
     title: 'Getting started',
-    items: HOME_FAQS.slice(0, 2),
+    items: HOME_FAQS.slice(0, 3),
   },
   {
     title: 'Core features',
-    items: HOME_FAQS.slice(2, 4),
+    items: HOME_FAQS.slice(3, 6),
   },
   {
     title: 'Trust and boundaries',
-    items: HOME_FAQS.slice(4, 6),
+    items: HOME_FAQS.slice(6, 8),
+  },
+  {
+    title: 'Choosing MoneyKai',
+    items: HOME_FAQS.slice(8),
   },
 ];
 
@@ -48,10 +51,8 @@ export default function FaqPage() {
         description="Read common questions about MoneyKai, including expense tracking, budgeting, shared expenses, security, pricing, and financial-advice boundaries."
         path="/faq"
         keywords={['MoneyKai FAQ', 'budget app FAQ', 'expense tracking help', 'personal finance app questions']}
+        structuredData={faqStructuredData}
       />
-      <Head>
-        <script type="application/ld+json">{JSON.stringify(faqStructuredData)}</script>
-      </Head>
       <PublicShell
         eyebrow="FAQ"
         title="Questions people commonly ask before they trust a finance app"

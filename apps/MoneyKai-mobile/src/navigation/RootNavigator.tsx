@@ -1,10 +1,11 @@
 import React from 'react';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors } from '@/constants/theme';
+import { ScreenState } from '@/components/ui/ScreenState';
 import type { RootStackParamList } from './types';
 import { AuthNavigator } from './AuthNavigator';
 import { AppTabs } from './AppTabs';
@@ -17,6 +18,7 @@ import { SavingsScreen } from '@/screens/app/SavingsScreen';
 import { SettingsScreen } from '@/screens/app/SettingsScreen';
 import { AutoCaptureScreen } from '@/screens/app/AutoCaptureScreen';
 import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordinator';
+import { SyncCoordinator } from '@/components/sync/SyncCoordinator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -33,8 +35,8 @@ export function RootNavigator() {
 
   if (isHydratingSession) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', padding: 24 }}>
+        <ScreenState loading title="Opening MoneyKai" body="Restoring your secure session and local budget data." tone="primary" />
       </View>
     );
   }
@@ -60,6 +62,11 @@ export function RootNavigator() {
           headerTitleStyle: { color: colors.textPrimary },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
+          animation: 'ios_from_right',
+          gestureEnabled: true,
+          headerBackTitle: 'Back',
+          headerLargeTitle: true,
+          headerTransparent: false,
         }}
       >
         {isAuthenticated ? (
@@ -80,7 +87,12 @@ export function RootNavigator() {
           <Stack.Screen name="Auth" component={AuthNavigator} options={{ headerShown: false }} />
         )}
       </Stack.Navigator>
-      {isAuthenticated && <AutoCaptureCoordinator />}
+      {isAuthenticated && (
+        <>
+          <SyncCoordinator />
+          <AutoCaptureCoordinator />
+        </>
+      )}
     </NavigationContainer>
   );
 }

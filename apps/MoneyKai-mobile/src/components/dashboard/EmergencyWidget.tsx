@@ -7,7 +7,8 @@ import { Typography, Spacing, BorderRadius, Shadows } from '../../constants/them
 
 export const EmergencyWidget: React.FC<{ onPress?: () => void }> = ({ onPress }) => {
   const { colors } = useTheme();
-  const { isEmergencyMode, toggleEmergencyMode } = useBudgetStore();
+  const isEmergencyMode = useBudgetStore((s) => s.isEmergencyMode);
+  const toggleEmergencyMode = useBudgetStore((s) => s.toggleEmergencyMode);
 
   return (
     <TouchableOpacity
@@ -77,7 +78,7 @@ export const EmergencyWidget: React.FC<{ onPress?: () => void }> = ({ onPress })
 export const SOSFloatingButton: React.FC<{ onPress: () => void }> = ({ onPress }) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { isEmergencyMode } = useBudgetStore();
+  const isEmergencyMode = useBudgetStore((s) => s.isEmergencyMode);
 
   if (!isEmergencyMode) return null;
 

@@ -21,6 +21,7 @@ const PRIMARY_LINKS = [
   { href: '/features/analytics', label: 'AI Insights' },
   { href: '/features/expense-tracking', label: 'Imports' },
   { href: '/features/savings', label: 'Portfolio' },
+  { href: '/compare', label: 'Compare' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/faq', label: 'FAQ' },
 ] as const;
@@ -39,36 +40,22 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
           pointerEvents="none"
           style={{
             position: 'absolute',
-            top: -180,
-            right: -120,
-            width: 460,
-            height: 460,
-            borderRadius: 999,
-            backgroundColor: 'rgba(225, 243, 233, 0.12)',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: isWide ? 1 : 0,
+            backgroundColor: 'rgba(234, 246, 240, 0.08)',
           }}
         />
         <View
           pointerEvents="none"
           style={{
             position: 'absolute',
-            bottom: 20,
-            left: -180,
-            width: 420,
-            height: 420,
-            borderRadius: 999,
-            backgroundColor: 'rgba(174, 209, 188, 0.11)',
-          }}
-        />
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: '32%',
-            left: '18%',
-            width: 260,
-            height: 260,
-            borderRadius: 999,
-            backgroundColor: 'rgba(245, 250, 247, 0.045)',
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: isWide ? 1 : 0,
+            backgroundColor: 'rgba(234, 246, 240, 0.06)',
           }}
         />
 
@@ -91,10 +78,10 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                   justifyContent: 'space-between',
                   gap: isCompact ? Spacing.sm : Spacing.md,
                   padding: isCompact ? Spacing.sm : Spacing.md,
-                  borderRadius: 32,
-                  backgroundColor: 'rgba(2, 3, 3, 0.78)',
+                  borderRadius: BorderRadius.xl,
+                  backgroundColor: 'rgba(3, 5, 4, 0.9)',
                   borderWidth: 1,
-                  borderColor: 'rgba(234, 246, 240, 0.1)',
+                  borderColor: 'rgba(234, 246, 240, 0.14)',
                 }}
               >
                 <Pressable
@@ -135,11 +122,11 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                     />
                   </View>
                   <View>
-                    <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: '#FFFFFF' }}>
                       {SITE.name}
                     </Text>
-                    <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                      AI report engine
+                    <Text style={{ fontSize: Typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.68)' }}>
+                      Private finance reports
                     </Text>
                   </View>
                 </Pressable>
@@ -172,7 +159,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                             transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                           })}
                         >
-                          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: '#FFFFFF' }}>
                             {item.label}
                           </Text>
                         </Pressable>
@@ -194,12 +181,14 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       onPress={() => router.push('/(auth)/login')}
                       variant="ghost"
                       fullWidth={isCompact}
+                      textStyle={{ color: '#FFFFFF' }}
+                      style={{ borderColor: 'rgba(255, 255, 255, 0.14)' }}
                     />
                     <Button
-                      title="Create account"
+                      title="Create secure account"
                       onPress={() => router.push('/(auth)/signup')}
                       fullWidth={isCompact}
-                      icon="account-plus-outline"
+                      icon="shield-account-outline"
                     />
                   </View>
                 ) : (
@@ -228,7 +217,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                           transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                         })}
                       >
-                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: '#FFFFFF' }}>
                           {item.label}
                         </Text>
                       </Pressable>
@@ -291,7 +280,13 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
               </View>
             ) : null}
 
-            <View style={{ flexGrow: 1, minHeight: 0, paddingBottom: Spacing['4xl'] }}>{children}</View>
+            <View
+              nativeID="main-content"
+              accessibilityRole="main"
+              style={{ flexGrow: 1, minHeight: 0, paddingBottom: Spacing['4xl'] }}
+            >
+              {children}
+            </View>
 
             <View
               style={{
@@ -316,6 +311,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                   { href: '/about', label: 'About' },
                   { href: '/faq', label: 'FAQ' },
                   { href: '/contact', label: 'Contact' },
+                  { href: '/compare', label: 'Compare' },
                   { href: '/pricing', label: 'Pricing' },
                   { href: '/news', label: 'News' },
                   { href: '/privacy-policy', label: 'Privacy policy' },

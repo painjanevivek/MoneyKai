@@ -16,6 +16,15 @@ import type { FinancialEmailCategory, FinancialEmailRecord } from '@/types/gmail
 
 const CATEGORY_LABELS = Object.fromEntries(FINANCIAL_EMAIL_CATEGORIES.map((category) => [category.key, category.label]));
 
+const isGoogleAuthorizationUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && parsed.hostname === 'accounts.google.com';
+  } catch {
+    return false;
+  }
+};
+
 export const GmailConnectionCard: React.FC = () => {
   const { colors } = useTheme();
   const enabled = isGmailSyncEnabled();
@@ -94,6 +103,10 @@ export const GmailConnectionCard: React.FC = () => {
     setBusy('connect');
     try {
       const response = await gmailSyncApi.startConnect(consent.metadataScanAcceptedAt);
+      if (!isGoogleAuthorizationUrl(response.authorizationUrl)) {
+        Alert.alert('Gmail connect failed', 'MoneyKai received an unexpected Google authorization URL.');
+        return;
+      }
       const opened = await Linking.openURL(response.authorizationUrl).then(() => true).catch(() => false);
       if (!opened) {
         Alert.alert('Open Gmail consent', response.authorizationUrl);

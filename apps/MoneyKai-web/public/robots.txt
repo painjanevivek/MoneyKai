@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
 
+# Public marketing, learning, FAQ, and comparison pages are crawlable for search
+# and answer engines.
 Sitemap: https://moneykai.app/sitemap.xml

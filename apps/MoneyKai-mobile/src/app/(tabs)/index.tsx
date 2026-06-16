@@ -19,6 +19,7 @@ import { MonthYearPickerSheet } from '@/components/calendar/MonthYearPickerSheet
 import { DashboardCalendarButton } from '@/components/dashboard/DashboardCalendarButton';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { formatCurrency } from '@/utils/formatCurrency';
 import {
   buildCategoryBudgetCards,
   buildDashboardInsight,
@@ -77,6 +78,9 @@ export default function DashboardScreen() {
   const monthlyAllowance = settings.monthly_allowance;
   const remaining = monthlyAllowance - monthExpenseTotal;
   const budgetProgress = monthlyAllowance > 0 ? (monthExpenseTotal / monthlyAllowance) * 100 : 0;
+  const firstName = user?.full_name?.split(' ')?.[0] || 'there';
+  const netCashflow = monthSummary.income - monthExpenseTotal;
+  const remainingLabel = remaining < 0 ? 'Over budget by' : 'Available after spend';
   const dashboardInsight = useMemo(
     () => buildDashboardInsight(monthExpenseTotal, previousMonthExpenseTotal, monthlyAllowance),
     [monthExpenseTotal, previousMonthExpenseTotal, monthlyAllowance]
@@ -107,46 +111,168 @@ export default function DashboardScreen() {
             gap: Spacing.sm,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontSize: Typography.fontSize.xl,
-                  fontFamily: Typography.fontFamily.display,
-                  color: colors.textPrimary,
-                }}
-              >
-                MoneyKai
+          <View
+            style={{
+              borderRadius: BorderRadius['2xl'],
+              padding: Spacing.lg,
+              backgroundColor: colors.primaryDark,
+              borderWidth: 1,
+              borderColor: `${colors.primaryLight}30`,
+              overflow: 'hidden',
+              ...Shadows.lg,
+              shadowColor: colors.shadowColor,
+            }}
+          >
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                backgroundColor: 'rgba(255, 255, 255, 0.24)',
+              }}
+            />
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                right: 72,
+                width: 1,
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }}
+            />
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md }}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: Typography.fontSize.xs,
+                    fontFamily: Typography.fontFamily.semiBold,
+                    color: 'rgba(255, 255, 255, 0.72)',
+                  }}
+                >
+                  MONEYKAI LEDGER
+                </Text>
+                <Text
+                  style={{
+                    marginTop: 4,
+                    fontSize: Typography.fontSize['2xl'],
+                    lineHeight: 31,
+                    fontFamily: Typography.fontFamily.display,
+                    color: '#FFFFFF',
+                  }}
+                >
+                  Hi {firstName}, your month is in view
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Open notifications"
+                  activeOpacity={0.82}
+                  onPress={() => router.push('/(tabs)/notifications' as never)}
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: BorderRadius.sm,
+                    backgroundColor: 'rgba(255, 255, 255, 0.13)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.18)',
+                  }}
+                >
+                  <MaterialCommunityIcons name="bell-outline" size={21} color="#FFFFFF" />
+                </TouchableOpacity>
+
+                <DashboardCalendarButton monthLabel={selectedMonthLabel} onPress={() => setShowMonthMenu(true)} inverted />
+              </View>
+            </View>
+
+            <View style={{ marginTop: Spacing.xl }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.68)' }}>
+                {remainingLabel}
               </Text>
               <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
                 style={{
-                  fontSize: Typography.fontSize.sm,
-                  color: colors.textSecondary,
+                  marginTop: 4,
+                  fontSize: 42,
+                  lineHeight: 48,
+                  fontFamily: Typography.fontFamily.bold,
+                  color: remaining < 0 ? '#FFE1E5' : '#FFFFFF',
                 }}
               >
-                {selectedMonthLabel}
+                {formatCurrency(Math.abs(remaining))}
               </Text>
             </View>
 
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/notifications' as never)}
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                backgroundColor: colors.card,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: colors.border,
-                ...Shadows.sm,
-                shadowColor: colors.shadowColor,
-              }}
-            >
-              <MaterialCommunityIcons name="bell-outline" size={22} color={colors.textPrimary} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg }}>
+              <View
+                style={{
+                  flex: 1,
+                  padding: Spacing.md,
+                  borderRadius: BorderRadius.md,
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.13)',
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.64)' }}>Spent</Text>
+                <Text style={{ marginTop: 2, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: '#FFFFFF' }}>
+                  {formatCurrency(monthExpenseTotal)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  flex: 1,
+                  padding: Spacing.md,
+                  borderRadius: BorderRadius.md,
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.13)',
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.64)' }}>Net flow</Text>
+                <Text style={{ marginTop: 2, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: netCashflow < 0 ? '#FFE1E5' : '#D9FFF2' }}>
+                  {netCashflow < 0 ? '-' : '+'}
+                  {formatCurrency(Math.abs(netCashflow))}
+                </Text>
+              </View>
+            </View>
 
-            <DashboardCalendarButton monthLabel={selectedMonthLabel} onPress={() => setShowMonthMenu(true)} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg }}>
+              {[
+                ['shield-check-outline', 'User-controlled data'],
+                ['cloud-check-outline', 'Backup ready'],
+                ['chart-timeline-variant', selectedMonthLabel],
+              ].map(([icon, label]) => (
+                <View
+                  key={label}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingHorizontal: Spacing.sm,
+                    paddingVertical: 7,
+                    borderRadius: BorderRadius.full,
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.12)',
+                  }}
+                >
+                  <MaterialCommunityIcons name={icon as any} size={14} color="rgba(255, 255, 255, 0.82)" />
+                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: 'rgba(255, 255, 255, 0.82)' }}>
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
         </View>
 

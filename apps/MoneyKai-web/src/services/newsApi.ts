@@ -1,7 +1,16 @@
 import type { NewsCategory, NewsFeedResponse } from '@/types/news';
 
-const rawBaseUrl = process.env.EXPO_PUBLIC_BACKEND_BASE_URL?.trim() || 'http://localhost:8000';
-const backendBaseUrl = rawBaseUrl.replace(/\/$/, '');
+const normalizeBackendBaseUrl = (value: string | undefined): string => {
+  const trimmed = value?.trim() ?? '';
+  if (!trimmed) {
+    return 'http://localhost:8000';
+  }
+
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return withProtocol.replace(/\/$/, '');
+};
+
+const backendBaseUrl = normalizeBackendBaseUrl(process.env.EXPO_PUBLIC_BACKEND_BASE_URL);
 
 class NewsApiError extends Error {
   constructor(message: string, public status: number) {

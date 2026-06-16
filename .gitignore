@@ -46,6 +46,7 @@ yarn-error.*
 .env.*
 !.env.example
 !.env*.sample
+.env.sentry-build-plugin
 
 # typescript
 *.tsbuildinfo

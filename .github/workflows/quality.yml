@@ -1,0 +1,40 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  app:
+    name: App checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck mobile
+        run: npm run mobile:typecheck
+
+      - name: Typecheck web
+        run: npm run web:typecheck
+
+      - name: Lint mobile
+        run: npm run mobile:lint
+
+      - name: Lint web
+        run: npm run web:lint
+
+      - name: SMS production policy tests
+        run: npm run mobile:test:capture

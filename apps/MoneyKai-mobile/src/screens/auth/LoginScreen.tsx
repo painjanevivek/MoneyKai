@@ -23,7 +23,9 @@ type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: LoginScreenProps) {
   const { colors } = useTheme();
-  const { signIn, signInWithGoogle, isLoading } = useAuthStore();
+  const signIn = useAuthStore((state) => state.signIn);
+  const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle);
+  const isLoading = useAuthStore((state) => state.isLoading);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -150,10 +152,13 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                 fontSize: Typography.fontSize.xl,
                 fontFamily: Typography.fontFamily.display,
                 color: colors.textPrimary,
-                marginBottom: Spacing.xl,
+                marginBottom: Spacing.xs,
               }}
             >
               Welcome back
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, marginBottom: Spacing.lg }}>
+              Continue to the same budgets, records, and reports. No setup loop after sign-in.
             </Text>
 
             <Input

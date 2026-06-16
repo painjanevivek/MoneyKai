@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { addYears, format, parseISO, subYears } from 'date-fns';
+import { addYears } from 'date-fns/addYears';
+import { format } from 'date-fns/format';
+import { parseISO } from 'date-fns/parseISO';
+import { subYears } from 'date-fns/subYears';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { ModalSheet } from '@/components/ui/ModalSheet';

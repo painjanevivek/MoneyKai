@@ -274,4 +274,24 @@ export const HOME_FAQS = [
     answer:
       'No. MoneyKai helps users organize personal finance information, but it does not replace professional financial advice.',
   },
+  {
+    question: 'Who is MoneyKai best for?',
+    answer:
+      'MoneyKai is best for people who want a calm personal finance workspace for expenses, budgets, shared costs, savings, portfolio context, and private review without a complicated accounting system.',
+  },
+  {
+    question: 'How is MoneyKai different from a spreadsheet?',
+    answer:
+      'A spreadsheet is flexible but manual. MoneyKai is designed around recurring finance workflows: adding records, reviewing budgets, seeing summaries, and keeping money context easier to revisit.',
+  },
+  {
+    question: 'Can MoneyKai help with monthly money reviews?',
+    answer:
+      'Yes. MoneyKai is structured around monthly review habits, including available money, spending categories, budget pressure, transaction history, savings, and portfolio context.',
+  },
+  {
+    question: 'What should I do first after creating a MoneyKai account?',
+    answer:
+      'The best first step is to set a monthly budget or add one real transaction. That gives MoneyKai enough context to make the dashboard and review flow useful.',
+  },
 ];

@@ -38,38 +38,11 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
   const pieData = React.useMemo(
     () =>
       categoryTotals.slice(0, 6).map((cat, index) => ({
+        category: cat.category,
         value: cat.total,
         color: chartColors[index % chartColors.length],
-        text: `${Math.round(cat.percentage)}%`,
-        focused: index === 0,
       })),
     [categoryTotals, chartColors]
-  );
-
-  const renderCenterLabel = React.useCallback(
-    () => (
-      <View style={{ alignItems: 'center' }}>
-        <Text
-          style={{
-            fontSize: Typography.fontSize.xs,
-            fontFamily: Typography.fontFamily.regular,
-            color: colors.textTertiary,
-          }}
-        >
-          Expenses
-        </Text>
-        <Text
-          style={{
-            fontSize: Typography.fontSize.md,
-            fontFamily: Typography.fontFamily.bold,
-            color: colors.textPrimary,
-          }}
-        >
-          {formatCurrency(totalSpent)}
-        </Text>
-      </View>
-    ),
-    [colors, totalSpent]
   );
 
   return (
@@ -81,10 +54,29 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
         shadowColor: colors.shadowColor,
       }}
     >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 22, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-          Spending Overview
-        </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md, gap: Spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: Typography.fontSize.md, lineHeight: 22, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+            Spending mix
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+            Largest categories for this month
+          </Text>
+        </View>
+        <View
+          style={{
+            paddingHorizontal: Spacing.sm,
+            paddingVertical: 6,
+            borderRadius: BorderRadius.full,
+            backgroundColor: colors.accentLight,
+            borderWidth: 1,
+            borderColor: `${colors.accent}24`,
+          }}
+        >
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.accent }}>
+            Reviewed
+          </Text>
+        </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.base }}>
         <View style={{ width: 156, alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xs }}>
@@ -94,7 +86,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
                 <Circle cx={68} cy={68} r={58} stroke={colors.borderLight} strokeWidth={18} fill="none" />
                 {pieData.reduce<{ nodes: React.ReactNode[]; offset: number }>(
                   (acc, cat, index) => {
-                    const dash = (cat.total / Math.max(1, totalSpent)) * circumference;
+                    const dash = (cat.value / Math.max(1, totalSpent)) * circumference;
                     acc.nodes.push(
                       <Circle
                         key={cat.category}

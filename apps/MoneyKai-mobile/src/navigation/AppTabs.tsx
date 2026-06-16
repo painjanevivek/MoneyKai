@@ -1,7 +1,9 @@
 import React from 'react';
-import { Animated, Pressable, type GestureResponderEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, useWindowDimensions, type GestureResponderEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { createBottomTabNavigator, type BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AppTabParamList } from './types';
 import { useTheme } from '@/hooks/useTheme';
 import { useNotificationStore } from '@/stores/useNotificationStore';
@@ -17,17 +19,24 @@ const Tab = createBottomTabNavigator<AppTabParamList>();
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 function AnimatedTabButton({ children, onPress, style, accessibilityState, isAdd = false }: BottomTabBarButtonProps & { isAdd?: boolean }) {
-  const scale = React.useRef(new Animated.Value(1)).current;
+  const scale = useSharedValue(1);
   const focused = Boolean(accessibilityState?.selected);
 
   const animateTo = (value: number) => {
-    Animated.spring(scale, {
-      toValue: value,
-      useNativeDriver: true,
-      friction: 5,
-      tension: 180,
-    }).start();
+    scale.value = withSpring(value, {
+      damping: 13,
+      stiffness: 240,
+      mass: 0.7,
+    });
   };
+
+  React.useEffect(() => {
+    animateTo(focused || isAdd ? 1.04 : 1);
+  }, [focused, isAdd]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   return (
     <AnimatedPressable
@@ -37,8 +46,8 @@ function AnimatedTabButton({ children, onPress, style, accessibilityState, isAdd
       onPressOut={() => animateTo(focused || isAdd ? 1.04 : 1)}
       style={[
         style as StyleProp<ViewStyle>,
+        animatedStyle,
         {
-          transform: [{ scale }],
           top: isAdd ? -8 : 0,
         },
       ]}
@@ -50,12 +59,20 @@ function AnimatedTabButton({ children, onPress, style, accessibilityState, isAdd
 
 export function AppTabs() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const unreadCount = useNotificationStore((state) => state.unreadCount);
+  const isWide = width >= 720;
 
   return (
     <Tab.Navigator
+      detachInactiveScreens
       screenOptions={{
+        freezeOnBlur: true,
         headerShown: false,
+        lazy: true,
+        tabBarHideOnKeyboard: true,
+        tabBarLabelPosition: isWide ? 'beside-icon' : 'below-icon',
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarLabelStyle: {
@@ -66,12 +83,14 @@ export function AppTabs() {
           backgroundColor: colors.surface,
           borderColor: colors.borderLight,
           borderTopWidth: 1,
-          minHeight: 72,
-          paddingBottom: Spacing.sm,
+          height: 64 + Math.max(insets.bottom, Spacing.sm),
+          paddingBottom: Math.max(insets.bottom, Spacing.sm),
           paddingTop: Spacing.xs,
+          position: 'absolute',
         },
         tabBarItemStyle: {
           borderRadius: BorderRadius.md,
+          maxWidth: isWide ? 148 : undefined,
           marginHorizontal: 2,
         },
         tabBarBadgeStyle: {

@@ -47,6 +47,7 @@ function NewsCard({ item }: { item: NewsItem }) {
             source={{ uri: item.image as string }}
             style={{ width: '100%', height: '100%' }}
             resizeMode="cover"
+            accessibilityLabel={`News image for ${item.title}`}
           />
         ) : (
           <View style={{ alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: Spacing.lg }}>
@@ -104,6 +105,8 @@ function NewsCard({ item }: { item: NewsItem }) {
 
         <Link href={item.url as any} target="_blank" rel="noopener noreferrer" asChild>
           <TouchableOpacity
+            accessibilityRole="link"
+            accessibilityLabel={`Read full article: ${item.title}`}
             activeOpacity={0.82}
             style={{
               flexDirection: 'row',
@@ -198,6 +201,8 @@ export default function NewsScreen() {
                 </Text>
               </View>
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Refresh finance news feed"
                 activeOpacity={0.82}
                 onPress={handleRefresh}
                 style={{
@@ -225,6 +230,9 @@ export default function NewsScreen() {
                 return (
                   <TouchableOpacity
                     key={filter.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={`Show ${filter.label} news`}
                     activeOpacity={0.82}
                     onPress={() => setCategory(filter.value)}
                     style={{
@@ -273,6 +281,8 @@ export default function NewsScreen() {
                 {error}
               </Text>
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Try loading finance news again"
                 activeOpacity={0.82}
                 onPress={handleRefresh}
                 style={{

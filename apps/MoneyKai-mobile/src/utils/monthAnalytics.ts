@@ -1,4 +1,5 @@
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns/format';
+import { parseISO } from 'date-fns/parseISO';
 import { buildCategoryTotals, filterTransactionsByMonth, getMonthLabel } from '@/utils/dashboard';
 import type { CategoryTotal, Transaction } from '@/types/transaction';
 
@@ -8,12 +9,12 @@ export const getMonthTransactionsNewestFirst = (transactions: Transaction[], mon
   );
 
 export const getMonthExpenses = (transactions: Transaction[], monthKey: string) =>
-  getMonthTransactionsNewestFirst(transactions, monthKey)
+  filterTransactionsByMonth(transactions, monthKey)
     .filter((transaction) => transaction.type === 'expense')
     .reduce((sum, transaction) => sum + transaction.amount, 0);
 
 export const getMonthIncome = (transactions: Transaction[], monthKey: string) =>
-  getMonthTransactionsNewestFirst(transactions, monthKey)
+  filterTransactionsByMonth(transactions, monthKey)
     .filter((transaction) => transaction.type === 'income')
     .reduce((sum, transaction) => sum + transaction.amount, 0);
 
@@ -25,20 +26,25 @@ export const getMonthCategoryTotals = (transactions: Transaction[], monthKey: st
 
 export const getMonthSummary = (transactions: Transaction[], monthKey: string) => {
   const monthTransactions = getMonthTransactionsNewestFirst(transactions, monthKey);
-  const expenses = monthTransactions
-    .filter((transaction) => transaction.type === 'expense')
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
-  const income = monthTransactions
-    .filter((transaction) => transaction.type === 'income')
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
+  const totals = monthTransactions.reduce(
+    (acc, transaction) => {
+      if (transaction.type === 'expense') {
+        acc.expenses += transaction.amount;
+      } else {
+        acc.income += transaction.amount;
+      }
+      return acc;
+    },
+    { expenses: 0, income: 0 }
+  );
 
   return {
     monthKey,
     monthLabel: getMonthLabel(monthKey),
     transactions: monthTransactions,
-    expenses,
-    income,
-    net: income - expenses,
+    expenses: totals.expenses,
+    income: totals.income,
+    net: totals.income - totals.expenses,
     categoryTotals: buildCategoryTotals(monthTransactions),
   };
 };

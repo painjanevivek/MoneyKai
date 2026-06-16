@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, Spacing, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, Spacing, Typography } from '../../constants/theme';
 
 interface InputProps {
   label?: string;
@@ -73,6 +73,7 @@ export const Input: React.FC<InputProps> = ({
     : isFocused
       ? colors.primary
       : colors.border;
+  const supportingColor = error ? colors.error : isFocused ? colors.primary : colors.textSecondary;
 
   return (
     <View style={[{ marginBottom: Spacing.base }, style]}>
@@ -80,9 +81,9 @@ export const Input: React.FC<InputProps> = ({
         <Text
           style={{
             fontSize: Typography.fontSize.sm,
-            fontFamily: Typography.fontFamily.medium,
-            color: colors.textSecondary,
-            marginBottom: Spacing.xs,
+            fontFamily: Typography.fontFamily.semiBold,
+            color: supportingColor,
+            marginBottom: Spacing.sm,
           }}
         >
           {label}
@@ -92,13 +93,14 @@ export const Input: React.FC<InputProps> = ({
         style={{
           flexDirection: 'row',
           alignItems: multiline ? 'flex-start' : 'center',
-          backgroundColor: colors.surface,
+          backgroundColor: editable ? colors.surface : colors.surfaceElevated,
           borderRadius: BorderRadius.md,
           borderWidth: 1.5,
           borderColor,
           paddingHorizontal: Spacing.md,
           paddingVertical: multiline ? Spacing.md : 0,
-          minHeight: multiline ? 100 : 48,
+          minHeight: multiline ? 104 : ComponentTokens.controlHeight.md,
+          opacity: editable ? 1 : ComponentTokens.disabledOpacity,
         }}
       >
         {icon && (
@@ -122,6 +124,9 @@ export const Input: React.FC<InputProps> = ({
           </Text>
         )}
         <TextInput
+          accessibilityLabel={label ?? placeholder}
+          accessibilityHint={error ? error : undefined}
+          accessibilityState={{ disabled: !editable }}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -166,7 +171,11 @@ export const Input: React.FC<InputProps> = ({
           </Text>
         )}
         {secureTextEntry && (
-          <TouchableOpacity onPress={() => setIsSecureVisible(!isSecureVisible)}>
+          <TouchableOpacity
+            onPress={() => setIsSecureVisible(!isSecureVisible)}
+            accessibilityRole="button"
+            accessibilityLabel={isSecureVisible ? 'Hide password' : 'Show password'}
+          >
             <MaterialCommunityIcons
               name={isSecureVisible ? 'eye-off-outline' : 'eye-outline'}
               size={20}
@@ -179,9 +188,9 @@ export const Input: React.FC<InputProps> = ({
         <Text
           style={{
             fontSize: Typography.fontSize.xs,
-            fontFamily: Typography.fontFamily.regular,
+            fontFamily: Typography.fontFamily.medium,
             color: colors.error,
-            marginTop: 4,
+            marginTop: Spacing.xs,
           }}
         >
           {error}

@@ -19,6 +19,8 @@ import type { AppNotification } from '@/types/notification';
 import type { ThemeMode } from '@/constants/theme';
 import { getLatestUserBackup, isFirebaseConfigured, saveUserBackup } from './firestoreService';
 import { backendApi, isBackendConfigured } from './backendApi';
+import { getNetworkStatus } from './networkClient';
+import { useSyncStore } from '@/stores/useSyncStore';
 
 const AUTO_BACKUP_STATE_KEY = 'moneykai-auto-backup-state';
 const AUTO_BACKUP_DEBOUNCE_MS = 10_000;
@@ -203,6 +205,13 @@ export const flushAutomaticBackup = async ({ force = false }: { force?: boolean 
     return false;
   }
 
+  const networkStatus = await getNetworkStatus().catch(() => null);
+  if (networkStatus && !networkStatus.isOnline) {
+    useSyncStore.getState().setOnline(false);
+    return false;
+  }
+  useSyncStore.getState().setOnline(true);
+
   const state = await loadAutomaticBackupState();
   if (!state.pending) {
     return false;
@@ -215,10 +224,12 @@ export const flushAutomaticBackup = async ({ force = false }: { force?: boolean 
 
   const sequenceAtStart = state.sequence;
   automaticBackupInFlight = true;
+  useSyncStore.getState().startSync();
 
   try {
     await saveCloudBackup({ silent: true, preserveAutomaticBackupState: true });
   } catch (error) {
+    useSyncStore.getState().failSync(error instanceof Error ? error.message : 'Automatic backup failed.');
     if (__DEV__) {
       console.warn('[MoneyKai] automatic backup failed:', error);
     }
@@ -238,6 +249,7 @@ export const flushAutomaticBackup = async ({ force = false }: { force?: boolean 
       sequence: latestState.sequence + 1,
     };
     await persistAutomaticBackupState();
+    useSyncStore.getState().finishSync(new Date().toISOString());
   } else if (latestState.pending) {
     scheduleAutomaticBackup();
   }
@@ -474,4 +486,3 @@ export const restoreLatestCloudBackup = async () => {
 
   return snapshot;
 };
-

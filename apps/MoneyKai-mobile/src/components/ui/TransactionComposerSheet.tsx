@@ -41,7 +41,9 @@ export function TransactionComposerSheet({
   const monthlyAllowance = useBudgetStore((s) => s.settings.monthly_allowance);
   const updateBudgetSettings = useBudgetStore((s) => s.updateSettings);
   const currencySymbol = useSettingsStore((s) => s.currencySymbol);
-  const { addTransaction, updateTransaction, deleteTransaction } = useTransactionStore();
+  const addTransaction = useTransactionStore((s) => s.addTransaction);
+  const updateTransaction = useTransactionStore((s) => s.updateTransaction);
+  const deleteTransaction = useTransactionStore((s) => s.deleteTransaction);
   const isEditing = editingTransaction !== null;
 
   const [txnType, setTxnType] = useState<'expense' | 'income'>(editingTransaction?.type ?? 'expense');

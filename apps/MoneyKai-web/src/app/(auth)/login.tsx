@@ -8,16 +8,15 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { AuthShell } from '@/components/auth/AuthShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 const getFriendlyAuthMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : '';
@@ -106,60 +105,28 @@ export default function LoginScreen() {
         path="/login"
         robots="noindex,nofollow"
       />
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <AuthShell
+        eyebrow="SECURE SIGN IN"
+        title="Pick up exactly where your money left off."
+        subtitle="Return to reviewed transactions, budgets, portfolio records, and AI summaries in one private workspace."
+      >
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ width: '100%' }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: 'center',
-            paddingHorizontal: Spacing.xl,
-            paddingVertical: Spacing['2xl'],
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo & Branding */}
-          <View style={{ alignItems: 'center', marginBottom: Spacing['3xl'] }}>
-            <View style={{
-              width: 72,
-              height: 72,
-              borderRadius: 20,
-              backgroundColor: colors.surface,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: Spacing.base,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-              ...Shadows.lg,
-              shadowColor: colors.shadowColor,
-            }}>
-              <Image
-                source={require('../../../assets/images/moneykai-logo.png')}
-                style={{ width: 44, height: 44 }}
-                resizeMode="contain"
-                accessibilityLabel="MoneyKai logo"
-              />
-            </View>
-            <Text style={{
-              fontSize: Typography.fontSize['3xl'],
-              fontFamily: Typography.fontFamily.display,
-              color: colors.textPrimary,
-            }}>MoneyKai</Text>
-            <Text style={{
-              fontSize: Typography.fontSize.base,
-              fontFamily: Typography.fontFamily.regular,
-              color: colors.textSecondary,
-              marginTop: 4,
-            }}>Money that feels easier to manage.</Text>
-          </View>
-
-          {/* Login Form */}
           <View style={{
             backgroundColor: colors.card,
             borderRadius: BorderRadius.xl,
             padding: Spacing.xl,
+            borderWidth: 1,
+            borderColor: colors.borderLight,
             ...Shadows.lg,
             shadowColor: colors.shadowColor,
           }}>
@@ -167,8 +134,29 @@ export default function LoginScreen() {
               fontSize: Typography.fontSize.xl,
               fontFamily: Typography.fontFamily.display,
               color: colors.textPrimary,
-              marginBottom: Spacing.xl,
+              marginBottom: Spacing.xs,
             }}>Welcome back</Text>
+            <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 21, color: colors.textSecondary, marginBottom: Spacing.xl }}>
+              Sign in to continue your reviewed money workspace.
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing.sm,
+                backgroundColor: colors.primaryBg,
+                borderRadius: BorderRadius.sm,
+                borderWidth: 1,
+                borderColor: `${colors.primary}22`,
+                marginBottom: Spacing.lg,
+                padding: Spacing.md,
+              }}
+            >
+              <MaterialCommunityIcons name="shield-check-outline" size={18} color={colors.primary} />
+              <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textPrimary }}>
+                We will take you straight back to budgets, records, and reports. No reset, no tour loop.
+              </Text>
+            </View>
 
             <Input
               label="Email"
@@ -177,8 +165,11 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               error={errors.email}
               icon="email-outline"
+              testID="login-email"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
             />
 
             <Input
@@ -188,7 +179,10 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               error={errors.password}
               icon="lock-outline"
+              testID="login-password"
               secureTextEntry
+              autoComplete="password"
+              textContentType="password"
             />
 
             <TouchableOpacity
@@ -210,6 +204,7 @@ export default function LoginScreen() {
               fullWidth
               size="lg"
               icon="login"
+              testID="login-submit"
             />
 
             {/* Divider */}
@@ -226,9 +221,9 @@ export default function LoginScreen() {
 
             {/* Social Login Buttons */}
             <View style={{ gap: Spacing.md }}>
-              {/* Google Sign In */}
               <TouchableOpacity
                 onPress={handleGoogleSignIn}
+                testID="login-google"
                 disabled={googleLoading}
                 activeOpacity={0.7}
                 style={{
@@ -279,7 +274,6 @@ export default function LoginScreen() {
 
           </View>
 
-          {/* Sign Up Link */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.xl }}>
             <Text style={{
               fontSize: Typography.fontSize.base,
@@ -296,8 +290,7 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      </SafeAreaView>
+      </AuthShell>
     </>
   );
 }
-

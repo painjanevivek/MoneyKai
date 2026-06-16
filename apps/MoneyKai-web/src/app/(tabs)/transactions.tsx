@@ -10,6 +10,7 @@ import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
 import { getCategoryById, EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate, formatRelativeDate } from '@/utils/dateUtils';
@@ -42,7 +43,7 @@ type SortOption = typeof SORT_OPTIONS[number]['id'];
 type FilterValue = 'all' | string;
 
 export default function TransactionsScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const { addTransaction, updateTransaction, deleteTransaction, setFilter } = useTransactionStore();
@@ -186,6 +187,7 @@ export default function TransactionsScreen() {
       : ALL_CATEGORY_OPTIONS;
   const activeFilterCount = Number(categoryFilter !== 'all') + Number(paymentFilter !== 'all') + Number(dateFilter !== 'all');
   const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest First';
+  const netFlow = totalIncome - totalSpent;
 
   const displayTransactions = useMemo(() => {
     const now = new Date();
@@ -332,38 +334,24 @@ export default function TransactionsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Transactions</Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Manage your income and expenses</Text>
-      </View>
-
-      <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md }}>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: isDark ? colors.surface : '#F5F5F5',
-            borderRadius: BorderRadius.md,
-            padding: Spacing.md,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Total Spent</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>{formatCurrency(totalSpent)}</Text>
-        </View>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: colors.surface,
-            borderRadius: BorderRadius.md,
-            padding: Spacing.md,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Total Income</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>{formatCurrency(totalIncome)}</Text>
-        </View>
+      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base }}>
+        <WorkspaceHeader
+          icon="swap-horizontal"
+          eyebrow="TRANSACTION LEDGER"
+          title="Reviewed money movement"
+          description="Search, filter, edit, and approve the records shaping MoneyKai reports and budget decisions."
+          metrics={[
+            { label: 'Visible records', value: String(displayTransactions.length) },
+            { label: 'Spent', value: formatCurrency(totalSpent), tone: 'danger' },
+            { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
+            { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'warning' : 'positive' },
+          ]}
+          chips={[
+            { icon: 'filter-variant', label: `${activeFilterCount} active filters` },
+            { icon: 'sort', label: sortLabel },
+          ]}
+          actions={<Button title="Add Transaction" icon="plus" onPress={handleOpenAddModal} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />}
+        />
       </View>
 
       <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.sm }}>

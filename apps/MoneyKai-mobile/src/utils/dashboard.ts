@@ -1,4 +1,6 @@
-import { format, parseISO, subMonths } from 'date-fns';
+import { format } from 'date-fns/format';
+import { parseISO } from 'date-fns/parseISO';
+import { subMonths } from 'date-fns/subMonths';
 import { CHALLENGE_TEMPLATES, type Challenge } from '../types/challenge';
 import { EXPENSE_CATEGORIES } from '../constants/categories';
 import type { CategoryTotal, Transaction } from '../types/transaction';

@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { updateProfile as updateFirebaseProfile } from 'firebase/auth';
@@ -24,7 +24,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 
 export default function ProfileEditScreen() {
   const { colors } = useTheme();
-  const { user, updateProfile } = useAuthStore();
+  const { user, updateProfile, isAuthenticated, isHydratingSession } = useAuthStore();
 
   const [fullName, setFullName] = useState(user?.full_name ?? '');
   const [email] = useState(user?.email ?? '');
@@ -32,6 +32,14 @@ export default function ProfileEditScreen() {
   const [errors, setErrors] = useState<{ fullName?: string }>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isPickingAvatar, setIsPickingAvatar] = useState(false);
+
+  if (isHydratingSession) {
+    return null;
+  }
+
+  if (!isAuthenticated || !user) {
+    return <Redirect href="/login" />;
+  }
 
   const handlePickAvatar = async () => {
     setIsPickingAvatar(true);

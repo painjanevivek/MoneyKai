@@ -7,10 +7,12 @@ import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 interface DashboardCalendarButtonProps {
   monthLabel: string;
   onPress: () => void;
+  inverted?: boolean;
 }
 
-export const DashboardCalendarButton = ({ monthLabel, onPress }: DashboardCalendarButtonProps) => {
+export const DashboardCalendarButton = ({ monthLabel, onPress, inverted = false }: DashboardCalendarButtonProps) => {
   const { colors } = useTheme();
+  const foreground = inverted ? '#FFFFFF' : colors.textPrimary;
 
   return (
     <TouchableOpacity
@@ -21,18 +23,18 @@ export const DashboardCalendarButton = ({ monthLabel, onPress }: DashboardCalend
       style={{
         minWidth: 42,
         height: 42,
-        borderRadius: BorderRadius.md,
-        backgroundColor: colors.card,
+        borderRadius: BorderRadius.sm,
+        backgroundColor: inverted ? 'rgba(255, 255, 255, 0.13)' : colors.card,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: inverted ? 'rgba(255, 255, 255, 0.18)' : colors.borderLight,
         paddingHorizontal: Spacing.sm,
         ...Shadows.sm,
         shadowColor: colors.shadowColor,
       }}
     >
-      <MaterialCommunityIcons name="calendar-month-outline" size={21} color={colors.textPrimary} />
+      <MaterialCommunityIcons name="calendar-month-outline" size={21} color={foreground} />
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
@@ -42,7 +44,7 @@ export const DashboardCalendarButton = ({ monthLabel, onPress }: DashboardCalend
           bottom: 4,
           fontSize: 8,
           fontFamily: Typography.fontFamily.bold,
-          color: colors.textPrimary,
+          color: foreground,
           maxWidth: 34,
         }}
       >

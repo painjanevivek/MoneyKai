@@ -5,10 +5,23 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useSyncStore } from '@/stores/useSyncStore';
 import { isFirebaseConfigured } from '@/firebase/firebaseConfig';
 import { useTheme } from '@/hooks/useTheme';
 import { Spacing } from '@/constants/theme';
 import { createAppScreenStyles } from './screenStyles';
+
+const formatDateTime = (value: string | null) => {
+  if (!value) {
+    return 'Not synced yet';
+  }
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+};
 
 export function SettingsScreen() {
   const { colors, theme } = useTheme();
@@ -22,7 +35,14 @@ export function SettingsScreen() {
   const toggleNotifications = useSettingsStore((state) => state.toggleNotifications);
   const toggleHaptic = useSettingsStore((state) => state.toggleHaptic);
   const setAppLockEnabled = useSettingsStore((state) => state.setAppLockEnabled);
+  const syncStatus = useSyncStore((state) => state.status);
+  const lastSyncedAt = useSyncStore((state) => state.lastSyncedAt);
+  const lastCacheHydratedAt = useSyncStore((state) => state.lastCacheHydratedAt);
+  const syncError = useSyncStore((state) => state.error);
+  const pendingCount = useSyncStore((state) => state.pendingCount);
+  const isOnline = useSyncStore((state) => state.isOnline);
   const [backupLoading, setBackupLoading] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
 
   const runBackup = async () => {
     setBackupLoading(true);
@@ -34,6 +54,31 @@ export function SettingsScreen() {
       Alert.alert('Backup failed', error instanceof Error ? error.message : 'Could not save a backup.');
     } finally {
       setBackupLoading(false);
+    }
+  };
+
+  const runSync = async () => {
+    setSyncLoading(true);
+    try {
+      const [{ flushSyncQueue }, { syncRemoteState }] = await Promise.all([
+        import('@/services/syncQueue'),
+        import('@/services/remoteSync'),
+      ]);
+      await flushSyncQueue();
+      const result = await syncRemoteState({ force: true });
+      if (!result.synced) {
+        throw new Error(result.error ?? 'Could not sync account data.');
+      }
+      Alert.alert(
+        result.source === 'cache' ? 'Cached data ready' : 'Sync complete',
+        result.source === 'cache'
+          ? 'MoneyKai is using the latest cached data on this device.'
+          : 'MoneyKai is up to date.',
+      );
+    } catch (error) {
+      Alert.alert('Sync failed', error instanceof Error ? error.message : 'Could not sync account data.');
+    } finally {
+      setSyncLoading(false);
     }
   };
 
@@ -129,6 +174,50 @@ export function SettingsScreen() {
           <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>
             Backups and Firestore sync are stored under your authenticated user id.
           </Text>
+          <View
+            style={{
+              backgroundColor: isOnline ? colors.surfaceElevated : colors.primaryBg,
+              borderColor: syncError ? colors.error : colors.borderLight,
+              borderRadius: 12,
+              borderWidth: 1,
+              marginBottom: Spacing.md,
+              padding: Spacing.md,
+            }}
+          >
+            <View style={[styles.row, { alignItems: 'flex-start', marginBottom: Spacing.sm }]}>
+              <View style={{ flex: 1, paddingRight: Spacing.md }}>
+                <Text style={styles.value}>
+                  {!isOnline ? 'Offline mode' : syncStatus === 'syncing' ? 'Syncing' : 'Cloud sync'}
+                </Text>
+                <Text style={styles.muted}>
+                  {pendingCount > 0
+                    ? `${pendingCount} change${pendingCount === 1 ? '' : 's'} waiting to upload`
+                    : syncError ?? 'Cached reads and retryable writes are active.'}
+                </Text>
+              </View>
+              <MaterialCommunityIcons
+                name={!isOnline ? 'cloud-off-outline' : syncStatus === 'syncing' ? 'sync' : 'cloud-check-outline'}
+                size={24}
+                color={!isOnline ? colors.warning : syncError ? colors.error : colors.primary}
+              />
+            </View>
+            <View style={[styles.row, { marginTop: Spacing.sm }]}>
+              <Text style={styles.muted}>Last cloud sync</Text>
+              <Text style={{ ...styles.muted, color: colors.textPrimary }}>{formatDateTime(lastSyncedAt)}</Text>
+            </View>
+            <View style={[styles.row, { marginTop: Spacing.xs }]}>
+              <Text style={styles.muted}>Cache hydrated</Text>
+              <Text style={{ ...styles.muted, color: colors.textPrimary }}>{formatDateTime(lastCacheHydratedAt)}</Text>
+            </View>
+          </View>
+          <Button
+            title="Sync Now"
+            onPress={runSync}
+            loading={syncLoading || syncStatus === 'syncing'}
+            icon="sync"
+            variant="secondary"
+            style={{ marginBottom: Spacing.sm }}
+          />
           <Button title="Save Cloud Backup" onPress={runBackup} loading={backupLoading} icon="cloud-upload-outline" />
         </View>
 

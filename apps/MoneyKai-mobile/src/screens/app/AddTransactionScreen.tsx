@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -7,12 +7,14 @@ import DateTimePicker, { type DateTimePickerEvent } from '@react-native-communit
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { ScreenState } from '@/components/ui/ScreenState';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
-import { BorderRadius, Spacing } from '@/constants/theme';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import type { AppTabParamList } from '@/navigation/types';
 import type { TransactionType } from '@/types/transaction';
 import { createAppScreenStyles } from './screenStyles';
@@ -33,10 +35,13 @@ export function AddTransactionScreen() {
   const [paymentMethod, setPaymentMethod] = useState<string>(PAYMENT_METHODS[0].id);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
   const selectType = (nextType: TransactionType) => {
+    setFormError(null);
     setType(nextType);
     setCategory(nextType === 'expense' ? EXPENSE_CATEGORIES[0].id : INCOME_CATEGORIES[0].id);
   };
@@ -44,6 +49,7 @@ export function AddTransactionScreen() {
   const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (event.type === 'set' && selectedDate) {
+      setFormError(null);
       setDate(selectedDate.toISOString().slice(0, 10));
     }
   };
@@ -51,18 +57,20 @@ export function AddTransactionScreen() {
   const submit = () => {
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      Alert.alert('Amount needed', 'Enter a valid amount greater than zero.');
+      setFormError('Enter a valid amount greater than zero.');
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Description needed', 'Add a short description for this transaction.');
+      setFormError('Add a short description for this transaction.');
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      Alert.alert('Date format', 'Use YYYY-MM-DD for the transaction date.');
+      setFormError('Choose a valid transaction date.');
       return;
     }
 
+    setFormError(null);
+    setIsSaving(true);
     const saved = addTransaction({
       user_id: user?.id ?? 'local',
       type,
@@ -72,12 +80,10 @@ export function AddTransactionScreen() {
       payment_method: paymentMethod,
       transaction_date: date,
     });
+    setIsSaving(false);
 
     if (!saved) {
-      Alert.alert('Set a budget first', 'MoneyKai needs a monthly budget before transactions can be added.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Budget', onPress: () => navigation.navigate('Budget') },
-      ]);
+      setFormError('Set a monthly budget before adding transactions, or remove any duplicate captured entry.');
       return;
     }
 
@@ -90,6 +96,8 @@ export function AddTransactionScreen() {
   const displayDate = Number.isFinite(selectedDate.getTime())
     ? selectedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     : date;
+  const previewAmount = Number(amount);
+  const hasPreview = Number.isFinite(previewAmount) && previewAmount > 0 && description.trim().length > 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -106,20 +114,35 @@ export function AddTransactionScreen() {
             {(['expense', 'income'] as const).map((item) => {
               const active = type === item;
               return (
-                <TouchableOpacity key={item} onPress={() => selectType(item)} style={[styles.chip, active && styles.chipActive]}>
+                <PressableScale key={item} onPress={() => selectType(item)} style={[styles.chip, active && styles.chipActive]}>
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>
                     {item[0].toUpperCase() + item.slice(1)}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
+
+          {formError && (
+            <ScreenState
+              actionLabel={formError.startsWith('Set a monthly budget') ? 'Open Budget' : undefined}
+              body={formError}
+              icon="alert-circle-outline"
+              onAction={formError.startsWith('Set a monthly budget') ? () => navigation.navigate('Budget') : undefined}
+              style={{ marginBottom: Spacing.base, padding: Spacing.base }}
+              title="Needs attention"
+              tone="danger"
+            />
+          )}
 
           <Input
             label="Amount"
             placeholder="0"
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={(text) => {
+              setAmount(text);
+              if (formError) setFormError(null);
+            }}
             keyboardType="decimal-pad"
             inputMode="decimal"
             icon="currency-inr"
@@ -129,15 +152,17 @@ export function AddTransactionScreen() {
             label="Description"
             placeholder="Lunch, salary, rent..."
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(text) => {
+              setDescription(text);
+              if (formError) setFormError(null);
+            }}
             icon="text"
           />
           <View style={{ marginBottom: Spacing.base }}>
             <Text style={styles.muted}>Date</Text>
-            <TouchableOpacity
+            <PressableScale
               accessibilityRole="button"
               accessibilityLabel="Choose transaction date"
-              activeOpacity={0.75}
               onPress={() => setShowDatePicker(true)}
               style={{
                 alignItems: 'center',
@@ -155,7 +180,7 @@ export function AddTransactionScreen() {
               <MaterialCommunityIcons name="calendar-month-outline" size={22} color={colors.primary} />
               <Text style={[styles.value, { flex: 1 }]}>{displayDate}</Text>
               <MaterialCommunityIcons name="chevron-down" size={22} color={colors.textTertiary} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
           {showDatePicker && (
             <DateTimePicker
@@ -171,7 +196,7 @@ export function AddTransactionScreen() {
             {categories.map((item) => {
               const active = category === item.id;
               return (
-                <TouchableOpacity key={item.id} onPress={() => setCategory(item.id)} style={[styles.chip, active && styles.chipActive]}>
+                <PressableScale key={item.id} onPress={() => setCategory(item.id)} style={[styles.chip, active && styles.chipActive]}>
                   <MaterialCommunityIcons
                     name={item.icon}
                     size={16}
@@ -179,7 +204,7 @@ export function AddTransactionScreen() {
                     style={{ marginRight: Spacing.xs }}
                   />
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
@@ -189,7 +214,7 @@ export function AddTransactionScreen() {
             {PAYMENT_METHODS.map((item) => {
               const active = paymentMethod === item.id;
               return (
-                <TouchableOpacity key={item.id} onPress={() => setPaymentMethod(item.id)} style={[styles.chip, active && styles.chipActive]}>
+                <PressableScale key={item.id} onPress={() => setPaymentMethod(item.id)} style={[styles.chip, active && styles.chipActive]}>
                   <MaterialCommunityIcons
                     name={item.icon}
                     size={16}
@@ -197,12 +222,35 @@ export function AddTransactionScreen() {
                     style={{ marginRight: Spacing.xs }}
                   />
                   <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
 
-          <Button title="Save Transaction" onPress={submit} icon="content-save-outline" style={{ marginTop: Spacing.sm }} />
+          <View
+            style={{
+              backgroundColor: colors.primaryBg,
+              borderColor: `${colors.primary}22`,
+              borderRadius: BorderRadius.sm,
+              borderWidth: 1,
+              marginBottom: Spacing.base,
+              padding: Spacing.md,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <MaterialCommunityIcons name={hasPreview ? 'check-circle-outline' : 'information-outline'} size={20} color={colors.primary} />
+              <Text style={{ color: colors.textPrimary, flex: 1, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm }}>
+                {hasPreview ? 'Ready to save' : 'What happens after saving'}
+              </Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, marginTop: Spacing.sm }}>
+              {hasPreview
+                ? `${type === 'income' ? 'Income' : 'Expense'} of ${currencySymbol}${previewAmount.toLocaleString('en-IN')} will update this month, dashboard totals, and category review.`
+                : 'Add an amount and description, then MoneyKai will update your monthly dashboard immediately.'}
+            </Text>
+          </View>
+
+          <Button title="Save Transaction" onPress={submit} icon="content-save-outline" loading={isSaving} style={{ marginTop: Spacing.sm }} />
         </View>
       </ScrollView>
     </SafeAreaView>

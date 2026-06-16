@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  TouchableOpacity,
   Text,
   ActivityIndicator,
   type ViewStyle,
@@ -8,7 +7,8 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, Shadows, Typography } from '../../constants/theme';
+import { PressableScale } from './PressableScale';
 
 interface ButtonProps {
   title: string;
@@ -40,57 +40,63 @@ export const Button: React.FC<ButtonProps> = ({
   const { colors } = useTheme();
 
   const sizeStyles = {
-    sm: { paddingVertical: 8, paddingHorizontal: 16, fontSize: Typography.fontSize.sm, iconSize: 16 },
-    md: { paddingVertical: 12, paddingHorizontal: 20, fontSize: Typography.fontSize.base, iconSize: 18 },
-    lg: { paddingVertical: 16, paddingHorizontal: 28, fontSize: Typography.fontSize.md, iconSize: 20 },
+    sm: { minHeight: ComponentTokens.controlHeight.sm, paddingHorizontal: ComponentTokens.controlPaddingX.sm, fontSize: Typography.fontSize.sm, iconSize: 16 },
+    md: { minHeight: ComponentTokens.controlHeight.md, paddingHorizontal: ComponentTokens.controlPaddingX.md, fontSize: Typography.fontSize.base, iconSize: 18 },
+    lg: { minHeight: ComponentTokens.controlHeight.lg, paddingHorizontal: ComponentTokens.controlPaddingX.lg, fontSize: Typography.fontSize.md, iconSize: 20 },
   };
 
   const variantStyles: Record<string, { bg: string; text: string; border?: string }> = {
     primary: { bg: colors.primary, text: colors.textInverse },
     secondary: { bg: colors.primaryBg, text: colors.primary },
-    outline: { bg: 'transparent', text: colors.primary, border: colors.primary },
+    outline: { bg: colors.card, text: colors.primary, border: colors.borderLight },
     ghost: { bg: 'transparent', text: colors.textSecondary },
     danger: { bg: colors.emergency, text: colors.textInverse },
   };
 
   const s = sizeStyles[size];
   const v = variantStyles[variant];
+  const isUnavailable = disabled || loading;
+  const contentColor = isUnavailable ? colors.textTertiary : v.text;
 
   return (
-    <TouchableOpacity
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityState={{ busy: loading, disabled: isUnavailable }}
       onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.7}
+      disabled={isUnavailable}
+      pressedScale={ComponentTokens.pressedScale}
       style={[
         {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: v.bg,
-          paddingVertical: s.paddingVertical,
+          backgroundColor: isUnavailable ? colors.surfaceElevated : v.bg,
+          minHeight: s.minHeight,
           paddingHorizontal: s.paddingHorizontal,
-          borderRadius: BorderRadius.md,
-          opacity: disabled ? 0.5 : 1,
+          borderRadius: BorderRadius.sm,
+          opacity: isUnavailable ? ComponentTokens.disabledOpacity : 1,
           gap: 8,
-          ...(v.border ? { borderWidth: 1.5, borderColor: v.border } : {}),
+          borderWidth: 1,
+          borderColor: isUnavailable ? colors.borderLight : (v.border ?? 'transparent'),
+          ...(variant === 'primary' && !isUnavailable ? { ...Shadows.sm, shadowColor: colors.shadowColor } : {}),
           ...(fullWidth ? { width: '100%' } : {}),
         },
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={v.text} />
+        <ActivityIndicator size="small" color={contentColor} />
       ) : (
         <>
           {icon && iconPosition === 'left' && (
-            <MaterialCommunityIcons name={icon} size={s.iconSize} color={v.text} />
+            <MaterialCommunityIcons name={icon} size={s.iconSize} color={contentColor} />
           )}
           <Text
             style={[
               {
                 fontSize: s.fontSize,
                 fontFamily: Typography.fontFamily.semiBold,
-                color: v.text,
+                color: contentColor,
               },
               textStyle,
             ]}
@@ -98,11 +104,11 @@ export const Button: React.FC<ButtonProps> = ({
             {title}
           </Text>
           {icon && iconPosition === 'right' && (
-            <MaterialCommunityIcons name={icon} size={s.iconSize} color={v.text} />
+            <MaterialCommunityIcons name={icon} size={s.iconSize} color={contentColor} />
           )}
         </>
       )}
-    </TouchableOpacity>
+    </PressableScale>
   );
 };
 

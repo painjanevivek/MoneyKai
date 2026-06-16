@@ -1,11 +1,14 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, SectionList, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useDeferredValue, useMemo, useState } from 'react';
+import { Alert, SectionList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { ScreenState } from '@/components/ui/ScreenState';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -26,14 +29,16 @@ export function TransactionsScreen() {
   const styles = createAppScreenStyles(colors);
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const transactions = useTransactionStore((state) => state.transactions);
+  const isLoading = useTransactionStore((state) => state.isLoading);
   const deleteTransaction = useTransactionStore((state) => state.deleteTransaction);
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
   const [type, setType] = useState<TransactionType | 'all'>('all');
-  const formatCategory = (categoryId: string) => getCategoryById(categoryId)?.name ?? titleCase(categoryId);
-  const formatPaymentMethod = (methodId: string) => PAYMENT_METHODS.find((item) => item.id === methodId)?.name ?? titleCase(methodId);
+  const formatCategory = useCallback((categoryId: string) => getCategoryById(categoryId)?.name ?? titleCase(categoryId), []);
+  const formatPaymentMethod = useCallback((methodId: string) => PAYMENT_METHODS.find((item) => item.id === methodId)?.name ?? titleCase(methodId), []);
 
   const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = deferredQuery.trim().toLowerCase();
     return transactions
       .filter((item) => (type === 'all' ? true : item.type === type))
       .filter((item) => {
@@ -45,7 +50,7 @@ export function TransactionsScreen() {
         );
       })
       .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
-  }, [query, transactions, type]);
+  }, [deferredQuery, formatCategory, formatPaymentMethod, transactions, type]);
 
   const sections = useMemo(() => {
     const grouped = new Map<string, Transaction[]>();
@@ -100,7 +105,7 @@ export function TransactionsScreen() {
               {(['all', 'expense', 'income'] as const).map((item) => {
                 const active = type === item;
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={item}
                     onPress={() => setType(item)}
                     style={[styles.chip, active && styles.chipActive]}
@@ -108,7 +113,7 @@ export function TransactionsScreen() {
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>
                       {item === 'all' ? 'All' : item[0].toUpperCase() + item.slice(1)}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 );
               })}
             </View>
@@ -117,17 +122,33 @@ export function TransactionsScreen() {
           </>
         }
         ListEmptyComponent={
-          <View style={styles.panel}>
-            <Text style={styles.emptyText}>No matching transactions yet.</Text>
-          </View>
+          isLoading ? (
+            <ScreenState loading title="Loading transactions" body="Pulling your latest income and expense history." tone="primary" />
+          ) : (
+            <ScreenState
+              actionLabel={query || type !== 'all' ? 'Clear Filters' : 'Add Transaction'}
+              body={query || type !== 'all' ? 'Try a different search or remove the current filter.' : 'Add an income or expense and it will appear here by month.'}
+              icon={query || type !== 'all' ? 'filter-off-outline' : 'receipt-text-plus-outline'}
+              onAction={() => {
+                if (query || type !== 'all') {
+                  setQuery('');
+                  setType('all');
+                } else {
+                  navigation.navigate('Add');
+                }
+              }}
+              title={query || type !== 'all' ? 'No matches found' : 'No transactions yet'}
+              tone="primary"
+            />
+          )
         }
         renderSectionHeader={({ section }) => (
           <View style={{ paddingTop: Spacing.sm }}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
           </View>
         )}
-        renderItem={({ item }) => (
-          <View style={styles.panel}>
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInDown.delay(index * 24).duration(220)} layout={Layout.springify()} style={styles.panel}>
             <View style={styles.row}>
               <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', paddingRight: Spacing.md }}>
                 <View
@@ -159,12 +180,12 @@ export function TransactionsScreen() {
                   {item.type === 'income' ? '+' : '-'}
                   {formatMoney(item.amount)}
                 </Text>
-                <TouchableOpacity onPress={() => confirmDelete(item.id)} style={{ marginTop: Spacing.sm }}>
+                <PressableScale accessibilityRole="button" onPress={() => confirmDelete(item.id)} style={{ marginTop: Spacing.sm }}>
                   <Text style={{ ...styles.muted, color: colors.error }}>Delete</Text>
-                </TouchableOpacity>
+                </PressableScale>
               </View>
             </View>
-          </View>
+          </Animated.View>
         )}
       />
     </SafeAreaView>

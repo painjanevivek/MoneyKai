@@ -12,7 +12,8 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
-import { Typography, Spacing, BorderRadius } from '@/constants/theme';
+import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
+import { Typography, Spacing } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/dateUtils';
 
@@ -33,38 +34,25 @@ export default function BudgetsScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['4xl'] }}
       >
         <View style={{ gap: Spacing.xl }}>
+          <WorkspaceHeader
+            icon="wallet-outline"
+            eyebrow="BUDGET CONTROL"
+            title="Monthly guardrails"
+            description="Review the allowance currently driving MoneyKai, see spending pressure, and keep reset behavior visible."
+            metrics={[
+              { label: 'Monthly budget', value: formatCurrency(allowance) },
+              { label: 'Spent', value: formatCurrency(totalSpent), tone: 'warning' },
+              { label: remaining < 0 ? 'Over by' : 'Remaining', value: formatCurrency(Math.abs(remaining)), tone: remaining < 0 ? 'danger' : 'positive' },
+            ]}
+            chips={[
+              { icon: 'progress-check', label: `${Math.round(usage)}% used` },
+              { icon: 'shield-check-outline', label: 'User-owned budget settings' },
+            ]}
+            actions={<Button title="Open Settings" onPress={() => router.push('/settings' as any)} icon="cog-outline" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />}
+          />
+
           <Card>
-            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Budgets
-            </Text>
-            <Text style={{ marginTop: 6, fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22, maxWidth: 760 }}>
-              Review the monthly allowance currently driving your MoneyKai workspace, see how much has been spent, and adjust the reset flow when you need to.
-            </Text>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md }}>
-              <View style={{ flex: 1, minWidth: 180, backgroundColor: colors.primaryBg, borderRadius: BorderRadius.md, padding: Spacing.md }}>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Monthly budget</Text>
-                <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-                  {formatCurrency(allowance)}
-                </Text>
-              </View>
-              <View style={{ flex: 1, minWidth: 180, backgroundColor: colors.surface, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: colors.borderLight }}>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Spent</Text>
-                <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-                  {formatCurrency(totalSpent)}
-                </Text>
-              </View>
-              <View style={{ flex: 1, minWidth: 180, backgroundColor: colors.surface, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: colors.borderLight }}>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Remaining</Text>
-                <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-                  {formatCurrency(Math.max(0, remaining))}
-                </Text>
-              </View>
-            </View>
-
-            <View style={{ marginTop: Spacing.md }}>
-              <ProgressBar progress={usage} showLabel label="Budget usage" />
-            </View>
+            <ProgressBar progress={usage} showLabel label="Budget usage" height={10} />
           </Card>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl, alignItems: 'flex-start' }}>

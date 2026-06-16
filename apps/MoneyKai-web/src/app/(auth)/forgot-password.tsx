@@ -97,10 +97,11 @@ export default function ForgotPasswordScreen() {
                   value={email}
                   onChangeText={setEmail}
                   icon="email-outline"
+                  testID="forgot-password-email"
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
-                <Button title="Send Reset Link" onPress={handleReset} fullWidth size="lg" loading={isLoading} />
+                <Button title="Send Reset Link" onPress={handleReset} fullWidth size="lg" loading={isLoading} testID="forgot-password-submit" />
 
               </>
             ) : (

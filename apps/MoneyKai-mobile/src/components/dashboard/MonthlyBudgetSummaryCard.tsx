@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
@@ -25,27 +26,27 @@ export function MonthlyBudgetSummaryCard({
   const overBudget = remaining < 0;
   const remainingLabel = overBudget ? 'Overspent' : 'Available';
   const remainingAmount = overBudget ? Math.abs(remaining) : remaining;
-  const statusColor = overBudget ? colors.chart5 : colors.chart6;
-  const progressLabel = `Budget used (${Math.round(progress)}%)`;
+  const statusColor = overBudget ? colors.emergency : colors.success;
+  const progressLabel = `${Math.round(progress)}% of monthly budget used`;
 
   return (
     <Card
       variant="elevated"
       style={{
-        gap: Spacing.md,
-        borderRadius: BorderRadius['2xl'],
+        gap: Spacing.lg,
+        borderRadius: BorderRadius.xl,
         borderWidth: 1,
-        borderColor: `${colors.primary}12`,
+        borderColor: overBudget ? `${colors.emergency}30` : colors.borderLight,
         backgroundColor: colors.surfaceElevated,
       }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.md }}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
-            Monthly Budget
+            Monthly budget control
           </Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.display, color: colors.textPrimary, marginTop: 2 }}>
-            {monthLabel}
+          <Text style={{ fontSize: Typography.fontSize['2xl'], lineHeight: 32, fontFamily: Typography.fontFamily.display, color: colors.textPrimary, marginTop: 2 }}>
+            {remainingLabel}: {formatCurrency(remainingAmount)}
           </Text>
         </View>
         <View
@@ -58,29 +59,8 @@ export function MonthlyBudgetSummaryCard({
             borderColor: overBudget ? `${colors.emergency}30` : `${colors.primary}20`,
           }}
         >
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: overBudget ? colors.emergency : colors.primary }}>
-            {overBudget ? 'Over budget' : 'On track'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-        <View style={{ flex: 1, padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Budget</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-            {formatCurrency(monthlyAllowance)}
-          </Text>
-        </View>
-        <View style={{ flex: 1, padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Spent</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-            {formatCurrency(spent)}
-          </Text>
-        </View>
-        <View style={{ flex: 1, padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>{remainingLabel}</Text>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: statusColor }}>
-            {formatCurrency(remainingAmount)}
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: statusColor }}>
+            {overBudget ? 'Needs review' : 'On track'}
           </Text>
         </View>
       </View>
@@ -88,15 +68,48 @@ export function MonthlyBudgetSummaryCard({
       <ProgressBar
         progress={progress}
         color={statusColor}
-        height={8}
+        height={10}
         label={progressLabel}
       />
+
+      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+        {[
+          ['wallet-outline', 'Budget', formatCurrency(monthlyAllowance)],
+          ['arrow-up-right', 'Spent', formatCurrency(spent)],
+          ['calendar-month-outline', 'Cycle', monthLabel],
+        ].map(([icon, label, value]) => (
+          <View
+            key={label}
+            style={{
+              flex: 1,
+              minHeight: 82,
+              padding: Spacing.sm,
+              borderRadius: BorderRadius.md,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+            }}
+          >
+            <MaterialCommunityIcons name={icon as any} size={17} color={label === 'Spent' ? colors.warning : colors.primary} />
+            <Text style={{ marginTop: 7, fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>{label}</Text>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.76}
+              style={{ marginTop: 2, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}
+            >
+              {value}
+            </Text>
+          </View>
+        ))}
+      </View>
+
       {overBudget ? (
-        <Text style={{ fontSize: Typography.fontSize.xs, color: statusColor }}>
+        <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: statusColor }}>
           You are {formatCurrency(Math.abs(remaining))} over your monthly budget.
         </Text>
       ) : (
-        <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+        <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
           You have {formatCurrency(remaining)} left for the selected month.
         </Text>
       )}

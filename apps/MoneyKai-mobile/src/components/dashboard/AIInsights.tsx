@@ -17,7 +17,7 @@ export const AIInsights: React.FC = () => {
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const totalIncome = useTransactionStore((s) => s.getTotalIncome());
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
-  const { settings } = useBudgetStore();
+  const settings = useBudgetStore((s) => s.settings);
 
   const fallbackInsights = generateInsights(settings.monthly_allowance, totalSpent, categoryTotals);
   const aiPayload =

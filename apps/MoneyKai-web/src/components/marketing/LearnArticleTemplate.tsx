@@ -5,6 +5,7 @@ import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native'
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import type { LearnArticle, LearnFaq, LearnSection } from '@/data/learnArticles';
+import { SITE } from '@/constants/site';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -129,14 +130,59 @@ export function LearnArticleTemplate({
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 960;
+  const articlePath = `/learn/${article.slug}`;
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: article.title,
+      description: article.metaDescription,
+      datePublished: article.publishedAt,
+      dateModified: article.updatedAt,
+      author: {
+        '@type': 'Organization',
+        name: article.author,
+        url: SITE.url,
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: SITE.name,
+        url: SITE.url,
+        logo: `${SITE.url}/favicon.png`,
+      },
+      mainEntityOfPage: `${SITE.url}${articlePath}`,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: article.faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer,
+        },
+      })),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+        { '@type': 'ListItem', position: 2, name: 'Learn', item: `${SITE.url}/learn` },
+        { '@type': 'ListItem', position: 3, name: article.title, item: `${SITE.url}${articlePath}` },
+      ],
+    },
+  ];
 
   return (
     <>
       <SeoHead
         title={article.metaTitle}
         description={article.metaDescription}
-        path={`/learn/${article.slug}`}
+        path={articlePath}
         keywords={article.keywords}
+        structuredData={structuredData}
       />
       <PublicShell eyebrow={`MoneyKai Learn · ${article.category}`} title={article.title} description={article.excerpt}>
         <View style={{ gap: Spacing.lg, paddingBottom: Spacing['2xl'] }}>

@@ -1,10 +1,12 @@
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
@@ -122,10 +124,9 @@ export function MoreScreen() {
           <Text style={styles.subtitle}>Open the features that support your daily budget, shared costs, savings, and account safety.</Text>
         </View>
 
-        <TouchableOpacity
+        <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Open profile"
-          activeOpacity={0.78}
           onPress={() => navigation.navigate('ProfileEdit')}
           style={{
             alignItems: 'center',
@@ -159,17 +160,20 @@ export function MoreScreen() {
             </Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textInverse} />
-        </TouchableOpacity>
+        </PressableScale>
 
         <View style={{ gap: Spacing.md }}>
-          {features.map((feature) => {
+          {features.map((feature, index) => {
             const featureColor = toneColor[feature.tone];
             return (
-              <TouchableOpacity
+              <Animated.View
                 key={feature.route}
+                entering={FadeInDown.delay(index * 28).duration(220)}
+                layout={Layout.springify()}
+              >
+                <PressableScale
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${feature.title}`}
-                activeOpacity={0.78}
                 onPress={() => navigation.navigate(feature.route)}
                 style={{
                   alignItems: 'center',
@@ -216,7 +220,8 @@ export function MoreScreen() {
                   <Text style={[styles.muted, { marginTop: 3 }]}>{feature.body}</Text>
                 </View>
                 <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
-              </TouchableOpacity>
+                </PressableScale>
+              </Animated.View>
             );
           })}
         </View>

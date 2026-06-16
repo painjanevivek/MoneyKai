@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { addMonths, endOfMonth, isBefore, parseISO, setDate, startOfDay, startOfMonth, subMonths } from 'date-fns';
+import { addMonths } from 'date-fns/addMonths';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { isBefore } from 'date-fns/isBefore';
+import { parseISO } from 'date-fns/parseISO';
+import { setDate } from 'date-fns/setDate';
+import { startOfDay } from 'date-fns/startOfDay';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { subMonths } from 'date-fns/subMonths';
 import type { BudgetSettings, BudgetAdjustment } from '../types/budget';
 import type { Transaction } from '../types/transaction';
 import { useAuthStore } from './useAuthStore';

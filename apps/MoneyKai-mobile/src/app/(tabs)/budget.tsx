@@ -13,6 +13,7 @@ import { BudgetHealth } from '@/components/dashboard/BudgetHealth';
 import { MonthlyBudgetSummaryCard } from '@/components/dashboard/MonthlyBudgetSummaryCard';
 import { CategoryBudgetRail } from '@/components/dashboard/CategoryBudgetRail';
 import { MonthYearPickerSheet } from '@/components/calendar/MonthYearPickerSheet';
+import { AppScreenHeader } from '@/components/ui/AppScreenHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -112,35 +113,45 @@ export default function BudgetScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base, flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: Typography.fontSize.xl, lineHeight: 28, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-            Budget
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
-            {monthLabel}
-          </Text>
-        </View>
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={`Select budget month, currently ${monthLabel}`}
-          activeOpacity={0.82}
-          onPress={() => setShowMonthPicker(true)}
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: BorderRadius.md,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-            ...Shadows.sm,
-            shadowColor: colors.shadowColor,
-          }}
-        >
-          <MaterialCommunityIcons name="calendar-month-outline" size={21} color={colors.textPrimary} />
-        </TouchableOpacity>
+      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base }}>
+        <AppScreenHeader
+          icon="wallet-outline"
+          eyebrow="BUDGET CONTROL"
+          title={`${monthLabel} budget`}
+          description="Keep the monthly allowance, category guardrails, and reset behavior in one calm review surface."
+          metrics={[
+            { label: 'Allowance', value: formatCurrency(settings.monthly_allowance), tone: 'default' },
+            { label: 'Spent', value: formatCurrency(monthExpenses), tone: 'warning' },
+            { label: monthRemaining < 0 ? 'Over by' : 'Left', value: formatCurrency(Math.abs(monthRemaining)), tone: monthRemaining < 0 ? 'danger' : 'positive' },
+          ]}
+          chips={[
+            { icon: 'calendar-month-outline', label: monthLabel },
+            { icon: settings.carry_forward ? 'transfer-up' : 'transfer', label: settings.carry_forward ? 'Carry forward on' : 'Carry forward off' },
+          ]}
+          actions={
+            <>
+              <Button
+                title="Change Month"
+                icon="calendar-month-outline"
+                onPress={() => setShowMonthPicker(true)}
+                variant="outline"
+                size="sm"
+                style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }}
+              />
+              <Button
+                title="Edit Budget"
+                icon="pencil-outline"
+                onPress={() => {
+                  setAllowanceValue(String(settings.monthly_allowance));
+                  setShowAllowanceEditor(true);
+                }}
+                variant="outline"
+                size="sm"
+                style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }}
+              />
+            </>
+          }
+        />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: Spacing['2xl'], gap: Spacing.base }} showsVerticalScrollIndicator={false}>

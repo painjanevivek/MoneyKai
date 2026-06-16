@@ -19,8 +19,6 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: 'view-dashboard-outline' },
-  { href: '/reports', label: 'Reports', icon: 'chart-bar' },
-  { href: '/reports', label: 'Import Center', icon: 'database-import-outline' },
   { href: '/transactions', label: 'Transactions', icon: 'swap-horizontal' },
   { href: '/ai-review', label: 'AI Review', icon: 'receipt-text-outline' },
   { href: '/budgets', label: 'Budgets', icon: 'wallet-outline' },
@@ -121,6 +119,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
               <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Go to MoneyKai dashboard"
                 onPress={() => router.push('/')}
                 style={({ hovered, pressed }: any) => ({
                   flexDirection: 'row',
@@ -167,6 +167,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open notifications"
                   onPress={() => router.push('/notifications' as any)}
                   style={({ hovered, pressed }: any) => ({
                     width: 40,
@@ -184,6 +186,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 </Pressable>
 
                 <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Open help and frequently asked questions"
                   onPress={() => router.push('/faq' as any)}
                   style={({ hovered, pressed }: any) => ({
                     width: 40,
@@ -204,6 +208,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
             <View style={{ position: 'relative', zIndex: 60 }}>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Choose reporting month"
+                accessibilityState={{ expanded: showMonthMenu }}
                 onPress={() => setShowMonthMenu((current) => !current)}
                 style={({ hovered, pressed }: any) => ({
                   flexDirection: 'row',
@@ -253,6 +260,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     return (
                       <Pressable
                         key={month.key}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Show ${month.label}`}
+                        accessibilityState={{ selected: active }}
                         onPress={() => {
                           setSelectedMonthKey(month.key);
                           setShowMonthMenu(false);
@@ -284,6 +294,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 return (
                   <Pressable
                     key={`${item.href}-${item.label}`}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Open ${item.label}`}
+                    accessibilityState={{ selected: active }}
                     onPress={() => router.push(item.href as any)}
                     style={({ hovered, pressed }: any) => ({
                       flexDirection: 'row',
@@ -328,7 +341,11 @@ export function DesktopShell({ children }: PropsWithChildren) {
               paddingBottom: insets.bottom + Spacing.lg,
             }}
           >
-            <View style={{ flex: 1, minWidth: 0, width: '100%', maxWidth: 720, alignSelf: 'center' }}>
+            <View
+              nativeID="main-content"
+              accessibilityRole="main"
+              style={{ flex: 1, minWidth: 0, width: '100%', maxWidth: 720, alignSelf: 'center' }}
+            >
               {children}
             </View>
           </View>
@@ -352,6 +369,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
         >
           <View style={{ flex: 1, paddingBottom: insets.bottom + 20 }}>
             <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Go to MoneyKai dashboard"
               onPress={() => router.push('/')}
               style={({ hovered, pressed }: any) => ({
                 flexDirection: 'row',
@@ -397,6 +416,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 return (
                   <Pressable
                     key={`${item.href}-${item.label}`}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Open ${item.label}`}
+                    accessibilityState={{ selected: active }}
                     onPress={() => router.push(item.href as any)}
                     style={({ hovered, pressed }: any) => ({
                       flexDirection: 'row',
@@ -494,30 +516,6 @@ export function DesktopShell({ children }: PropsWithChildren) {
               }}
             />
           ) : null}
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: -120,
-              right: -80,
-              width: 260,
-              height: 260,
-              borderRadius: 999,
-              backgroundColor: `${colors.primary}04`,
-            }}
-          />
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              bottom: 80,
-              left: -120,
-              width: 260,
-              height: 260,
-              borderRadius: 999,
-              backgroundColor: `${colors.accent}08`,
-            }}
-          />
 
           <View
             style={{
@@ -546,6 +544,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, position: 'relative', zIndex: 60, overflow: 'visible' }}>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Choose reporting month"
+                accessibilityState={{ expanded: showMonthMenu }}
                 onPress={() => setShowMonthMenu((current) => !current)}
                 style={({ hovered, pressed }: any) => ({
                   flexDirection: 'row',
@@ -568,6 +569,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </Pressable>
 
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open notifications"
                 onPress={() => router.push('/notifications' as any)}
                 style={({ hovered, pressed }: any) => ({
                   width: 42,
@@ -584,6 +587,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 <MaterialCommunityIcons name="bell-outline" size={20} color={colors.textPrimary} />
               </Pressable>
               <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Open help and frequently asked questions"
                 onPress={() => router.push('/faq' as any)}
                 style={({ hovered, pressed }: any) => ({
                   width: 42,
@@ -622,6 +627,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     return (
                       <Pressable
                         key={month.key}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Show ${month.label}`}
+                        accessibilityState={{ selected: active }}
                         onPress={() => {
                           setSelectedMonthKey(month.key);
                           setShowMonthMenu(false);
@@ -655,7 +663,11 @@ export function DesktopShell({ children }: PropsWithChildren) {
               paddingBottom: insets.bottom + Spacing['2xl'],
             }}
           >
-            <View style={{ maxWidth: 1440, width: '100%', alignSelf: 'center', flex: 1, minWidth: 0 }}>
+            <View
+              nativeID="main-content"
+              accessibilityRole="main"
+              style={{ maxWidth: 1440, width: '100%', alignSelf: 'center', flex: 1, minWidth: 0 }}
+            >
               {children}
             </View>
           </View>

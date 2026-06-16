@@ -12,6 +12,7 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { TrendLineChart } from '@/components/charts/TrendLineChart';
 import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
@@ -60,6 +61,87 @@ function SummaryCard({
   );
 }
 
+type ActivationStep = {
+  done: boolean;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  title: string;
+  body: string;
+  action: string;
+  onPress: () => void;
+};
+
+function ActivationPanel({ steps }: { steps: ActivationStep[] }) {
+  const { colors } = useTheme();
+  const completed = steps.filter((step) => step.done).length;
+  const progress = Math.round((completed / steps.length) * 100);
+  const nextStep = steps.find((step) => !step.done) ?? steps[steps.length - 1];
+
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
+        <View style={{ flex: 1, minWidth: 260 }}>
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
+            FIRST VALUE LOOP
+          </Text>
+          <Text style={{ marginTop: 4, fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+            Get to your first useful review
+          </Text>
+          <Text style={{ marginTop: 6, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+            MoneyKai becomes clearer once a budget and a few reviewed records are in place.
+          </Text>
+        </View>
+        <View style={{ minWidth: 180 }}>
+          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+            Setup progress
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
+            {completed}/{steps.length}
+          </Text>
+          <View style={{ height: 8, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg, overflow: 'hidden', marginTop: Spacing.sm }}>
+            <View style={{ height: 8, width: `${progress}%`, backgroundColor: colors.primary }} />
+          </View>
+        </View>
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.lg }}>
+        {steps.map((step) => (
+          <View
+            key={step.title}
+            style={{
+              flex: 1,
+              minWidth: 220,
+              padding: Spacing.md,
+              borderRadius: BorderRadius.sm,
+              borderWidth: 1,
+              borderColor: step.done ? `${colors.success}44` : colors.borderLight,
+              backgroundColor: step.done ? `${colors.success}12` : colors.surfaceElevated,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <View style={{ width: 34, height: 34, borderRadius: BorderRadius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: step.done ? `${colors.success}20` : colors.primaryBg }}>
+                <MaterialCommunityIcons name={step.done ? 'check' : step.icon} size={18} color={step.done ? colors.success : colors.primary} />
+              </View>
+              <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                {step.title}
+              </Text>
+            </View>
+            <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+              {step.body}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={{ marginTop: Spacing.lg, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
+        <Text style={{ flex: 1, minWidth: 240, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+          Next best action: <Text style={{ fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{nextStep.title}</Text>
+        </Text>
+        <Button title={nextStep.action} onPress={nextStep.onPress} icon="arrow-right" iconPosition="right" />
+      </View>
+    </Card>
+  );
+}
+
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -73,6 +155,7 @@ export default function DashboardScreen() {
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const totalIncome = useTransactionStore((s) => s.getTotalIncome());
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
+  const allTransactions = useTransactionStore((s) => s.transactions);
   const groups = useGroupStore((s) => s.groups);
   const challenges = useChallengeStore((s) => s.challenges);
   const { badges } = useBadgeStore();
@@ -91,6 +174,33 @@ export default function DashboardScreen() {
   const budgetUsage = allowance > 0 ? (totalSpent / allowance) * 100 : 0;
   const activeGroups = groups.filter((group) => !group.archived).length;
   const firstName = user?.full_name?.split(' ')?.[0] ?? 'there';
+  const netFlow = totalIncome - totalSpent;
+  const activationSteps: ActivationStep[] = [
+    {
+      done: allowance > 0,
+      icon: 'target',
+      title: 'Set a monthly budget',
+      body: 'Create the guardrail that makes every dashboard number easier to judge.',
+      action: 'Set budget',
+      onPress: () => router.push('/budgets' as any),
+    },
+    {
+      done: allTransactions.length > 0,
+      icon: 'receipt-text-plus-outline',
+      title: 'Add your first record',
+      body: 'Start with one income or expense. Reports need reviewed data before they can help.',
+      action: 'Add transaction',
+      onPress: () => router.push('/transactions' as any),
+    },
+    {
+      done: allTransactions.length >= 3,
+      icon: 'chart-box-outline',
+      title: 'Review the first pattern',
+      body: 'After a few records, check categories and cashflow so the app can earn your trust.',
+      action: 'Review transactions',
+      onPress: () => router.push('/transactions' as any),
+    },
+  ];
   const summaryCards = [
     {
       icon: 'wallet-outline' as const,
@@ -132,39 +242,32 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['4xl'] }}>
-      <Card>
-        <View style={{ flexDirection: isWide ? 'row' : 'column', alignItems: isWide ? 'center' : 'stretch', justifyContent: 'space-between', gap: Spacing.lg }}>
-          <View style={{ flex: 1, gap: 8 }}>
-            <Text style={{ fontSize: Typography.fontSize['3xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Welcome back, {firstName}
-            </Text>
-            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22, maxWidth: 740 }}>
-              This is your desktop workspace for budgeting, transactions, shared spending, savings, and financial first aid.
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.sm }}>
-              <Button title="Open Transactions" onPress={() => router.push('/transactions' as any)} />
-              <Button title="Review Receipt" onPress={() => router.push('/ai-review' as any)} variant="outline" icon="receipt-text-outline" />
-              <Button title="Add Holding" onPress={() => router.push('/portfolio' as any)} variant="outline" icon="briefcase-plus-outline" />
-              <Button title="Open Groups" onPress={() => router.push('/groups' as any)} variant="outline" />
-            </View>
-          </View>
+      <WorkspaceHeader
+        icon="view-dashboard-outline"
+        eyebrow="MONEY CONTROL CENTER"
+        title={`Welcome back, ${firstName}`}
+        description="A private desktop workspace for reviewed transactions, budgets, shared spending, savings, and portfolio context."
+        metrics={[
+          { label: 'Available', value: formatCurrency(Math.max(0, remaining)), tone: remaining < 0 ? 'danger' : 'positive' },
+          { label: 'Spent', value: formatCurrency(totalSpent), tone: 'warning' },
+          { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
+          { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'warning' : 'positive' },
+        ]}
+        chips={[
+          { icon: 'calendar-refresh-outline', label: `Reset day ${settings.reset_day}` },
+          { icon: 'target', label: `${activeChallenges.length} active goal${activeChallenges.length === 1 ? '' : 's'}` },
+          { icon: 'account-group-outline', label: `${activeGroups} active group${activeGroups === 1 ? '' : 's'}` },
+        ]}
+        actions={
+          <>
+            <Button title="Transactions" onPress={() => router.push('/transactions' as any)} variant="outline" icon="swap-horizontal" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+            <Button title="AI Review" onPress={() => router.push('/ai-review' as any)} variant="outline" icon="receipt-text-outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+            <Button title="Portfolio" onPress={() => router.push('/portfolio' as any)} variant="outline" icon="briefcase-outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+          </>
+        }
+      />
 
-          <View style={{ minWidth: isWide ? 280 : '100%' as any, gap: Spacing.sm }}>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', justifyContent: isWide ? 'flex-end' : 'flex-start' }}>
-              <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 10, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: colors.borderLight }}>
-                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-                  Reset day {settings.reset_day}
-                </Text>
-              </View>
-              <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 10, borderRadius: BorderRadius.full, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderLight }}>
-                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-                  {activeChallenges.length} active goal{activeChallenges.length === 1 ? '' : 's'}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Card>
+      <ActivationPanel steps={activationSteps} />
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
         {summaryCards.map((card) => (

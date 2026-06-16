@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, Spacing, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, Spacing, Typography } from '../../constants/theme';
 
 interface InputProps {
   label?: string;
@@ -31,6 +31,12 @@ interface InputProps {
   suffix?: string;
   maxLength?: number;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoComplete?: TextInputProps['autoComplete'];
+  textContentType?: TextInputProps['textContentType'];
+  returnKeyType?: TextInputProps['returnKeyType'];
+  onSubmitEditing?: TextInputProps['onSubmitEditing'];
+  autoCorrect?: boolean;
+  testID?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -52,16 +58,24 @@ export const Input: React.FC<InputProps> = ({
   suffix,
   maxLength,
   autoCapitalize = 'sentences',
+  autoComplete,
+  textContentType,
+  returnKeyType,
+  onSubmitEditing,
+  autoCorrect,
+  testID,
 }) => {
   const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [isSecureVisible, setIsSecureVisible] = useState(!secureTextEntry);
+  const resolvedAutoCorrect = autoCorrect ?? (!secureTextEntry && keyboardType !== 'email-address');
 
   const borderColor = error
     ? colors.error
     : isFocused
       ? colors.primary
       : colors.border;
+  const supportingColor = error ? colors.error : isFocused ? colors.primary : colors.textSecondary;
 
   return (
     <View style={[{ marginBottom: Spacing.base }, style]}>
@@ -69,9 +83,9 @@ export const Input: React.FC<InputProps> = ({
         <Text
           style={{
             fontSize: Typography.fontSize.sm,
-            fontFamily: Typography.fontFamily.medium,
-            color: colors.textSecondary,
-            marginBottom: Spacing.xs,
+            fontFamily: Typography.fontFamily.semiBold,
+            color: supportingColor,
+            marginBottom: Spacing.sm,
           }}
         >
           {label}
@@ -81,13 +95,14 @@ export const Input: React.FC<InputProps> = ({
         style={{
           flexDirection: 'row',
           alignItems: multiline ? 'flex-start' : 'center',
-          backgroundColor: colors.surface,
+          backgroundColor: editable ? colors.surface : colors.surfaceElevated,
           borderRadius: BorderRadius.md,
           borderWidth: 1.5,
           borderColor,
           paddingHorizontal: Spacing.md,
           paddingVertical: multiline ? Spacing.md : 0,
-          minHeight: multiline ? 100 : 48,
+          minHeight: multiline ? 104 : ComponentTokens.controlHeight.md,
+          opacity: editable ? 1 : ComponentTokens.disabledOpacity,
         }}
       >
         {icon && (
@@ -112,7 +127,9 @@ export const Input: React.FC<InputProps> = ({
         )}
         <TextInput
           accessibilityLabel={label ?? placeholder}
+          testID={testID}
           accessibilityHint={error ? error : undefined}
+          accessibilityState={{ disabled: !editable }}
           aria-invalid={Boolean(error)}
           value={value}
           onChangeText={onChangeText}
@@ -126,6 +143,11 @@ export const Input: React.FC<InputProps> = ({
           editable={editable}
           maxLength={maxLength}
           autoCapitalize={autoCapitalize}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
+          autoCorrect={resolvedAutoCorrect}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           style={[
@@ -135,6 +157,7 @@ export const Input: React.FC<InputProps> = ({
               fontFamily: Typography.fontFamily.regular,
               color: colors.textPrimary,
               paddingVertical: multiline ? 0 : 12,
+              textAlignVertical: multiline ? 'top' : 'center',
             },
             inputStyle,
           ]}
@@ -169,9 +192,9 @@ export const Input: React.FC<InputProps> = ({
         <Text
           style={{
             fontSize: Typography.fontSize.xs,
-            fontFamily: Typography.fontFamily.regular,
+            fontFamily: Typography.fontFamily.medium,
             color: colors.error,
-            marginTop: 4,
+            marginTop: Spacing.xs,
           }}
         >
           {error}

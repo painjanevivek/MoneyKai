@@ -11,7 +11,9 @@ import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 
 export const MonthlyReset: React.FC = () => {
   const { colors, isDark } = useTheme();
-  const { settings, updateSettings, addAdjustment } = useBudgetStore();
+  const settings = useBudgetStore((s) => s.settings);
+  const updateSettings = useBudgetStore((s) => s.updateSettings);
+  const addAdjustment = useBudgetStore((s) => s.addAdjustment);
   const nextReset = getNextResetDate(settings.reset_day);
 
   const [amount, setAmount] = useState('');

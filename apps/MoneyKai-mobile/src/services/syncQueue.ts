@@ -219,13 +219,16 @@ export const queueSyncOperation = async (operation: QueueOperation) => {
   const queue = await loadQueue();
   queue.push(entry);
   await saveQueue(queue);
+  useSyncStore.getState().failSync('Changes are saved locally and will sync when the connection is available.');
 };
 
 export const flushSyncQueue = async () => {
   const networkState = await NetInfo.fetch().catch(() => null);
   if (networkState && (networkState.isConnected === false || networkState.isInternetReachable === false)) {
+    useSyncStore.getState().setOnline(false);
     return;
   }
+  useSyncStore.getState().setOnline(true);
 
   let queue = await loadQueue();
   if (queue.length === 0) {
@@ -233,8 +236,10 @@ export const flushSyncQueue = async () => {
     return;
   }
 
+  useSyncStore.getState().startSync();
   const nextQueue: QueueEntry[] = [];
   let syncedAny = false;
+  let lastError: string | null = null;
 
   for (const entry of queue) {
     try {
@@ -243,10 +248,11 @@ export const flushSyncQueue = async () => {
     } catch (error) {
       const retriable = canRetryError(error);
       if (retriable && entry.attempts + 1 < MAX_ATTEMPTS) {
+        lastError = error instanceof Error ? error.message : 'Sync failed';
         nextQueue.push({
           ...entry,
           attempts: entry.attempts + 1,
-          lastError: error instanceof Error ? error.message : 'Sync failed',
+          lastError,
         });
       }
       if (!retriable) {
@@ -260,7 +266,9 @@ export const flushSyncQueue = async () => {
   queue = nextQueue;
   await saveQueue(queue);
 
-  if (syncedAny) {
+  if (queue.length > 0) {
+    useSyncStore.getState().failSync(lastError ?? 'Some changes could not be synced.');
+  } else if (syncedAny) {
     useSyncStore.getState().finishSync();
   }
 };

@@ -16,7 +16,7 @@ export const Card: React.FC<CardProps> = ({
   style,
   variant = 'default',
   padding = 'base',
-  borderRadius = 'lg',
+  borderRadius = 'sm',
 }) => {
   const { colors } = useTheme();
 
@@ -25,10 +25,10 @@ export const Card: React.FC<CardProps> = ({
     borderRadius: BorderRadius[borderRadius],
     padding: Spacing[padding],
     ...(variant === 'outlined'
-      ? { borderWidth: 1, borderColor: colors.border }
+      ? { borderWidth: 1, borderColor: colors.borderLight }
       : variant === 'elevated'
-        ? { ...Shadows.lg, shadowColor: colors.shadowColor }
-        : { ...Shadows.md, shadowColor: colors.shadowColor }
+        ? { borderWidth: 1, borderColor: colors.borderLight, ...Shadows.lg, shadowColor: colors.shadowColor }
+        : { borderWidth: 1, borderColor: colors.borderLight, ...Shadows.sm, shadowColor: colors.shadowColor }
     ),
   };
 

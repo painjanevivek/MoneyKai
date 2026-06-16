@@ -33,6 +33,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
       <Image
         source={{ uri: avatarUrl }}
         style={[baseImageStyle, imageStyle]}
+        accessibilityLabel={`${name || email || 'User'} avatar`}
       />
     );
   }

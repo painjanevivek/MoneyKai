@@ -7,12 +7,21 @@ import { HoldingsList } from '@/components/portfolio/HoldingsList';
 import { ManualHoldingSheet } from '@/components/portfolio/ManualHoldingSheet';
 import { PortfolioSummaryCard } from '@/components/portfolio/PortfolioSummaryCard';
 import { ProviderConnectionCard } from '@/components/portfolio/ProviderConnectionCard';
+import { AppScreenHeader } from '@/components/ui/AppScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Spacing, Typography } from '@/constants/theme';
 import { usePortfolioWorkspace } from '@/features/wealth/usePortfolioWorkspace';
 import { useTheme } from '@/hooks/useTheme';
+
+const isHttpsUrl = (url: string) => {
+  try {
+    return new URL(url).protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
 
 export default function PortfolioScreen() {
   const { colors } = useTheme();
@@ -64,20 +73,29 @@ export default function PortfolioScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.base, paddingBottom: Spacing['2xl'], gap: Spacing.base }}
       >
-        <View style={{ gap: Spacing.xs }}>
-          <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-            Portfolio
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-            {lastUpdatedAt ? `Last updated ${new Date(lastUpdatedAt).toLocaleString()}` : 'No portfolio data synced yet'}
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, paddingTop: Spacing.sm }}>
-            <Button title="Refresh" icon="refresh" onPress={refreshPortfolio} loading={busy === 'refresh'} size="sm" />
-            <Button title="Add Holding" icon="plus" onPress={() => setShowManualEntry(true)} size="sm" variant="outline" />
-            <Button title="Snapshot" icon="camera-outline" onPress={handleSnapshot} loading={busy === 'snapshot'} size="sm" variant="outline" />
-            <Button title="Wealth" icon="chart-line" onPress={() => router.push('/(tabs)/wealth' as never)} size="sm" variant="outline" />
-          </View>
-        </View>
+        <AppScreenHeader
+          icon="briefcase-outline"
+          eyebrow="WEALTH WORKSPACE"
+          title="Portfolio review"
+          description={lastUpdatedAt ? `Last updated ${new Date(lastUpdatedAt).toLocaleString()}` : 'Add holdings or connect a provider before portfolio insights become useful.'}
+          metrics={[
+            { label: 'Accounts', value: String(accounts.length) },
+            { label: 'Holdings', value: String(holdings.length) },
+            { label: 'Status', value: busy ? 'Syncing' : 'Ready', tone: busy ? 'warning' : 'positive' },
+          ]}
+          chips={[
+            { icon: 'shield-check-outline', label: 'Manual review' },
+            { icon: 'bank-transfer', label: aaStatus ? 'AA status open' : 'Consented data only' },
+          ]}
+          actions={
+            <>
+              <Button title="Refresh" icon="refresh" onPress={refreshPortfolio} loading={busy === 'refresh'} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+              <Button title="Add Holding" icon="plus" onPress={() => setShowManualEntry(true)} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+              <Button title="Snapshot" icon="camera-outline" onPress={handleSnapshot} loading={busy === 'snapshot'} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+              <Button title="Wealth" icon="chart-line" onPress={() => router.push('/(tabs)/wealth' as never)} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+            </>
+          }
+        />
 
         <PortfolioSummaryCard snapshot={overview.snapshot} currencySymbol={currencySymbol} />
         <ProviderConnectionCard
@@ -149,6 +167,10 @@ export default function PortfolioScreen() {
                 title="Open Partner"
                 icon="open-in-new"
                 onPress={() => {
+                  if (!isHttpsUrl(aaStatus.partnerUrl!)) {
+                    Alert.alert('Partner URL blocked', 'MoneyKai only opens secure HTTPS partner links.');
+                    return;
+                  }
                   void Linking.openURL(aaStatus.partnerUrl!).catch(() => {
                     Alert.alert('Partner URL', aaStatus.partnerUrl!);
                   });

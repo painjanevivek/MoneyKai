@@ -53,7 +53,7 @@ const gaugeLabelPosition = (mark: number) => {
 export const BudgetHealth: React.FC<{ totalSpent?: number }> = ({ totalSpent: totalSpentProp }) => {
   const { colors } = useTheme();
   const storeTotalSpent = useTransactionStore((s) => s.getTotalSpent());
-  const { settings } = useBudgetStore();
+  const settings = useBudgetStore((s) => s.settings);
   const totalSpent = totalSpentProp ?? storeTotalSpent;
   const health = calculateBudgetHealth(settings.monthly_allowance, totalSpent);
   const healthColor = getBudgetHealthColor(health.level, colors);

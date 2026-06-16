@@ -9,14 +9,39 @@ import { useTheme } from '@/hooks/useTheme';
 
 export function FeatureDetailPage({ feature }: { feature: PublicFeature }) {
   const { colors } = useTheme();
+  const featurePath = `/features/${feature.slug}`;
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: feature.faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer,
+        },
+      })),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://moneykai.app/' },
+        { '@type': 'ListItem', position: 2, name: 'Features', item: 'https://moneykai.app/features' },
+        { '@type': 'ListItem', position: 3, name: feature.title, item: `https://moneykai.app${featurePath}` },
+      ],
+    },
+  ];
 
   return (
     <>
       <SeoHead
         title={`MoneyKai ${feature.title} | ${feature.shortTitle}`}
         description={feature.description}
-        path={`/features/${feature.slug}`}
+        path={featurePath}
         keywords={feature.keywords}
+        structuredData={structuredData}
       />
       <PublicShell
         eyebrow={feature.category}
@@ -24,6 +49,15 @@ export function FeatureDetailPage({ feature }: { feature: PublicFeature }) {
         description={feature.heroDescription}
       >
         <View style={{ gap: Spacing.xl }}>
+          <SectionCard>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              What is MoneyKai {feature.title}?
+            </Text>
+            <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
+              MoneyKai {feature.title.toLowerCase()} helps users {feature.description.charAt(0).toLowerCase() + feature.description.slice(1)}
+            </Text>
+          </SectionCard>
+
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
               Why this feature matters

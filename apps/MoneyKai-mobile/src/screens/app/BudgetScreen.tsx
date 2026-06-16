@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ScreenState } from '@/components/ui/ScreenState';
 import { EXPENSE_CATEGORIES, getCategoryById } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -144,6 +146,7 @@ export function BudgetScreen() {
   const [adjustmentAmount, setAdjustmentAmount] = useState('');
   const [adjustmentReason, setAdjustmentReason] = useState('');
   const [categoryLimitDrafts, setCategoryLimitDrafts] = useState(() => toLimitDrafts(settings.category_limits));
+  const [budgetNotice, setBudgetNotice] = useState<{ tone: 'danger' | 'primary'; title: string; body: string } | null>(null);
 
   const currentMonthTransactions = useMemo(
     () => filterTransactionsByMonth(transactions, getMonthKey(new Date())),
@@ -160,11 +163,11 @@ export function BudgetScreen() {
     const nextAllowance = Number(allowance);
     const nextResetDay = Number(resetDay);
     if (!Number.isFinite(nextAllowance) || nextAllowance < 0) {
-      Alert.alert('Invalid budget', 'Enter a valid monthly allowance.');
+      setBudgetNotice({ tone: 'danger', title: 'Invalid budget', body: 'Enter a valid monthly allowance.' });
       return;
     }
     if (!Number.isInteger(nextResetDay) || nextResetDay < 1 || nextResetDay > 31) {
-      Alert.alert('Invalid reset day', 'Reset day must be between 1 and 31.');
+      setBudgetNotice({ tone: 'danger', title: 'Invalid reset day', body: 'Reset day must be between 1 and 31.' });
       return;
     }
 
@@ -174,13 +177,13 @@ export function BudgetScreen() {
       currency: settings.currency,
       category_limits: normalizedLimits,
     });
-    Alert.alert('Budget saved', 'Your budget settings and category limits were saved.');
+    setBudgetNotice({ tone: 'primary', title: 'Budget saved', body: 'Your budget settings and category limits were saved.' });
   };
 
   const saveAdjustment = (type: 'add' | 'subtract') => {
     const numericAmount = Number(adjustmentAmount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      Alert.alert('Invalid adjustment', 'Enter an amount greater than zero.');
+      setBudgetNotice({ tone: 'danger', title: 'Invalid adjustment', body: 'Enter an amount greater than zero.' });
       return;
     }
 
@@ -193,6 +196,7 @@ export function BudgetScreen() {
     setAllowance(String(type === 'add' ? settings.monthly_allowance + numericAmount : settings.monthly_allowance - numericAmount));
     setAdjustmentAmount('');
     setAdjustmentReason('');
+    setBudgetNotice({ tone: 'primary', title: 'Adjustment added', body: 'Your monthly allowance draft has been updated.' });
   };
 
   return (
@@ -201,8 +205,18 @@ export function BudgetScreen() {
         <View style={styles.header}>
           <Text style={styles.eyebrow}>Budget</Text>
           <Text style={styles.title}>Monthly guardrails</Text>
-          <Text style={styles.subtitle}>Set category limits, watch the split, and keep this month in control. ✨</Text>
+          <Text style={styles.subtitle}>Set category limits, watch the split, and keep this month in control.</Text>
         </View>
+
+        {budgetNotice && (
+          <ScreenState
+            body={budgetNotice.body}
+            icon={budgetNotice.tone === 'danger' ? 'alert-circle-outline' : 'check-circle-outline'}
+            style={{ marginBottom: Spacing.base, padding: Spacing.base }}
+            title={budgetNotice.title}
+            tone={budgetNotice.tone}
+          />
+        )}
 
         <View style={styles.panel}>
           <View style={styles.row}>
@@ -230,14 +244,16 @@ export function BudgetScreen() {
             Give every noisy spending category a clear ceiling. Leave a field empty when you do not want a limit.
           </Text>
           <View style={{ gap: Spacing.sm }}>
-            {EXPENSE_CATEGORIES.map((category) => {
+            {EXPENSE_CATEGORIES.map((category, index) => {
               const spentAmount = spentTotals.find((item) => item.category === category.id)?.total ?? 0;
               const limitAmount = normalizedLimits[category.id] ?? 0;
               const percentUsed = limitAmount > 0 ? Math.min(100, Math.round((spentAmount / limitAmount) * 100)) : 0;
 
               return (
-                <View
+                <Animated.View
                   key={category.id}
+                  entering={FadeInDown.delay(index * 18).duration(220)}
+                  layout={Layout.springify()}
                   style={{
                     borderColor: colors.borderLight,
                     borderRadius: BorderRadius.md,
@@ -297,7 +313,7 @@ export function BudgetScreen() {
                       />
                     </View>
                   </View>
-                </View>
+                </Animated.View>
               );
             })}
           </View>
