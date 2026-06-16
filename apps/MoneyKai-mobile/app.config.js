@@ -1,5 +1,7 @@
 const appJson = require('./app.json');
 
+const hasValue = (value) => typeof value === 'string' && value.trim().length > 0;
+
 const easBuildProfile = process.env.EAS_BUILD_PROFILE;
 const nativeSmsResearchBuildEnabled =
   process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD !== 'false' &&
@@ -15,11 +17,34 @@ const devClientLaunchURL =
     ? `http://${process.env.REACT_NATIVE_PACKAGER_HOSTNAME}:8081`
     : undefined);
 
+const baseExpoConfig = appJson.expo ?? {};
 const config = {
-  ...appJson.expo,
+  name: appJson.displayName ?? appJson.name ?? 'MoneyKai',
+  slug: 'moneykai-mobile',
+  version: '1.0.1',
+  scheme: 'moneykai-mobile',
+  orientation: 'portrait',
+  ...baseExpoConfig,
 };
 
-config.plugins = [...config.plugins, './plugins/withMoneyKaiReleaseAutolinking'];
+config.plugins = [...(config.plugins ?? []), './plugins/withMoneyKaiReleaseAutolinking'];
+
+if (hasValue(process.env.SENTRY_ORG) && hasValue(process.env.SENTRY_PROJECT)) {
+  config.plugins = [
+    ...config.plugins,
+    [
+      '@sentry/react-native/expo',
+      {
+        url: process.env.SENTRY_URL || 'https://sentry.io/',
+        organization: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        disableAutoUpload:
+          process.env.SENTRY_DISABLE_AUTO_UPLOAD === 'true' ||
+          !hasValue(process.env.SENTRY_AUTH_TOKEN),
+      },
+    ],
+  ];
+}
 
 if (nativeSmsResearchBuildEnabled && config.android?.blockedPermissions) {
   const smsPermissions = new Set([

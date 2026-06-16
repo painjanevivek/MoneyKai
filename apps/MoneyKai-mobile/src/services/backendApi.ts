@@ -1,7 +1,8 @@
-import { firebaseAuth } from './firebase';
 import { financialFeatureEndpoints } from '@/contracts/financialFeatureContracts';
 import { getBackendBaseUrl } from '@/config/environment';
+import { getCurrentFirebaseIdToken, getCurrentFirebaseUser } from './authService';
 import { fetchWithRetry, NetworkRequestError, readDataCache, writeDataCache } from './networkClient';
+import { addSentryBreadcrumb, captureSentryException, startSentrySpan } from './sentry';
 import type { DiagnosticEvent } from '@/services/diagnosticsService';
 import type { AiSmsParseCandidate, AiSmsParseInput } from '@/types/capture';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
@@ -122,12 +123,7 @@ const parseErrorMessage = async (response: Response, fallback: string): Promise<
 };
 
 async function getAuthToken(): Promise<string> {
-  const currentUser = firebaseAuth.currentUser;
-  if (!currentUser) {
-    throw new Error('You need to be signed in to call the backend.');
-  }
-
-  return currentUser.getIdToken();
+  return getCurrentFirebaseIdToken();
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -145,48 +141,103 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const method = (init.method ?? 'GET').toUpperCase();
   const isGetRequest = method === 'GET';
-  const cacheKey = isGetRequest ? `backend:${firebaseAuth.currentUser?.uid ?? 'anonymous'}:${path}` : null;
+  const cacheKey = isGetRequest ? `backend:${getCurrentFirebaseUser()?.uid ?? 'anonymous'}:${path}` : null;
 
-  try {
-    const response = await fetchWithRetry(
-      `${backendBaseUrl}${path}`,
-      {
-        ...init,
-        headers,
+  return startSentrySpan(
+    {
+      name: `${method} ${path}`,
+      op: 'http.client',
+      attributes: {
+        'http.method': method,
+        'url.path': path,
+        'moneykai.cacheable': isGetRequest,
+        'moneykai.feature': 'backend_api',
       },
-      {
-        retries: isGetRequest ? 2 : 0,
-        timeoutMs: 20_000,
-      },
-    );
+    },
+    async () => {
+      addSentryBreadcrumb({
+        category: 'backend.request',
+        level: 'info',
+        message: `${method} ${path}`,
+        data: {
+          method,
+          path,
+          cacheable: isGetRequest,
+        },
+      });
 
-    if (!response.ok) {
-      const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
-      throw new BackendApiError(message, response.status);
-    }
+      try {
+        const response = await fetchWithRetry(
+          `${backendBaseUrl}${path}`,
+          {
+            ...init,
+            headers,
+          },
+          {
+            retries: isGetRequest ? 2 : 0,
+            timeoutMs: 20_000,
+          },
+        );
 
-    const payload = (await response.json()) as T;
-    if (cacheKey) {
-      void writeDataCache(cacheKey, payload, BACKEND_GET_CACHE_TTL_MS).catch(() => undefined);
-    }
-    return payload;
-  } catch (error) {
-    if (cacheKey) {
-      const cached = await readDataCache<T>(cacheKey);
-      const canUseCached =
-        error instanceof NetworkRequestError ||
-        (error instanceof BackendApiError && (error.status === 0 || error.status >= 500));
-      if (cached && canUseCached) {
-        return cached.value;
+        if (!response.ok) {
+          const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
+          throw new BackendApiError(message, response.status);
+        }
+
+        const payload = (await response.json()) as T;
+        if (cacheKey) {
+          void writeDataCache(cacheKey, payload, BACKEND_GET_CACHE_TTL_MS).catch(() => undefined);
+        }
+        return payload;
+      } catch (error) {
+        if (cacheKey) {
+          const cached = await readDataCache<T>(cacheKey);
+          const canUseCached =
+            error instanceof NetworkRequestError ||
+            (error instanceof BackendApiError && (error.status === 0 || error.status >= 500));
+          if (cached && canUseCached) {
+            addSentryBreadcrumb({
+              category: 'backend.cache',
+              level: 'info',
+              message: 'Served cached backend response after request failure',
+              data: {
+                method,
+                path,
+              },
+            });
+            return cached.value;
+          }
+        }
+
+        if (error instanceof NetworkRequestError) {
+          captureSentryException(error, {
+            tags: {
+              feature: 'backend_api',
+              method,
+              endpoint: path,
+              status: String(error.status),
+            },
+            level: 'warning',
+          });
+          throw new BackendApiError(error.message, error.status);
+        }
+
+        if (error instanceof BackendApiError && error.status >= 500) {
+          captureSentryException(error, {
+            tags: {
+              feature: 'backend_api',
+              method,
+              endpoint: path,
+              status: String(error.status),
+            },
+            level: 'error',
+          });
+        }
+
+        throw error;
       }
-    }
-
-    if (error instanceof NetworkRequestError) {
-      throw new BackendApiError(error.message, error.status);
-    }
-
-    throw error;
-  }
+    },
+  );
 }
 
 export const backendApi = {

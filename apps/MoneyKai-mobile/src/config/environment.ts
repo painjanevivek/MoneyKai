@@ -34,6 +34,19 @@ const pdfStatementParsingEnabledValue = readEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSI
 const wealthTabEnabledValue = readEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
 const financialAiEnabledValue = readEnv('EXPO_PUBLIC_FINANCIAL_AI_ENABLED');
 
+const sentryEnv = {
+  dsn: readEnv('EXPO_PUBLIC_SENTRY_DSN') || readEnv('SENTRY_DSN'),
+  environment: readEnv('EXPO_PUBLIC_SENTRY_ENVIRONMENT') || readEnv('SENTRY_ENVIRONMENT'),
+  release: readEnv('EXPO_PUBLIC_SENTRY_RELEASE') || readEnv('SENTRY_RELEASE'),
+  dist: readEnv('EXPO_PUBLIC_SENTRY_DIST') || readEnv('SENTRY_DIST'),
+  enabled: readEnv('EXPO_PUBLIC_SENTRY_ENABLED'),
+  tracesSampleRate: readEnv('EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE'),
+  profilesSampleRate: readEnv('EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE'),
+  replaySessionSampleRate: readEnv('EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE'),
+  replayErrorSampleRate: readEnv('EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE'),
+  errorSampleRate: readEnv('EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE'),
+};
+
 export const appEnvironment = {
   firebase: firebaseEnv,
   google: googleEnv,
@@ -47,6 +60,7 @@ export const appEnvironment = {
   pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
   wealthTabEnabled: wealthTabEnabledValue === '' ? true : wealthTabEnabledValue === 'true',
   financialAiEnabled: financialAiEnabledValue === 'true',
+  sentry: sentryEnv,
 };
 
 export const hasFirebaseEnvironment = (): boolean =>
