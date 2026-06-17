@@ -1,6 +1,7 @@
 import React from 'react';
 import { Redirect, router } from 'expo-router';
 import { Image, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { Asset } from 'expo-asset';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
@@ -43,7 +44,7 @@ export default function LandingScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isCompact = width < 720;
   const isWide = width >= 980;
-  const heroImageUri = Image.resolveAssetSource(HERO_IMAGE)?.uri;
+  const heroImageUri = Asset.fromModule(HERO_IMAGE).uri;
   const structuredData = [
     {
       '@context': 'https://schema.org',
