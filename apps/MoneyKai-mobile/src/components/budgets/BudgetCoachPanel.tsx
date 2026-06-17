@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAiBudgetCoach } from '@/features/ai/hooks';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';

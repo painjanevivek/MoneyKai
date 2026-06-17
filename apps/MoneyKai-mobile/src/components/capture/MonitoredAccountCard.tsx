@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { formatMonitoredAccountLabel } from '@/services/captureAccountIdentifier';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';

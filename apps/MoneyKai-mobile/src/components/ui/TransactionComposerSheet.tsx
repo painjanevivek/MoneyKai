@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Animated, Dimensions, Easing, Modal, Platform, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';

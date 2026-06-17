@@ -4,7 +4,7 @@ import { addYears } from 'date-fns/addYears';
 import { format } from 'date-fns/format';
 import { parseISO } from 'date-fns/parseISO';
 import { subYears } from 'date-fns/subYears';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { useTheme } from '@/hooks/useTheme';

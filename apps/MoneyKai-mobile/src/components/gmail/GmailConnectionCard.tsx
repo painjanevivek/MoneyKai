@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, Linking, Platform, Switch, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ModalSheet } from '@/components/ui/ModalSheet';

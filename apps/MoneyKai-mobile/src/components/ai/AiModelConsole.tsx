@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -13,7 +13,7 @@ type ModelPreset = {
   id: string;
   label: string;
   detail: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: string;
 };
 
 const MODEL_PRESETS: ModelPreset[] = [

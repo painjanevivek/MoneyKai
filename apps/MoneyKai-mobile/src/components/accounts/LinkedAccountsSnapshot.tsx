@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   formatLinkedAccountMask,
   summarizeLinkedAccounts,
@@ -14,7 +13,11 @@ import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { formatCurrency } from '@/utils/formatCurrency';
 
-export function LinkedAccountsSnapshot() {
+interface LinkedAccountsSnapshotProps {
+  onOpenAccounts?: () => void;
+}
+
+export function LinkedAccountsSnapshot({ onOpenAccounts }: LinkedAccountsSnapshotProps = {}) {
   const { colors } = useTheme();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const accounts = useLinkedAccountStore((s) => s.accounts);
@@ -36,7 +39,12 @@ export function LinkedAccountsSnapshot() {
             Balances and imported transactions by account.
           </Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/accounts' as never)} accessibilityRole="button" accessibilityLabel="Open linked accounts">
+        <TouchableOpacity
+          onPress={onOpenAccounts}
+          disabled={!onOpenAccounts}
+          accessibilityRole="button"
+          accessibilityLabel="Open linked accounts"
+        >
           <MaterialCommunityIcons name="arrow-right" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -75,7 +83,8 @@ export function LinkedAccountsSnapshot() {
           {activeAccounts.slice(0, 2).map((account) => (
             <TouchableOpacity
               key={account.id}
-              onPress={() => router.push('/(tabs)/accounts' as never)}
+              onPress={onOpenAccounts}
+              disabled={!onOpenAccounts}
               style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}
             >
               <MaterialCommunityIcons name={account.kind === 'credit_card' ? 'credit-card-outline' : 'bank-outline'} size={20} color={colors.primary} />

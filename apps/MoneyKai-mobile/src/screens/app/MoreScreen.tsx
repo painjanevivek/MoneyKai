@@ -106,6 +106,14 @@ export function MoreScreen() {
       tone: unreadCount > 0 ? 'danger' : 'accent',
     },
     {
+      title: 'AI Review',
+      body: 'Test configured models and check attachment analysis readiness.',
+      metric: 'DeepSeek, Kimi, Gemma',
+      icon: 'brain',
+      route: 'AiReview',
+      tone: 'primary',
+    },
+    {
       title: 'Settings',
       body: 'Profile, backup, security, and app preferences.',
       metric: theme === 'dark' ? 'Dark mode' : 'Light mode',

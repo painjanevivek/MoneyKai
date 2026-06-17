@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAiTransactionInsights } from '@/features/ai/hooks';
 import type { AiInsightCard } from '@/features/ai/types';
@@ -12,7 +11,11 @@ import { useTransactionStore } from '@/stores/useTransactionStore';
 import { generateInsights } from '@/utils/insightEngine';
 import { Card } from '../ui/Card';
 
-export const AIInsights: React.FC = () => {
+interface AIInsightsProps {
+  onOpenReports?: () => void;
+}
+
+export const AIInsights: React.FC<AIInsightsProps> = ({ onOpenReports }) => {
   const { colors } = useTheme();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const totalIncome = useTransactionStore((s) => s.getTotalIncome());
@@ -49,7 +52,7 @@ export const AIInsights: React.FC = () => {
     achievement: colors.primaryLight,
     trend: colors.info,
   };
-  const iconNames: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
+  const iconNames: Record<string, string> = {
     info: 'lightbulb-on-outline',
     warning: 'alert-circle-outline',
     success: 'check-decagram-outline',
@@ -119,7 +122,7 @@ export const AIInsights: React.FC = () => {
                 marginTop: 2,
               }}
             >
-              <MaterialCommunityIcons name={iconNames[card.tone] as any} size={16} color={iconColors[card.tone]} />
+              <MaterialCommunityIcons name={iconNames[card.tone]} size={16} color={iconColors[card.tone]} />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -211,7 +214,8 @@ export const AIInsights: React.FC = () => {
       ) : null}
 
       <TouchableOpacity
-        onPress={() => router.push('/reports' as any)}
+        onPress={onOpenReports}
+        disabled={!onOpenReports}
         style={{
           flexDirection: 'row',
           alignItems: 'center',

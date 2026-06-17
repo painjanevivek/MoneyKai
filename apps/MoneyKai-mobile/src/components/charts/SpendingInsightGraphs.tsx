@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, type DimensionValue } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { PAYMENT_METHODS } from '../../constants/categories';

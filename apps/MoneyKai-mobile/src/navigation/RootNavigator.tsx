@@ -15,6 +15,7 @@ import { NotesScreen } from '@/screens/app/NotesScreen';
 import { GroupsScreen } from '@/screens/app/GroupsScreen';
 import { LearnScreen } from '@/screens/app/LearnScreen';
 import { SavingsScreen } from '@/screens/app/SavingsScreen';
+import { AiReviewScreen } from '@/screens/app/AiReviewScreen';
 import { SettingsScreen } from '@/screens/app/SettingsScreen';
 import { AutoCaptureScreen } from '@/screens/app/AutoCaptureScreen';
 import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordinator';
@@ -80,6 +81,7 @@ export function RootNavigator() {
             <Stack.Screen name="Groups" component={GroupsScreen} options={{ title: 'Groups' }} />
             <Stack.Screen name="Learn" component={LearnScreen} options={{ title: 'MoneyKai Learn' }} />
             <Stack.Screen name="Savings" component={SavingsScreen} options={{ title: 'Savings' }} />
+            <Stack.Screen name="AiReview" component={AiReviewScreen} options={{ title: 'AI Review' }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
             <Stack.Screen name="AutoCapture" component={AutoCaptureScreen} options={{ title: 'Auto Capture' }} />
           </>

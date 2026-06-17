@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SMS_IMPORT_RANGE_OPTIONS } from '@/constants/smsImportRanges';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';

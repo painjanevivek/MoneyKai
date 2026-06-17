@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useTheme } from '@/hooks/useTheme';

@@ -46,6 +46,7 @@ const gmailSyncEnabledValue = readEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
 const pdfStatementParsingEnabledValue = readEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
 const wealthTabEnabledValue = readEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
 const financialAiEnabledValue = readEnv('EXPO_PUBLIC_FINANCIAL_AI_ENABLED');
+const DEFAULT_PRODUCTION_BACKEND_BASE_URL = 'https://money-kai-backend.vercel.app';
 
 const sentryEnv = {
   dsn: readEnv('EXPO_PUBLIC_SENTRY_DSN') || readEnv('SENTRY_DSN'),
@@ -67,8 +68,8 @@ export const appEnvironment = {
   backendBaseUrl,
   debug: readEnv('EXPO_PUBLIC_DEBUG') === 'true',
   demoMode: readEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
-  smsResearchBuild: smsResearchBuildValue === '' ? true : smsResearchBuildValue === 'true',
-  nativeSmsResearchBuild: nativeSmsResearchBuildValue === '' ? true : nativeSmsResearchBuildValue === 'true',
+  smsResearchBuild: smsResearchBuildValue === 'true',
+  nativeSmsResearchBuild: nativeSmsResearchBuildValue === 'true',
   gmailSyncEnabled: gmailSyncEnabledValue === 'true',
   pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
   wealthTabEnabled: wealthTabEnabledValue === '' ? true : wealthTabEnabledValue === 'true',
@@ -110,7 +111,7 @@ export const getBackendBaseUrl = (): string => {
     return appEnvironment.backendBaseUrl;
   }
 
-  return isDevRuntime() ? 'http://localhost:8000' : 'https://moneykai.app/api';
+  return isDevRuntime() ? 'http://localhost:8000' : DEFAULT_PRODUCTION_BACKEND_BASE_URL;
 };
 
 export const hasGoogleClientIds = (platform: string = 'web'): boolean => {

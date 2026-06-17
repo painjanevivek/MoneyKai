@@ -24,7 +24,7 @@
     "lint": "npm run mobile:lint && npm run web:lint",
     "typecheck": "npm run mobile:typecheck && npm run web:typecheck",
     "build": "npm run web:build",
-    "install": "npm --prefix apps/MoneyKai-mobile install && npm --prefix apps/MoneyKai-web install",
+    "bootstrap": "npm install --workspaces --include-workspace-root",
     "launch:check": "node ./scripts/launch-check.mjs",
     "backend:dev": "node ./scripts/backend-runner.mjs dev",
     "backend:test": "node ./scripts/backend-runner.mjs test",

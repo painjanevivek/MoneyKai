@@ -67,6 +67,9 @@ __pycache__/
 venv/
 
 # local validation artifacts
+.codex-artifacts/
+.codex-logs/
+playwright-report/
 apps/*/artifacts/**
 !apps/*/artifacts/
 !apps/*/artifacts/README.md

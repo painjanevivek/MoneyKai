@@ -21,6 +21,7 @@ export type RootStackParamList = {
   Groups: undefined;
   Learn: undefined;
   Savings: undefined;
+  AiReview: undefined;
   Settings: undefined;
   AutoCapture: undefined;
 };

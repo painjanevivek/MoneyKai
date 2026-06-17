@@ -12,8 +12,7 @@ const hasDependency = (dependencyName) => {
 
 const easBuildProfile = process.env.EAS_BUILD_PROFILE;
 const nativeSmsResearchBuildEnabled =
-  process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD !== 'false' &&
-  easBuildProfile !== 'preview' &&
+  process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD === 'true' &&
   easBuildProfile !== 'production';
 const devClientBuildEnabled =
   hasDependency('expo-dev-client') &&

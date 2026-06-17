@@ -1,7 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { MMKV } from 'react-native-mmkv';
 
 const CACHE_PREFIX = 'moneykai:data-cache:v1:';
+const CACHE_ENCRYPTION_KEY = 'moneykai-backend-cache-v1';
+const cacheStore = createCacheStore();
 
 export type NetworkErrorCode = 'OFFLINE' | 'TIMEOUT' | 'HTTP' | 'NETWORK';
 
@@ -136,7 +139,7 @@ const cacheKey = (key: string) => `${CACHE_PREFIX}${key}`;
 
 export async function readDataCache<T>(key: string): Promise<CacheEnvelope<T> | null> {
   try {
-    const raw = await AsyncStorage.getItem(cacheKey(key));
+    const raw = await cacheStore.get(cacheKey(key));
     if (!raw) {
       return null;
     }
@@ -154,7 +157,7 @@ export async function writeDataCache<T>(key: string, value: T, ttlMs?: number): 
     expiresAt: ttlMs ? new Date(Date.now() + ttlMs).toISOString() : undefined,
   };
 
-  await AsyncStorage.setItem(cacheKey(key), JSON.stringify(envelope));
+  await cacheStore.set(cacheKey(key), JSON.stringify(envelope));
   return envelope;
 }
 
@@ -164,3 +167,26 @@ export const isCacheFresh = <T>(cache: CacheEnvelope<T> | null): cache is CacheE
   }
   return !cache.expiresAt || new Date(cache.expiresAt).getTime() > Date.now();
 };
+
+function createCacheStore(): {
+  get: (key: string) => Promise<string | null>;
+  set: (key: string, value: string) => Promise<void>;
+} {
+  try {
+    const mmkv = new MMKV({
+      id: 'moneykai-backend-cache',
+      encryptionKey: CACHE_ENCRYPTION_KEY,
+    });
+    return {
+      get: async (key) => mmkv.getString(key) ?? null,
+      set: async (key, value) => {
+        mmkv.set(key, value);
+      },
+    };
+  } catch {
+    return {
+      get: (key) => AsyncStorage.getItem(key),
+      set: (key, value) => AsyncStorage.setItem(key, value),
+    };
+  }
+}

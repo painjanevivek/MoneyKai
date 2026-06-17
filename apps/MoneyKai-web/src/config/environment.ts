@@ -45,6 +45,7 @@ const sentryTraceSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RAT
 const sentryReplaySessionSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE');
 const sentryReplayErrorSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE');
 const sentryDsnValue = readEnv('EXPO_PUBLIC_SENTRY_DSN');
+const DEFAULT_PRODUCTION_BACKEND_BASE_URL = 'https://money-kai-backend.vercel.app';
 
 export const appEnvironment = {
   backendBaseUrl,
@@ -78,7 +79,7 @@ export const getBackendBaseUrl = (): string => {
     return appEnvironment.backendBaseUrl;
   }
 
-  return isDevRuntime() ? 'http://localhost:8000' : '/api';
+  return isDevRuntime() ? 'http://localhost:8000' : DEFAULT_PRODUCTION_BACKEND_BASE_URL;
 };
 
 export const getStoreReviewUrl = (platform: 'ios' | 'android'): string => {
