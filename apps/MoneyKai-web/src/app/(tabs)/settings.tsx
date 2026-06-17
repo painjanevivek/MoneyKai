@@ -561,7 +561,7 @@ export default function SettingsScreen() {
       >
         <View style={{ gap: Spacing.sm }}>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            Cloud backups store your current transactions, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device.
+            Cloud backups store your current transactions, linked accounts, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device.
           </Text>
           <View style={{
             padding: Spacing.md,
@@ -638,7 +638,7 @@ export default function SettingsScreen() {
       >
         <View style={{ gap: Spacing.md }}>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
-            Deleting your account removes transactions, notes, budgets, groups, savings goals, notifications, backups, and your profile from MoneyKai.
+            Deleting your account removes transactions, linked accounts, notes, budgets, groups, savings goals, notifications, backups, and your profile from MoneyKai.
           </Text>
           <View style={{
             padding: Spacing.md,
@@ -659,5 +659,4 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
-
 

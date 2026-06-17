@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Linking, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Switch, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -25,9 +25,24 @@ const isGoogleAuthorizationUrl = (url: string) => {
   }
 };
 
+const getWebLocation = () =>
+  globalThis as typeof globalThis & {
+    location?: { href?: string; origin?: string; pathname?: string };
+    history?: { replaceState?: (data: unknown, unused: string, url?: string | URL | null) => void };
+  };
+
+const getGmailOAuthReturnTo = (): string | undefined => {
+  if (Platform.OS === 'web') {
+    const origin = getWebLocation().location?.origin;
+    return origin ? `${origin}/settings` : undefined;
+  }
+
+  return 'moneykai-mobile://more';
+};
+
 export const GmailConnectionCard: React.FC = () => {
   const { colors } = useTheme();
-  const enabled = isGmailSyncEnabled();
+  const featureEnabled = isGmailSyncEnabled();
   const [showConsent, setShowConsent] = React.useState(false);
   const [showEmails, setShowEmails] = React.useState(false);
   const [busy, setBusy] = React.useState<'connect' | 'refresh' | 'sync' | 'disconnect' | null>(null);
@@ -44,6 +59,7 @@ export const GmailConnectionCard: React.FC = () => {
   const setLastSyncSummary = useGmailSyncStore((state) => state.setLastSyncSummary);
   const resetGmailSync = useGmailSyncStore((state) => state.resetGmailSync);
   const addOrUpdateDocument = useFinancialDocumentStore((state) => state.addOrUpdateDocument);
+  const enabled = featureEnabled && status.enabled;
   const metadataAccepted = Boolean(consent.metadataScanAcceptedAt);
   const attachmentDownloadsAccepted = Boolean(consent.attachmentDownloadAcceptedAt);
   const isConnected = connection?.status === 'connected';
@@ -62,6 +78,27 @@ export const GmailConnectionCard: React.FC = () => {
     }
   }, [enabled, setEmails, setStatus]);
 
+  const consumeOAuthReturn = React.useCallback((url?: string | null) => {
+    if (!url || !enabled) {
+      return;
+    }
+
+    try {
+      const parsed = new URL(url);
+      if (parsed.searchParams.get('gmail') !== 'connected') {
+        return;
+      }
+
+      void hydrateStatus();
+      if (Platform.OS === 'web') {
+        parsed.searchParams.delete('gmail');
+        getWebLocation().history?.replaceState?.({}, '', `${parsed.pathname}${parsed.search}${parsed.hash}`);
+      }
+    } catch {
+      // Deep-link parsing is best effort; the manual Refresh button still works.
+    }
+  }, [enabled, hydrateStatus]);
+
   const refreshStatus = React.useCallback(async () => {
     setBusy('refresh');
     try {
@@ -76,6 +113,20 @@ export const GmailConnectionCard: React.FC = () => {
       void hydrateStatus();
     }
   }, [enabled, hydrateStatus, metadataAccepted]);
+
+  React.useEffect(() => {
+    if (!enabled || !metadataAccepted) {
+      return undefined;
+    }
+
+    if (Platform.OS === 'web') {
+      consumeOAuthReturn(getWebLocation().location?.href);
+    }
+
+    void Linking.getInitialURL().then(consumeOAuthReturn).catch(() => undefined);
+    const subscription = Linking.addEventListener('url', (event) => consumeOAuthReturn(event.url));
+    return () => subscription.remove();
+  }, [consumeOAuthReturn, enabled, metadataAccepted]);
 
   const toggleCategory = (category: FinancialEmailCategory, selected: boolean) => {
     const next = selected
@@ -102,7 +153,7 @@ export const GmailConnectionCard: React.FC = () => {
 
     setBusy('connect');
     try {
-      const response = await gmailSyncApi.startConnect(consent.metadataScanAcceptedAt);
+      const response = await gmailSyncApi.startConnect(consent.metadataScanAcceptedAt, getGmailOAuthReturnTo());
       if (!isGoogleAuthorizationUrl(response.authorizationUrl)) {
         Alert.alert('Gmail connect failed', 'MoneyKai received an unexpected Google authorization URL.');
         return;

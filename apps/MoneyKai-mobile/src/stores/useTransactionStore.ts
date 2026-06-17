@@ -27,6 +27,7 @@ interface TransactionState {
   // Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at'>) => boolean;
   upsertBackendTransaction: (transaction: Transaction) => void;
+  upsertImportedTransactions: (transactions: Transaction[]) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   setFilter: (filter: Partial<TransactionFilter>) => void;
@@ -136,6 +137,9 @@ export const useTransactionStore = create<TransactionState>()(
           }
           if (filter.paymentMethod) {
             filtered = filtered.filter(t => t.payment_method === filter.paymentMethod);
+          }
+          if (filter.captureAccountId) {
+            filtered = filtered.filter(t => t.captureAccountId === filter.captureAccountId);
           }
 
           const result = filtered.sort((a, b) =>
@@ -260,6 +264,49 @@ export const useTransactionStore = create<TransactionState>()(
               ...state.transactions.filter((existing) => existing.id !== transaction.id),
             ],
           }));
+        },
+
+        upsertImportedTransactions: (incomingTransactions) => {
+          if (incomingTransactions.length === 0) return;
+
+          const transactionsToSync = incomingTransactions.map((transaction) => ({
+            ...transaction,
+            created_at: transaction.created_at ?? new Date().toISOString(),
+          }));
+
+          set((state) => {
+            const nextTransactions = [...state.transactions];
+
+            transactionsToSync.forEach((incoming) => {
+              const existingIndex = nextTransactions.findIndex((existing) =>
+                existing.id === incoming.id ||
+                Boolean(existing.canonicalTransactionKey && existing.canonicalTransactionKey === incoming.canonicalTransactionKey) ||
+                Boolean(existing.sourceFingerprint && existing.sourceFingerprint === incoming.sourceFingerprint) ||
+                isDuplicateCapturedTransaction(existing, incoming)
+              );
+
+              if (existingIndex >= 0) {
+                const existing = nextTransactions[existingIndex];
+                nextTransactions[existingIndex] = {
+                  ...existing,
+                  ...incoming,
+                  id: existing.id,
+                  created_at: existing.created_at,
+                };
+              } else {
+                nextTransactions.unshift(incoming);
+              }
+            });
+
+            return {
+              transactions: nextTransactions.sort(
+                (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+              ),
+            };
+          });
+
+          transactionsToSync.forEach(syncTransactionCreate);
+          void requestAutomaticBackup('linked account transactions imported');
         },
 
         updateTransaction: (id, updates) => {

@@ -14,6 +14,7 @@ import type { Group, GroupExpense } from '../types/group';
 import type { Challenge } from '../types/challenge';
 import type { Badge } from '../types/badge';
 import type { ThemeMode } from '../constants/theme';
+import type { LinkedAccount } from '@moneykai/domain';
 
 type AppSettingsDoc = {
   theme: ThemeMode;
@@ -52,6 +53,7 @@ export type FirestoreUserSnapshot = {
     savings: Challenge[];
     badges: Badge[];
     notifications: DocumentData[];
+    linkedAccounts: LinkedAccount[];
   };
 };
 
@@ -90,7 +92,7 @@ const normalize = <T,>(docs: { id: string; data: () => DocumentData }[]): T[] =>
 export const loadUserFirestoreSnapshot = async (uid: string, profile: FirestoreUserSnapshot['profile']): Promise<FirestoreUserSnapshot> => {
   const db = ensure();
 
-  const [transactionsSnap, notesSnap, groupsSnap, badgesSnap, notificationsSnap, savingsSnap, appSettingsSnap, budgetSnap] =
+  const [transactionsSnap, notesSnap, groupsSnap, badgesSnap, notificationsSnap, savingsSnap, linkedAccountsSnap, appSettingsSnap, budgetSnap] =
     await Promise.all([
       getDocs(collection(db, 'users', uid, 'transactions')),
       getDocs(collection(db, 'users', uid, 'notes')),
@@ -98,6 +100,7 @@ export const loadUserFirestoreSnapshot = async (uid: string, profile: FirestoreU
       getDocs(collection(db, 'users', uid, 'badges')),
       getDocs(collection(db, 'users', uid, 'notifications')),
       getDocs(collection(db, 'users', uid, 'savings')),
+      getDocs(collection(db, 'users', uid, 'linkedAccounts')),
       getDoc(doc(db, 'users', uid, 'settings', 'app')),
       getDoc(doc(db, 'users', uid, 'budgets', 'current')),
     ]);
@@ -127,6 +130,7 @@ export const loadUserFirestoreSnapshot = async (uid: string, profile: FirestoreU
       savings: normalize<Challenge>(savingsSnap.docs),
       badges: normalize<Badge>(badgesSnap.docs),
       notifications: notificationsSnap.docs.map((item) => ({ id: item.id, ...item.data() })),
+      linkedAccounts: normalize<LinkedAccount>(linkedAccountsSnap.docs),
     },
   };
 };

@@ -8,6 +8,7 @@ import { useGroupStore } from '@/stores/useGroupStore';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
+import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
 import { recordAppNotification } from './notificationService';
 import type { BudgetAdjustment, BudgetSettings } from '@/types/budget';
 import type { Transaction } from '@/types/transaction';
@@ -17,6 +18,7 @@ import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { AppNotification } from '@/types/notification';
 import type { ThemeMode } from '@/constants/theme';
+import type { LinkedAccount } from '@moneykai/domain';
 import { getLatestUserBackup, isFirebaseConfigured, saveUserBackup } from './firestoreService';
 import { backendApi, isBackendConfigured } from './backendApi';
 import { getNetworkStatus } from './networkClient';
@@ -119,6 +121,7 @@ export interface MoneyKaiBackupSnapshot {
     totalXP: number;
     badges: Badge[];
     notifications: AppNotification[];
+    linkedAccounts?: LinkedAccount[];
   };
 }
 
@@ -268,6 +271,7 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
   const totalXP = useChallengeStore.getState().totalXP;
   const badges = useBadgeStore.getState().badges;
   const notifications = useNotificationStore.getState().notifications;
+  const linkedAccounts = useLinkedAccountStore.getState().accounts;
 
   return {
     version: 1,
@@ -303,6 +307,7 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
       totalXP,
       badges,
       notifications,
+      linkedAccounts,
     },
   };
 };
@@ -457,6 +462,7 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
   });
 
   useNotificationStore.getState().replaceNotifications(snapshot.data.notifications ?? []);
+  useLinkedAccountStore.getState().replaceAccounts(snapshot.data.linkedAccounts ?? []);
 };
 
 export const restoreLatestCloudBackup = async () => {

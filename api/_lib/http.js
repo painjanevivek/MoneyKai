@@ -44,6 +44,45 @@ const readRawBody = (req, options = {}) =>
     req.on('error', reject);
   });
 
+const readRawBodyBuffer = (req, options = {}) =>
+  new Promise((resolve, reject) => {
+    const limitBytes = options.limitBytes ?? DEFAULT_BODY_LIMIT_BYTES;
+
+    if (Buffer.isBuffer(req.body)) {
+      if (req.body.length > limitBytes) {
+        reject(Object.assign(new Error('Request body is too large.'), { statusCode: 413 }));
+        return;
+      }
+      resolve(req.body);
+      return;
+    }
+
+    if (typeof req.body === 'string') {
+      const buffer = Buffer.from(req.body, 'binary');
+      if (buffer.length > limitBytes) {
+        reject(Object.assign(new Error('Request body is too large.'), { statusCode: 413 }));
+        return;
+      }
+      resolve(buffer);
+      return;
+    }
+
+    const chunks = [];
+    let byteLength = 0;
+    req.on('data', (chunk) => {
+      const buffer = Buffer.from(chunk);
+      byteLength += buffer.length;
+      if (byteLength > limitBytes) {
+        reject(Object.assign(new Error('Request body is too large.'), { statusCode: 413 }));
+        req.destroy();
+        return;
+      }
+      chunks.push(buffer);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+
 const readJsonBody = async (req, options) => {
   if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
     return req.body;
@@ -124,6 +163,7 @@ module.exports = {
   getBearerToken,
   readJsonBody,
   readRawBody,
+  readRawBodyBuffer,
   requireMethod,
   sendJson,
 };

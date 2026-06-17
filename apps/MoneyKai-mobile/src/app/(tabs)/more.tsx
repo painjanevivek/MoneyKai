@@ -454,6 +454,7 @@ export default function MoreScreen() {
     { label: 'Savings', icon: 'piggy-bank-outline', route: '/(tabs)/savings' },
     { label: 'Notifications', icon: 'bell-outline', route: '/(tabs)/notifications' },
     { label: 'AI Review', icon: 'receipt-text-outline', route: '/(tabs)/ai-review' },
+    { label: 'Accounts', icon: 'bank-outline', route: '/(tabs)/accounts' },
     { label: 'Notes', icon: 'note-text-outline', route: '/(tabs)/notes' },
     { label: 'Groups', icon: 'account-group-outline', route: '/(tabs)/groups' },
     { label: 'Portfolio', icon: 'briefcase-outline', route: '/(tabs)/portfolio' },
@@ -707,7 +708,7 @@ export default function MoreScreen() {
         }
       >
         <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-          Cloud backups store your current transactions, notes, groups, challenges, badges, budget, and settings in Firebase. Capture inbox data, raw notifications, and raw SMS bodies are excluded by default.
+          Cloud backups store your current transactions, linked accounts, notes, groups, challenges, badges, budget, and settings in Firebase. Capture inbox data, raw notifications, and raw SMS bodies are excluded by default.
         </Text>
       </ModalSheet>
 

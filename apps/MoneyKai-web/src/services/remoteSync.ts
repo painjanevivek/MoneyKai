@@ -7,6 +7,7 @@ import { useGroupStore } from '@/stores/useGroupStore';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
+import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
 import { clearAutomaticBackupQueue } from './backupService';
 import { loadUserFirestoreSnapshot } from './firestoreData';
 
@@ -63,6 +64,7 @@ export const resetLocalAppState = () => {
   });
 
   useNotificationStore.getState().clearNotifications();
+  useLinkedAccountStore.getState().clearAccounts();
   void clearAutomaticBackupQueue();
 };
 
@@ -129,6 +131,7 @@ export const syncRemoteState = async () => {
   });
 
   useNotificationStore.getState().replaceNotifications((snapshot.data.notifications ?? []) as never[]);
+  useLinkedAccountStore.getState().replaceAccounts(snapshot.data.linkedAccounts ?? []);
 };
 
 export const clearTransientSessionState = async () => {

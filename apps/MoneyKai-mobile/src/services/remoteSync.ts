@@ -8,6 +8,7 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useSyncStore } from '@/stores/useSyncStore';
+import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
 import { clearSyncQueue } from './syncQueue';
 import { clearAutomaticBackupQueue } from './backupService';
 import { loadUserFirestoreSnapshot, type FirestoreUserSnapshot } from './firestoreData';
@@ -93,6 +94,7 @@ export const resetLocalAppState = () => {
   });
 
   useNotificationStore.getState().clearNotifications();
+  useLinkedAccountStore.getState().clearAccounts();
   useSyncStore.getState().setPendingCount(0);
   void clearAutomaticBackupQueue();
 };
@@ -149,6 +151,7 @@ const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot) => {
   });
 
   useNotificationStore.getState().replaceNotifications((snapshot.data.notifications ?? []) as never[]);
+  useLinkedAccountStore.getState().replaceAccounts(snapshot.data.linkedAccounts ?? []);
 };
 
 const hydrateCachedSnapshot = async (userId: string) => {

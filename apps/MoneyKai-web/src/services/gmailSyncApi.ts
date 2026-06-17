@@ -9,11 +9,11 @@ import type {
 } from '@/types/gmail';
 
 export const gmailSyncApi = {
-  startConnect: async (metadataScanAcceptedAt: string): Promise<GmailConnectStartResponse> => {
+  startConnect: async (metadataScanAcceptedAt: string, returnTo?: string): Promise<GmailConnectStartResponse> => {
     if (!isGmailSyncEnabled()) {
       throw new Error('Gmail sync is disabled for this build.');
     }
-    return backendApi.startGmailConnect(metadataScanAcceptedAt);
+    return backendApi.startGmailConnect(metadataScanAcceptedAt, returnTo);
   },
 
   getStatus: async (): Promise<GmailSyncStatus> => {

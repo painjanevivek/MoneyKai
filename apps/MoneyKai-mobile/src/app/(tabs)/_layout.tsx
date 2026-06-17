@@ -269,6 +269,7 @@ export default function TabLayout() {
         <Tabs.Screen name="analytics" options={hiddenTabOptions('Analytics')} />
         <Tabs.Screen name="notes" options={hiddenTabOptions('Notes')} />
         <Tabs.Screen name="notifications" options={hiddenTabOptions('Notifications')} />
+        <Tabs.Screen name="accounts" options={hiddenTabOptions('Accounts')} />
         <Tabs.Screen name="auto-capture" options={hiddenTabOptions('Transaction Capture')} />
         <Tabs.Screen name="ai-review" options={hiddenTabOptions('AI Review')} />
         <Tabs.Screen name="portfolio" options={hiddenTabOptions('Portfolio')} />

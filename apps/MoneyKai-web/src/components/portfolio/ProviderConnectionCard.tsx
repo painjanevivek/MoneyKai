@@ -19,6 +19,23 @@ interface ProviderConnectionCardProps {
   onDisconnect: (account: PortfolioAccount) => void;
 }
 
+const providerLabels: Record<PortfolioAccount['provider'], string> = {
+  zerodha: 'Zerodha',
+  upstox: 'Upstox',
+  angel_one: 'Angel One',
+  account_aggregator: 'Account Aggregator',
+  gmail_statement: 'Statement import',
+  manual: 'Manual',
+};
+
+const statusLabels: Record<PortfolioAccount['status'], string> = {
+  connected: 'Connected',
+  needs_reauth: 'Setup required',
+  paused: 'Paused',
+  error: 'Needs review',
+  disconnected: 'Disconnected',
+};
+
 export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
   accounts,
   busyAccountId,
@@ -31,6 +48,19 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
   onDisconnect,
 }) => {
   const { colors } = useTheme();
+  const connectedCount = accounts.filter((account) => account.status === 'connected').length;
+  const getStatusColor = (status: PortfolioAccount['status']) => {
+    if (status === 'connected') {
+      return colors.success;
+    }
+    if (status === 'needs_reauth' || status === 'paused') {
+      return colors.warning;
+    }
+    if (status === 'error' || status === 'disconnected') {
+      return colors.error;
+    }
+    return colors.textTertiary;
+  };
 
   return (
     <Card style={{ gap: Spacing.md }}>
@@ -39,12 +69,19 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
         <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
           Connected accounts
         </Text>
+        {accounts.length > 0 ? (
+          <View style={{ marginLeft: 'auto', backgroundColor: colors.primaryBg, borderRadius: 999, paddingHorizontal: Spacing.sm, paddingVertical: 4 }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
+              {connectedCount}/{accounts.length} active
+            </Text>
+          </View>
+        ) : null}
       </View>
+      <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+        Add holdings manually, connect a Zerodha sandbox now, or create an Account Aggregator readiness tracker while production credentials are being completed.
+      </Text>
       {accounts.length === 0 ? (
         <View style={{ gap: Spacing.sm }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-            Add manual holdings first, or start a provider connection when backend credentials are configured.
-          </Text>
           <Button title="Add Manual Entry" icon="plus" onPress={onAddManual} />
           <Button title="Create Manual Account" icon="folder-plus-outline" onPress={onCreateManualAccount} variant="outline" />
         </View>
@@ -58,8 +95,21 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
                     {account.displayName}
                   </Text>
                   <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
-                    {account.provider} | {account.status}
+                    {providerLabels[account.provider]}
+                    {account.maskedAccountId ? ` | ${account.maskedAccountId}` : ''}
                     {account.lastSyncedAt ? ` | ${new Date(account.lastSyncedAt).toLocaleDateString()}` : ''}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    borderRadius: 999,
+                    paddingHorizontal: Spacing.sm,
+                    paddingVertical: 4,
+                    backgroundColor: `${getStatusColor(account.status)}18`,
+                  }}
+                >
+                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: getStatusColor(account.status) }}>
+                    {statusLabels[account.status]}
                   </Text>
                 </View>
                 <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} />
@@ -83,8 +133,8 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
         </View>
       )}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-        <Button title="Zerodha" icon="chart-line" onPress={onStartZerodha} variant="outline" style={{ flexGrow: 1 }} />
-        <Button title="Account Aggregator" icon="bank-transfer" onPress={onExploreAccountAggregator} variant="outline" style={{ flexGrow: 1 }} />
+        <Button title="Zerodha / Sandbox" icon="chart-line" onPress={onStartZerodha} variant="outline" style={{ flexGrow: 1, flexBasis: 220 }} />
+        <Button title="AA readiness" icon="bank-transfer" onPress={onExploreAccountAggregator} variant="outline" style={{ flexGrow: 1, flexBasis: 220 }} />
       </View>
     </Card>
   );

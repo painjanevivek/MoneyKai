@@ -41,9 +41,12 @@ const shouldUseLocalFallback = (error: unknown): boolean => {
   const message = error instanceof Error ? error.message.toLowerCase() : '';
   return (
     message.includes('backend api is not configured') ||
+    message.includes('not configured') ||
     message.includes('you need to be signed in') ||
     message.includes('failed to fetch') ||
-    message.includes('network request failed')
+    message.includes('network request failed') ||
+    message.includes('404') ||
+    message.includes('not found')
   );
 };
 
@@ -57,6 +60,9 @@ const remoteOrLocal = async <T>(remote: () => Promise<T>, local: () => Promise<T
     throw error;
   }
 };
+
+const isLocalZerodhaPayload = (payload: ZerodhaConnectCallbackRequest): boolean =>
+  payload.state.startsWith('local-zerodha-sandbox');
 
 export const portfolioApi = {
   getState: async (): Promise<PortfolioStateResponse> => {
@@ -182,17 +188,22 @@ export const portfolioApi = {
     if (!isWealthTabEnabled()) {
       return { enabled: false, authorizationUrl: null, state: null, expiresAt: null, message: 'Wealth monitoring is disabled for this build.' };
     }
-    return remoteOrLocal(() => backendApi.startZerodhaConnect(), () => localPortfolioApi.startZerodhaConnect());
+    const response = await remoteOrLocal(() => backendApi.startZerodhaConnect(), () => localPortfolioApi.startZerodhaConnect());
+    return response.enabled ? response : localPortfolioApi.startZerodhaConnect();
   },
 
   completeZerodhaConnect: async (payload: ZerodhaConnectCallbackRequest): Promise<ZerodhaConnectCallbackResponse> => {
     if (!isWealthTabEnabled()) {
       return { enabled: false, account: null, message: 'Wealth monitoring is disabled for this build.' };
     }
-    return remoteOrLocal(
+    if (isLocalZerodhaPayload(payload)) {
+      return localPortfolioApi.completeZerodhaConnect(payload);
+    }
+    const response = await remoteOrLocal(
       () => backendApi.completeZerodhaConnect(payload),
-      () => localPortfolioApi.completeZerodhaConnect()
+      () => localPortfolioApi.completeZerodhaConnect(payload)
     );
+    return response.enabled ? response : localPortfolioApi.completeZerodhaConnect(payload);
   },
 
   getAccountAggregatorExploration: async (): Promise<AccountAggregatorExplorationStatus> => {
@@ -211,4 +222,7 @@ export const portfolioApi = {
       () => localPortfolioApi.getAccountAggregatorExploration()
     );
   },
+
+  ensureAccountAggregatorReadinessAccount: async (): Promise<PortfolioAccount> =>
+    localPortfolioApi.ensureAccountAggregatorReadinessAccount(),
 };

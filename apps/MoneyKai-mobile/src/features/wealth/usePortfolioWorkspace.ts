@@ -15,7 +15,11 @@ import type {
 import type { WealthInsight } from '@/types/wealth';
 import { buildWealthOverview } from '@/utils/wealthAnalytics';
 
-type WorkspaceBusyState = 'refresh' | 'manual' | 'snapshot' | 'ai' | 'zerodha' | null;
+type WorkspaceBusyState = 'refresh' | 'manual' | 'snapshot' | 'ai' | 'zerodha' | 'aa' | null;
+type ZerodhaConnectMode = 'production' | 'local_sandbox';
+
+const LOCAL_ZERODHA_REQUEST_TOKEN = 'local-sandbox-token';
+const LOCAL_ZERODHA_STATE_PREFIX = 'local-zerodha-sandbox';
 
 const isZerodhaAuthorizationUrl = (url: string) => {
   try {
@@ -25,6 +29,8 @@ const isZerodhaAuthorizationUrl = (url: string) => {
     return false;
   }
 };
+
+const isLocalZerodhaState = (state: string | null): boolean => Boolean(state?.startsWith(LOCAL_ZERODHA_STATE_PREFIX));
 
 export interface PortfolioWorkspaceController {
   enabled: boolean;
@@ -43,6 +49,9 @@ export interface PortfolioWorkspaceController {
   zerodhaRequestToken: string;
   zerodhaState: string | null;
   zerodhaExpiresAt: string | null;
+  zerodhaMode: ZerodhaConnectMode;
+  zerodhaConnectMessage: string;
+  zerodhaSetupItems: string[];
   setShowManualEntry: React.Dispatch<React.SetStateAction<boolean>>;
   setShowZerodhaSheet: React.Dispatch<React.SetStateAction<boolean>>;
   setAaStatus: React.Dispatch<React.SetStateAction<AccountAggregatorExplorationStatus | null>>;
@@ -71,6 +80,9 @@ export function usePortfolioWorkspace(): PortfolioWorkspaceController {
   const [zerodhaRequestToken, setZerodhaRequestToken] = React.useState('');
   const [zerodhaState, setZerodhaState] = React.useState<string | null>(null);
   const [zerodhaExpiresAt, setZerodhaExpiresAt] = React.useState<string | null>(null);
+  const [zerodhaMode, setZerodhaMode] = React.useState<ZerodhaConnectMode>('production');
+  const [zerodhaConnectMessage, setZerodhaConnectMessage] = React.useState('');
+  const [zerodhaSetupItems, setZerodhaSetupItems] = React.useState<string[]>([]);
   const [busyAccountId, setBusyAccountId] = React.useState<string | undefined>();
   const [busyHoldingId, setBusyHoldingId] = React.useState<string | undefined>();
   const user = useAuthStore((state) => state.user);
@@ -221,37 +233,53 @@ export function usePortfolioWorkspace(): PortfolioWorkspaceController {
   };
 
   const handleStartZerodha = async () => {
+    setBusy('zerodha');
     try {
       const response = await portfolioApi.startZerodhaConnect();
-      if (response.enabled && response.authorizationUrl) {
-        if (!isZerodhaAuthorizationUrl(response.authorizationUrl)) {
+      if (response.enabled) {
+        if (response.authorizationUrl && !isZerodhaAuthorizationUrl(response.authorizationUrl)) {
           Alert.alert('Zerodha unavailable', 'MoneyKai received an unexpected Zerodha authorization URL.');
           return;
         }
-        setZerodhaState(response.state ?? null);
+        const nextMode = response.mode ?? (response.authorizationUrl ? 'production' : 'local_sandbox');
+        const nextState = response.state ?? (nextMode === 'local_sandbox' ? `${LOCAL_ZERODHA_STATE_PREFIX}-${Date.now().toString(36)}` : null);
+        if (!nextState) {
+          Alert.alert('Zerodha setup', response.message);
+          return;
+        }
+        setZerodhaMode(nextMode);
+        setZerodhaConnectMessage(response.message);
+        setZerodhaSetupItems(response.manualSetupRequired ?? []);
+        setZerodhaState(nextState);
         setZerodhaExpiresAt(response.expiresAt ?? null);
+        setZerodhaRequestToken(nextMode === 'local_sandbox' ? LOCAL_ZERODHA_REQUEST_TOKEN : '');
         setShowZerodhaSheet(true);
-        const opened = await Linking.openURL(response.authorizationUrl).then(() => true).catch(() => false);
-        if (!opened) {
-          Alert.alert('Open Zerodha', response.authorizationUrl);
+        if (response.authorizationUrl) {
+          const opened = await Linking.openURL(response.authorizationUrl).then(() => true).catch(() => false);
+          if (!opened) {
+            Alert.alert('Open Zerodha', response.authorizationUrl);
+          }
         }
         return;
       }
       Alert.alert('Zerodha setup', response.message);
     } catch (error) {
       Alert.alert('Zerodha unavailable', error instanceof Error ? error.message : 'Could not start Zerodha connection.');
+    } finally {
+      setBusy(null);
     }
   };
 
   const handleCompleteZerodha = async () => {
-    if (!zerodhaState || zerodhaRequestToken.trim().length === 0) {
+    const requestToken = zerodhaRequestToken.trim() || (isLocalZerodhaState(zerodhaState) ? LOCAL_ZERODHA_REQUEST_TOKEN : '');
+    if (!zerodhaState || requestToken.length === 0) {
       Alert.alert('Request token required', 'Paste the Zerodha request token to complete the connection.');
       return;
     }
     setBusy('zerodha');
     try {
       const response = await portfolioApi.completeZerodhaConnect({
-        requestToken: zerodhaRequestToken.trim(),
+        requestToken,
         state: zerodhaState,
       });
       if (response.account) {
@@ -261,8 +289,13 @@ export function usePortfolioWorkspace(): PortfolioWorkspaceController {
       setZerodhaRequestToken('');
       setZerodhaState(null);
       setZerodhaExpiresAt(null);
-      await hydratePortfolio();
-      Alert.alert('Zerodha connected', response.message);
+      setZerodhaMode('production');
+      setZerodhaConnectMessage('');
+      setZerodhaSetupItems([]);
+      if (response.mode !== 'local_sandbox') {
+        await hydratePortfolio();
+      }
+      Alert.alert(response.mode === 'local_sandbox' ? 'Zerodha sandbox connected' : 'Zerodha connected', response.message);
     } catch (error) {
       Alert.alert('Zerodha connection failed', error instanceof Error ? error.message : 'Could not complete Zerodha authorization.');
     } finally {
@@ -271,10 +304,27 @@ export function usePortfolioWorkspace(): PortfolioWorkspaceController {
   };
 
   const handleExploreAa = async () => {
+    setBusy('aa');
     try {
-      setAaStatus(await portfolioApi.getAccountAggregatorExploration());
+      const status = await portfolioApi.getAccountAggregatorExploration();
+      let nextStatus = status;
+      if (!status.productionReady) {
+        const readinessAccount = await portfolioApi.ensureAccountAggregatorReadinessAccount();
+        upsertAccount(readinessAccount);
+        nextStatus = {
+          ...status,
+          readinessAccountId: readinessAccount.id,
+          checklist: [
+            ...status.checklist,
+            'MoneyKai created a readiness tracker under Connected accounts so Account Aggregator setup stays visible.',
+          ],
+        };
+      }
+      setAaStatus(nextStatus);
     } catch (error) {
       Alert.alert('Account Aggregator unavailable', error instanceof Error ? error.message : 'Could not load AA status.');
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -295,6 +345,9 @@ export function usePortfolioWorkspace(): PortfolioWorkspaceController {
     zerodhaRequestToken,
     zerodhaState,
     zerodhaExpiresAt,
+    zerodhaMode,
+    zerodhaConnectMessage,
+    zerodhaSetupItems,
     setShowManualEntry,
     setShowZerodhaSheet,
     setAaStatus,

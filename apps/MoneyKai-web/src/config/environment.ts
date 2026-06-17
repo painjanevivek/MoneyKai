@@ -18,7 +18,24 @@ const storeReviewEnv = {
   androidUrl: readEnv('EXPO_PUBLIC_PLAY_STORE_URL'),
 };
 
-const backendBaseUrl = readEnv('EXPO_PUBLIC_BACKEND_BASE_URL').replace(/\/$/, '');
+const normalizeBackendBaseUrl = (value: string): string => {
+  const trimmed = value.trim().replace(/\/$/, '');
+  if (!trimmed) {
+    return '';
+  }
+
+  if (trimmed.startsWith('/')) {
+    return trimmed;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+};
+
+const backendBaseUrl = normalizeBackendBaseUrl(readEnv('EXPO_PUBLIC_BACKEND_BASE_URL'));
 const isDevRuntime = (): boolean => typeof __DEV__ !== 'undefined' && __DEV__;
 const gmailSyncEnabledValue = readEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
 const pdfStatementParsingEnabledValue = readEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
@@ -61,7 +78,7 @@ export const getBackendBaseUrl = (): string => {
     return appEnvironment.backendBaseUrl;
   }
 
-  return isDevRuntime() ? 'http://localhost:8000' : '';
+  return isDevRuntime() ? 'http://localhost:8000' : '/api';
 };
 
 export const getStoreReviewUrl = (platform: 'ios' | 'android'): string => {

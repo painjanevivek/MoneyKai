@@ -1,4 +1,5 @@
 export type TransactionType = 'income' | 'expense';
+export type TransactionCaptureSource = 'notification' | 'sms' | 'aa' | 'gmail' | 'pdf' | 'portfolio' | 'manual';
 
 export interface Transaction {
   id: string;
@@ -8,6 +9,13 @@ export interface Transaction {
   category: string;
   description: string;
   payment_method: string;
+  captureAccountId?: string;
+  captureAccountLabel?: string;
+  captureBankLabel?: string;
+  captureAccountHint?: string;
+  captureSource?: TransactionCaptureSource;
+  canonicalTransactionKey?: string;
+  sourceFingerprint?: string;
   receipt_url?: string;
   transaction_date: string;
   created_at: string;
@@ -21,6 +29,7 @@ export interface TransactionFilter {
   endDate?: string;
   searchQuery?: string;
   paymentMethod?: string;
+  captureAccountId?: string;
 }
 
 export interface TransactionFormData {

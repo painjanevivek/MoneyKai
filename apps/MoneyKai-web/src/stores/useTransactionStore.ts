@@ -24,6 +24,7 @@ interface TransactionState {
 
   // Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at'>) => void;
+  upsertImportedTransactions: (transactions: Transaction[]) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   setFilter: (filter: Partial<TransactionFilter>) => void;
@@ -100,6 +101,33 @@ const syncTransactionDelete = (id: string) => {
   });
 };
 
+const normalizeDuplicateText = (value?: string) =>
+  value?.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() ?? '';
+
+const isDuplicateCapturedTransaction = (
+  existing: Transaction,
+  incoming: Transaction
+) => {
+  if (existing.id === incoming.id) return true;
+  if (existing.canonicalTransactionKey && existing.canonicalTransactionKey === incoming.canonicalTransactionKey) return true;
+  if (existing.sourceFingerprint && existing.sourceFingerprint === incoming.sourceFingerprint) return true;
+
+  const hasCaptureAccount = Boolean(incoming.captureAccountId || incoming.captureBankLabel || incoming.captureAccountHint);
+  if (!hasCaptureAccount) return false;
+
+  const sameAccount =
+    existing.captureAccountId === incoming.captureAccountId ||
+    Boolean(existing.captureAccountHint && incoming.captureAccountHint && existing.captureAccountHint === incoming.captureAccountHint);
+
+  return (
+    sameAccount &&
+    existing.type === incoming.type &&
+    existing.transaction_date === incoming.transaction_date &&
+    Math.abs(existing.amount - incoming.amount) < 0.01 &&
+    normalizeDuplicateText(existing.description) === normalizeDuplicateText(incoming.description)
+  );
+};
+
 export const useTransactionStore = create<TransactionState>()(
   persist(
     (set, get) => {
@@ -145,6 +173,9 @@ export const useTransactionStore = create<TransactionState>()(
           }
           if (filter.paymentMethod) {
             filtered = filtered.filter(t => t.payment_method === filter.paymentMethod);
+          }
+          if (filter.captureAccountId) {
+            filtered = filtered.filter(t => t.captureAccountId === filter.captureAccountId);
           }
 
           const result = filtered.sort((a, b) =>
@@ -257,6 +288,46 @@ export const useTransactionStore = create<TransactionState>()(
               });
             }
           }
+        },
+
+        upsertImportedTransactions: (incomingTransactions) => {
+          if (incomingTransactions.length === 0) return;
+
+          const transactionsToSync = incomingTransactions.map((transaction) => ({
+            ...transaction,
+            created_at: transaction.created_at ?? new Date().toISOString(),
+          }));
+
+          set((state) => {
+            const nextTransactions = [...state.transactions];
+
+            transactionsToSync.forEach((incoming) => {
+              const existingIndex = nextTransactions.findIndex((existing) =>
+                isDuplicateCapturedTransaction(existing, incoming)
+              );
+
+              if (existingIndex >= 0) {
+                const existing = nextTransactions[existingIndex];
+                nextTransactions[existingIndex] = {
+                  ...existing,
+                  ...incoming,
+                  id: existing.id,
+                  created_at: existing.created_at,
+                };
+              } else {
+                nextTransactions.unshift(incoming);
+              }
+            });
+
+            return {
+              transactions: nextTransactions.sort(
+                (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+              ),
+            };
+          });
+
+          transactionsToSync.forEach(syncTransactionCreate);
+          void requestAutomaticBackup('linked account transactions imported');
         },
 
         updateTransaction: (id, updates) => {

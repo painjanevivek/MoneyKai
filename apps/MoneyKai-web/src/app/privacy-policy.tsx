@@ -30,7 +30,7 @@ export default function PrivacyPolicyScreen() {
           {[
             {
               title: 'Data we store',
-              body: 'Your profile, transactions, notes, groups, savings-related records, settings, and notification preferences may be stored locally on your device and, when backup is enabled, in your connected Firebase setup.',
+              body: 'Your profile, linked accounts, transactions, notes, groups, savings-related records, settings, and notification preferences may be stored locally on your device and, when backup is enabled, in your connected Firebase setup.',
             },
             {
               title: 'How data is used',

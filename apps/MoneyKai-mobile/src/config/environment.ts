@@ -25,7 +25,20 @@ const storeReviewEnv = {
   androidUrl: readEnv('EXPO_PUBLIC_PLAY_STORE_URL'),
 };
 
-const backendBaseUrl = readEnv('EXPO_PUBLIC_BACKEND_BASE_URL').replace(/\/$/, '');
+const normalizeBackendBaseUrl = (value: string): string => {
+  const trimmed = value.trim().replace(/\/$/, '');
+  if (!trimmed) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+};
+
+const backendBaseUrl = normalizeBackendBaseUrl(readEnv('EXPO_PUBLIC_BACKEND_BASE_URL'));
 const isDevRuntime = (): boolean => typeof __DEV__ !== 'undefined' && __DEV__;
 const smsResearchBuildValue = readEnv('EXPO_PUBLIC_SMS_RESEARCH_BUILD');
 const nativeSmsResearchBuildValue = readEnv('EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD');
@@ -97,7 +110,7 @@ export const getBackendBaseUrl = (): string => {
     return appEnvironment.backendBaseUrl;
   }
 
-  return isDevRuntime() ? 'http://localhost:8000' : '';
+  return isDevRuntime() ? 'http://localhost:8000' : 'https://moneykai.app/api';
 };
 
 export const hasGoogleClientIds = (platform: string = 'web'): boolean => {
@@ -110,7 +123,7 @@ export const hasGoogleClientIds = (platform: string = 'web'): boolean => {
   }
 
   if (platform === 'android') {
-    return isRealValue(googleEnv.androidClientId);
+    return isRealValue(googleEnv.androidClientId) || isRealValue(googleEnv.webClientId);
   }
 
   return true;

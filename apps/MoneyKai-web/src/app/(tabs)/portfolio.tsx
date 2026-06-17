@@ -40,6 +40,9 @@ export default function PortfolioScreen() {
     aaStatus,
     zerodhaRequestToken,
     zerodhaExpiresAt,
+    zerodhaMode,
+    zerodhaConnectMessage,
+    zerodhaSetupItems,
     setShowManualEntry,
     setShowZerodhaSheet,
     setAaStatus,
@@ -129,28 +132,56 @@ export default function PortfolioScreen() {
       ) : null}
       <ModalSheet
         visible={showZerodhaSheet}
-        title="Complete Zerodha"
-        subtitle="Authorize in Zerodha, then paste the request token here to finish connecting this broker account."
+        title={zerodhaMode === 'local_sandbox' ? 'Zerodha sandbox' : 'Complete Zerodha'}
+        subtitle={
+          zerodhaMode === 'local_sandbox'
+            ? 'Production Kite credentials are not configured yet. Complete this local broker account to test holdings, sync, and review flows.'
+            : 'Authorize in Zerodha, then paste the request token here to finish connecting this broker account.'
+        }
         onClose={() => setShowZerodhaSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm }}>
-            <Button title="Complete Connection" icon="check-circle-outline" loading={busy === 'zerodha'} onPress={handleCompleteZerodha} />
+            <Button
+              title={zerodhaMode === 'local_sandbox' ? 'Connect Sandbox' : 'Complete Connection'}
+              icon="check-circle-outline"
+              loading={busy === 'zerodha'}
+              onPress={handleCompleteZerodha}
+            />
             <Button title="Close" onPress={() => setShowZerodhaSheet(false)} variant="outline" />
           </View>
         }
       >
         <View style={{ gap: Spacing.md }}>
+          {zerodhaConnectMessage ? (
+            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+              {zerodhaConnectMessage}
+            </Text>
+          ) : null}
           {zerodhaExpiresAt ? (
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
               Authorization expires at {new Date(zerodhaExpiresAt).toLocaleString()}
             </Text>
           ) : null}
+          {zerodhaSetupItems.length > 0 ? (
+            <View style={{ gap: Spacing.xs }}>
+              {zerodhaSetupItems.map((item) => (
+                <View key={item} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+                  <Text style={{ color: colors.primary }}>-</Text>
+                  <Text style={{ flex: 1, fontSize: Typography.fontSize.xs, color: colors.textTertiary, lineHeight: 16 }}>
+                    {item}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           <Input
-            label="Request token"
-            placeholder="Paste Zerodha request token"
+            label={zerodhaMode === 'local_sandbox' ? 'Sandbox token' : 'Request token'}
+            placeholder={zerodhaMode === 'local_sandbox' ? 'Generated locally' : 'Paste Zerodha request token'}
             value={zerodhaRequestToken}
             onChangeText={setZerodhaRequestToken}
             autoCapitalize="none"
+            autoCorrect={false}
+            editable={zerodhaMode !== 'local_sandbox'}
           />
         </View>
       </ModalSheet>
@@ -186,6 +217,11 @@ export default function PortfolioScreen() {
               ? 'A production Account Aggregator path is configured.'
               : 'Production AA connectivity requires an FIU/TSP partner and consent-flow onboarding.'}
           </Text>
+          {aaStatus?.readinessAccountId ? (
+            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textPrimary, lineHeight: 20 }}>
+              Readiness tracker added to Connected accounts.
+            </Text>
+          ) : null}
           {aaStatus?.partnerName ? (
             <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textPrimary }}>
               Partner: {aaStatus.partnerName}

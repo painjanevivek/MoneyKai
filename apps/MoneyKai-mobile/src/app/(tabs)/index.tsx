@@ -15,6 +15,7 @@ import { SpendingPieChart } from '@/components/charts/SpendingPieChart';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { SavingsGoalCard } from '@/components/dashboard/SavingsGoalCard';
 import { CategoryBudgetRail } from '@/components/dashboard/CategoryBudgetRail';
+import { LinkedAccountsSnapshot } from '@/components/accounts/LinkedAccountsSnapshot';
 import { MonthYearPickerSheet } from '@/components/calendar/MonthYearPickerSheet';
 import { DashboardCalendarButton } from '@/components/dashboard/DashboardCalendarButton';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
@@ -284,6 +285,10 @@ export default function DashboardScreen() {
             remaining={remaining}
             progress={budgetProgress}
           />
+        </View>
+
+        <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
+          <LinkedAccountsSnapshot />
         </View>
 
         <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>

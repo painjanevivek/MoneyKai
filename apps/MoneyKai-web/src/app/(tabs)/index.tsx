@@ -22,6 +22,7 @@ import { NoteModal } from '@/components/dashboard/NoteModal';
 import { AIInsights } from '@/components/dashboard/AIInsights';
 import { AiAssistantPanel } from '@/components/dashboard/AiAssistantPanel';
 import { EmergencyWidget } from '@/components/dashboard/EmergencyWidget';
+import { LinkedAccountsSnapshot } from '@/components/accounts/LinkedAccountsSnapshot';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { BADGE_DEFINITIONS } from '@/constants/badges';
@@ -337,6 +338,8 @@ export default function DashboardScreen() {
 
         <View style={{ flex: 1, gap: Spacing.xl, minWidth: isWide ? 380 : '100%' as any }}>
           <EmergencyWidget />
+
+          <LinkedAccountsSnapshot />
 
           <Card>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>

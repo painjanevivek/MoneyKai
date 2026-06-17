@@ -35,7 +35,9 @@ export default function ReportsScreen() {
   const transactions = useTransactionStore((state) => state.transactions);
   const addTransaction = useTransactionStore((state) => state.addTransaction);
   const fileInputRef = useRef<any>(null);
+  const dragDepthRef = useRef(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [results, setResults] = useState<StatementImportResult[]>([]);
   const [selectedDrafts, setSelectedDrafts] = useState<Record<string, boolean>>({});
 
@@ -86,6 +88,8 @@ export default function ReportsScreen() {
   const handleFiles = async (files: any[]) => {
     if (files.length === 0) return;
     setIsProcessing(true);
+    dragDepthRef.current = 0;
+    setIsDragActive(false);
 
     try {
       const nextResults = await Promise.all(files.map((file) => processStatementFile(file, userId)));
@@ -114,6 +118,64 @@ export default function ReportsScreen() {
     }
     fileInputRef.current?.click?.();
   };
+
+  const resetDragState = () => {
+    dragDepthRef.current = 0;
+    setIsDragActive(false);
+  };
+
+  const hasDraggedFiles = (event: any) => {
+    const types = Array.from(event?.dataTransfer?.types ?? []);
+    return types.includes('Files');
+  };
+
+  const handleDragEnter = (event: any) => {
+    if (Platform.OS !== 'web' || !hasDraggedFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (isProcessing) return;
+    dragDepthRef.current += 1;
+    setIsDragActive(true);
+  };
+
+  const handleDragOver = (event: any) => {
+    if (Platform.OS !== 'web' || !hasDraggedFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = isProcessing ? 'none' : 'copy';
+    }
+  };
+
+  const handleDragLeave = (event: any) => {
+    if (Platform.OS !== 'web' || !hasDraggedFiles(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (event: any) => {
+    if (Platform.OS !== 'web') return;
+    event.preventDefault();
+    event.stopPropagation();
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    resetDragState();
+    if (isProcessing || files.length === 0) return;
+    void handleFiles(files);
+  };
+
+  const uploadDropZoneProps = Platform.OS === 'web'
+    ? ({
+        onDragEnter: handleDragEnter,
+        onDragOver: handleDragOver,
+        onDragLeave: handleDragLeave,
+        onDragEnd: resetDragState,
+        onDrop: handleDrop,
+      } as any)
+    : {};
 
   const toggleDraft = (draft: StatementDraftTransaction) => {
     const key = createDraftKey(draft);
@@ -381,30 +443,33 @@ export default function ReportsScreen() {
             </View>
 
             <Pressable
+              {...uploadDropZoneProps}
               onPress={handlePickFiles}
               disabled={isProcessing}
+              accessibilityRole="button"
+              accessibilityLabel="Upload bank statement by browsing or dragging files here"
               style={({ hovered, pressed }: any) => ({
                 minHeight: 112,
                 minWidth: isWide ? 300 : '100%',
                 borderRadius: BorderRadius.lg,
                 borderWidth: 1.5,
                 borderStyle: 'dashed',
-                borderColor: hovered ? colors.primary : colors.border,
-                backgroundColor: hovered ? `${colors.primary}0D` : colors.surface,
+                borderColor: isDragActive ? colors.primary : hovered ? colors.primary : colors.border,
+                backgroundColor: isDragActive ? colors.primaryBg : hovered ? `${colors.primary}0D` : colors.surface,
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: Spacing.lg,
                 gap: Spacing.sm,
-                transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                transform: (hovered || isDragActive) && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                 opacity: isProcessing ? 0.65 : 1,
               })}
             >
-              <MaterialCommunityIcons name={isProcessing ? 'progress-clock' : 'cloud-upload-outline'} size={28} color={colors.primary} />
+              <MaterialCommunityIcons name={isProcessing ? 'progress-clock' : isDragActive ? 'tray-arrow-down' : 'cloud-upload-outline'} size={28} color={colors.primary} />
               <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                {isProcessing ? 'Reading statement...' : 'Upload statement'}
+                {isProcessing ? 'Reading statement...' : isDragActive ? 'Drop statement here' : 'Upload statement'}
               </Text>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, textAlign: 'center' }}>
-                PDF, Word, Excel, CSV, or text export
+                {isDragActive ? 'Release to parse PDF, Word, Excel, CSV, or text files' : 'Drag files here or click to browse'}
               </Text>
             </Pressable>
 

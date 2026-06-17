@@ -303,9 +303,9 @@ export const backendApi = {
       body: JSON.stringify(payload),
     }),
   getGmailStatus: async () => request<GmailSyncStatus>(financialFeatureEndpoints.gmail.status),
-  startGmailConnect: async (metadataScanAcceptedAt: string) =>
+  startGmailConnect: async (metadataScanAcceptedAt: string, returnTo?: string) =>
     request<GmailConnectStartResponse>(
-      financialFeatureEndpoints.gmail.connectStart(metadataScanAcceptedAt)
+      financialFeatureEndpoints.gmail.connectStart(metadataScanAcceptedAt, returnTo)
     ),
   disconnectGmail: async () => request<{ disconnected: boolean }>(financialFeatureEndpoints.gmail.disconnect, { method: 'POST' }),
   syncGmail: async (payload: GmailSyncRequest) =>

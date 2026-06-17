@@ -39,7 +39,7 @@ const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
   { href: '/wealth', title: 'Wealth', subtitle: 'Net worth, allocation, and AI portfolio review' },
   { href: '/portfolio', title: 'Portfolio', subtitle: 'Manual holdings and provider placeholders' },
   { href: '/reports', title: 'Reports', subtitle: 'Spot patterns in your spending' },
-  { href: '/accounts', title: 'Accounts', subtitle: 'Profile and account-related preferences' },
+  { href: '/accounts', title: 'Accounts', subtitle: 'Linked balances, sync health, and account controls' },
   { href: '/categories', title: 'Categories', subtitle: 'See where money goes by category' },
   { href: '/settings', title: 'Settings', subtitle: 'Profile, privacy, and backups' },
 ];

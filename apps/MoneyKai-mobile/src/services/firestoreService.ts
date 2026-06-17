@@ -6,6 +6,7 @@ import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { ThemeMode } from '@/constants/theme';
+import type { LinkedAccount } from '@moneykai/domain';
 import { retryAsync } from './networkClient';
 import { useSyncStore } from '@/stores/useSyncStore';
 
@@ -49,6 +50,7 @@ export type FirestoreUserSnapshot = {
     savings: Challenge[];
     badges: Badge[];
     notifications: FirestoreDocumentData[];
+    linkedAccounts: LinkedAccount[];
   };
 };
 
@@ -123,6 +125,7 @@ export const loadUserFirestoreSnapshot = async (
     badgesSnap,
     notificationsSnap,
     savingsSnap,
+    linkedAccountsSnap,
     appSettingsSnap,
     budgetSnap,
   ] = await Promise.all([
@@ -132,6 +135,7 @@ export const loadUserFirestoreSnapshot = async (
     userDoc.collection('badges').get(),
     userDoc.collection('notifications').get(),
     userDoc.collection('savings').get(),
+    userDoc.collection('linkedAccounts').get(),
     userDoc.collection('settings').doc('app').get(),
     userDoc.collection('budgets').doc('current').get(),
   ]);
@@ -165,6 +169,7 @@ export const loadUserFirestoreSnapshot = async (
       savings: normalize<Challenge>(savingsSnap.docs),
       badges: normalize<Badge>(badgesSnap.docs),
       notifications: notificationsSnap.docs.map((item) => ({ id: item.id, ...item.data() })),
+      linkedAccounts: normalize<LinkedAccount>(linkedAccountsSnap.docs),
     },
   };
 };

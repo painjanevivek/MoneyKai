@@ -6,6 +6,7 @@ import type { Challenge } from './challenge';
 import type { Badge } from './badge';
 import type { AppNotification } from './notification';
 import type { ThemeMode } from '@/constants/theme';
+import type { LinkedAccount } from '@moneykai/domain';
 
 export interface BackendAppSettings {
   theme: ThemeMode;
@@ -44,6 +45,7 @@ export interface BackendSnapshot {
     totalXP: number;
     badges: Badge[];
     notifications: AppNotification[];
+    linkedAccounts?: LinkedAccount[];
     backups?: unknown[];
   };
   summary?: {

@@ -103,8 +103,13 @@ export const financialFeatureContracts: Record<FinancialFeatureKey, FinancialFea
 export const financialFeatureEndpoints = {
   gmail: {
     status: '/v1/gmail/status',
-    connectStart: (metadataScanAcceptedAt: string) =>
-      `/v1/gmail/connect/start?metadataScanAcceptedAt=${encodeURIComponent(metadataScanAcceptedAt)}`,
+    connectStart: (metadataScanAcceptedAt: string, returnTo?: string) => {
+      const params = [`metadataScanAcceptedAt=${encodeURIComponent(metadataScanAcceptedAt)}`];
+      if (returnTo) {
+        params.push(`returnTo=${encodeURIComponent(returnTo)}`);
+      }
+      return `/v1/gmail/connect/start?${params.join('&')}`;
+    },
     disconnect: '/v1/gmail/disconnect',
     sync: '/v1/gmail/sync',
     emails: (parseStatus?: string) =>
