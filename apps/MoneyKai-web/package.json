@@ -65,7 +65,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint --no-cache",
+    "lint": "node ../../scripts/check-web-icon-imports.mjs && expo lint --no-cache",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
