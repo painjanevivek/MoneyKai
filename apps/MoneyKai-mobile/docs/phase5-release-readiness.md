@@ -1,6 +1,6 @@
 # Phase 5 Release Readiness
 
-Last reviewed: 2026-06-11
+Last reviewed: 2026-06-17
 
 ## Current artifact status
 
@@ -35,6 +35,7 @@ npm.cmd run typecheck
 npm.cmd run lint
 npm.cmd run test:capture
 npx.cmd expo-modules-autolinking verify --platform android
+npm.cmd run android:verify:release-permissions -- --aab artifacts\phase5a\moneykai-phase5-release-no-devclient-arm64.aab
 ```
 
 ### Local debug APK
@@ -67,10 +68,14 @@ Expected output:
 Set-Location android
 $env:NODE_ENV='production'
 .\gradlew.bat :app:bundleRelease --console=plain --no-daemon --stacktrace --max-workers=2 -PreactNativeArchitectures=arm64-v8a
+Set-Location ..
+npm.cmd run android:verify:release-permissions -- --aab android\app\build\outputs\bundle\release\app-release.aab
 ```
 
 Expected output:
 `android/app/build/outputs/bundle/release/app-release.aab`
+
+The release permission verifier inspects the compiled `base/manifest/AndroidManifest.xml` inside the AAB and fails the release if any restricted SMS permissions are present: `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS`.
 
 ### EAS preview APK
 
@@ -103,6 +108,7 @@ $env:NODE_ENV='production'
 
 ```powershell
 npx eas build --platform android --profile production
+npm.cmd run android:verify:release-permissions -- --aab path\to\downloaded-production.aab
 ```
 
 ### EAS submit to Play internal track
@@ -126,6 +132,7 @@ npx eas submit --platform android --profile production
 - Release autolinking excludes `expo-dev-client`, `expo-dev-launcher`, and `expo-dev-menu` outside development builds
 - Production-safe Android prebuild no longer includes the SMS receiver in the generated manifest
 - Installed release package has no dev-client/dev-menu components, no SMS receiver, and no restricted SMS permissions
+- `npm.cmd run android:verify:release-permissions -- --aab artifacts\phase5a\moneykai-phase5-release-no-devclient-arm64.aab` passes against the current Play-safe release AAB and reports no restricted SMS permissions
 - Release APK installed and launched on the connected Android device via ADB
 - Local SMS Research APK installed and launched on the connected Android device via ADB
 - Local SMS Research package inspection confirms `MoneyKaiSmsReceiver`, `READ_SMS`, and `RECEIVE_SMS`

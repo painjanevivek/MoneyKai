@@ -61,6 +61,8 @@
     "android:assemble:debug": "cd android && gradlew.bat :app:assembleDebug",
     "android:assemble:release": "cd android && gradlew.bat :app:assembleRelease",
     "android:bundle:release": "cd android && gradlew.bat :app:bundleRelease",
+    "android:bundle:release:verify": "npm run android:bundle:release && npm run android:verify:release-permissions -- --aab android/app/build/outputs/bundle/release/app-release.aab",
+    "android:verify:release-permissions": "node ./scripts/verify-android-release-permissions.mjs",
     "eas-build-on-complete": "sentry-eas-build-on-complete",
     "generate:icons": "node ./scripts/generate-app-icons.mjs",
     "lint": "eslint . --no-cache",

@@ -1,6 +1,14 @@
 const appJson = require('./app.json');
+const fs = require('fs');
+const path = require('path');
 
 const hasValue = (value) => typeof value === 'string' && value.trim().length > 0;
+const hasLocalPlugin = (pluginPath) =>
+  [pluginPath, `${pluginPath}.js`].some((candidatePath) => fs.existsSync(path.join(__dirname, candidatePath)));
+const hasDependency = (dependencyName) => {
+  const packageJson = require('./package.json');
+  return Boolean(packageJson.dependencies?.[dependencyName] || packageJson.devDependencies?.[dependencyName]);
+};
 
 const easBuildProfile = process.env.EAS_BUILD_PROFILE;
 const nativeSmsResearchBuildEnabled =
@@ -8,8 +16,9 @@ const nativeSmsResearchBuildEnabled =
   easBuildProfile !== 'preview' &&
   easBuildProfile !== 'production';
 const devClientBuildEnabled =
-  process.env.EXPO_PUBLIC_DEV_CLIENT_BUILD === 'true' ||
-  process.env.EAS_BUILD_PROFILE === 'development';
+  hasDependency('expo-dev-client') &&
+  (process.env.EXPO_PUBLIC_DEV_CLIENT_BUILD === 'true' ||
+    process.env.EAS_BUILD_PROFILE === 'development');
 const devClientLaunchURL =
   process.env.EXPO_PUBLIC_DEV_CLIENT_LAUNCH_URL ||
   process.env.EXPO_DEV_CLIENT_LAUNCH_URL ||
@@ -27,9 +36,13 @@ const config = {
   ...baseExpoConfig,
 };
 
-config.plugins = [...(config.plugins ?? []), './plugins/withMoneyKaiReleaseAutolinking'];
+config.plugins = [...(config.plugins ?? [])];
 
-if (hasValue(process.env.SENTRY_ORG) && hasValue(process.env.SENTRY_PROJECT)) {
+if (hasLocalPlugin('./plugins/withMoneyKaiReleaseAutolinking')) {
+  config.plugins = [...config.plugins, './plugins/withMoneyKaiReleaseAutolinking'];
+}
+
+if (hasDependency('@sentry/react-native') && hasValue(process.env.SENTRY_ORG) && hasValue(process.env.SENTRY_PROJECT)) {
   config.plugins = [
     ...config.plugins,
     [
@@ -85,7 +98,7 @@ if (devClientBuildEnabled) {
   ];
 }
 
-if (nativeSmsResearchBuildEnabled) {
+if (nativeSmsResearchBuildEnabled && hasLocalPlugin('./plugins/withMoneyKaiSmsResearch')) {
   config.plugins = [...config.plugins, './plugins/withMoneyKaiSmsResearch'];
 }
 

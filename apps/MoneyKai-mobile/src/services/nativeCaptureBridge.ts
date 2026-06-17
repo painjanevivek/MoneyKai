@@ -1,5 +1,4 @@
-import { PermissionsAndroid, Platform } from 'react-native';
-import { requireOptionalNativeModule } from 'expo';
+import { NativeEventEmitter, NativeModules, PermissionsAndroid, Platform } from 'react-native';
 import { getSmsImportRangeOption } from '@/constants/smsImportRanges';
 import { captureDiagnosticEvent, captureException } from '@/services/diagnosticsService';
 import type { CaptureSignalInput } from '@/types/capture';

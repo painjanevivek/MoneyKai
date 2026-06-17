@@ -1,6 +1,7 @@
 # SMS Production Decision
 
 Decision date: 2026-06-11
+Last reviewed: 2026-06-17
 
 ## Decision
 
@@ -39,6 +40,7 @@ MoneyKai can reconsider SMS for production only after all of the following are c
 - Preview and production EAS profiles set `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=false`.
 - `app.json` blocks restricted SMS permissions for release builds.
 - `app.config.js` loads the SMS manifest plugin only when native SMS research is enabled outside preview and production.
+- `npm run android:verify:release-permissions` inspects the compiled production AAB manifest and fails the release if `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS` are present.
 - SMS Research Mode is disabled by default and requires explicit in-app consent.
 - SMS drafts are review-only and never auto-confirm transactions.
 - Capture inbox data and raw SMS bodies are excluded from cloud backup snapshots by default.

@@ -4,8 +4,7 @@
 
 .PHONY: start web ios android backend server install lint typecheck clean setup
 
-# Start the Expo dev server with hot reloading.
-# Expo already handles live reload/hot refresh, so no extra watcher is required.
+# Start the mobile dev server with hot reloading.
 start:
 	npm.cmd run mobile:start
 
@@ -30,7 +29,7 @@ ios:
 
 # Install dependencies for a fresh checkout.
 install:
-	npm.cmd run install
+	npm.cmd run bootstrap
 
 # Run lint checks.
 lint:
@@ -43,7 +42,7 @@ typecheck:
 # Recommended setup for first-time use: install dependencies and verify tooling.
 setup: install lint typecheck
 
-# Remove Expo and build caches plus local generated artifacts.
+# Remove build caches plus local generated artifacts.
 clean:
 	@if exist .expo rmdir /s /q .expo
 	@if exist .expo-shared rmdir /s /q .expo-shared

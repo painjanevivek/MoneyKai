@@ -1,6 +1,6 @@
 # SMS Capture Privacy And Play Policy Review
 
-Last reviewed: 2026-06-13
+Last reviewed: 2026-06-17
 
 ## Sources Reviewed
 
@@ -58,7 +58,7 @@ Required before production SMS permission reconsideration:
 | Gate | Owner | Status | Evidence |
 | --- | --- | --- | --- |
 | Production APK manifest has no restricted SMS permission | Engineering | Passed for local ignored APK artifact | `aapt dump permissions apps/MoneyKai-mobile/android/app/build/outputs/apk/release/app-release.apk` reported no `READ_SMS`, `RECEIVE_SMS`, `SEND_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH`, or `WRITE_SMS` |
-| Production AAB manifest has no restricted SMS permission | Engineering | Pending | Local `apkanalyzer`/`aapt` could not decode the AAB manifest directly; verify with bundletool, EAS artifact inspection, or Play Console before upload |
+| Production AAB manifest has no restricted SMS permission | Engineering | Passed for current local AAB artifact | `npm.cmd run android:verify:release-permissions -- --aab artifacts\phase5a\moneykai-phase5-release-no-devclient-arm64.aab` inspected the compiled AAB manifest and reported no `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS` |
 | Research APK declares restricted SMS permission only for research use | Engineering | Passed for installed device build | Fresh local debug research APK `com.moneykai.mobile` `versionCode=1`, `versionName=1.0.0` requested `READ_SMS` and `RECEIVE_SMS`, and both were granted on the physical Android 16 device; treat as internal research-only evidence, not production release evidence |
 | Real-device QA matrix complete | QA | In progress | `docs/sms-capture-real-device-qa.md` has one Android 16 source-matched debug run; range controls and native discovery are verified, while approval/unselect/resume/retry matrix completion remains pending |
 | Privacy policy reviewed for SMS and AI handling | Privacy/legal | Pending | |
@@ -81,7 +81,7 @@ Observed local APK permissions:
 Known limitation:
 
 - The local manifest-merger text report still contains restricted SMS permission lines, but the actual APK manifest inspected with `aapt` does not. Treat the text report as stale or not representative until a fresh production build is generated and inspected.
-- The AAB remains the production upload artifact and still needs final manifest inspection with a tool that can decode Android App Bundle manifests.
+- The AAB remains the production upload artifact. Run `npm.cmd run android:verify:release-permissions -- --aab path\to\production.aab` against the exact EAS-downloaded upload candidate before Play Console upload.
 - The installed research build should not be used as Play policy evidence except to validate internal SMS behavior, permission gating, redaction, and source-matched QA behavior.
 
 ## Release Rule

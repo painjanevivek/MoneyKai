@@ -88,6 +88,17 @@ def moneyKaiUploadKeyPassword = findProperty('MONEYKAI_UPLOAD_KEY_PASSWORD') ?: 
 def hasMoneyKaiUploadSigning = moneyKaiUploadStoreFile && moneyKaiUploadStorePassword && moneyKaiUploadKeyAlias && moneyKaiUploadKeyPassword
 def moneyKaiSmsResearchBuild = ((findProperty('MONEYKAI_SMS_RESEARCH_BUILD') ?: System.getenv('MONEYKAI_SMS_RESEARCH_BUILD')) ?: 'false').toBoolean()
 def moneyKaiNativeSmsResearchBuild = ((findProperty('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD') ?: System.getenv('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD')) ?: 'false').toBoolean()
+def moneyKaiUploadSigningError = "MoneyKai release/original builds require MONEYKAI_UPLOAD_STORE_FILE, MONEYKAI_UPLOAD_STORE_PASSWORD, MONEYKAI_UPLOAD_KEY_ALIAS, and MONEYKAI_UPLOAD_KEY_PASSWORD."
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def needsUploadSigning = taskGraph.allTasks.any { task ->
+        def taskName = task.path.toLowerCase(java.util.Locale.ROOT)
+        taskName.contains("release") || taskName.contains("original")
+    }
+    if (needsUploadSigning && !hasMoneyKaiUploadSigning) {
+        throw new GradleException(moneyKaiUploadSigningError)
+    }
+}
 
 android {
     ndkVersion rootProject.ext.ndkVersion

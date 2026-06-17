@@ -76,67 +76,28 @@ class MoneyKaiNativeCaptureModule(
     return true
   }
 
-    Function("setCaptureSourcesEnabled") { notificationEnabled: Boolean, smsEnabled: Boolean ->
-      setCaptureSourcesEnabled(requireContext(), notificationEnabled, smsEnabled)
-      if (!notificationEnabled && !smsEnabled) {
-        clearPendingSignals(requireContext())
-      }
-      true
-    }
-
-    Function("setApprovedSmsAccounts") { approvedAccountIdsJson: String ->
-      setApprovedSmsAccounts(requireContext(), approvedAccountIdsJson)
-      true
-    }
-
-    Function("getStatus") {
-      activeModule = this@MoneyKaiNativeCaptureModule
-      val status = Bundle()
-      status.putString("platform", "android")
-      status.putBoolean("nativeModuleAvailable", true)
-      status.putString(
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun getStatus(): WritableMap {
+    activeModule = this
+    return Arguments.createMap().apply {
+      putString("platform", "android")
+      putBoolean("nativeModuleAvailable", true)
+      putString(
         "notificationAccess",
-        if (isNotificationListenerEnabled(requireContext())) "granted" else "not_requested"
+        if (isNotificationListenerEnabled(reactContext)) "granted" else "not_requested"
       )
-      status.putString(
-        "smsAccess",
-        getSmsAccessStatus(requireContext())
-      )
-      status.putString(
-        "smsInboxAccess",
-        getSmsInboxAccessStatus(requireContext())
-      )
-      status
-    }
-
-    Function("discoverRecentSmsAccounts") { optionsJson: String ->
-      discoverRecentSmsAccounts(requireContext(), optionsJson)
-    }
-
-    Function("importRecentSmsTransactions") { optionsJson: String, approvedAccountIdsJson: String ->
-      importRecentSmsTransactions(requireContext(), optionsJson, approvedAccountIdsJson)
-    }
-
-    Function("openNotificationListenerSettings") {
-      val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-      }
-      try {
-        requireContext().startActivity(intent)
-        true
-      } catch (_: ActivityNotFoundException) {
-        false
-      }
+      putString("smsAccess", getSmsAccessStatus(reactContext))
+      putString("smsInboxAccess", getSmsInboxAccessStatus(reactContext))
     }
   }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun discoverRecentSmsAccounts(days: Int, maxMessages: Int): String =
-    discoverRecentSmsAccounts(reactContext, days, maxMessages)
+  fun discoverRecentSmsAccounts(optionsJson: String): String =
+    discoverRecentSmsAccounts(reactContext, optionsJson)
 
   @ReactMethod(isBlockingSynchronousMethod = true)
-  fun importRecentSmsTransactions(days: Int, maxMessages: Int, approvedAccountIdsJson: String): String =
-    importRecentSmsTransactions(reactContext, days, maxMessages, approvedAccountIdsJson)
+  fun importRecentSmsTransactions(optionsJson: String, approvedAccountIdsJson: String): String =
+    importRecentSmsTransactions(reactContext, optionsJson, approvedAccountIdsJson)
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun openNotificationListenerSettings(): Boolean {

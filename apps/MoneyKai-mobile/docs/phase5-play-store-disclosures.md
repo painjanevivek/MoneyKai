@@ -1,6 +1,6 @@
 # Phase 5E Play Store-Safe Disclosure Package
 
-Last reviewed: 2026-06-11
+Last reviewed: 2026-06-17
 
 ## Release scope
 
@@ -23,6 +23,14 @@ For SMS:
 MoneyKai requests Android notification listener access so users can optionally convert supported bank/payment transaction notifications into reviewable budget drafts. Notification capture is opt-in, disabled by user controls, and never auto-confirms transactions.
 
 The Play Store build does not include restricted SMS permissions, does not register the MoneyKai SMS receiver, and does not read the SMS inbox. A separate internal-only APK exists for native SMS research, but that APK is not intended for Play distribution.
+
+Before uploading a production AAB to Play Console, run the release permission verifier against the exact downloaded/upload candidate artifact:
+
+```powershell
+npm.cmd --prefix apps\MoneyKai-mobile run android:verify:release-permissions -- --aab path\to\production.aab
+```
+
+The upload must be blocked if the verifier reports `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS`.
 
 ## Data Safety notes
 
@@ -49,4 +57,4 @@ Do not use screenshots from Original MoneyKai or any screen showing native SMS p
 
 ## Current status
 
-Phase 5E is ready for internal testing materials. Final Play Console Data Safety answers still need to be entered and reviewed in Play Console before a closed or production release.
+Phase 5E is ready for internal testing materials. Final Play Console Data Safety answers still need to be entered and reviewed in Play Console before a closed or production release. The current Play-safe AAB has passed the repository release permission verifier with no restricted SMS permissions detected.
