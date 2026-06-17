@@ -74,6 +74,29 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
   );
 };
 
+function ThemeSwatches({ swatches }: { swatches: readonly string[] }) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={{ flexDirection: 'row', marginRight: Spacing.sm }}>
+      {swatches.map((swatch) => (
+        <View
+          key={swatch}
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: 9,
+            backgroundColor: swatch,
+            borderWidth: 1,
+            borderColor: colors.borderLight,
+            marginRight: -4,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const { colors, theme, setTheme } = useTheme();
   const { user, signOut } = useAuthStore();
@@ -83,6 +106,7 @@ export default function SettingsScreen() {
 
   const [showAllowanceEditor, setShowAllowanceEditor] = useState(false);
   const [showBackupSheet, setShowBackupSheet] = useState(false);
+  const [showThemePicker, setShowThemePicker] = useState(false);
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
   const [showDeleteAccountSheet, setShowDeleteAccountSheet] = useState(false);
   const [allowanceValue, setAllowanceValue] = useState(String(settings.monthly_allowance));
@@ -96,6 +120,7 @@ export default function SettingsScreen() {
     true: colors.primary,
   } as const;
   const switchThumb = colors.textInverse;
+  const selectedTheme = THEME_OPTIONS.find((option) => option.id === theme) ?? THEME_OPTIONS[0];
 
   const allowanceSubtitle = useMemo(
     () => `${currencySymbol} ${settings.monthly_allowance.toLocaleString('en-IN')}`,
@@ -248,12 +273,7 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
         <Card style={{ marginBottom: Spacing.lg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-            <UserAvatar
-              name={user?.full_name}
-              email={user?.email}
-              avatarUrl={user?.avatar_url}
-              size={56}
-            />
+            <UserAvatar name={user?.full_name} email={user?.email} avatarUrl={user?.avatar_url} size={56} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{user?.full_name || 'Your profile'}</Text>
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>{user?.email || 'No email available'}</Text>
@@ -312,83 +332,49 @@ export default function SettingsScreen() {
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Appearance</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
-          <View style={{ paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: Spacing.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: BorderRadius.sm,
-                  backgroundColor: colors.primaryBg,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <MaterialCommunityIcons name="palette-outline" size={20} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>Theme</Text>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>Choose a MoneyKai look</Text>
-              </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Choose website theme"
+            onPress={() => setShowThemePicker(true)}
+            style={({ hovered, pressed }: any) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: Spacing.md,
+              paddingHorizontal: Spacing.sm,
+              marginHorizontal: -Spacing.sm,
+              borderRadius: BorderRadius.sm,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderLight,
+              backgroundColor: hovered ? `${colors.primary}0F` : 'transparent',
+              transform: hovered && !pressed ? [{ translateX: 2 }] : [{ translateX: 0 }],
+            })}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: BorderRadius.sm,
+                backgroundColor: colors.primaryBg,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: Spacing.md,
+              }}
+            >
+              <MaterialCommunityIcons name="palette-outline" size={20} color={colors.primary} />
             </View>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-              {THEME_OPTIONS.map((option) => {
-                const active = theme === option.id;
-                return (
-                  <Pressable
-                    key={option.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={`Use ${option.label} theme`}
-                    onPress={() => setTheme(option.id)}
-                    style={({ hovered, pressed }: any) => ({
-                      width: '30%',
-                      minWidth: 142,
-                      flexGrow: 1,
-                      minHeight: 96,
-                      borderRadius: BorderRadius.md,
-                      borderWidth: active ? 2 : 1,
-                      borderColor: active ? colors.primary : hovered ? `${colors.primary}80` : colors.border,
-                      backgroundColor: active ? colors.primaryBg : hovered ? colors.surfaceElevated : colors.surface,
-                      padding: Spacing.sm,
-                      gap: Spacing.xs,
-                      transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-                    })}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
-                      <View style={{ flexDirection: 'row' }}>
-                        {option.swatches.map((swatch) => (
-                          <View
-                            key={swatch}
-                            style={{
-                              width: 18,
-                              height: 18,
-                              borderRadius: 9,
-                              backgroundColor: swatch,
-                              borderWidth: 1,
-                              borderColor: colors.borderLight,
-                              marginRight: -4,
-                            }}
-                          />
-                        ))}
-                      </View>
-                      <MaterialCommunityIcons name={active ? 'check-circle' : (option.icon as any)} size={18} color={active ? colors.primary : colors.textTertiary} />
-                    </View>
-                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{option.label}</Text>
-                    <Text numberOfLines={2} style={{ fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>{option.description}</Text>
-                  </Pressable>
-                );
-              })}
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>Theme</Text>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>Choose a MoneyKai look</Text>
             </View>
-          </View>
-          <SettingItem
-            icon="currency-inr"
-            iconColor="#707070"
-            iconBg="#F1F1F1"
-            title="Currency"
-            subtitle={`${currency} (${currencySymbol})`}
-          />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <ThemeSwatches swatches={selectedTheme.swatches} />
+              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                {selectedTheme.label}
+              </Text>
+              <MaterialCommunityIcons name="chevron-down" size={20} color={colors.textTertiary} />
+            </View>
+          </Pressable>
+          <SettingItem icon="currency-inr" iconColor="#707070" iconBg="#F1F1F1" title="Currency" subtitle={`${currency} (${currencySymbol})`} />
         </Card>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Notifications</Text>
@@ -430,55 +416,20 @@ export default function SettingsScreen() {
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Data & Privacy</Text>
         <GmailConnectionCard />
         <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem
-            icon="download-outline"
-            iconColor="#111111"
-            iconBg="#F4F4F4"
-            title="Export Data (CSV)"
-            subtitle="Share your transactions as CSV"
-            onPress={handleExport}
-          />
-          <SettingItem
-            icon="cloud-upload-outline"
-            iconColor="#2B2B2B"
-            iconBg="#F2F2F2"
-            title="Cloud backups"
-            subtitle="Save to or restore a cloud backup"
-            onPress={() => setShowBackupSheet(true)}
-          />
-          <SettingItem
-            icon="shield-lock-outline"
-            iconColor="#444444"
-            iconBg="#ECECEC"
-            title="Privacy Policy"
-            subtitle="Open the privacy policy"
-            onPress={handlePrivacy}
-          />
-          <SettingItem
-            icon="delete-outline"
-            iconColor={colors.emergency}
-            iconBg={colors.emergencyBg}
-            title="Delete Account"
-            subtitle="Permanently remove your account and stored data"
-            onPress={() => setShowDeleteAccountSheet(true)}
-          />
+          <SettingItem icon="download-outline" iconColor="#111111" iconBg="#F4F4F4" title="Export Data (CSV)" subtitle="Share your transactions as CSV" onPress={handleExport} />
+          <SettingItem icon="cloud-upload-outline" iconColor="#2B2B2B" iconBg="#F2F2F2" title="Cloud backups" subtitle="Save to or restore a cloud backup" onPress={() => setShowBackupSheet(true)} />
+          <SettingItem icon="shield-lock-outline" iconColor="#444444" iconBg="#ECECEC" title="Privacy Policy" subtitle="Open the privacy policy" onPress={handlePrivacy} />
+          <SettingItem icon="delete-outline" iconColor={colors.emergency} iconBg={colors.emergencyBg} title="Delete Account" subtitle="Permanently remove your account and stored data" onPress={() => setShowDeleteAccountSheet(true)} />
         </Card>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>About</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="MoneyKai v1.0.0" />
           <SettingItem icon="star-outline" iconColor="#5A5A5A" iconBg="#EFEFEF" title="Rate the App" onPress={handleRate} />
-          <SettingItem
-            icon="help-circle-outline"
-            iconColor="#707070"
-            iconBg="#F1F1F1"
-            title="Help & Support"
-            subtitle="Open contact and support options"
-            onPress={handleSupport}
-          />
+          <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" subtitle="Open contact and support options" onPress={handleSupport} />
         </Card>
 
-          <Pressable
+        <Pressable
           onPress={() => setShowSignOutSheet(true)}
           style={({ hovered, pressed }: any) => ({
             flexDirection: 'row',
@@ -499,24 +450,57 @@ export default function SettingsScreen() {
       </ScrollView>
 
       <ModalSheet
+        visible={showThemePicker}
+        title="Website theme"
+        subtitle="Pick a named theme. The color palette is shown before each name."
+        onClose={() => setShowThemePicker(false)}
+      >
+        <View style={{ gap: Spacing.sm }}>
+          {THEME_OPTIONS.map((option) => {
+            const active = theme === option.id;
+            return (
+              <Pressable
+                key={option.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Use ${option.label} theme`}
+                onPress={() => {
+                  setTheme(option.id);
+                  setShowThemePicker(false);
+                }}
+                style={({ hovered, pressed }: any) => ({
+                  minHeight: 58,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: Spacing.md,
+                  borderRadius: BorderRadius.sm,
+                  borderWidth: 1,
+                  borderColor: active ? colors.primary : hovered ? `${colors.primary}80` : colors.borderLight,
+                  backgroundColor: active ? colors.primaryBg : hovered ? colors.surfaceElevated : colors.surface,
+                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                })}
+              >
+                <ThemeSwatches swatches={option.swatches} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{option.label}</Text>
+                  <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>{option.description}</Text>
+                </View>
+                <MaterialCommunityIcons name={active ? 'check-circle' : 'circle-outline'} size={20} color={active ? colors.primary : colors.textTertiary} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </ModalSheet>
+
+      <ModalSheet
         visible={showAllowanceEditor}
         title="Edit Monthly Budget"
         subtitle="Update the budget used across your savings and dashboard calculations."
         onClose={() => setShowAllowanceEditor(false)}
         footer={
           <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
-            <Button
-              title="Cancel"
-              onPress={() => setShowAllowanceEditor(false)}
-              variant="outline"
-              style={{ flex: 1 }}
-            />
-            <Button
-              title="Save"
-              onPress={saveAllowance}
-              loading={savingAllowance}
-              style={{ flex: 1 }}
-            />
+            <Button title="Cancel" onPress={() => setShowAllowanceEditor(false)} variant="outline" style={{ flex: 1 }} />
+            <Button title="Save" onPress={saveAllowance} loading={savingAllowance} style={{ flex: 1 }} />
           </View>
         }
       >
@@ -526,7 +510,7 @@ export default function SettingsScreen() {
           value={allowanceValue}
           onChangeText={(value) => setAllowanceValue(value.replace(/[^0-9]/g, ''))}
           keyboardType="numeric"
-          prefix="₹"
+          prefix="Rs"
         />
       </ModalSheet>
 
@@ -543,19 +527,8 @@ export default function SettingsScreen() {
         onClose={() => setShowBackupSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
-            <Button
-              title="Back Up Now"
-              onPress={handleCloudBackup}
-              loading={backupBusy}
-              disabled={!isFirebaseConfigured() && !isBackendConfigured()}
-            />
-            <Button
-              title="Restore Latest Backup"
-              onPress={handleCloudRestore}
-              variant="outline"
-              loading={backupBusy}
-              disabled={!isFirebaseConfigured() && !isBackendConfigured()}
-            />
+            <Button title="Back Up Now" onPress={handleCloudBackup} loading={backupBusy} disabled={!isFirebaseConfigured() && !isBackendConfigured()} />
+            <Button title="Restore Latest Backup" onPress={handleCloudRestore} variant="outline" loading={backupBusy} disabled={!isFirebaseConfigured() && !isBackendConfigured()} />
           </View>
         }
       >
@@ -563,13 +536,7 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
             Cloud backups store your current transactions, linked accounts, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device.
           </Text>
-          <View style={{
-            padding: Spacing.md,
-            borderRadius: BorderRadius.md,
-            backgroundColor: colors.primaryBg,
-            borderWidth: 1,
-            borderColor: `${colors.primary}22`,
-          }}>
+          <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: `${colors.primary}22` }}>
             <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary, marginBottom: 4 }}>
               First backup checklist
             </Text>
@@ -590,19 +557,8 @@ export default function SettingsScreen() {
         onClose={() => (signOutBusy ? undefined : setShowSignOutSheet(false))}
         footer={
           <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
-            <Button
-              title="Cancel"
-              onPress={() => setShowSignOutSheet(false)}
-              variant="outline"
-              style={{ flex: 1 }}
-              disabled={signOutBusy}
-            />
-            <Button
-              title="Sign Out"
-              onPress={handleSignOut}
-              loading={signOutBusy}
-              style={{ flex: 1 }}
-            />
+            <Button title="Cancel" onPress={() => setShowSignOutSheet(false)} variant="outline" style={{ flex: 1 }} disabled={signOutBusy} />
+            <Button title="Sign Out" onPress={handleSignOut} loading={signOutBusy} style={{ flex: 1 }} />
           </View>
         }
       >
@@ -618,21 +574,8 @@ export default function SettingsScreen() {
         onClose={() => (deleteBusy ? undefined : setShowDeleteAccountSheet(false))}
         footer={
           <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
-            <Button
-              title="Cancel"
-              onPress={() => setShowDeleteAccountSheet(false)}
-              variant="outline"
-              style={{ flex: 1 }}
-              disabled={deleteBusy}
-            />
-            <Button
-              title="Delete"
-              onPress={handleDeleteAccount}
-              variant="danger"
-              loading={deleteBusy}
-              style={{ flex: 1 }}
-              disabled={!isBackendConfigured()}
-            />
+            <Button title="Cancel" onPress={() => setShowDeleteAccountSheet(false)} variant="outline" style={{ flex: 1 }} disabled={deleteBusy} />
+            <Button title="Delete" onPress={handleDeleteAccount} variant="danger" loading={deleteBusy} style={{ flex: 1 }} disabled={!isBackendConfigured()} />
           </View>
         }
       >
@@ -640,13 +583,7 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
             Deleting your account removes transactions, linked accounts, notes, budgets, groups, savings goals, notifications, backups, and your profile from MoneyKai.
           </Text>
-          <View style={{
-            padding: Spacing.md,
-            borderRadius: BorderRadius.md,
-            backgroundColor: colors.emergencyBg,
-            borderWidth: 1,
-            borderColor: `${colors.emergency}22`,
-          }}>
+          <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.emergencyBg, borderWidth: 1, borderColor: `${colors.emergency}22` }}>
             <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.emergency, marginBottom: 4 }}>
               This cannot be undone
             </Text>
@@ -659,4 +596,3 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
-

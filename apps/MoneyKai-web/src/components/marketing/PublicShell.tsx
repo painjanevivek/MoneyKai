@@ -1,10 +1,10 @@
 import React, { type PropsWithChildren } from 'react';
 import { Link, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
-import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Colors, Shadows, Spacing, Typography, type ColorScheme } from '@/constants/theme';
 import { SITE } from '@/constants/site';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -13,6 +13,7 @@ type ShellProps = PropsWithChildren<{
   eyebrow?: string;
   title?: string;
   description?: string;
+  tone?: 'default' | 'light';
 }>;
 
 const PRIMARY_LINKS = [
@@ -26,16 +27,53 @@ const PRIMARY_LINKS = [
   { href: '/faq', label: 'FAQ' },
 ] as const;
 
-export function PublicShell({ eyebrow, title, description, children }: ShellProps) {
+function BrandMark({ colors, lightMode }: { colors: ColorScheme; lightMode: boolean }) {
+  return (
+    <View
+      style={{
+        width: 42,
+        height: 42,
+        borderRadius: BorderRadius.sm,
+        backgroundColor: lightMode ? colors.primary : '#FFFFFF',
+        borderWidth: 1,
+        borderColor: lightMode ? `${colors.primary}22` : 'rgba(255, 255, 255, 0.24)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...Shadows.md,
+        shadowColor: colors.shadowColor,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 15,
+          lineHeight: 18,
+          fontFamily: Typography.fontFamily.bold,
+          color: lightMode ? '#FFFFFF' : colors.primaryDark,
+        }}
+      >
+        MK
+      </Text>
+    </View>
+  );
+}
+
+export function PublicShell({ eyebrow, title, description, children, tone = 'default' }: ShellProps) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 960;
   const isCompact = width < 640;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const lightMode = tone === 'light';
+  const shellColors = lightMode ? Colors.light : colors;
+  const navBackground = lightMode ? 'rgba(255, 255, 255, 0.94)' : 'rgba(3, 5, 4, 0.9)';
+  const navBorder = lightMode ? shellColors.borderLight : 'rgba(234, 246, 240, 0.14)';
+  const navText = lightMode ? shellColors.textPrimary : '#FFFFFF';
+  const navMuted = lightMode ? shellColors.textSecondary : 'rgba(255, 255, 255, 0.68)';
+  const navHover = lightMode ? `${shellColors.primary}0F` : 'rgba(234, 246, 240, 0.08)';
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: shellColors.background }}>
+      <View style={{ flex: 1, backgroundColor: shellColors.background, overflow: 'hidden' }}>
         <View
           pointerEvents="none"
           style={{
@@ -44,7 +82,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
             right: 0,
             bottom: 0,
             width: isWide ? 1 : 0,
-            backgroundColor: 'rgba(234, 246, 240, 0.08)',
+            backgroundColor: lightMode ? 'rgba(203, 213, 225, 0.34)' : 'rgba(234, 246, 240, 0.08)',
           }}
         />
         <View
@@ -55,7 +93,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
             left: 0,
             bottom: 0,
             width: isWide ? 1 : 0,
-            backgroundColor: 'rgba(234, 246, 240, 0.06)',
+            backgroundColor: lightMode ? 'rgba(203, 213, 225, 0.26)' : 'rgba(234, 246, 240, 0.06)',
           }}
         />
 
@@ -79,9 +117,9 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                   gap: isCompact ? Spacing.sm : Spacing.md,
                   padding: isCompact ? Spacing.sm : Spacing.md,
                   borderRadius: BorderRadius.xl,
-                  backgroundColor: 'rgba(3, 5, 4, 0.9)',
+                  backgroundColor: navBackground,
                   borderWidth: 1,
-                  borderColor: 'rgba(234, 246, 240, 0.14)',
+                  borderColor: navBorder,
                 }}
               >
                 <Pressable
@@ -96,36 +134,16 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                     padding: 6,
                     margin: -6,
                     borderRadius: BorderRadius.lg,
-                    backgroundColor: hovered ? 'rgba(234, 246, 240, 0.08)' : 'transparent',
+                    backgroundColor: hovered ? navHover : 'transparent',
                     transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                   })}
                 >
-                  <View
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 21,
-                      backgroundColor: 'rgba(247, 250, 248, 0.96)',
-                      borderWidth: 1,
-                      borderColor: 'rgba(255, 255, 255, 0.24)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      ...Shadows.md,
-                      shadowColor: colors.shadowColor,
-                    }}
-                  >
-                    <Image
-                      source={require('../../../assets/images/moneykai-logo.png')}
-                      style={{ width: 34, height: 34 }}
-                      resizeMode="contain"
-                      accessibilityLabel="MoneyKai logo"
-                    />
-                  </View>
+                  <BrandMark colors={shellColors} lightMode={lightMode} />
                   <View>
-                    <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: '#FFFFFF' }}>
+                    <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: navText }}>
                       {SITE.name}
                     </Text>
-                    <Text style={{ fontSize: Typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.68)' }}>
+                    <Text style={{ fontSize: Typography.fontSize.xs, color: navMuted }}>
                       Private finance reports
                     </Text>
                   </View>
@@ -139,9 +157,9 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       gap: 4,
                       padding: 4,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: 'rgba(255, 255, 255, 0.055)',
+                      backgroundColor: lightMode ? shellColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)',
                       borderWidth: 1,
-                      borderColor: 'rgba(255, 255, 255, 0.08)',
+                      borderColor: lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.08)',
                     }}
                   >
                     {PRIMARY_LINKS.map((item) => (
@@ -153,13 +171,13 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                             paddingHorizontal: Spacing.md,
                             paddingVertical: 9,
                             borderRadius: BorderRadius.full,
-                            backgroundColor: hovered ? 'rgba(234, 246, 240, 0.12)' : 'transparent',
+                            backgroundColor: hovered ? (lightMode ? '#FFFFFF' : 'rgba(234, 246, 240, 0.12)') : 'transparent',
                             borderWidth: 1,
-                            borderColor: hovered ? 'rgba(234, 246, 240, 0.18)' : 'transparent',
+                            borderColor: hovered ? (lightMode ? shellColors.border : 'rgba(234, 246, 240, 0.18)') : 'transparent',
                             transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                           })}
                         >
-                          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: '#FFFFFF' }}>
+                          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: navText }}>
                             {item.label}
                           </Text>
                         </Pressable>
@@ -181,8 +199,8 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       onPress={() => router.push('/(auth)/login')}
                       variant="ghost"
                       fullWidth={isCompact}
-                      textStyle={{ color: '#FFFFFF' }}
-                      style={{ borderColor: 'rgba(255, 255, 255, 0.14)' }}
+                      textStyle={{ color: navText }}
+                      style={{ borderColor: lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.14)' }}
                     />
                     <Button
                       title="Create secure account"
@@ -211,13 +229,17 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                           paddingHorizontal: Spacing.md,
                           paddingVertical: 10,
                           borderRadius: BorderRadius.full,
-                          backgroundColor: hovered ? 'rgba(234, 246, 240, 0.12)' : 'rgba(255, 255, 255, 0.055)',
+                          backgroundColor: hovered
+                            ? (lightMode ? '#FFFFFF' : 'rgba(234, 246, 240, 0.12)')
+                            : (lightMode ? shellColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)'),
                           borderWidth: 1,
-                          borderColor: hovered ? 'rgba(234, 246, 240, 0.18)' : 'rgba(255, 255, 255, 0.08)',
+                          borderColor: hovered
+                            ? (lightMode ? shellColors.border : 'rgba(234, 246, 240, 0.18)')
+                            : (lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.08)'),
                           transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                         })}
                       >
-                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: '#FFFFFF' }}>
+                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: navText }}>
                           {item.label}
                         </Text>
                       </Pressable>
@@ -239,13 +261,13 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       paddingHorizontal: Spacing.md,
                       paddingVertical: 8,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: colors.surface,
+                      backgroundColor: shellColors.surface,
                       borderWidth: 1,
-                      borderColor: colors.borderLight,
+                      borderColor: shellColors.borderLight,
                     }}
                   >
-                    <View style={{ width: 7, height: 7, borderRadius: 999, backgroundColor: colors.primary }} />
-                    <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary }}>
+                    <View style={{ width: 7, height: 7, borderRadius: 999, backgroundColor: shellColors.primary }} />
+                    <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: shellColors.textSecondary }}>
                       {eyebrow}
                     </Text>
                   </View>
@@ -258,7 +280,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       fontSize: isWide ? 52 : 36,
                       lineHeight: isWide ? 56 : 40,
                       fontFamily: Typography.fontFamily.display,
-                      color: colors.textPrimary,
+                      color: shellColors.textPrimary,
                     }}
                   >
                     {title}
@@ -271,7 +293,7 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                       maxWidth: 760,
                       fontSize: Typography.fontSize.md,
                       lineHeight: 26,
-                      color: colors.textSecondary,
+                      color: shellColors.textSecondary,
                     }}
                   >
                     {description}
@@ -293,16 +315,16 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                 paddingTop: Spacing.lg,
                 paddingBottom: Spacing['2xl'],
                 borderTopWidth: 1,
-                borderTopColor: colors.borderLight,
+                borderTopColor: shellColors.borderLight,
                 gap: Spacing.md,
                 marginTop: Spacing['2xl'],
               }}
             >
               <View style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'space-between', gap: Spacing.sm }}>
-                <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, maxWidth: 560 }}>
-                  MoneyKai turns user-provided statements, pasted records, portfolios, and manual entries into AI-powered financial reports. No hidden SMS reading. No background transaction capture.
+                <Text style={{ fontSize: Typography.fontSize.sm, color: shellColors.textSecondary, maxWidth: 560 }}>
+                  MoneyKai turns user-provided records into private finance reports with review-first controls.
                 </Text>
-                <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textTertiary }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, color: shellColors.textTertiary }}>
                   Contact: {SITE.supportEmail}
                 </Text>
               </View>
@@ -331,8 +353,8 @@ export function PublicShell({ eyebrow, title, description, children }: ShellProp
                         opacity: hovered ? 1 : 0.9,
                       })}
                     >
-                      <MaterialCommunityIcons name="arrow-top-right" size={14} color={colors.textTertiary} />
-                      <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>{item.label}</Text>
+                      <MaterialCommunityIcons name="arrow-top-right" size={14} color={shellColors.textTertiary} />
+                      <Text style={{ fontSize: Typography.fontSize.sm, color: shellColors.textSecondary }}>{item.label}</Text>
                     </Pressable>
                   </Link>
                 ))}
