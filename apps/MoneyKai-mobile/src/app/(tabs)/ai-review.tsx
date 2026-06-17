@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { AiModelConsole } from '@/components/ai/AiModelConsole';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import {
@@ -258,6 +259,8 @@ export default function AiReviewScreen() {
             <Button title="Sign In" icon="login" variant="outline" onPress={() => router.push('/(auth)/login')} />
           </Card>
         ) : null}
+
+        <AiModelConsole providerStatus={providerStatus} requiresSignIn={requiresSignIn} />
 
         <Card style={{ gap: Spacing.md }}>
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>

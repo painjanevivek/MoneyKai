@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { AiModelConsole } from '@/components/ai/AiModelConsole';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import {
@@ -51,6 +52,8 @@ const TASK_OPTIONS: { id: AiAttachmentAnalyzeTask; title: string; subtitle: stri
 export default function AiReviewScreen() {
   const { colors } = useTheme();
   const userId = useAuthStore((state) => state.user?.id ?? 'local');
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isHydratingSession = useAuthStore((state) => state.isHydratingSession);
   const addTransaction = useTransactionStore((state) => state.addTransaction);
   const [task, setTask] = React.useState<AiAttachmentAnalyzeTask>('receipt_extract');
   const [prompt, setPrompt] = React.useState(() => buildDefaultAttachmentPrompt('receipt_extract'));
@@ -64,6 +67,7 @@ export default function AiReviewScreen() {
   const analyzeState = useAiAttachmentAnalysis();
 
   const attachmentsReady = providerStatus?.enabled && providerStatus.attachmentsEnabled;
+  const requiresSignIn = !isHydratingSession && !isAuthenticated;
   const canAnalyze = Boolean(selectedAsset) && !uploadState.loading && !analyzeState.loading && attachmentsReady;
 
   React.useEffect(() => {
@@ -219,6 +223,8 @@ export default function AiReviewScreen() {
           </Text>
         ) : null}
       </Card>
+
+      <AiModelConsole providerStatus={providerStatus} requiresSignIn={requiresSignIn} />
 
       <Card style={{ gap: Spacing.md }}>
         <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
