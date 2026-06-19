@@ -1,19 +1,17 @@
 import React, { type PropsWithChildren } from 'react';
 import { Link, router } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Colors, Shadows, Spacing, Typography, type ColorScheme } from '@/constants/theme';
 import { SITE } from '@/constants/site';
-import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 type ShellProps = PropsWithChildren<{
   eyebrow?: string;
   title?: string;
   description?: string;
-  tone?: 'default' | 'light';
+  tone?: 'default' | 'light' | 'dark';
 }>;
 
 const PRIMARY_LINKS = [
@@ -57,19 +55,72 @@ function BrandMark({ colors, lightMode }: { colors: ColorScheme; lightMode: bool
   );
 }
 
+function ShellAction({
+  title,
+  href,
+  colors,
+  lightMode,
+  primary = false,
+  fullWidth = false,
+}: {
+  title: string;
+  href: string;
+  colors: ColorScheme;
+  lightMode: boolean;
+  primary?: boolean;
+  fullWidth?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={title}
+      onPress={() => router.push(href as never)}
+      style={({ hovered, pressed }: any) => ({
+        minHeight: 46,
+        width: fullWidth ? '100%' : undefined,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: Spacing.lg,
+        borderRadius: BorderRadius.sm,
+        backgroundColor: primary ? colors.primary : hovered ? `${colors.primary}12` : 'transparent',
+        borderWidth: 1,
+        borderColor: primary
+          ? colors.primary
+          : lightMode
+            ? colors.borderLight
+            : 'rgba(255, 255, 255, 0.14)',
+        transform: pressed ? [{ scale: 0.98 }] : hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
+      })}
+    >
+      <Text
+        numberOfLines={1}
+        style={{
+          fontSize: Typography.fontSize.base,
+          fontFamily: Typography.fontFamily.semiBold,
+          color: primary ? colors.textInverse : lightMode ? colors.textPrimary : '#FFFFFF',
+        }}
+      >
+        {title}
+      </Text>
+    </Pressable>
+  );
+}
+
 export function PublicShell({ eyebrow, title, description, children, tone = 'default' }: ShellProps) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const isWide = width >= 960;
   const isCompact = width < 640;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const lightMode = tone === 'light';
-  const shellColors = lightMode ? Colors.light : colors;
+  const shellColors = lightMode ? Colors.light : tone === 'dark' ? Colors.dark : colors;
   const navBackground = lightMode ? 'rgba(255, 255, 255, 0.94)' : 'rgba(3, 5, 4, 0.9)';
   const navBorder = lightMode ? shellColors.borderLight : 'rgba(234, 246, 240, 0.14)';
   const navText = lightMode ? shellColors.textPrimary : '#FFFFFF';
   const navMuted = lightMode ? shellColors.textSecondary : 'rgba(255, 255, 255, 0.68)';
   const navHover = lightMode ? `${shellColors.primary}0F` : 'rgba(234, 246, 240, 0.08)';
+  const showMobileMenu = !isCompact || mobileMenuOpen;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: shellColors.background }}>
@@ -98,7 +149,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
         />
 
         <ScrollView
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           contentContainerStyle={{ flexGrow: 1, paddingBottom: Spacing['4xl'] }}
         >
           <View style={{ width: '100%', maxWidth: 1180, alignSelf: 'center', flexGrow: 1, paddingHorizontal: Spacing.base }}>
@@ -122,32 +173,58 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                   borderColor: navBorder,
                 }}
               >
-                <Pressable
-                  onPress={() => router.push('/')}
-                  accessibilityRole="link"
-                  accessibilityLabel="Go to MoneyKai home"
-                  style={({ hovered, pressed }: any) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    alignSelf: 'flex-start',
-                    padding: 6,
-                    margin: -6,
-                    borderRadius: BorderRadius.lg,
-                    backgroundColor: hovered ? navHover : 'transparent',
-                    transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-                  })}
-                >
-                  <BrandMark colors={shellColors} lightMode={lightMode} />
-                  <View>
-                    <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: navText }}>
-                      {SITE.name}
-                    </Text>
-                    <Text style={{ fontSize: Typography.fontSize.xs, color: navMuted }}>
-                      Private finance reports
-                    </Text>
-                  </View>
-                </Pressable>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
+                  <Pressable
+                    onPress={() => router.push('/')}
+                    accessibilityRole="link"
+                    accessibilityLabel="Go to MoneyKai home"
+                    style={({ hovered, pressed }: any) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 12,
+                      alignSelf: 'flex-start',
+                      padding: 6,
+                      margin: -6,
+                      borderRadius: BorderRadius.lg,
+                      backgroundColor: hovered ? navHover : 'transparent',
+                      transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                    })}
+                  >
+                    <BrandMark colors={shellColors} lightMode={lightMode} />
+                    <View>
+                      <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: navText }}>
+                        {SITE.name}
+                      </Text>
+                      <Text style={{ fontSize: Typography.fontSize.xs, color: navMuted }}>
+                        Private finance reports
+                      </Text>
+                    </View>
+                  </Pressable>
+
+                  {isCompact ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                      accessibilityState={{ expanded: mobileMenuOpen }}
+                      onPress={() => setMobileMenuOpen((value) => !value)}
+                      style={({ hovered, pressed }: any) => ({
+                        minHeight: 40,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingHorizontal: Spacing.base,
+                        borderRadius: BorderRadius.sm,
+                        backgroundColor: hovered ? navHover : lightMode ? shellColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)',
+                        borderWidth: 1,
+                        borderColor: lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.12)',
+                        transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
+                      })}
+                    >
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: navText }}>
+                        {mobileMenuOpen ? 'Close' : 'Menu'}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
 
                 {!isCompact ? (
                   <View
@@ -186,7 +263,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                   </View>
                 ) : null}
 
-                {!isAuthenticated ? (
+                {showMobileMenu && !isAuthenticated ? (
                   <View
                     style={{
                       flexDirection: isCompact ? 'column' : 'row',
@@ -194,59 +271,64 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                       alignSelf: isCompact ? 'stretch' : 'flex-start',
                     }}
                   >
-                    <Button
+                    <ShellAction
                       title="Sign in"
-                      onPress={() => router.push('/(auth)/login')}
-                      variant="ghost"
+                      href="/login"
+                      colors={shellColors}
+                      lightMode={lightMode}
                       fullWidth={isCompact}
-                      textStyle={{ color: navText }}
-                      style={{ borderColor: lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.14)' }}
                     />
-                    <Button
+                    <ShellAction
                       title="Create secure account"
-                      onPress={() => router.push('/(auth)/signup')}
+                      href="/signup"
+                      colors={shellColors}
+                      lightMode={lightMode}
+                      primary
                       fullWidth={isCompact}
-                      icon="shield-account-outline"
                     />
                   </View>
-                ) : (
-                  <Button title="Open app" onPress={() => router.push('/(tabs)')} icon="arrow-top-right" />
-                )}
-              </View>
+                ) : showMobileMenu ? (
+                  <ShellAction title="Open app" href="/dashboard" colors={shellColors} lightMode={lightMode} primary />
+                ) : null}
 
-              {isCompact ? (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: Spacing.xs, paddingRight: Spacing.base }}
-                >
-                  {PRIMARY_LINKS.map((item) => (
-                    <Link key={`${item.href}-${item.label}`} href={item.href as any} asChild>
-                      <Pressable
-                        accessibilityRole="link"
-                        accessibilityLabel={`Open ${item.label}`}
-                        style={({ hovered, pressed }: any) => ({
-                          paddingHorizontal: Spacing.md,
-                          paddingVertical: 10,
-                          borderRadius: BorderRadius.full,
-                          backgroundColor: hovered
-                            ? (lightMode ? '#FFFFFF' : 'rgba(234, 246, 240, 0.12)')
-                            : (lightMode ? shellColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)'),
-                          borderWidth: 1,
-                          borderColor: hovered
-                            ? (lightMode ? shellColors.border : 'rgba(234, 246, 240, 0.18)')
-                            : (lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.08)'),
-                          transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-                        })}
-                      >
-                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: navText }}>
-                          {item.label}
-                        </Text>
-                      </Pressable>
-                    </Link>
-                  ))}
-                </ScrollView>
-              ) : null}
+                {isCompact && showMobileMenu ? (
+                  <View
+                    accessibilityRole="menu"
+                    style={{
+                      gap: Spacing.xs,
+                      paddingTop: Spacing.sm,
+                      borderTopWidth: 1,
+                      borderTopColor: navBorder,
+                    }}
+                  >
+                    {PRIMARY_LINKS.map((item) => (
+                      <Link key={`${item.href}-${item.label}`} href={item.href as any} asChild>
+                        <Pressable
+                          accessibilityRole="link"
+                          accessibilityLabel={`Open ${item.label}`}
+                          style={({ hovered, pressed }: any) => ({
+                            paddingHorizontal: Spacing.md,
+                            paddingVertical: 11,
+                            borderRadius: BorderRadius.sm,
+                            backgroundColor: hovered
+                              ? (lightMode ? '#FFFFFF' : 'rgba(234, 246, 240, 0.12)')
+                              : (lightMode ? shellColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)'),
+                            borderWidth: 1,
+                            borderColor: hovered
+                              ? (lightMode ? shellColors.border : 'rgba(234, 246, 240, 0.18)')
+                              : (lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.08)'),
+                            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                          })}
+                        >
+                          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: navText }}>
+                            {item.label}
+                          </Text>
+                        </Pressable>
+                      </Link>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
             </View>
 
             {(title || description) ? (
@@ -304,7 +386,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
 
             <View
               nativeID="main-content"
-              accessibilityRole="main"
+              role="main"
               style={{ flexGrow: 1, minHeight: 0, paddingBottom: Spacing['4xl'] }}
             >
               {children}
@@ -353,7 +435,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                         opacity: hovered ? 1 : 0.9,
                       })}
                     >
-                      <MaterialCommunityIcons name="arrow-top-right" size={14} color={shellColors.textTertiary} />
+                      <Text style={{ fontSize: Typography.fontSize.sm, color: shellColors.textTertiary }}>-&gt;</Text>
                       <Text style={{ fontSize: Typography.fontSize.sm, color: shellColors.textSecondary }}>{item.label}</Text>
                     </Pressable>
                   </Link>

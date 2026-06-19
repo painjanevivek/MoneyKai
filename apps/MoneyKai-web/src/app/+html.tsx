@@ -21,12 +21,44 @@ export default function RootHtml({ children }: PropsWithChildren) {
             padding: 0;
           }
 
+          html {
+            scrollbar-gutter: stable;
+          }
+
+          *, *::before, *::after {
+            box-sizing: border-box;
+          }
+
           body {
-            overflow-y: auto;
+            overflow-y: scroll;
             overflow-x: hidden;
-            background: #F4F7F5;
-            color: #13211D;
+            background: #07110F;
+            color: #F5FBF8;
             color-scheme: light dark;
+          }
+
+          * {
+            scrollbar-color: rgba(125, 211, 199, 0.72) rgba(7, 17, 15, 0.42);
+            scrollbar-width: thin;
+          }
+
+          *::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+          }
+
+          *::-webkit-scrollbar-track {
+            background: rgba(7, 17, 15, 0.42);
+          }
+
+          *::-webkit-scrollbar-thumb {
+            background: rgba(125, 211, 199, 0.72);
+            border: 3px solid rgba(7, 17, 15, 0.42);
+            border-radius: 999px;
+          }
+
+          *::-webkit-scrollbar-thumb:hover {
+            background: rgba(125, 211, 199, 0.92);
           }
 
           *:focus-visible {

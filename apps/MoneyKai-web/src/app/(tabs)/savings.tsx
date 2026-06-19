@@ -490,7 +490,7 @@ export default function SavingsScreen() {
         })}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={true}>
         {activeTab === 'Savings Predictor' && renderSavingsPredictor()}
         {activeTab === 'Challenges' && renderChallenges()}
         {activeTab === 'Emergency' && renderEmergency()}

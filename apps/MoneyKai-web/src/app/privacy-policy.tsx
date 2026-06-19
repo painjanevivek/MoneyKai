@@ -24,7 +24,7 @@ export default function PrivacyPolicyScreen() {
         description="This page explains the basic privacy model for MoneyKai in plain language so people can understand the product before creating an account."
       >
         <ScrollView
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           contentContainerStyle={{ gap: Spacing.md, paddingBottom: Spacing['5xl'] }}
         >
           {[

@@ -34,7 +34,7 @@ export default function LearnCenterScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
         contentContainerStyle={{
           paddingHorizontal: Spacing.base,
           paddingTop: Spacing.md,

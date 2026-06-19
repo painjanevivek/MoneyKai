@@ -62,7 +62,7 @@ export default function PortfolioScreen() {
 
   React.useEffect(() => {
     if (!enabled) {
-      router.replace('/(tabs)');
+      router.replace('/dashboard');
     }
   }, [enabled]);
 
@@ -73,7 +73,7 @@ export default function PortfolioScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={[]}>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
         contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.base, paddingBottom: Spacing['2xl'], gap: Spacing.base }}
       >
         <WorkspaceHeader
@@ -95,7 +95,7 @@ export default function PortfolioScreen() {
               <Button title="Refresh" icon="refresh" onPress={refreshPortfolio} loading={busy === 'refresh'} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
               <Button title="Add Holding" icon="plus" onPress={() => setShowManualEntry(true)} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
               <Button title="Snapshot" icon="camera-outline" onPress={handleSnapshot} loading={busy === 'snapshot'} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
-              <Button title="Wealth" icon="chart-line" onPress={() => router.push('/(tabs)/wealth' as never)} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+              <Button title="Wealth" icon="chart-line" onPress={() => router.push('/wealth')} size="sm" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
             </>
           }
         />

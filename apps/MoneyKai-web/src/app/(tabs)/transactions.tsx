@@ -568,7 +568,7 @@ export default function TransactionsScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={true}>
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
                 Category
               </Text>
@@ -825,7 +825,7 @@ export default function TransactionsScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={true}>
               <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
                 {(['expense', 'income'] as const).map((type) => (
                   <TouchableOpacity

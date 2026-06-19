@@ -133,7 +133,7 @@ export default function ProfileEditScreen() {
           </Text>
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: 100 }} showsVerticalScrollIndicator={true}>
           {/* Avatar */}
           <View style={{ alignItems: 'center', marginVertical: Spacing['2xl'] }}>
             <View style={{ position: 'relative' }}>

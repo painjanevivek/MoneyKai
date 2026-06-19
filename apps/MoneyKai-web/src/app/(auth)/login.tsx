@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -33,10 +32,13 @@ const getFriendlyAuthMessage = (error: unknown) => {
     return 'Too many attempts. Please wait a moment before trying again.';
   }
   if (lower.includes('popup') || lower.includes('blocked') || lower.includes('cancelled')) {
-    return 'Google sign-in needs a popup in this browser. Allow popups for localhost and try again, or use email login.';
+    return 'Google sign-in needs a popup in this browser. Allow popups for MoneyKai and try again, or use email login.';
   }
   if (lower.includes('unauthorized-domain')) {
-    return 'Add localhost to Firebase Authentication authorized domains, then retry Google sign-in.';
+    return 'Add moneykai.com and www.moneykai.com to Firebase Authentication authorized domains, then retry Google sign-in.';
+  }
+  if (lower.includes('content security policy') || lower.includes('script-src')) {
+    return 'Google sign-in is blocked by the website security policy. Redeploy MoneyKai with the updated CSP and try again.';
   }
 
   return 'Please check your details and try again.';
@@ -53,7 +55,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/(tabs)');
+      router.replace('/dashboard');
     }
   }, [isAuthenticated]);
 
@@ -115,13 +117,7 @@ export default function LoginScreen() {
         style={{ width: '100%' }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
-          }}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={{ width: '100%' }}>
           <View style={{
             backgroundColor: colors.card,
             borderRadius: BorderRadius.xl,
@@ -289,7 +285,7 @@ export default function LoginScreen() {
               }}>Sign Up</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
       </AuthShell>
     </>

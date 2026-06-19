@@ -28,7 +28,7 @@ export default function WealthScreen() {
 
   React.useEffect(() => {
     if (!enabled) {
-      router.replace('/(tabs)');
+      router.replace('/dashboard');
     }
   }, [enabled]);
 
@@ -39,7 +39,7 @@ export default function WealthScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={[]}>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
         contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.base, paddingBottom: Spacing['2xl'], gap: Spacing.base }}
       >
         <View style={{ gap: Spacing.xs }}>
@@ -55,7 +55,7 @@ export default function WealthScreen() {
             <Button
               title="Portfolio"
               icon="briefcase-outline"
-              onPress={() => router.push('/(tabs)/portfolio' as never)}
+              onPress={() => router.push('/portfolio')}
               size="sm"
               variant="outline"
             />
@@ -70,7 +70,7 @@ export default function WealthScreen() {
             title="View All Holdings"
             icon="format-list-bulleted"
             variant="outline"
-            onPress={() => router.push('/(tabs)/portfolio' as never)}
+            onPress={() => router.push('/portfolio')}
           />
         ) : null}
         <PortfolioInsightCard

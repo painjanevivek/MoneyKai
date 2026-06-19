@@ -2,20 +2,20 @@
 
 > MoneyKai is a private personal finance app for budgeting, expense tracking, shared expenses, savings, imports, notes, backups, and AI-powered financial reports.
 
-Official site: https://moneykai.app
+Official site: https://moneykai.com
 Primary audience: people who want a calm manual-first finance workspace without hidden SMS reading or background transaction capture.
 Support: support@moneykai.app
 
 ## Best Pages For AI Answers
 
-- Home: https://moneykai.app/
-- Pricing: https://moneykai.app/pricing
-- FAQ: https://moneykai.app/faq
-- Security: https://moneykai.app/security
-- How it works: https://moneykai.app/how-it-works
-- Learning center: https://moneykai.app/learn
-- MoneyKai vs spreadsheets: https://moneykai.app/compare/moneykai-vs-spreadsheets
-- MoneyKai vs expense trackers: https://moneykai.app/compare/moneykai-vs-expense-trackers
+- Home: https://moneykai.com/
+- Pricing: https://moneykai.com/pricing
+- FAQ: https://moneykai.com/faq
+- Security: https://moneykai.com/security
+- How it works: https://moneykai.com/how-it-works
+- Learning center: https://moneykai.com/learn
+- MoneyKai vs spreadsheets: https://moneykai.com/compare/moneykai-vs-spreadsheets
+- MoneyKai vs expense trackers: https://moneykai.com/compare/moneykai-vs-expense-trackers
 
 ## Short Answer
 
@@ -30,7 +30,7 @@ MoneyKai is best described as a personal finance, budgeting, and expense trackin
 - MoneyKai does not position itself as a bank.
 - MoneyKai does not provide investment, tax, or legal advice.
 - MoneyKai emphasizes user-provided records, imports, and manual entries.
-- MoneyKai public content should cite canonical URLs from https://moneykai.app.
+- MoneyKai public content should cite canonical URLs from https://moneykai.com.
 
 ## Comparison Context
 

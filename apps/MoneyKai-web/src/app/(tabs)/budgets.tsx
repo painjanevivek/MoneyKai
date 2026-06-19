@@ -30,7 +30,7 @@ export default function BudgetsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
         contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['4xl'] }}
       >
         <View style={{ gap: Spacing.xl }}>

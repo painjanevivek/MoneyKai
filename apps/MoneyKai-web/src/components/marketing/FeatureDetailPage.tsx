@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import type { PublicFeature } from '@/content/publicSite';
+import { SITE } from '@/constants/site';
 import { Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -27,9 +28,9 @@ export function FeatureDetailPage({ feature }: { feature: PublicFeature }) {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://moneykai.app/' },
-        { '@type': 'ListItem', position: 2, name: 'Features', item: 'https://moneykai.app/features' },
-        { '@type': 'ListItem', position: 3, name: feature.title, item: `https://moneykai.app${featurePath}` },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+        { '@type': 'ListItem', position: 2, name: 'Features', item: `${SITE.url}/features` },
+        { '@type': 'ListItem', position: 3, name: feature.title, item: `${SITE.url}${featurePath}` },
       ],
     },
   ];

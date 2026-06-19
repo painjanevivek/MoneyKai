@@ -1,0 +1,22 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#07110F"/>
+  <circle cx="170" cy="90" r="210" fill="#7DD3C7" fill-opacity="0.14"/>
+  <circle cx="1030" cy="120" r="240" fill="#DAB35D" fill-opacity="0.12"/>
+  <rect x="70" y="70" width="1060" height="490" rx="26" fill="#101D18" stroke="#D2E2DA" stroke-opacity="0.18" stroke-width="2"/>
+  <rect x="106" y="106" width="70" height="70" rx="16" fill="#7DD3C7"/>
+  <text x="141" y="150" text-anchor="middle" fill="#06211B" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900">MK</text>
+  <text x="206" y="135" fill="#F5FBF8" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800">MoneyKai</text>
+  <text x="206" y="168" fill="#B9CCC4" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600">Private finance reports for records you review</text>
+  <text x="106" y="286" fill="#F5FBF8" font-family="Inter, Arial, sans-serif" font-size="66" font-weight="900">Calm money clarity</text>
+  <text x="106" y="362" fill="#F5FBF8" font-family="Inter, Arial, sans-serif" font-size="66" font-weight="900">from records you control.</text>
+  <text x="106" y="420" fill="#B9CCC4" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="500">Expense tracking, budgets, shared spends, reviewable drafts,</text>
+  <text x="106" y="458" fill="#B9CCC4" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="500">and private reports for everyday money habits.</text>
+  <rect x="786" y="244" width="270" height="220" rx="18" fill="#F5F0E5"/>
+  <text x="820" y="300" fill="#15231E" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">June report</text>
+  <rect x="820" y="328" width="202" height="12" rx="6" fill="#DCE8E2"/>
+  <rect x="820" y="328" width="154" height="12" rx="6" fill="#0F766E"/>
+  <rect x="820" y="370" width="202" height="12" rx="6" fill="#DCE8E2"/>
+  <rect x="820" y="370" width="118" height="12" rx="6" fill="#DAB35D"/>
+  <rect x="820" y="412" width="202" height="12" rx="6" fill="#DCE8E2"/>
+  <rect x="820" y="412" width="82" height="12" rx="6" fill="#0F766E"/>
+</svg>

@@ -53,7 +53,7 @@ export default function NotificationsScreen() {
       ) : (
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
         >
           {notifications.map((notification, index) => (
             <TouchableOpacity

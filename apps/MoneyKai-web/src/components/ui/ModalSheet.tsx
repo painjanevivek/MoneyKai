@@ -204,7 +204,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
           </View>
 
           <ScrollView
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingBottom: footer ? Spacing.md : 0 }}
           >

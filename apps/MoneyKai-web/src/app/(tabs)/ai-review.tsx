@@ -177,7 +177,7 @@ export default function AiReviewScreen() {
   };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['4xl'] }}>
+    <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['4xl'] }}>
       <input
         ref={fileInputRef}
         type="file"

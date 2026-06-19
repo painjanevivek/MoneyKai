@@ -27,7 +27,7 @@ export function SeoHead({
   path = '',
   keywords = [],
   robots = 'index,follow',
-  imagePath,
+  imagePath = '/og-image.svg',
   preloadImageHref,
   structuredData,
 }: SeoHeadProps) {

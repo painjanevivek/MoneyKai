@@ -156,7 +156,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({ visible, onClose }) => {
             })}
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <ScrollView showsVerticalScrollIndicator={true} keyboardShouldPersistTaps="handled">
             {/* Title */}
             <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary, marginBottom: 6 }}>
               Title <Text style={{ color: colors.emergency }}>*</Text>

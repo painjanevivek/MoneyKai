@@ -1,6 +1,6 @@
 export const SITE = {
   name: 'MoneyKai',
-  url: 'https://moneykai.app',
+  url: 'https://moneykai.com',
   supportEmail: 'support@moneykai.app',
   title: 'MoneyKai | Personal finance, budgeting, shared expenses, and financial first aid',
   description:

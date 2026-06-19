@@ -305,7 +305,7 @@ export default function AccountsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
         contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['4xl'] }}
       >
         <View style={{ gap: Spacing.xl, paddingHorizontal: Spacing.base, paddingTop: Spacing.md }}>
@@ -542,7 +542,7 @@ export default function AccountsScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 520 }}>
+            <ScrollView showsVerticalScrollIndicator={true} style={{ maxHeight: 520 }}>
               <View style={{ gap: Spacing.md }}>
                 <View>
                   <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginBottom: 6 }}>Institution</Text>

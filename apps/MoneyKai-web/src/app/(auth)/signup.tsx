@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -45,7 +45,7 @@ export default function SignupScreen() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/(tabs)');
+      router.replace('/dashboard');
     }
   }, [isAuthenticated]);
 
@@ -83,13 +83,7 @@ export default function SignupScreen() {
         subtitle="Create a workspace for budgets, imports, holdings, shared expenses, and calm monthly review."
       >
       <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
-          }}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={{ width: '100%' }}>
           <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: Spacing.lg }}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -228,7 +222,7 @@ export default function SignupScreen() {
               }}>Sign In</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
       </AuthShell>
     </>
