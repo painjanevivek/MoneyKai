@@ -14,7 +14,7 @@ import type { Group, GroupExpense } from '../types/group';
 import type { Challenge } from '../types/challenge';
 import type { Badge } from '../types/badge';
 import { DEFAULT_THEME_PALETTE, getThemeModeForPalette, type ThemeMode, type ThemePaletteId } from '../constants/theme';
-import type { DashboardTrendMetric, DashboardTrendRange } from '@/stores/useSettingsStore';
+import type { DashboardTrendChartType, DashboardTrendMetric, DashboardTrendRange } from '@/stores/useSettingsStore';
 import type { LinkedAccount } from '@moneykai/domain';
 
 type AppSettingsDoc = {
@@ -23,6 +23,7 @@ type AppSettingsDoc = {
   darkModeEnabled: boolean;
   dashboardTrendRange: DashboardTrendRange;
   dashboardTrendMetric: DashboardTrendMetric;
+  dashboardTrendChartType: DashboardTrendChartType;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;
@@ -68,6 +69,7 @@ const DEFAULT_APP_SETTINGS: AppSettingsDoc = {
   darkModeEnabled: false,
   dashboardTrendRange: '1m',
   dashboardTrendMetric: 'spending',
+  dashboardTrendChartType: 'line',
   currency: 'INR',
   currencySymbol: '₹',
   notificationsEnabled: true,

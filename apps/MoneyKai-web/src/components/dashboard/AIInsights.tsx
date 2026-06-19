@@ -12,7 +12,36 @@ import { useTransactionStore } from '@/stores/useTransactionStore';
 import { generateInsights } from '@/utils/insightEngine';
 import { Card } from '../ui/Card';
 
-export const AIInsights: React.FC = () => {
+type AIInsightsProps = {
+  showFooterLink?: boolean;
+  surface?: 'dashboard' | 'reports';
+};
+
+const hasCjkText = (value?: string | null) => /[\u3400-\u9FFF\uF900-\uFAFF]/u.test(value ?? '');
+
+const isEnglishFacingCard = (card: AiInsightCard) =>
+  ![
+    card.title,
+    card.body,
+    card.actionLabel,
+    card.metricLabel,
+    card.metricValue,
+  ].some(hasCjkText);
+
+const localInsightTitle = (id: string, fallback?: string) => {
+  const titles: Record<string, string> = {
+    budget_warning: 'Budget limit warning',
+    daily_overspend: 'Daily pace is high',
+    savings_tip: 'Possible saving opportunity',
+    top_category: 'Top spending category',
+    savings_improved: 'Savings improved',
+    weekend_alert: 'Weekend spending pattern',
+  };
+
+  return titles[id] ?? fallback ?? 'Spending signal';
+};
+
+export const AIInsights: React.FC<AIInsightsProps> = ({ showFooterLink = true, surface = 'reports' }) => {
   const { colors } = useTheme();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const totalIncome = useTransactionStore((s) => s.getTotalIncome());
@@ -34,7 +63,10 @@ export const AIInsights: React.FC = () => {
             percentage: item.percentage,
           })),
           context: {
-            surface: 'dashboard',
+            surface,
+            responseLanguage: 'en',
+            locale: 'en-IN',
+            instruction: 'Return user-facing MoneyKai insights only in clear English.',
             monthlyAllowance: settings.monthly_allowance,
           },
         }
@@ -66,15 +98,16 @@ export const AIInsights: React.FC = () => {
         : insight.type === 'achievement'
           ? ('success' as const)
           : ('info' as const),
-    title: insight.actionLabel || 'Spending signal',
+    title: localInsightTitle(insight.id, insight.actionLabel),
     body: insight.message,
     actionLabel: insight.actionLabel,
     metricLabel: null,
     metricValue: null,
   }));
-  const cards = data?.cards?.length ? data.cards : error && localCards.length ? localCards : [];
+  const englishAiCards = data?.cards?.filter(isEnglishFacingCard) ?? [];
+  const cards = englishAiCards.length ? englishAiCards : localCards;
   const sourceLabel =
-    data?.source === 'deterministic'
+    data?.source === 'deterministic' && !englishAiCards.length
       ? 'Showing deterministic spending signals from your current month data.'
       : error && localCards.length > 0
         ? 'Smart insights are unavailable right now. Showing local spending signals instead.'
@@ -192,7 +225,7 @@ export const AIInsights: React.FC = () => {
               lineHeight: 20,
             }}
           >
-            Add a few transactions and we&apos;ll surface personalized insights here.
+            Add a few transactions and we'll surface personalized insights here.
           </Text>
         </View>
       )}
@@ -210,27 +243,29 @@ export const AIInsights: React.FC = () => {
         </Text>
       ) : null}
 
-      <TouchableOpacity
-        onPress={() => router.push('/reports' as any)}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: Spacing.sm,
-          gap: 4,
-        }}
-      >
-        <Text
+      {showFooterLink ? (
+        <TouchableOpacity
+          onPress={() => router.push('/reports' as any)}
           style={{
-            fontSize: Typography.fontSize.sm,
-            fontFamily: Typography.fontFamily.medium,
-            color: colors.primary,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: Spacing.sm,
+            gap: 4,
           }}
         >
-          View More Insights
-        </Text>
-        <MaterialCommunityIcons name="arrow-right" size={14} color={colors.primary} />
-      </TouchableOpacity>
+          <Text
+            style={{
+              fontSize: Typography.fontSize.sm,
+              fontFamily: Typography.fontFamily.medium,
+              color: colors.primary,
+            }}
+          >
+            View More Insights
+          </Text>
+          <MaterialCommunityIcons name="arrow-right" size={14} color={colors.primary} />
+        </TouchableOpacity>
+      ) : null}
     </Card>
   );
 };

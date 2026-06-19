@@ -26,6 +26,7 @@ type PersistedAppSettings = {
   darkModeEnabled: boolean;
   dashboardTrendRange: DashboardTrendRange;
   dashboardTrendMetric: DashboardTrendMetric;
+  dashboardTrendChartType: DashboardTrendChartType;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;
@@ -36,6 +37,7 @@ type PersistedAppSettings = {
 type TourCompletionMap = Record<string, boolean>;
 export type DashboardTrendRange = '1d' | '1w' | '1m' | '3m' | '6m' | '1y' | 'all';
 export type DashboardTrendMetric = 'spending' | 'income' | 'netFlow' | 'transactionCount';
+export type DashboardTrendChartType = 'line' | 'bar' | 'donut';
 
 const persistAppSettings = (settings: PersistedAppSettings) => {
   const userId = useAuthStore.getState().user?.id;
@@ -53,6 +55,7 @@ interface SettingsState {
   darkModeEnabled: boolean;
   dashboardTrendRange: DashboardTrendRange;
   dashboardTrendMetric: DashboardTrendMetric;
+  dashboardTrendChartType: DashboardTrendChartType;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;
@@ -69,7 +72,7 @@ interface SettingsState {
   setTheme: (theme: ThemeMode) => void;
   setThemePalette: (themePalette: ThemePaletteId) => void;
   setDarkModeEnabled: (enabled: boolean) => void;
-  setDashboardTrendPreferences: (preferences: Partial<Pick<SettingsState, 'dashboardTrendRange' | 'dashboardTrendMetric'>>) => void;
+  setDashboardTrendPreferences: (preferences: Partial<Pick<SettingsState, 'dashboardTrendRange' | 'dashboardTrendMetric' | 'dashboardTrendChartType'>>) => void;
   setCurrency: (currency: string, symbol: string) => void;
   refreshExchangeRates: (force?: boolean) => Promise<void>;
   toggleNotifications: () => void;
@@ -87,6 +90,7 @@ export const useSettingsStore = create<SettingsState>()(
       darkModeEnabled: true,
       dashboardTrendRange: '1m',
       dashboardTrendMetric: 'spending',
+      dashboardTrendChartType: 'line',
       currency: 'INR',
       currencySymbol: '₹',
       notificationsEnabled: true,
@@ -105,6 +109,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -127,6 +132,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -147,6 +153,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled: state.darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -167,6 +174,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -182,12 +190,14 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => {
           const dashboardTrendRange = preferences.dashboardTrendRange ?? state.dashboardTrendRange;
           const dashboardTrendMetric = preferences.dashboardTrendMetric ?? state.dashboardTrendMetric;
+          const dashboardTrendChartType = preferences.dashboardTrendChartType ?? state.dashboardTrendChartType;
           const next: PersistedAppSettings = {
             theme: state.theme,
             themePalette: state.themePalette,
             darkModeEnabled: state.darkModeEnabled,
             dashboardTrendRange,
             dashboardTrendMetric,
+            dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -196,7 +206,7 @@ export const useSettingsStore = create<SettingsState>()(
           };
           persistAppSettings(next);
           void requestAutomaticBackup('settings updated');
-          return { dashboardTrendRange, dashboardTrendMetric };
+          return { dashboardTrendRange, dashboardTrendMetric, dashboardTrendChartType };
         }),
 
       setCurrency: (currency, symbol) =>
@@ -207,6 +217,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled: state.darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency,
             currencySymbol: symbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -248,6 +259,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled: state.darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: !state.notificationsEnabled,
@@ -267,6 +279,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled: state.darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: enabled,
@@ -286,6 +299,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled: state.darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -305,6 +319,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled: state.darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -324,6 +339,7 @@ export const useSettingsStore = create<SettingsState>()(
             darkModeEnabled: state.darkModeEnabled,
             dashboardTrendRange: state.dashboardTrendRange,
             dashboardTrendMetric: state.dashboardTrendMetric,
+            dashboardTrendChartType: state.dashboardTrendChartType,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -352,6 +368,7 @@ export const useSettingsStore = create<SettingsState>()(
         currencySymbol: state.currencySymbol,
         dashboardTrendRange: state.dashboardTrendRange,
         dashboardTrendMetric: state.dashboardTrendMetric,
+        dashboardTrendChartType: state.dashboardTrendChartType,
         notificationsEnabled: state.notificationsEnabled,
         hapticEnabled: state.hapticEnabled,
         tourCompleted: state.tourCompleted,
@@ -375,6 +392,7 @@ export const useSettingsStore = create<SettingsState>()(
           darkModeEnabled,
           dashboardTrendRange: persistedState?.dashboardTrendRange ?? current.dashboardTrendRange,
           dashboardTrendMetric: persistedState?.dashboardTrendMetric ?? current.dashboardTrendMetric,
+          dashboardTrendChartType: persistedState?.dashboardTrendChartType ?? current.dashboardTrendChartType,
         };
       },
     }

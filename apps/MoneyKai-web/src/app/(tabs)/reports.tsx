@@ -6,6 +6,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { AIInsights } from '@/components/dashboard/AIInsights';
 import { getCategoryById } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/dateUtils';
@@ -492,6 +493,10 @@ export default function ReportsScreen() {
           {renderMetric('Rows awaiting import', String(allDrafts.length), 'file-search-outline', 'warning')}
           {renderMetric('Statement expenses', formatCurrency(pendingSummary.expense), 'arrow-up-circle-outline', 'neutral')}
           {renderMetric('Statement income', formatCurrency(pendingSummary.income), 'arrow-down-circle-outline', 'accent')}
+        </View>
+
+        <View style={{ marginTop: Spacing.md }}>
+          <AIInsights showFooterLink={false} surface="reports" />
         </View>
 
         {results.length > 0 ? (

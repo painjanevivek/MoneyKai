@@ -42,7 +42,7 @@ const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
   { href: '/reports', title: 'Reports', subtitle: 'Spot patterns in your spending' },
   { href: '/accounts', title: 'Accounts', subtitle: 'Linked balances, sync health, and account controls' },
   { href: '/categories', title: 'Categories', subtitle: 'See where money goes by category' },
-  { href: '/subscriptions', title: 'Subscriptions', subtitle: 'Choose the MoneyKai plan that fits your workspace' },
+  { href: '/subscriptions', title: 'Subscriptions', subtitle: '' },
   { href: '/settings', title: 'Settings', subtitle: 'Profile, privacy, and backups' },
 ];
 
@@ -51,8 +51,9 @@ function MoneyKaiBrandMark({ size }: { size: number }) {
     <Image
       source={{ uri: '/brand/moneykai-mark.jpeg' }}
       contentFit="contain"
+      contentPosition="center"
       accessibilityIgnoresInvertColors
-      style={{ width: Math.round(size * 0.78), height: Math.round(size * 0.78) }}
+      style={{ width: Math.round(size * 0.68), height: Math.round(size * 0.68) }}
     />
   );
 }
@@ -185,17 +186,17 @@ export function DesktopShell({ children }: PropsWithChildren) {
               >
                 <View
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: BorderRadius.md,
-                    backgroundColor: colors.primaryBg,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.borderLight,
-                    overflow: 'hidden',
-                  }}
-                >
+                  width: 42,
+                  height: 42,
+                  borderRadius: BorderRadius.md,
+                  backgroundColor: '#FFFFFF',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: colors.glassBorder,
+                  overflow: 'hidden',
+                }}
+              >
                   <MoneyKaiBrandMark size={42} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -205,12 +206,14 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   >
                     MoneyKai
                   </Text>
-                  <Text
-                    style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}
-                    numberOfLines={1}
-                  >
-                    {activeMeta.title}
-                  </Text>
+                  {activeMeta.subtitle ? (
+                    <Text
+                      style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}
+                      numberOfLines={1}
+                    >
+                      {activeMeta.title}
+                    </Text>
+                  ) : null}
                 </View>
               </Pressable>
 
@@ -413,7 +416,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   width: 48,
                   height: 48,
                   borderRadius: BorderRadius.lg,
-                  backgroundColor: colors.primaryBg,
+                  backgroundColor: '#FFFFFF',
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 1,
@@ -676,9 +679,11 @@ export function DesktopShell({ children }: PropsWithChildren) {
               <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
                 {activeMeta.title}
               </Text>
-              <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-                {activeMeta.subtitle}
-              </Text>
+              {activeMeta.subtitle ? (
+                <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
+                  {activeMeta.subtitle}
+                </Text>
+              ) : null}
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, position: 'relative', zIndex: 60, overflow: 'visible' }}>

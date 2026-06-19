@@ -56,21 +56,11 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   },
 ];
 
-const getStatusLabel = (status: BillingStatus | null) => {
-  if (!status || status.status === 'none' || status.status === 'canceled') return 'Free plan active';
-  if (status.status === 'past_due' || status.status === 'unpaid') return 'Payment needs attention';
-  if (status.status === 'trialing') return 'Premium trial active';
-  if (status.status === 'active') return 'Premium active';
-  return 'Subscription status pending';
-};
-
 export default function SubscriptionsScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 1080;
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
-  const [billingMessage, setBillingMessage] = useState('');
-  const [portalLoading, setPortalLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -81,9 +71,7 @@ export default function SubscriptionsScreen() {
         if (mounted) setBillingStatus(status);
       })
       .catch((error) => {
-        if (mounted) {
-          setBillingMessage(error instanceof Error ? error.message : 'Billing status is unavailable.');
-        }
+        void error;
       });
 
     return () => {
@@ -103,75 +91,9 @@ export default function SubscriptionsScreen() {
     );
   };
 
-  const handlePortalPress = async () => {
-    setPortalLoading(true);
-    setBillingMessage('');
-    try {
-      const session = await billingApi.createPortalSession();
-      if (typeof window !== 'undefined') {
-        window.location.assign(session.url);
-      }
-    } catch (error) {
-      setBillingMessage(error instanceof Error ? error.message : 'Unable to open billing portal.');
-    } finally {
-      setPortalLoading(false);
-    }
-  };
-
   return (
-    <ScrollView contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['2xl'] }} showsVerticalScrollIndicator={false}>
-      <Card
-        style={{
-          gap: Spacing.lg,
-          backgroundColor: colors.primaryDark,
-          borderColor: `${colors.primaryLight}44`,
-          padding: isWide ? Spacing['2xl'] : Spacing.xl,
-        }}
-        borderRadius="xl"
-      >
-        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.lg, justifyContent: 'space-between' }}>
-          <View style={{ flex: 1, gap: Spacing.sm }}>
-            <Text style={{ color: '#F5C55A', fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.xs }}>
-              MONEYKAI PLANS
-            </Text>
-            <Text
-              style={{
-                color: '#FFFFFF',
-                fontFamily: Typography.fontFamily.display,
-                fontSize: isWide ? 44 : 32,
-                lineHeight: isWide ? 50 : 38,
-                maxWidth: 780,
-              }}
-            >
-              Pick the right workspace before checkout goes live.
-            </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.74)', fontSize: Typography.fontSize.base, lineHeight: 24, maxWidth: 760 }}>
-              Free, Plus, and Premium are structured here now. Inclusions and live checkout can be connected once the final product limits are decided.
-            </Text>
-          </View>
-
-          <Card
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.12)',
-              borderColor: 'rgba(255,255,255,0.2)',
-              gap: 4,
-              minWidth: isWide ? 280 : undefined,
-            }}
-          >
-            <Text style={{ color: 'rgba(255,255,255,0.66)', fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.xs }}>
-              Account status
-            </Text>
-            <Text style={{ color: '#FFFFFF', fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.xl }}>
-              {getStatusLabel(billingStatus)}
-            </Text>
-            {billingMessage ? (
-              <Text style={{ color: '#FFE6A6', fontSize: Typography.fontSize.xs, lineHeight: 18 }}>{billingMessage}</Text>
-            ) : null}
-          </Card>
-        </View>
-      </Card>
-
-      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.base }}>
+    <ScrollView contentContainerStyle={{ paddingBottom: Spacing.xl }} showsVerticalScrollIndicator={false}>
+      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.base, alignItems: 'stretch' }}>
         {SUBSCRIPTION_PLANS.map((plan) => {
           const isGold = plan.tone === 'gold';
           const isPremiumActive = billingStatus?.status === 'active' && billingStatus.plan !== 'free';
@@ -273,27 +195,6 @@ export default function SubscriptionsScreen() {
           );
         })}
       </View>
-
-      <Card style={{ gap: Spacing.md }} borderRadius="lg">
-        <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md, alignItems: isWide ? 'center' : 'stretch', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.lg }}>
-              Billing controls
-            </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: 20 }}>
-              Existing subscribers can manage invoices and payment details here once the billing portal is available.
-            </Text>
-          </View>
-          <Button
-            title="Manage billing"
-            onPress={handlePortalPress}
-            variant="outline"
-            icon="credit-card-outline"
-            loading={portalLoading}
-            disabled={!billingStatus || billingStatus.status === 'none' || billingStatus.status === 'canceled'}
-          />
-        </View>
-      </Card>
     </ScrollView>
   );
 }

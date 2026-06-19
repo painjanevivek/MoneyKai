@@ -431,13 +431,11 @@ export default function AccountsScreen() {
                     Connect through a configured banking provider, or add a manual balance while live provider onboarding is completed.
                   </Text>
                 </View>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'flex-end' }}>
-                  <Button title="Connect live bank" icon="bank-plus" onPress={handleConnectLiveBank} loading={isProviderActionPending} />
-                  <Button title="Manual Account" icon="plus" onPress={() => setShowManualModal(true)} variant="outline" />
-                  {demoDataEnabled ? (
+                {demoDataEnabled ? (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'flex-end' }}>
                     <Button title="Load demo data" icon="database-import-outline" onPress={handleLoadDemoData} variant="outline" />
-                  ) : null}
-                </View>
+                  </View>
+                ) : null}
               </View>
             </Card>
           ) : null}

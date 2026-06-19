@@ -43,10 +43,13 @@ export function WorkspaceHeader({
 
   const resolveMetricColor = (tone: WorkspaceMetric['tone']) => {
     if (tone === 'positive') return '#D9FFF2';
-    if (tone === 'danger') return '#FFE1E5';
+    if (tone === 'danger') return colors.emergency;
     if (tone === 'warning') return '#FFF4CC';
     return '#FFFFFF';
   };
+
+  const resolveMetricTone = (metric: WorkspaceMetric) =>
+    metric.value.trim().startsWith('-') ? 'danger' : metric.tone;
 
   return (
     <View
@@ -159,7 +162,7 @@ export function WorkspaceHeader({
               }}
             >
               <Text style={{ fontSize: Typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.64)' }}>{metric.label}</Text>
-              <Text style={{ marginTop: 4, fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: resolveMetricColor(metric.tone) }}>
+              <Text style={{ marginTop: 4, fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: resolveMetricColor(resolveMetricTone(metric)) }}>
                 {metric.value}
               </Text>
             </View>

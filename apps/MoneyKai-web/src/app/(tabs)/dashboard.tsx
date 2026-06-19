@@ -19,7 +19,6 @@ import { CategoryBarChart } from '@/components/charts/CategoryBarChart';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { QuickNotes } from '@/components/dashboard/QuickNotes';
 import { NoteModal } from '@/components/dashboard/NoteModal';
-import { AIInsights } from '@/components/dashboard/AIInsights';
 import { AiAssistantPanel } from '@/components/dashboard/AiAssistantPanel';
 import { EmergencyWidget } from '@/components/dashboard/EmergencyWidget';
 import { LinkedAccountsSnapshot } from '@/components/accounts/LinkedAccountsSnapshot';
@@ -288,7 +287,7 @@ export default function DashboardScreen() {
           { label: 'Available', value: formatCurrency(Math.max(0, remaining)), tone: remaining < 0 ? 'danger' : 'positive' },
           { label: 'Spent', value: formatCurrency(totalSpent), tone: 'warning' },
           { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
-          { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'warning' : 'positive' },
+          { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'danger' : 'positive' },
         ]}
         chips={[
           { icon: 'calendar-refresh-outline', label: `Reset day ${settings.reset_day}` },
@@ -445,8 +444,6 @@ export default function DashboardScreen() {
               </Text>
             )}
           </Card>
-
-          <AIInsights />
 
           <AiAssistantPanel />
 

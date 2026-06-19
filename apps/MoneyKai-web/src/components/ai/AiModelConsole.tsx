@@ -54,7 +54,7 @@ export function AiModelConsole({ containerStyle, providerStatus, requiresSignIn 
       </View>
 
       <Input
-        label="Ask MoneyKai AI"
+        placeholder="Ask about spending, budgets, records, or reports"
         value={prompt}
         onChangeText={setPrompt}
         multiline

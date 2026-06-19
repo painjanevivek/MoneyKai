@@ -416,7 +416,7 @@ export default function TransactionsScreen() {
               { label: 'Visible records', value: String(displayTransactions.length) },
               { label: 'Spent', value: formatCurrency(totalSpent), tone: 'danger' },
               { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
-              { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'warning' : 'positive' },
+              { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'danger' : 'positive' },
             ]}
             chips={[
               { icon: 'filter-variant', label: `${activeFilterCount} active filters` },
