@@ -15,8 +15,8 @@ export const QuickNotes: React.FC<{ onViewAll?: () => void; onNewNote?: () => vo
   const { colors, isDark } = useTheme();
   const recentNotes = useNotesStore((s) => s.getRecentNotes(2));
 
-  const handleViewAll = onViewAll ?? (() => router.push('/(tabs)/notes'));
-  const handleNewNote = onNewNote ?? (() => router.push('/(tabs)/notes'));
+  const handleViewAll = onViewAll ?? (() => router.push('/notes'));
+  const handleNewNote = onNewNote ?? (() => router.push('/notes'));
 
   return (
     <Card>

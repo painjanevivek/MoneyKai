@@ -15,8 +15,10 @@ export function confirmDestructive({
   cancelLabel = 'Cancel',
   onConfirm,
 }: ConfirmDestructiveOptions) {
-  if (Platform.OS === 'web' && typeof globalThis.confirm === 'function') {
-    if (globalThis.confirm(`${title}\n\n${message}`)) {
+  const webConfirm = (globalThis as typeof globalThis & { confirm?: (message?: string) => boolean }).confirm;
+
+  if (Platform.OS === 'web' && typeof webConfirm === 'function') {
+    if (webConfirm(`${title}\n\n${message}`)) {
       onConfirm();
     }
     return;

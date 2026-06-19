@@ -151,7 +151,7 @@ export interface ZerodhaConnectStartResponse {
   state?: string | null;
   expiresAt?: string | null;
   message: string;
-  mode?: 'production' | 'local_sandbox';
+  mode?: 'production';
   manualSetupRequired?: string[];
 }
 
@@ -164,7 +164,7 @@ export interface ZerodhaConnectCallbackResponse {
   enabled: boolean;
   account?: PortfolioAccount | null;
   message: string;
-  mode?: 'production' | 'local_sandbox';
+  mode?: 'production';
 }
 
 export interface AccountAggregatorExplorationStatus {

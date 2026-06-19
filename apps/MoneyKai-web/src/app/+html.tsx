@@ -13,7 +13,28 @@ export default function RootHtml({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#0F766E" />
         <meta name="color-scheme" content="light dark" />
         {headNodes}
+        <ScrollViewStyleReset />
         <style>{`
+          :root {
+            --mk-scrollbar-track: rgba(15, 118, 110, 0.08);
+            --mk-scrollbar-track-hover: rgba(15, 118, 110, 0.12);
+            --mk-scrollbar-thumb: rgba(15, 118, 110, 0.34);
+            --mk-scrollbar-thumb-hover: rgba(15, 118, 110, 0.52);
+            --mk-scrollbar-thumb-active: rgba(15, 78, 74, 0.68);
+            --mk-focus-ring: #14B8A6;
+          }
+
+          @media (prefers-color-scheme: dark) {
+            :root {
+              --mk-scrollbar-track: rgba(221, 247, 241, 0.08);
+              --mk-scrollbar-track-hover: rgba(221, 247, 241, 0.12);
+              --mk-scrollbar-thumb: rgba(125, 211, 199, 0.38);
+              --mk-scrollbar-thumb-hover: rgba(125, 211, 199, 0.56);
+              --mk-scrollbar-thumb-active: rgba(191, 245, 234, 0.72);
+              --mk-focus-ring: #7DD3C7;
+            }
+          }
+
           html, body, #root {
             width: 100%;
             height: 100%;
@@ -32,37 +53,60 @@ export default function RootHtml({ children }: PropsWithChildren) {
           body {
             overflow-y: scroll;
             overflow-x: hidden;
-            background: #07110F;
-            color: #F5FBF8;
+            background: #F4F7F5;
+            color: #13211D;
             color-scheme: light dark;
           }
 
           * {
-            scrollbar-color: rgba(125, 211, 199, 0.72) rgba(7, 17, 15, 0.42);
+            scrollbar-color: var(--mk-scrollbar-thumb) var(--mk-scrollbar-track);
             scrollbar-width: thin;
           }
 
           *::-webkit-scrollbar {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
           }
 
           *::-webkit-scrollbar-track {
-            background: rgba(7, 17, 15, 0.42);
-          }
-
-          *::-webkit-scrollbar-thumb {
-            background: rgba(125, 211, 199, 0.72);
-            border: 3px solid rgba(7, 17, 15, 0.42);
+            background: var(--mk-scrollbar-track);
             border-radius: 999px;
           }
 
+          *::-webkit-scrollbar-thumb {
+            min-height: 48px;
+            background: var(--mk-scrollbar-thumb);
+            background-clip: content-box;
+            border: 2px solid transparent;
+            border-radius: 999px;
+          }
+
+          *::-webkit-scrollbar-track:hover {
+            background: var(--mk-scrollbar-track-hover);
+          }
+
           *::-webkit-scrollbar-thumb:hover {
-            background: rgba(125, 211, 199, 0.92);
+            background: var(--mk-scrollbar-thumb-hover);
+            background-clip: content-box;
+          }
+
+          *::-webkit-scrollbar-thumb:active {
+            background: var(--mk-scrollbar-thumb-active);
+            background-clip: content-box;
+          }
+
+          *::-webkit-scrollbar-button {
+            display: none;
+            width: 0;
+            height: 0;
+          }
+
+          *::-webkit-scrollbar-corner {
+            background: transparent;
           }
 
           *:focus-visible {
-            outline: 3px solid #14B8A6;
+            outline: 3px solid var(--mk-focus-ring);
             outline-offset: 3px;
           }
 
@@ -84,7 +128,6 @@ export default function RootHtml({ children }: PropsWithChildren) {
             top: 16px;
           }
         `}</style>
-        <ScrollViewStyleReset />
       </head>
       <body {...bodyAttributes}>
         <a className="skip-link" href="#main-content">Skip to main content</a>

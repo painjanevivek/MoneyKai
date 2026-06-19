@@ -59,27 +59,31 @@ export const GmailConnectionCard: React.FC = () => {
   const setLastSyncSummary = useGmailSyncStore((state) => state.setLastSyncSummary);
   const resetGmailSync = useGmailSyncStore((state) => state.resetGmailSync);
   const addOrUpdateDocument = useFinancialDocumentStore((state) => state.addOrUpdateDocument);
-  const enabled = featureEnabled && status.enabled;
+  const providerReady = featureEnabled && status.enabled;
   const metadataAccepted = Boolean(consent.metadataScanAcceptedAt);
   const attachmentDownloadsAccepted = Boolean(consent.attachmentDownloadAcceptedAt);
   const isConnected = connection?.status === 'connected';
+  const setupItems = status.manualSetupRequired ?? status.checklist ?? [];
+  const restrictedScopes = status.restrictedScopes ?? ['https://www.googleapis.com/auth/gmail.metadata'];
 
   const hydrateStatus = React.useCallback(async () => {
-    if (!enabled) {
+    if (!featureEnabled) {
       return;
     }
     try {
       const nextStatus = await gmailSyncApi.getStatus();
       setStatus(nextStatus);
-      const nextEmails = await gmailSyncApi.listEmails();
-      setEmails(nextEmails);
+      if (nextStatus.enabled && metadataAccepted) {
+        const nextEmails = await gmailSyncApi.listEmails();
+        setEmails(nextEmails);
+      }
     } catch (error) {
       Alert.alert('Gmail status failed', error instanceof Error ? error.message : 'Could not refresh Gmail status.');
     }
-  }, [enabled, setEmails, setStatus]);
+  }, [featureEnabled, metadataAccepted, setEmails, setStatus]);
 
   const consumeOAuthReturn = React.useCallback((url?: string | null) => {
-    if (!url || !enabled) {
+    if (!url || !providerReady) {
       return;
     }
 
@@ -97,7 +101,7 @@ export const GmailConnectionCard: React.FC = () => {
     } catch {
       // Deep-link parsing is best effort; the manual Refresh button still works.
     }
-  }, [enabled, hydrateStatus]);
+  }, [providerReady, hydrateStatus]);
 
   const refreshStatus = React.useCallback(async () => {
     setBusy('refresh');
@@ -109,13 +113,13 @@ export const GmailConnectionCard: React.FC = () => {
   }, [hydrateStatus]);
 
   React.useEffect(() => {
-    if (enabled && metadataAccepted) {
+    if (featureEnabled) {
       void hydrateStatus();
     }
-  }, [enabled, hydrateStatus, metadataAccepted]);
+  }, [featureEnabled, hydrateStatus]);
 
   React.useEffect(() => {
-    if (!enabled || !metadataAccepted) {
+    if (!providerReady || !metadataAccepted) {
       return undefined;
     }
 
@@ -126,7 +130,7 @@ export const GmailConnectionCard: React.FC = () => {
     void Linking.getInitialURL().then(consumeOAuthReturn).catch(() => undefined);
     const subscription = Linking.addEventListener('url', (event) => consumeOAuthReturn(event.url));
     return () => subscription.remove();
-  }, [consumeOAuthReturn, enabled, metadataAccepted]);
+  }, [consumeOAuthReturn, providerReady, metadataAccepted]);
 
   const toggleCategory = (category: FinancialEmailCategory, selected: boolean) => {
     const next = selected
@@ -154,6 +158,18 @@ export const GmailConnectionCard: React.FC = () => {
     setBusy('connect');
     try {
       const response = await gmailSyncApi.startConnect(consent.metadataScanAcceptedAt, getGmailOAuthReturnTo());
+      if (response.enabled === false || !response.authorizationUrl) {
+        Alert.alert('Gmail setup required', response.message ?? 'Configure Gmail OAuth before connecting.');
+        setStatus({
+          ...status,
+          enabled: false,
+          message: response.message ?? status.message,
+          checklist: response.checklist ?? status.checklist,
+          manualSetupRequired: response.manualSetupRequired ?? status.manualSetupRequired,
+        });
+        setShowConsent(true);
+        return;
+      }
       if (!isGoogleAuthorizationUrl(response.authorizationUrl)) {
         Alert.alert('Gmail connect failed', 'MoneyKai received an unexpected Google authorization URL.');
         return;
@@ -242,21 +258,21 @@ export const GmailConnectionCard: React.FC = () => {
               width: 42,
               height: 42,
               borderRadius: BorderRadius.sm,
-              backgroundColor: enabled ? colors.primaryBg : colors.accentLight,
+              backgroundColor: providerReady ? colors.primaryBg : `${colors.warning}18`,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <MaterialCommunityIcons name="gmail" size={22} color={enabled ? colors.primary : colors.textTertiary} />
+            <MaterialCommunityIcons name="gmail" size={22} color={providerReady ? colors.primary : colors.warning} />
           </View>
           <View style={{ flex: 1, gap: Spacing.xs }}>
             <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               Gmail financial inbox
             </Text>
             <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
-              {enabled
+              {providerReady
                 ? connection?.email ?? (metadataAccepted ? 'Consent ready. OAuth connection is pending.' : 'Consent required before any Gmail scan.')
-                : GMAIL_RESTRICTED_SCOPE_NOTICE}
+                : status.message ?? GMAIL_RESTRICTED_SCOPE_NOTICE}
             </Text>
             <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', paddingTop: Spacing.xs }}>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
@@ -271,16 +287,40 @@ export const GmailConnectionCard: React.FC = () => {
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
                 {isConnected ? 'Connected' : connection?.status ?? 'Not connected'}
               </Text>
+              {!providerReady ? (
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.warning }}>
+                  Setup required
+                </Text>
+              ) : null}
             </View>
           </View>
         </View>
+        {!providerReady ? (
+          <View
+            style={{
+              marginTop: Spacing.md,
+              padding: Spacing.md,
+              borderRadius: BorderRadius.md,
+              borderWidth: 1,
+              borderColor: `${colors.warning}44`,
+              backgroundColor: `${colors.warning}12`,
+              gap: Spacing.xs,
+            }}
+          >
+            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              Gmail sync is not live yet
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+              The app can show consent copy now, but Google OAuth credentials, backend token storage, and restricted-scope verification must be completed before connecting accounts.
+            </Text>
+          </View>
+        ) : null}
         <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.md }}>
           <Button
-            title="Consent"
+            title={providerReady ? 'Consent' : 'Setup'}
             icon="shield-check-outline"
             onPress={() => setShowConsent(true)}
-            variant={enabled ? 'outline' : 'ghost'}
-            disabled={!enabled}
+            variant={providerReady ? 'outline' : 'outline'}
             style={{ flexGrow: 1 }}
           />
           <Button
@@ -288,7 +328,7 @@ export const GmailConnectionCard: React.FC = () => {
             icon={isConnected ? 'refresh' : 'link-variant'}
             onPress={isConnected ? refreshStatus : handleConnect}
             loading={busy === 'connect' || busy === 'refresh'}
-            disabled={!enabled || !metadataAccepted}
+            disabled={!providerReady || !metadataAccepted}
             style={{ flexGrow: 1 }}
           />
         </View>
@@ -298,7 +338,7 @@ export const GmailConnectionCard: React.FC = () => {
             icon="sync"
             onPress={handleSync}
             loading={busy === 'sync'}
-            disabled={!enabled || !isConnected || !metadataAccepted}
+            disabled={!providerReady || !isConnected || !metadataAccepted}
             style={{ flexGrow: 1 }}
           />
           <Button
@@ -316,7 +356,7 @@ export const GmailConnectionCard: React.FC = () => {
               onPress={handleDisconnect}
               loading={busy === 'disconnect'}
               variant="ghost"
-              disabled={!enabled}
+              disabled={!providerReady}
               style={{ flexGrow: 1 }}
             />
           ) : null}
@@ -335,24 +375,50 @@ export const GmailConnectionCard: React.FC = () => {
 
       <ModalSheet
         visible={showConsent}
-        title="Gmail consent"
-        subtitle="MoneyKai only scans selected financial categories and stores metadata needed for review."
+        title={providerReady ? 'Gmail consent' : 'Gmail setup required'}
+        subtitle={
+          providerReady
+            ? 'MoneyKai only scans selected financial categories and stores metadata needed for review.'
+            : 'Gmail restricted-scope sync needs Google Cloud OAuth setup, verification, and backend routes before it can connect users.'
+        }
         onClose={() => setShowConsent(false)}
         footer={
           <View style={{ gap: Spacing.sm }}>
-            <Button title="Accept Metadata Scan" icon="shield-check-outline" onPress={handleAccept} />
-            <Button
-              title="Allow Attachment Queue"
-              icon="paperclip"
-              onPress={handleAcceptAttachments}
-              variant={metadataAccepted ? 'outline' : 'ghost'}
-              disabled={!metadataAccepted}
-            />
+            {providerReady ? (
+              <>
+                <Button title="Accept Metadata Scan" icon="shield-check-outline" onPress={handleAccept} />
+                <Button
+                  title="Allow Attachment Queue"
+                  icon="paperclip"
+                  onPress={handleAcceptAttachments}
+                  variant={metadataAccepted ? 'outline' : 'ghost'}
+                  disabled={!metadataAccepted}
+                />
+              </>
+            ) : null}
             <Button title="Not Now" onPress={() => setShowConsent(false)} variant="outline" />
           </View>
         }
       >
         <View style={{ gap: Spacing.md }}>
+          {!providerReady ? (
+            <View style={{ gap: Spacing.sm }}>
+              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Manual setup left
+              </Text>
+              {setupItems.map((item) => (
+                <View key={item} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+                  <MaterialCommunityIcons name="progress-alert" size={18} color={colors.warning} />
+                  <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+                    {item}
+                  </Text>
+                </View>
+              ))}
+              <Text style={{ marginTop: Spacing.xs, fontSize: Typography.fontSize.xs, color: colors.textTertiary, lineHeight: 18 }}>
+                Restricted scopes: {restrictedScopes.join(', ')}
+              </Text>
+            </View>
+          ) : null}
           {[
             'No Gmail sync runs until this consent and OAuth connection are both complete.',
             'Attachments download only after you allow attachment queueing for selected financial emails.',

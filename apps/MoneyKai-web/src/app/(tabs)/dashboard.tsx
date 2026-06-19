@@ -143,6 +143,38 @@ function ActivationPanel({ steps }: { steps: ActivationStep[] }) {
   );
 }
 
+function SpendingSnapshot({
+  remaining,
+  topCategory,
+}: {
+  remaining: number;
+  topCategory?: string;
+}) {
+  const { colors } = useTheme();
+
+  return (
+    <Card>
+      <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
+        Spending Snapshot
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+        <View style={{ flex: 1, minWidth: 140, backgroundColor: colors.primaryBg, borderRadius: BorderRadius.md, padding: Spacing.md }}>
+          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Remaining</Text>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
+            {formatCurrency(Math.max(0, remaining))}
+          </Text>
+        </View>
+        <View style={{ flex: 1, minWidth: 140, backgroundColor: colors.surface, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: colors.borderLight }}>
+          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Top category</Text>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
+            {topCategory || 'None yet'}
+          </Text>
+        </View>
+      </View>
+    </Card>
+  );
+}
+
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -242,7 +274,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['4xl'] }}>
+    <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['4xl'] }}>
       <WorkspaceHeader
         icon="view-dashboard-outline"
         eyebrow="MONEY CONTROL CENTER"
@@ -334,6 +366,20 @@ export default function DashboardScreen() {
               </Text>
             )}
           </Card>
+
+          {isWide ? (
+            <View style={{ flexDirection: 'row', gap: Spacing.xl, alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <QuickNotes
+                  onViewAll={() => router.push('/notes' as any)}
+                  onNewNote={() => setShowNoteModal(true)}
+                />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <SpendingSnapshot remaining={remaining} topCategory={categoryTotals[0]?.category} />
+              </View>
+            </View>
+          ) : null}
         </View>
 
         <View style={{ flex: 1, gap: Spacing.xl, minWidth: isWide ? 380 : '100%' as any }}>
@@ -379,30 +425,16 @@ export default function DashboardScreen() {
 
           <AiAssistantPanel />
 
-          <QuickNotes
-            onViewAll={() => router.push('/notes' as any)}
-            onNewNote={() => setShowNoteModal(true)}
-          />
+          {!isWide ? (
+            <>
+              <QuickNotes
+                onViewAll={() => router.push('/notes' as any)}
+                onNewNote={() => setShowNoteModal(true)}
+              />
 
-          <Card>
-            <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
-              Spending Snapshot
-            </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-              <View style={{ flex: 1, minWidth: 140, backgroundColor: colors.primaryBg, borderRadius: BorderRadius.md, padding: Spacing.md }}>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Remaining</Text>
-                <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-                  {formatCurrency(Math.max(0, remaining))}
-                </Text>
-              </View>
-              <View style={{ flex: 1, minWidth: 140, backgroundColor: colors.surface, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: colors.borderLight }}>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Top category</Text>
-                <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-                  {categoryTotals[0]?.category || 'None yet'}
-                </Text>
-              </View>
-            </View>
-          </Card>
+              <SpendingSnapshot remaining={remaining} topCategory={categoryTotals[0]?.category} />
+            </>
+          ) : null}
         </View>
       </View>
 

@@ -6,6 +6,7 @@ module.exports = [
   ...tseslint.configs.recommended,
   {
     ignores: [
+      '.expo/**',
       'android/**',
       'ios/**',
       'coverage/**',

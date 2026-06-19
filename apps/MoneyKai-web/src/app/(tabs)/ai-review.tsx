@@ -18,7 +18,6 @@ import {
 } from '@/features/ai/attachmentReview';
 import {
   useAiAttachmentAnalysis,
-  useAiAttachmentFileUpload,
   useAiProviderStatus,
 } from '@/features/ai/hooks';
 import type { AiAttachmentAnalyzeTask } from '@/features/ai/types';
@@ -33,6 +32,9 @@ type SelectedAsset = {
   mimeType: string;
   sizeBytes: number;
 };
+
+const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024;
+const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 const TASK_OPTIONS: { id: AiAttachmentAnalyzeTask; title: string; subtitle: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
   {
@@ -62,13 +64,18 @@ export default function AiReviewScreen() {
   const [saveMessage, setSaveMessage] = React.useState<string | null>(null);
   const [pickerError, setPickerError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-  const { data: providerStatus, error: providerError, loading: loadingProviderStatus } = useAiProviderStatus();
-  const uploadState = useAiAttachmentFileUpload();
+  const requiresSignIn = !isHydratingSession && !isAuthenticated;
+  const canLoadAiStatus = !isHydratingSession && isAuthenticated;
+  const { data: providerStatus, error: providerError, loading: loadingProviderStatus } = useAiProviderStatus(canLoadAiStatus);
   const analyzeState = useAiAttachmentAnalysis();
 
-  const attachmentsReady = providerStatus?.enabled && providerStatus.attachmentsEnabled;
-  const requiresSignIn = !isHydratingSession && !isAuthenticated;
-  const canAnalyze = Boolean(selectedAsset) && !uploadState.loading && !analyzeState.loading && attachmentsReady;
+  const attachmentsReady = Boolean(
+    providerStatus?.enabled &&
+    providerStatus.configured &&
+    providerStatus.attachmentsEnabled &&
+    providerStatus.defaultVisionModelConfigured
+  );
+  const canAnalyze = Boolean(selectedAsset) && !requiresSignIn && !analyzeState.loading;
 
   React.useEffect(() => {
     return () => {
@@ -82,12 +89,11 @@ export default function AiReviewScreen() {
     setReceiptDraft(null);
     setSaveMessage(null);
     setPickerError(null);
-    uploadState.reset();
     analyzeState.reset();
     if (nextTask) {
       setPrompt(buildDefaultAttachmentPrompt(nextTask));
     }
-  }, [analyzeState, uploadState]);
+  }, [analyzeState]);
 
   const handleSelectTask = (nextTask: AiAttachmentAnalyzeTask) => {
     setTask(nextTask);
@@ -95,6 +101,10 @@ export default function AiReviewScreen() {
   };
 
   const handlePickImage = () => {
+    if (requiresSignIn) {
+      setPickerError('Sign in before uploading an attachment for AI review.');
+      return;
+    }
     fileInputRef.current?.click();
   };
 
@@ -104,8 +114,17 @@ export default function AiReviewScreen() {
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
+    const mimeType = file.type || 'image/jpeg';
+
+    if (!mimeType.startsWith('image/') || !SUPPORTED_IMAGE_TYPES.has(mimeType)) {
       setPickerError('Choose a PNG, JPEG, WebP, or another supported image file.');
+      event.currentTarget.value = '';
+      return;
+    }
+
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      setPickerError(`Choose an image under ${formatBytes(MAX_ATTACHMENT_BYTES)}.`);
+      event.currentTarget.value = '';
       return;
     }
 
@@ -117,7 +136,7 @@ export default function AiReviewScreen() {
       file,
       previewUri: URL.createObjectURL(file),
       filename: file.name,
-      mimeType: file.type || 'image/jpeg',
+      mimeType,
       sizeBytes: file.size,
     });
     event.currentTarget.value = '';
@@ -129,12 +148,24 @@ export default function AiReviewScreen() {
       return;
     }
 
+    if (requiresSignIn) {
+      setPickerError('Sign in before uploading an attachment for AI review.');
+      return;
+    }
+
     try {
-      const uploaded = await uploadState.uploadFile(selectedAsset.file);
+      const dataUrl = await readFileAsDataUrl(selectedAsset.file);
       const response = await analyzeState.analyze({
         task,
         message: prompt.trim() || buildDefaultAttachmentPrompt(task),
-        attachmentIds: [uploaded.attachmentId],
+        attachmentIds: [],
+        inlineAttachments: [
+          {
+            filename: selectedAsset.filename,
+            mimeType: selectedAsset.mimeType,
+            dataUrl,
+          },
+        ],
         context: {
           surface: 'web_ai_review',
           filename: selectedAsset.filename,
@@ -323,15 +354,15 @@ export default function AiReviewScreen() {
         />
 
         <Button
-          title={task === 'receipt_extract' ? 'Analyze receipt' : 'Analyze image'}
+          title="Analyse"
           icon="brain"
-          loading={uploadState.loading || analyzeState.loading}
+          loading={analyzeState.loading}
           disabled={!canAnalyze}
           onPress={analyzeSelectedAsset}
         />
         {!attachmentsReady ? (
           <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-            Configure AI attachments and a vision-capable model on the backend before using this workspace.
+            Analyse will run through the backend vision provider. If credentials are missing, MoneyKai will show the setup issue instead of silently doing nothing.
           </Text>
         ) : null}
       </Card>
@@ -509,4 +540,19 @@ function formatBytes(bytes: number): string {
     return `${(bytes / 1024).toFixed(1)} KB`;
   }
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error('Unable to read the selected image.'));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read the selected image.'));
+    reader.readAsDataURL(file);
+  });
 }

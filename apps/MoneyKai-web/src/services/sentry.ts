@@ -5,14 +5,6 @@ import type { User } from '@/stores/useAuthStore';
 let sentryModulePromise: Promise<typeof import('@sentry/react')> | null = null;
 let sentryReady = false;
 
-const sanitizeRate = (value: string, fallback: number): number => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-  return Math.min(1, Math.max(0, parsed));
-};
-
 const getSentry = () => {
   if (!sentryModulePromise) {
     sentryModulePromise = import('@sentry/react');

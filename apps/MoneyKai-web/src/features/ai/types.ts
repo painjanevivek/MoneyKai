@@ -128,6 +128,11 @@ export interface AiAttachmentUploadResponse {
 export interface AiAttachmentAnalyzeRequest {
   message: string;
   attachmentIds: string[];
+  inlineAttachments?: {
+    filename: string;
+    mimeType: string;
+    dataUrl: string;
+  }[];
   task?: AiAttachmentAnalyzeTask;
   context?: Record<string, unknown>;
 }

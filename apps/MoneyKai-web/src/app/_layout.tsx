@@ -1,4 +1,3 @@
-import '@/services/sentry';
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -140,7 +139,7 @@ export default function RootLayout() {
       return undefined;
     }
 
-    let uninstall = () => undefined;
+    let uninstall: () => void = () => undefined;
     let mounted = true;
 
     void import('@/services/notificationService').then(({ initializeNotificationChannel, installNotificationListeners }) => {

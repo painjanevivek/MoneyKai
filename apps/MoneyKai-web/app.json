@@ -45,7 +45,8 @@
         {
           "contactsPermission": "MoneyKai needs access to your contacts so you can choose people for split bills."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -58,4 +59,3 @@
     }
   }
 }
-

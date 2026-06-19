@@ -127,7 +127,7 @@ export const useChallengeStore = create<ChallengeState>()(
           title: 'Challenge started',
           body: newChallenge.name,
           type: 'challenge',
-          actionRoute: '/(tabs)/savings',
+          actionRoute: '/savings',
         });
       },
 
@@ -199,4 +199,3 @@ export const useChallengeStore = create<ChallengeState>()(
     }
   )
 );
-

@@ -40,20 +40,20 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({
             const pnl = getHoldingPnl(holding);
             return (
               <View key={holding.id} style={{ paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
-                <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1, minWidth: 170 }}>
+                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
                       {holding.name}
                     </Text>
-                    <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
+                    <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }} numberOfLines={1}>
                       {holding.symbol ?? holding.assetType} | {holding.quantity.toLocaleString('en-IN')} units
                     </Text>
                   </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  <View style={{ alignItems: 'flex-end', minWidth: 136, flexGrow: 1 }}>
+                    <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
                       {formatCurrency(holding.currentValue, currencySymbol)}
                     </Text>
-                    <Text style={{ fontSize: Typography.fontSize.xs, color: pnl >= 0 ? colors.success : colors.error }}>
+                    <Text style={{ fontSize: Typography.fontSize.xs, color: pnl >= 0 ? colors.success : colors.error }} numberOfLines={1}>
                       {formatCurrency(pnl, currencySymbol)} ({formatPercent(getHoldingPnlPercent(holding))})
                     </Text>
                   </View>

@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Linking, Modal, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -23,6 +23,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { isLinkedAccountDemoEnabled } from '@/config/environment';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 const ACCOUNT_KIND_OPTIONS: { id: LinkedAccountKind; label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
@@ -212,6 +213,11 @@ export default function AccountsScreen() {
   const { notificationsEnabled, hapticEnabled, currency, currencySymbol } = useSettingsStore();
   const accounts = useLinkedAccountStore((s) => s.accounts);
   const selectedAccountId = useLinkedAccountStore((s) => s.selectedAccountId);
+  const providerStatus = useLinkedAccountStore((s) => s.providerStatus);
+  const providerError = useLinkedAccountStore((s) => s.providerError);
+  const isProviderActionPending = useLinkedAccountStore((s) => s.isProviderActionPending);
+  const refreshProviderStatus = useLinkedAccountStore((s) => s.refreshProviderStatus);
+  const startLiveConnection = useLinkedAccountStore((s) => s.startLiveConnection);
   const connectSandboxAccounts = useLinkedAccountStore((s) => s.connectSandboxAccounts);
   const addManualAccount = useLinkedAccountStore((s) => s.addManualAccount);
   const syncAccount = useLinkedAccountStore((s) => s.syncAccount);
@@ -219,10 +225,12 @@ export default function AccountsScreen() {
   const pauseAccount = useLinkedAccountStore((s) => s.pauseAccount);
   const resumeAccount = useLinkedAccountStore((s) => s.resumeAccount);
   const disconnectAccount = useLinkedAccountStore((s) => s.disconnectAccount);
+  const removeDemoAccounts = useLinkedAccountStore((s) => s.removeDemoAccounts);
   const setSelectedAccountId = useLinkedAccountStore((s) => s.setSelectedAccountId);
   const transactions = useTransactionStore((s) => s.transactions);
 
   const [showManualModal, setShowManualModal] = useState(false);
+  const [showProviderModal, setShowProviderModal] = useState(false);
   const [manualInstitution, setManualInstitution] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualKind, setManualKind] = useState<LinkedAccountKind>('checking');
@@ -231,12 +239,17 @@ export default function AccountsScreen() {
   const [manualAvailable, setManualAvailable] = useState('');
   const [manualLimit, setManualLimit] = useState('');
 
-  const activeAccounts = useMemo(
-    () => accounts.filter((account) => account.status !== 'disconnected'),
-    [accounts]
+  const demoDataEnabled = isLinkedAccountDemoEnabled();
+  const displayAccounts = useMemo(
+    () => accounts.filter((account) => account.provider !== 'sandbox' || demoDataEnabled),
+    [accounts, demoDataEnabled]
   );
-  const summary = useMemo(() => summarizeLinkedAccounts(accounts), [accounts]);
-  const insights = useMemo(() => getLinkedAccountInsights(accounts), [accounts]);
+  const activeAccounts = useMemo(
+    () => displayAccounts.filter((account) => account.status !== 'disconnected'),
+    [displayAccounts]
+  );
+  const summary = useMemo(() => summarizeLinkedAccounts(displayAccounts), [displayAccounts]);
+  const insights = useMemo(() => getLinkedAccountInsights(displayAccounts), [displayAccounts]);
   const selectedAccount = useMemo(
     () => activeAccounts.find((account) => account.id === selectedAccountId) ?? activeAccounts[0],
     [activeAccounts, selectedAccountId]
@@ -251,6 +264,23 @@ export default function AccountsScreen() {
   const selectedIncome = selectedTransactions
     .filter((transaction) => transaction.type === 'income')
     .reduce((sum, transaction) => sum + transaction.amount, 0);
+  const providerChecklist = providerStatus?.checklist?.length
+    ? providerStatus.checklist
+    : [
+        'Choose a regulated account-data provider for your launch market.',
+        'Complete provider onboarding, redirect URLs, consent copy, and webhook verification.',
+        'Store provider credentials on the backend only.',
+        'Import provider transactions as reviewable MoneyKai drafts before saving.',
+      ];
+  const providerSetupRequired = providerStatus?.manualSetupRequired?.length
+    ? providerStatus.manualSetupRequired
+    : ['Provider credentials', 'Consent callback endpoint', 'Webhook signature verification'];
+
+  useEffect(() => {
+    if (!demoDataEnabled && accounts.some((account) => account.provider === 'sandbox')) {
+      removeDemoAccounts();
+    }
+  }, [accounts, demoDataEnabled, removeDemoAccounts]);
 
   const resetManualForm = () => {
     setManualInstitution('');
@@ -262,8 +292,58 @@ export default function AccountsScreen() {
     setManualLimit('');
   };
 
-  const handleConnectSandbox = () => {
-    connectSandboxAccounts(user?.id ?? 'local');
+  const handleConnectLiveBank = async () => {
+    try {
+      const status = await refreshProviderStatus();
+      if (!status.enabled || !status.productionReady) {
+        setShowProviderModal(true);
+        return;
+      }
+
+      const response = await startLiveConnection();
+      if (response.enabled && response.authorizationUrl) {
+        await Linking.openURL(response.authorizationUrl);
+        return;
+      }
+      setShowProviderModal(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to start live bank connection.';
+      Alert.alert('Live bank linking needs setup', message);
+      setShowProviderModal(true);
+    }
+  };
+
+  const handleLoadDemoData = () => {
+    Alert.alert(
+      'Load demo account data?',
+      'This adds sample balances and transactions for product testing only. It is not synced with a real bank.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Load demo data', onPress: () => connectSandboxAccounts(user?.id ?? 'local') },
+      ]
+    );
+  };
+
+  const handleSyncAccount = async (account: LinkedAccount) => {
+    try {
+      await syncAccount(account.id);
+    } catch (error) {
+      Alert.alert(
+        'Sync could not finish',
+        error instanceof Error ? error.message : `MoneyKai could not sync ${account.displayName}.`
+      );
+    }
+  };
+
+  const handleSyncAllAccounts = async () => {
+    try {
+      await syncAllAccounts();
+    } catch (error) {
+      Alert.alert(
+        'Sync could not finish',
+        error instanceof Error ? error.message : 'MoneyKai could not sync linked accounts.'
+      );
+    }
   };
 
   const handleManualSubmit = () => {
@@ -327,9 +407,12 @@ export default function AccountsScreen() {
             ]}
             actions={
               <>
-                <Button title="Connect Sandbox Bank" icon="bank-plus" onPress={handleConnectSandbox} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+                <Button title="Connect live bank" icon="bank-plus" onPress={handleConnectLiveBank} loading={isProviderActionPending} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
                 <Button title="Add Manual Account" icon="plus" onPress={() => setShowManualModal(true)} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
-                <Button title="Sync All" icon="sync" onPress={syncAllAccounts} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+                {demoDataEnabled ? (
+                  <Button title="Load demo data" icon="database-import-outline" onPress={handleLoadDemoData} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+                ) : null}
+                <Button title="Sync All" icon="sync" onPress={handleSyncAllAccounts} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
               </>
             }
           />
@@ -345,12 +428,15 @@ export default function AccountsScreen() {
                     No linked bank accounts yet
                   </Text>
                   <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, marginTop: 4, lineHeight: 22 }}>
-                    Start with sandbox accounts or add a manual balance. The dashboard and transaction ledger will use the same account layer immediately.
+                    Connect through a configured banking provider, or add a manual balance while live provider onboarding is completed.
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'flex-end' }}>
-                  <Button title="Connect Sandbox" icon="bank-plus" onPress={handleConnectSandbox} />
+                  <Button title="Connect live bank" icon="bank-plus" onPress={handleConnectLiveBank} loading={isProviderActionPending} />
                   <Button title="Manual Account" icon="plus" onPress={() => setShowManualModal(true)} variant="outline" />
+                  {demoDataEnabled ? (
+                    <Button title="Load demo data" icon="database-import-outline" onPress={handleLoadDemoData} variant="outline" />
+                  ) : null}
                 </View>
               </View>
             </Card>
@@ -414,7 +500,7 @@ export default function AccountsScreen() {
                     account={account}
                     selected={selectedAccount?.id === account.id}
                     onSelect={() => setSelectedAccountId(account.id)}
-                    onSync={() => syncAccount(account.id)}
+                    onSync={() => void handleSyncAccount(account)}
                     onPause={() => pauseAccount(account.id)}
                     onResume={() => resumeAccount(account.id)}
                     onDisconnect={() => handleDisconnect(account)}
@@ -510,6 +596,86 @@ export default function AccountsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal visible={showProviderModal} transparent animationType="fade" onRequestClose={() => setShowProviderModal(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: Spacing.xl }} onPress={() => setShowProviderModal(false)}>
+          <Pressable
+            onPress={(event) => event.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 620,
+              alignSelf: 'center',
+              backgroundColor: colors.card,
+              borderRadius: BorderRadius.xl,
+              padding: Spacing.xl,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+              ...Shadows.lg,
+              shadowColor: colors.shadowColor,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.md, alignItems: 'flex-start' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+                  Live bank linking needs provider setup
+                </Text>
+                <Text style={{ marginTop: 6, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                  {providerStatus?.message || providerError || 'MoneyKai is ready for a provider-backed flow, but this deployment does not have live bank credentials configured yet.'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowProviderModal(false)} accessibilityRole="button" accessibilityLabel="Close live bank setup modal">
+                <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginTop: Spacing.lg, gap: Spacing.md }}>
+              <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: colors.borderLight }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  Production path
+                </Text>
+                <Text style={{ marginTop: 4, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                  Use an India Account Aggregator/FIU partner or another regulated provider. MoneyKai should receive only consented account data from the backend, then create reviewable transaction drafts before saving.
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+                <View style={{ flex: 1, minWidth: 240 }}>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    Engineering checklist
+                  </Text>
+                  <View style={{ marginTop: Spacing.sm, gap: Spacing.sm }}>
+                    {providerChecklist.map((item) => (
+                      <View key={item} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+                        <MaterialCommunityIcons name="check-circle-outline" size={16} color={colors.primary} />
+                        <Text style={{ flex: 1, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                          {item}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View style={{ flex: 1, minWidth: 220 }}>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    Backend required
+                  </Text>
+                  <View style={{ marginTop: Spacing.sm, gap: Spacing.xs }}>
+                    {providerSetupRequired.map((item) => (
+                      <View key={item} style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: BorderRadius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight }}>
+                        <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'flex-end' }}>
+                <Button title="Add manual account" icon="plus" onPress={() => { setShowProviderModal(false); setShowManualModal(true); }} variant="outline" />
+                <Button title="Close" onPress={() => setShowProviderModal(false)} />
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal visible={showManualModal} transparent animationType="fade">
         <Pressable style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: Spacing.xl }} onPress={() => setShowManualModal(false)}>

@@ -1,13 +1,12 @@
 const { requireMethod, sendJson } = require('../../../_lib/http');
+const { disabledActionPayload } = require('../../../_lib/ai-disabled');
 
 module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'POST')) {
     return;
   }
 
-  return sendJson(res, 410, {
-    error: 'AI attachments now run through the MoneyKai backend. Set EXPO_PUBLIC_BACKEND_BASE_URL to the FastAPI backend origin.',
-  });
+  return sendJson(res, 503, disabledActionPayload());
 };
 
 module.exports.config = {

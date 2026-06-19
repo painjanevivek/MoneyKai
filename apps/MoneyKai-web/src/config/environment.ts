@@ -41,6 +41,7 @@ const gmailSyncEnabledValue = readEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
 const pdfStatementParsingEnabledValue = readEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
 const wealthTabEnabledValue = readEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
 const financialAiEnabledValue = readEnv('EXPO_PUBLIC_FINANCIAL_AI_ENABLED');
+const linkedAccountDemoEnabledValue = readEnv('EXPO_PUBLIC_LINKED_ACCOUNT_DEMO_ENABLED');
 const sentryTraceSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE');
 const sentryReplaySessionSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE');
 const sentryReplayErrorSampleRateValue = readEnv('EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE');
@@ -53,6 +54,7 @@ export const appEnvironment = {
   pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
   wealthTabEnabled: wealthTabEnabledValue === '' ? true : wealthTabEnabledValue === 'true',
   financialAiEnabled: financialAiEnabledValue === 'true',
+  linkedAccountDemoEnabled: linkedAccountDemoEnabledValue === 'true',
   sentryDsn: isRealValue(sentryDsnValue) ? sentryDsnValue : '',
   sentryEnvironment: readEnv('EXPO_PUBLIC_SENTRY_ENVIRONMENT'),
   sentryRelease: readEnv('EXPO_PUBLIC_SENTRY_RELEASE'),
@@ -73,6 +75,9 @@ export const isWealthTabEnabled = (): boolean =>
 
 export const isFinancialAiEnabled = (): boolean =>
   appEnvironment.financialAiEnabled;
+
+export const isLinkedAccountDemoEnabled = (): boolean =>
+  appEnvironment.linkedAccountDemoEnabled;
 
 export const getBackendBaseUrl = (): string => {
   if (appEnvironment.backendBaseUrl.length > 0) {

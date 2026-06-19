@@ -24,6 +24,8 @@ export const Card: React.FC<CardProps> = ({
     backgroundColor: variant === 'elevated' ? colors.surfaceElevated : colors.card,
     borderRadius: BorderRadius[borderRadius],
     padding: Spacing[padding],
+    minWidth: 0,
+    maxWidth: '100%',
     ...(variant === 'outlined'
       ? { borderWidth: 1, borderColor: colors.borderLight }
       : variant === 'elevated'

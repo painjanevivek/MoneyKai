@@ -143,7 +143,7 @@ export function ComparisonPage({ page }: { page: ComparisonPageData }) {
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg }}>
               <Button title="Create secure account" onPress={() => router.push('/(auth)/signup')} icon="shield-account-outline" />
-              <Link href="/compare" asChild>
+              <Link href={'/compare' as any} asChild>
                 <TouchableOpacity
                   activeOpacity={0.82}
                   style={{

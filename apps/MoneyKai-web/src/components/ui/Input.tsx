@@ -35,6 +35,7 @@ interface InputProps {
   textContentType?: TextInputProps['textContentType'];
   returnKeyType?: TextInputProps['returnKeyType'];
   onSubmitEditing?: TextInputProps['onSubmitEditing'];
+  onKeyPress?: TextInputProps['onKeyPress'];
   autoCorrect?: boolean;
   testID?: string;
 }
@@ -62,6 +63,7 @@ export const Input: React.FC<InputProps> = ({
   textContentType,
   returnKeyType,
   onSubmitEditing,
+  onKeyPress,
   autoCorrect,
   testID,
 }) => {
@@ -147,6 +149,7 @@ export const Input: React.FC<InputProps> = ({
           textContentType={textContentType}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          onKeyPress={onKeyPress}
           autoCorrect={resolvedAutoCorrect}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}

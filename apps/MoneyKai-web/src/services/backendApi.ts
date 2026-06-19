@@ -60,6 +60,11 @@ import type {
   ZerodhaConnectStartResponse,
 } from '@/types/portfolio';
 import type {
+  LinkedAccountConnectStartResponse,
+  LinkedAccountProviderStatus,
+  LinkedAccountSyncResponse,
+} from '@/types/linkedAccountProvider';
+import type {
   AiEmailClassificationRequest,
   AiEmailClassificationResult,
   AiStatementRowsRequest,
@@ -83,6 +88,10 @@ class BackendApiError extends Error {
 }
 
 const messageFromPayload = (payload: any, fallback: string): string => {
+  if (payload?.code === 'NOT_FOUND' || payload?.error?.code === 'NOT_FOUND') {
+    return 'MoneyKai backend route was not found. Check EXPO_PUBLIC_BACKEND_BASE_URL and deploy the backend API that includes this feature.';
+  }
+
   const detail = payload?.detail;
   return (
     (typeof detail === 'string' ? detail : detail?.message) ||
@@ -101,6 +110,9 @@ const parseErrorMessage = async (response: Response, fallback: string): Promise<
   try {
     return messageFromPayload(JSON.parse(text), fallback);
   } catch {
+    if (response.status === 404 && /NOT_FOUND|The page could not be found/i.test(text)) {
+      return 'MoneyKai backend route was not found. Check EXPO_PUBLIC_BACKEND_BASE_URL and deploy the backend API that includes this feature.';
+    }
     return text;
   }
 };
@@ -301,6 +313,20 @@ export const backendApi = {
     request<AiBudgetCoachResponse>('/v1/ai/budgets/coach', {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+  getLinkedAccountProviderStatus: async () =>
+    request<LinkedAccountProviderStatus>(financialFeatureEndpoints.linkedAccounts.providerStatus),
+  startLinkedAccountConnection: async () =>
+    request<LinkedAccountConnectStartResponse>(financialFeatureEndpoints.linkedAccounts.connectStart, {
+      method: 'POST',
+    }),
+  syncLinkedAccount: async (accountId: string) =>
+    request<LinkedAccountSyncResponse>(financialFeatureEndpoints.linkedAccounts.syncAccount(accountId), {
+      method: 'POST',
+    }),
+  syncLinkedAccounts: async () =>
+    request<LinkedAccountSyncResponse>(financialFeatureEndpoints.linkedAccounts.syncAll, {
+      method: 'POST',
     }),
   getGmailStatus: async () => request<GmailSyncStatus>(financialFeatureEndpoints.gmail.status),
   startGmailConnect: async (metadataScanAcceptedAt: string, returnTo?: string) =>

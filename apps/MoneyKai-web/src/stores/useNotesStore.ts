@@ -108,7 +108,7 @@ export const useNotesStore = create<NotesState>()(
             title: 'Note saved',
             body: newNote.title,
             type: 'system',
-            actionRoute: '/(tabs)/notes',
+            actionRoute: '/notes',
           });
         },
 
@@ -189,4 +189,3 @@ export const useNotesStore = create<NotesState>()(
     }
   )
 );
-

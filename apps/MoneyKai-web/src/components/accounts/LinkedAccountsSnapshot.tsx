@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -6,24 +6,34 @@ import {
   formatLinkedAccountMask,
   summarizeLinkedAccounts,
 } from '@moneykai/domain';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { isLinkedAccountDemoEnabled } from '@/config/environment';
 
 export function LinkedAccountsSnapshot() {
   const { colors } = useTheme();
-  const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const accounts = useLinkedAccountStore((s) => s.accounts);
-  const connectSandboxAccounts = useLinkedAccountStore((s) => s.connectSandboxAccounts);
-  const activeAccounts = useMemo(
-    () => accounts.filter((account) => account.status !== 'disconnected'),
-    [accounts]
+  const removeDemoAccounts = useLinkedAccountStore((s) => s.removeDemoAccounts);
+  const demoDataEnabled = isLinkedAccountDemoEnabled();
+  const displayAccounts = useMemo(
+    () => accounts.filter((account) => account.provider !== 'sandbox' || demoDataEnabled),
+    [accounts, demoDataEnabled]
   );
-  const summary = useMemo(() => summarizeLinkedAccounts(accounts), [accounts]);
+  const activeAccounts = useMemo(
+    () => displayAccounts.filter((account) => account.status !== 'disconnected'),
+    [displayAccounts]
+  );
+  const summary = useMemo(() => summarizeLinkedAccounts(displayAccounts), [displayAccounts]);
+
+  useEffect(() => {
+    if (!demoDataEnabled && accounts.some((account) => account.provider === 'sandbox')) {
+      removeDemoAccounts();
+    }
+  }, [accounts, demoDataEnabled, removeDemoAccounts]);
 
   return (
     <Card>
@@ -50,11 +60,11 @@ export function LinkedAccountsSnapshot() {
                 No accounts connected
               </Text>
               <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-                Connect sandbox accounts to import account-tagged transactions.
+                Open linked accounts to connect a live provider or add a manual balance.
               </Text>
             </View>
           </View>
-          <Button title="Connect Sandbox Bank" icon="bank-plus" onPress={() => connectSandboxAccounts(userId)} variant="outline" />
+          <Button title="Open linked accounts" icon="bank-plus" onPress={() => router.push('/accounts' as any)} variant="outline" />
         </View>
       ) : (
         <View style={{ gap: Spacing.md }}>

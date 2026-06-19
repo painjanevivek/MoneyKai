@@ -10,7 +10,7 @@ import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
-import GroupsScreen from '@/app/(tabs)/groups';
+import { GroupsScreen } from '@/screens/app/GroupsScreen';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { formatDate } from '@/utils/dateUtils';
@@ -377,7 +377,7 @@ export function TransactionComposerSheet({
                   type="date"
                   value={txnDate}
                   max={getTodayDate()}
-                  onChange={(event) => handleDateChange(event.currentTarget.value)}
+                  onChange={(event) => handleDateChange((event.currentTarget as unknown as { value: string }).value)}
                   style={{
                     flex: 1,
                     minWidth: 0,

@@ -13,7 +13,7 @@ import type { AuditEvent, SecurityChecklistItem, SecurityChecklistStatus, Securi
 
 const CONFIRM_DELETE = 'DELETE_FINANCIAL_DATA';
 
-const statusMeta: Record<SecurityChecklistStatus, { icon: keyof typeof MaterialCommunityIcons.glyphMap; label: string }> = {
+const statusMeta: Record<SecurityChecklistStatus, { icon: string; label: string }> = {
   ready: { icon: 'check-circle-outline', label: 'Ready' },
   needs_config: { icon: 'alert-circle-outline', label: 'Needs config' },
   manual_review: { icon: 'clipboard-check-outline', label: 'Review' },

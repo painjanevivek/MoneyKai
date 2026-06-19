@@ -44,7 +44,7 @@ export const BudgetCoachPanel: React.FC = () => {
     true,
   );
 
-  const iconByTone: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
+  const iconByTone: Record<string, string> = {
     info: 'compass-outline',
     warning: 'alert-outline',
     success: 'check-circle-outline',

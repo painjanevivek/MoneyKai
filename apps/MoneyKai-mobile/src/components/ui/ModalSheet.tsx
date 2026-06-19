@@ -28,6 +28,16 @@ interface ModalSheetProps {
   presentation?: 'bottom' | 'side';
 }
 
+type BrowserKeyEventLike = {
+  key?: string;
+  preventDefault?: () => void;
+};
+
+type BrowserWindowLike = {
+  addEventListener: (eventName: string, handler: (event: BrowserKeyEventLike) => void) => void;
+  removeEventListener: (eventName: string, handler: (event: BrowserKeyEventLike) => void) => void;
+};
+
 /**
  * A reusable bottom-sheet style modal with:
  * - close button
@@ -86,20 +96,21 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   useEffect(() => {
     if (!visible) return;
 
-    const onKeyDown = (event: KeyboardEvent) => {
+    const onKeyDown = (event: BrowserKeyEventLike) => {
       if (event.key === 'Escape') {
-        event.preventDefault();
+        event.preventDefault?.();
         onClose();
       }
     };
 
+    const browserWindow = globalThis as typeof globalThis & Partial<BrowserWindowLike>;
+
     if (
-      typeof window !== 'undefined' &&
-      typeof window.addEventListener === 'function' &&
-      typeof window.removeEventListener === 'function'
+      typeof browserWindow.addEventListener === 'function' &&
+      typeof browserWindow.removeEventListener === 'function'
     ) {
-      window.addEventListener('keydown', onKeyDown);
-      return () => window.removeEventListener('keydown', onKeyDown);
+      browserWindow.addEventListener('keydown', onKeyDown);
+      return () => browserWindow.removeEventListener?.('keydown', onKeyDown);
     }
 
     return;

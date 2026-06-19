@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   totalXP: 0,
   badges: [],
   notifications: [],
+  linkedAccounts: [],
 }));
 
 vi.mock('@/stores/useAuthStore', () => ({
@@ -93,6 +94,15 @@ vi.mock('@/stores/useNotificationStore', () => ({
   },
 }));
 
+vi.mock('@/stores/useLinkedAccountStore', () => ({
+  useLinkedAccountStore: {
+    getState: () => ({
+      accounts: mocks.linkedAccounts,
+      replaceAccounts: vi.fn(),
+    }),
+  },
+}));
+
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: vi.fn(),
@@ -106,9 +116,23 @@ vi.mock('@/services/firebase', () => ({
   isFirebaseConfigured: () => false,
 }));
 
+vi.mock('@/services/firestoreService', () => ({
+  getLatestUserBackup: vi.fn(),
+  isFirebaseConfigured: () => false,
+  saveUserBackup: vi.fn(),
+}));
+
 vi.mock('@/services/backendApi', () => ({
   backendApi: {},
   isBackendConfigured: () => false,
+}));
+
+vi.mock('@/services/networkClient', () => ({
+  getNetworkStatus: vi.fn(async () => ({
+    isOnline: true,
+    isConnected: true,
+    isInternetReachable: true,
+  })),
 }));
 
 vi.mock('@/services/notificationService', () => ({

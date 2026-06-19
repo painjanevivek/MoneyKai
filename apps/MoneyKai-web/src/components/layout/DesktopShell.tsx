@@ -18,7 +18,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: 'view-dashboard-outline' },
+  { href: '/dashboard', label: 'Dashboard', icon: 'view-dashboard-outline' },
   { href: '/transactions', label: 'Transactions', icon: 'swap-horizontal' },
   { href: '/ai-review', label: 'AI Review', icon: 'receipt-text-outline' },
   { href: '/budgets', label: 'Budgets', icon: 'wallet-outline' },
@@ -31,7 +31,7 @@ const NAV_ITEMS: NavItem[] = [
 ] as const;
 
 const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
-  { href: '/', title: 'Dashboard', subtitle: 'A clear overview of your money' },
+  { href: '/dashboard', title: 'Dashboard', subtitle: 'A clear overview of your money' },
   { href: '/transactions', title: 'Transactions', subtitle: 'Track income, expenses, and history' },
   { href: '/ai-review', title: 'AI Review', subtitle: 'Review receipt and image analysis before using it' },
   { href: '/budgets', title: 'Budgets', subtitle: 'Review monthly limits and budget health' },
@@ -48,7 +48,7 @@ const normalizePath = (pathname: string) => pathname.replace('/(tabs)', '') || '
 
 const isRouteActive = (pathname: string, href: string) => {
   const normalized = normalizePath(pathname);
-  if (href === '/') return normalized === '/';
+  if (href === '/dashboard') return normalized === '/dashboard';
   return normalized === href || normalized.startsWith(`${href}/`);
 };
 
@@ -121,7 +121,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               <Pressable
                 accessibilityRole="link"
                 accessibilityLabel="Go to MoneyKai dashboard"
-                onPress={() => router.push('/')}
+                onPress={() => router.push('/dashboard' as any)}
                 style={({ hovered, pressed }: any) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -343,7 +343,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
           >
             <View
               nativeID="main-content"
-              accessibilityRole="main"
+              role="main"
               style={{ flex: 1, minWidth: 0, width: '100%', maxWidth: 720, alignSelf: 'center' }}
             >
               {children}
@@ -371,7 +371,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="Go to MoneyKai dashboard"
-              onPress={() => router.push('/')}
+              onPress={() => router.push('/dashboard' as any)}
               style={({ hovered, pressed }: any) => ({
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -665,7 +665,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
           >
             <View
               nativeID="main-content"
-              accessibilityRole="main"
+              role="main"
               style={{ maxWidth: 1440, width: '100%', alignSelf: 'center', flex: 1, minWidth: 0 }}
             >
               {children}

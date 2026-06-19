@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
@@ -35,6 +35,8 @@ export function WorkspaceHeader({
   title,
 }: WorkspaceHeaderProps) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 760;
 
   const resolveMetricColor = (tone: WorkspaceMetric['tone']) => {
     if (tone === 'positive') return '#D9FFF2';
@@ -46,12 +48,14 @@ export function WorkspaceHeader({
   return (
     <View
       style={{
-        borderRadius: BorderRadius.xl,
-        padding: Spacing.xl,
+        borderRadius: isCompact ? BorderRadius.md : BorderRadius.xl,
+        padding: isCompact ? Spacing.base : Spacing.xl,
         backgroundColor: colors.primaryDark,
         borderWidth: 1,
         borderColor: 'rgba(234, 246, 240, 0.18)',
-        gap: Spacing.lg,
+        gap: isCompact ? Spacing.md : Spacing.lg,
+        minWidth: 0,
+        overflow: 'hidden',
         ...Shadows.lg,
         shadowColor: colors.shadowColor,
       }}
@@ -67,33 +71,57 @@ export function WorkspaceHeader({
           backgroundColor: 'rgba(255, 255, 255, 0.24)',
         }}
       />
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md }}>
-        <View
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: BorderRadius.md,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(255, 255, 255, 0.13)',
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.18)',
-          }}
-        >
-          <MaterialCommunityIcons name={icon} size={24} color="#FFFFFF" />
+      <View
+        style={{
+          flexDirection: isCompact ? 'column' : 'row',
+          alignItems: isCompact ? 'stretch' : 'flex-start',
+          gap: isCompact ? Spacing.md : Spacing.lg,
+          minWidth: 0,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, flex: 1, minWidth: 0 }}>
+          <View
+            style={{
+              width: isCompact ? 42 : 48,
+              height: isCompact ? 42 : 48,
+              borderRadius: BorderRadius.md,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.13)',
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.18)',
+            }}
+          >
+            <MaterialCommunityIcons name={icon} size={isCompact ? 22 : 24} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: 'rgba(255, 255, 255, 0.68)' }}>
+              {eyebrow}
+            </Text>
+            <Text style={{ marginTop: 4, fontSize: isCompact ? 26 : 34, lineHeight: isCompact ? 32 : 40, fontFamily: Typography.fontFamily.display, color: '#FFFFFF' }}>
+              {title}
+            </Text>
+            <Text style={{ marginTop: 8, maxWidth: 780, fontSize: Typography.fontSize.sm, lineHeight: 22, color: 'rgba(255, 255, 255, 0.74)' }}>
+              {description}
+            </Text>
+          </View>
         </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: 'rgba(255, 255, 255, 0.68)' }}>
-            {eyebrow}
-          </Text>
-          <Text style={{ marginTop: 4, fontSize: 34, lineHeight: 40, fontFamily: Typography.fontFamily.display, color: '#FFFFFF' }}>
-            {title}
-          </Text>
-          <Text style={{ marginTop: 8, maxWidth: 780, fontSize: Typography.fontSize.sm, lineHeight: 22, color: 'rgba(255, 255, 255, 0.74)' }}>
-            {description}
-          </Text>
-        </View>
-        {actions ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: Spacing.sm }}>{actions}</View> : null}
+        {actions ? (
+          <View
+            style={{
+              flexDirection: isCompact ? 'column' : 'row',
+              flexWrap: isCompact ? 'nowrap' : 'wrap',
+              justifyContent: isCompact ? 'flex-start' : 'flex-end',
+              alignItems: isCompact ? 'stretch' : 'center',
+              alignSelf: isCompact ? 'stretch' : 'flex-start',
+              gap: Spacing.sm,
+              maxWidth: '100%',
+              minWidth: 0,
+            }}
+          >
+            {actions}
+          </View>
+        ) : null}
       </View>
 
       {metrics.length > 0 ? (
@@ -103,7 +131,7 @@ export function WorkspaceHeader({
               key={metric.label}
               style={{
                 flex: 1,
-                minWidth: 160,
+                minWidth: isCompact ? 136 : 160,
                 padding: Spacing.md,
                 borderRadius: BorderRadius.md,
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',

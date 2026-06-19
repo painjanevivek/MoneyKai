@@ -174,12 +174,12 @@ export const useAuthStore = create<AuthState>()(
             const code = getAuthErrorCode(error);
             if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
               throw new Error(
-                'Google sign-in was blocked or cancelled. Allow popups for this local MoneyKai tab, then try again, or use email login.'
+                'Google sign-in was blocked or cancelled. Allow popups for MoneyKai, then try again, or use email login.'
               );
             }
 
             if (code === 'auth/unauthorized-domain') {
-              throw new Error('Add localhost to Firebase Authentication > Authorized domains in Firebase Console, then retry Google sign-in.');
+              throw new Error('Add moneykai.com and www.moneykai.com to Firebase Authentication > Authorized domains in Firebase Console, then retry Google sign-in.');
             }
 
             throw error;

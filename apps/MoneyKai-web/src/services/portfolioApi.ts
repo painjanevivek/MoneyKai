@@ -64,6 +64,38 @@ const remoteOrLocal = async <T>(remote: () => Promise<T>, local: () => Promise<T
 const isLocalZerodhaPayload = (payload: ZerodhaConnectCallbackRequest): boolean =>
   payload.state.startsWith('local-zerodha-sandbox');
 
+const ZERODHA_SETUP_ITEMS = [
+  'Create a Kite Connect app in Zerodha Developer Console.',
+  'Configure backend KITE_API_KEY, KITE_API_SECRET, and redirect URI environment variables.',
+  'Deploy the portfolio provider callback route before enabling live broker sync for users.',
+];
+
+const ACCOUNT_AGGREGATOR_SETUP_ITEMS = [
+  'Choose an RBI Account Aggregator/FIU technology partner.',
+  'Complete FIU onboarding, consent templates, and compliance review.',
+  'Deploy consent creation, callback, and data-fetch backend routes before showing live AA sync.',
+];
+
+const zerodhaSetupRequired = (message = 'Live Zerodha sync is not configured yet. Manual holdings are available now.'): ZerodhaConnectStartResponse => ({
+  enabled: false,
+  authorizationUrl: null,
+  state: null,
+  expiresAt: null,
+  mode: 'production',
+  message,
+  manualSetupRequired: ZERODHA_SETUP_ITEMS,
+});
+
+const accountAggregatorSetupRequired = (): AccountAggregatorExplorationStatus => ({
+  providerKey: 'account_aggregator',
+  productionReady: false,
+  buildVsPartnerDecision: 'partner_required',
+  partnerName: null,
+  partnerUrl: null,
+  checklist: ACCOUNT_AGGREGATOR_SETUP_ITEMS,
+  manualSetupRequired: ACCOUNT_AGGREGATOR_SETUP_ITEMS,
+});
+
 export const portfolioApi = {
   getState: async (): Promise<PortfolioStateResponse> => {
     if (!isWealthTabEnabled()) {
@@ -186,43 +218,52 @@ export const portfolioApi = {
 
   startZerodhaConnect: async (): Promise<ZerodhaConnectStartResponse> => {
     if (!isWealthTabEnabled()) {
-      return { enabled: false, authorizationUrl: null, state: null, expiresAt: null, message: 'Wealth monitoring is disabled for this build.' };
+      return zerodhaSetupRequired('Wealth monitoring is disabled for this build.');
     }
-    const response = await remoteOrLocal(() => backendApi.startZerodhaConnect(), () => localPortfolioApi.startZerodhaConnect());
-    return response.enabled ? response : localPortfolioApi.startZerodhaConnect();
+    try {
+      const response = await backendApi.startZerodhaConnect();
+      return response.enabled
+        ? response
+        : {
+            ...zerodhaSetupRequired(response.message),
+            manualSetupRequired: response.manualSetupRequired ?? ZERODHA_SETUP_ITEMS,
+          };
+    } catch (error) {
+      if (shouldUseLocalFallback(error)) {
+        return zerodhaSetupRequired(
+          'Live Zerodha sync needs backend provider routes and Kite Connect credentials before users can connect real accounts.'
+        );
+      }
+      throw error;
+    }
   },
 
   completeZerodhaConnect: async (payload: ZerodhaConnectCallbackRequest): Promise<ZerodhaConnectCallbackResponse> => {
     if (!isWealthTabEnabled()) {
-      return { enabled: false, account: null, message: 'Wealth monitoring is disabled for this build.' };
+      return { enabled: false, account: null, mode: 'production', message: 'Wealth monitoring is disabled for this build.' };
     }
     if (isLocalZerodhaPayload(payload)) {
-      return localPortfolioApi.completeZerodhaConnect(payload);
+      return {
+        enabled: false,
+        account: null,
+        mode: 'production',
+        message: 'Sandbox broker connections are no longer added as real portfolio accounts.',
+      };
     }
-    const response = await remoteOrLocal(
-      () => backendApi.completeZerodhaConnect(payload),
-      () => localPortfolioApi.completeZerodhaConnect(payload)
-    );
-    return response.enabled ? response : localPortfolioApi.completeZerodhaConnect(payload);
+    return backendApi.completeZerodhaConnect(payload);
   },
 
   getAccountAggregatorExploration: async (): Promise<AccountAggregatorExplorationStatus> => {
     if (!isWealthTabEnabled()) {
-      return {
-        providerKey: 'account_aggregator',
-        productionReady: false,
-        buildVsPartnerDecision: 'partner_required',
-        partnerName: null,
-        partnerUrl: null,
-        checklist: ['Enable the wealth feature flag before exploring Account Aggregator integrations.'],
-      };
+      return accountAggregatorSetupRequired();
     }
-    return remoteOrLocal(
-      () => backendApi.getAccountAggregatorExploration(),
-      () => localPortfolioApi.getAccountAggregatorExploration()
-    );
+    try {
+      return await backendApi.getAccountAggregatorExploration();
+    } catch (error) {
+      if (shouldUseLocalFallback(error)) {
+        return accountAggregatorSetupRequired();
+      }
+      throw error;
+    }
   },
-
-  ensureAccountAggregatorReadinessAccount: async (): Promise<PortfolioAccount> =>
-    localPortfolioApi.ensureAccountAggregatorReadinessAccount(),
 };

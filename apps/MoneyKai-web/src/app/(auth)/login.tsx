@@ -167,6 +167,7 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoComplete="email"
               textContentType="emailAddress"
+              returnKeyType="next"
             />
 
             <Input
@@ -180,6 +181,15 @@ export default function LoginScreen() {
               secureTextEntry
               autoComplete="password"
               textContentType="password"
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                void handleLogin();
+              }}
+              onKeyPress={(event) => {
+                if (event.nativeEvent.key === 'Enter') {
+                  void handleLogin();
+                }
+              }}
             />
 
             <TouchableOpacity

@@ -15,7 +15,7 @@ interface MonitoredAccountCardProps {
   onShowMessage?: (account: MonitoredAccount) => void;
 }
 
-const statusCopy: Record<MonitoredAccount['status'], { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }> = {
+const statusCopy: Record<MonitoredAccount['status'], { label: string; icon: string }> = {
   pending: { label: 'Needs approval', icon: 'clock-outline' },
   approved: { label: 'Monitoring', icon: 'check-circle-outline' },
   paused: { label: 'Unselected', icon: 'pause-circle-outline' },

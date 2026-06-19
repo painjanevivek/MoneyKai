@@ -157,6 +157,7 @@ export default function SignupScreen() {
               testID="signup-full-name"
               autoComplete="name"
               textContentType="name"
+              returnKeyType="next"
             />
             <Input
               label="Email"
@@ -170,6 +171,7 @@ export default function SignupScreen() {
               testID="signup-email"
               autoComplete="email"
               textContentType="emailAddress"
+              returnKeyType="next"
             />
             <Input
               label="Password"
@@ -182,6 +184,7 @@ export default function SignupScreen() {
               testID="signup-password"
               autoComplete="new-password"
               textContentType="newPassword"
+              returnKeyType="next"
             />
             <Input
               label="Confirm Password"
@@ -194,6 +197,15 @@ export default function SignupScreen() {
               testID="signup-confirm-password"
               autoComplete="new-password"
               textContentType="newPassword"
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                void handleSignUp();
+              }}
+              onKeyPress={(event) => {
+                if (event.nativeEvent.key === 'Enter') {
+                  void handleSignUp();
+                }
+              }}
             />
             <Button
               title="Create Account"

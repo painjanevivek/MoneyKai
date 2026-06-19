@@ -5,7 +5,6 @@ import type {
   PortfolioHolding,
   PortfolioHoldingDraft,
   PortfolioHoldingUpdate,
-  PortfolioTransaction,
   PortfolioStateResponse,
   ProviderConnectionDraft,
   ProviderConnectionUpdate,
@@ -19,17 +18,8 @@ import { buildWealthOverview } from '@/utils/wealthAnalytics';
 
 const LOCAL_USER_ID = 'local';
 const LOCAL_MANUAL_ACCOUNT_ID = 'local-manual-portfolio';
-const LOCAL_ZERODHA_ACCOUNT_ID = 'local-zerodha-sandbox';
-const LOCAL_ZERODHA_STATE_PREFIX = 'local-zerodha-sandbox';
-const LOCAL_ACCOUNT_AGGREGATOR_ACCOUNT_ID = 'local-account-aggregator-readiness';
 
 const nowIso = (): string => new Date().toISOString();
-
-const dateDaysAgo = (days: number): string => {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return date.toISOString().slice(0, 10);
-};
 
 const makeId = (prefix: string): string =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -121,169 +111,12 @@ const normalizeHolding = (
   };
 };
 
-const buildZerodhaSandboxHoldings = (accountId: string): PortfolioHolding[] => {
-  const asOfDate = nowIso().slice(0, 10);
-  return [
-    normalizeHolding(
-      {
-        accountId,
-        assetType: 'equity',
-        symbol: 'RELIANCE',
-        isin: 'INE002A01018',
-        name: 'Reliance Industries',
-        quantity: 8,
-        averagePrice: 2450,
-        lastPrice: 2875,
-        investedValue: 19600,
-        currentValue: 23000,
-        dayChange: 180,
-        asOfDate,
-        source: 'zerodha_local_sandbox',
-      },
-      accountId,
-      `${accountId}-reliance`
-    ),
-    normalizeHolding(
-      {
-        accountId,
-        assetType: 'equity',
-        symbol: 'TCS',
-        isin: 'INE467B01029',
-        name: 'Tata Consultancy Services',
-        quantity: 3,
-        averagePrice: 3370,
-        lastPrice: 3895,
-        investedValue: 10110,
-        currentValue: 11685,
-        dayChange: -45,
-        asOfDate,
-        source: 'zerodha_local_sandbox',
-      },
-      accountId,
-      `${accountId}-tcs`
-    ),
-    normalizeHolding(
-      {
-        accountId,
-        assetType: 'etf',
-        symbol: 'NIFTYBEES',
-        isin: 'INF204KB14I2',
-        name: 'Nippon India ETF Nifty 50 BeES',
-        quantity: 40,
-        averagePrice: 205,
-        lastPrice: 245.3,
-        investedValue: 8200,
-        currentValue: 9812,
-        dayChange: 85,
-        asOfDate,
-        source: 'zerodha_local_sandbox',
-      },
-      accountId,
-      `${accountId}-niftybees`
-    ),
-  ];
-};
-
-const buildZerodhaSandboxTransactions = (accountId: string): PortfolioTransaction[] => [
-  {
-    id: `${accountId}-txn-reliance-buy`,
-    userId: LOCAL_USER_ID,
-    accountId,
-    assetType: 'equity',
-    symbol: 'RELIANCE',
-    isin: 'INE002A01018',
-    name: 'Reliance Industries',
-    action: 'buy',
-    quantity: 8,
-    price: 2450,
-    amount: 19600,
-    transactionDate: dateDaysAgo(52),
-    providerReference: 'local-zerodha-sandbox-reliance',
-  },
-  {
-    id: `${accountId}-txn-tcs-buy`,
-    userId: LOCAL_USER_ID,
-    accountId,
-    assetType: 'equity',
-    symbol: 'TCS',
-    isin: 'INE467B01029',
-    name: 'Tata Consultancy Services',
-    action: 'buy',
-    quantity: 3,
-    price: 3370,
-    amount: 10110,
-    transactionDate: dateDaysAgo(31),
-    providerReference: 'local-zerodha-sandbox-tcs',
-  },
-  {
-    id: `${accountId}-txn-niftybees-sip`,
-    userId: LOCAL_USER_ID,
-    accountId,
-    assetType: 'etf',
-    symbol: 'NIFTYBEES',
-    isin: 'INF204KB14I2',
-    name: 'Nippon India ETF Nifty 50 BeES',
-    action: 'sip',
-    quantity: 40,
-    price: 205,
-    amount: 8200,
-    transactionDate: dateDaysAgo(18),
-    providerReference: 'local-zerodha-sandbox-niftybees',
-  },
-];
-
-const ensureZerodhaSandboxAccount = (): { account: PortfolioAccount; holdings: PortfolioHolding[]; transactions: PortfolioTransaction[] } => {
-  const state = usePortfolioStore.getState();
-  const syncedAt = nowIso();
-  const existing = state.accounts.find((account) => account.id === LOCAL_ZERODHA_ACCOUNT_ID || account.provider === 'zerodha');
-  const account: PortfolioAccount = {
-    id: existing?.id ?? LOCAL_ZERODHA_ACCOUNT_ID,
-    userId: existing?.userId ?? LOCAL_USER_ID,
-    provider: 'zerodha',
-    accountType: 'broker',
-    displayName: existing?.displayName ?? 'Zerodha sandbox portfolio',
-    maskedAccountId: existing?.maskedAccountId ?? 'KITE-4242',
-    status: 'connected',
-    createdAt: existing?.createdAt ?? syncedAt,
-    lastSyncedAt: syncedAt,
-  };
-  const holdings = buildZerodhaSandboxHoldings(account.id);
-  const transactions = buildZerodhaSandboxTransactions(account.id);
-  persistLocalState({
-    accounts: [account, ...state.accounts.filter((item) => item.id !== account.id)],
-    holdings: [...holdings, ...state.holdings.filter((holding) => holding.accountId !== account.id)],
-    transactions: [...transactions, ...state.transactions.filter((transaction) => transaction.accountId !== account.id)],
-  });
-  return { account, holdings, transactions };
-};
-
-const ensureAccountAggregatorReadinessAccount = (): PortfolioAccount => {
-  const state = usePortfolioStore.getState();
-  const createdAt = nowIso();
-  const existing = state.accounts.find(
-    (account) => account.id === LOCAL_ACCOUNT_AGGREGATOR_ACCOUNT_ID || account.provider === 'account_aggregator'
-  );
-  const account: PortfolioAccount = {
-    id: existing?.id ?? LOCAL_ACCOUNT_AGGREGATOR_ACCOUNT_ID,
-    userId: existing?.userId ?? LOCAL_USER_ID,
-    provider: 'account_aggregator',
-    accountType: 'bank',
-    displayName: existing?.displayName ?? 'Account Aggregator readiness',
-    maskedAccountId: existing?.maskedAccountId ?? 'FIU setup pending',
-    status: existing?.status && existing.status !== 'connected' ? existing.status : 'needs_reauth',
-    createdAt: existing?.createdAt ?? createdAt,
-    lastSyncedAt: existing?.lastSyncedAt,
-  };
-  persistLocalState({ accounts: [account, ...state.accounts.filter((item) => item.id !== account.id)] });
-  return account;
-};
-
 const getLocalSyncMessage = (account: PortfolioAccount): string => {
   if (account.provider === 'zerodha') {
-    return 'Zerodha sandbox holdings refreshed locally. Add Kite Connect credentials to enable live broker sync.';
+    return 'Zerodha sync requires live Kite Connect backend credentials.';
   }
   if (account.provider === 'account_aggregator') {
-    return 'Account Aggregator readiness refreshed locally. FIU/TSP onboarding is required before live consent sync.';
+    return 'Account Aggregator sync requires FIU/TSP onboarding and backend consent routes.';
   }
   if (account.provider === 'manual') {
     return 'Manual account snapshot refreshed locally.';
@@ -340,13 +173,10 @@ export const localPortfolioApi = {
     const initialState = usePortfolioStore.getState();
     const existing = initialState.accounts.find((item) => item.id === accountId);
     if (existing?.provider === 'zerodha') {
-      const response = ensureZerodhaSandboxAccount();
-      const state = usePortfolioStore.getState();
-      return {
-        ...response,
-        snapshot: buildSnapshot(state.accounts, state.holdings),
-        message: getLocalSyncMessage(response.account),
-      };
+      throw new Error(getLocalSyncMessage(existing));
+    }
+    if (existing?.provider === 'account_aggregator') {
+      throw new Error(getLocalSyncMessage(existing));
     }
 
     const account = existing ?? ensureManualAccount(accountId);
@@ -402,26 +232,25 @@ export const localPortfolioApi = {
   }),
 
   startZerodhaConnect: async (): Promise<ZerodhaConnectStartResponse> => ({
-    enabled: true,
+    enabled: false,
     authorizationUrl: null,
-    state: `${LOCAL_ZERODHA_STATE_PREFIX}-${Date.now().toString(36)}`,
+    state: null,
     expiresAt: null,
-    mode: 'local_sandbox',
+    mode: 'production',
     manualSetupRequired: [
       'Set Zerodha Kite Connect API key and secret on the backend.',
       'Register the MoneyKai callback URL in Kite Connect.',
       'Deploy encrypted token storage before enabling live broker sync.',
     ],
-    message: 'Zerodha production credentials are not configured yet, so MoneyKai will use a local sandbox broker account for this workflow.',
+    message: 'Live Zerodha sync is not configured yet. Manual holdings are available now.',
   }),
 
   completeZerodhaConnect: async (_payload?: ZerodhaConnectCallbackRequest): Promise<ZerodhaConnectCallbackResponse> => {
-    const { account } = ensureZerodhaSandboxAccount();
     return {
-      enabled: true,
-      account,
-      mode: 'local_sandbox',
-      message: 'Connected a local Zerodha sandbox account with sample holdings. Live Zerodha sync will use the same portfolio surface once Kite Connect credentials are configured.',
+      enabled: false,
+      account: null,
+      mode: 'production',
+      message: 'Live Zerodha sync requires backend Kite Connect credentials before users can connect accounts.',
     };
   },
 
@@ -429,7 +258,7 @@ export const localPortfolioApi = {
     providerKey: 'account_aggregator',
     productionReady: false,
     buildVsPartnerDecision: 'partner_required',
-    partnerName: 'FIU/TSP partner required',
+    partnerName: null,
     partnerUrl: null,
     manualSetupRequired: [
       'Choose an Account Aggregator FIU/TSP partner and complete onboarding.',
@@ -444,5 +273,4 @@ export const localPortfolioApi = {
     ],
   }),
 
-  ensureAccountAggregatorReadinessAccount: async (): Promise<PortfolioAccount> => ensureAccountAggregatorReadinessAccount(),
 };

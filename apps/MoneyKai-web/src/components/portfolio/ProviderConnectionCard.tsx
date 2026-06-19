@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -48,6 +48,8 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
   onDisconnect,
 }) => {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 760;
   const connectedCount = accounts.filter((account) => account.status === 'connected').length;
   const getStatusColor = (status: PortfolioAccount['status']) => {
     if (status === 'connected') {
@@ -64,13 +66,13 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
 
   return (
     <Card style={{ gap: Spacing.md }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.sm, minWidth: 0 }}>
         <MaterialCommunityIcons name="link-variant" size={20} color={colors.primary} />
-        <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+        <Text style={{ flex: 1, minWidth: 180, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
           Connected accounts
         </Text>
         {accounts.length > 0 ? (
-          <View style={{ marginLeft: 'auto', backgroundColor: colors.primaryBg, borderRadius: 999, paddingHorizontal: Spacing.sm, paddingVertical: 4 }}>
+          <View style={{ backgroundColor: colors.primaryBg, borderRadius: 999, paddingHorizontal: Spacing.sm, paddingVertical: 4 }}>
             <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
               {connectedCount}/{accounts.length} active
             </Text>
@@ -78,19 +80,19 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
         ) : null}
       </View>
       <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-        Add holdings manually, connect a Zerodha sandbox now, or create an Account Aggregator readiness tracker while production credentials are being completed.
+        Add holdings manually today. Broker sync and Account Aggregator data stay setup-gated until live provider credentials and consent flows are configured.
       </Text>
       {accounts.length === 0 ? (
         <View style={{ gap: Spacing.sm }}>
-          <Button title="Add Manual Entry" icon="plus" onPress={onAddManual} />
-          <Button title="Create Manual Account" icon="folder-plus-outline" onPress={onCreateManualAccount} variant="outline" />
+          <Button title="Add Manual Entry" icon="plus" onPress={onAddManual} fullWidth />
+          <Button title="Create Manual Account" icon="folder-plus-outline" onPress={onCreateManualAccount} variant="outline" fullWidth />
         </View>
       ) : (
         <View style={{ gap: Spacing.sm }}>
           {accounts.map((account) => (
             <View key={account.id} style={{ paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: Spacing.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: isCompact ? 'column' : 'row', alignItems: isCompact ? 'stretch' : 'center', gap: Spacing.sm, minWidth: 0 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                     {account.displayName}
                   </Text>
@@ -112,9 +114,9 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
                     {statusLabels[account.status]}
                   </Text>
                 </View>
-                <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} />
+                {!isCompact ? <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} /> : null}
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+              <View style={{ flexDirection: isCompact ? 'column' : 'row', flexWrap: isCompact ? 'nowrap' : 'wrap', gap: Spacing.sm, alignItems: isCompact ? 'stretch' : 'center' }}>
                 <Button
                   title="Sync"
                   icon="sync"
@@ -129,12 +131,12 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
               </View>
             </View>
           ))}
-          <Button title="Add Manual Entry" icon="plus" onPress={onAddManual} variant="outline" />
+          <Button title="Add Manual Entry" icon="plus" onPress={onAddManual} variant="outline" fullWidth={isCompact} />
         </View>
       )}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-        <Button title="Zerodha / Sandbox" icon="chart-line" onPress={onStartZerodha} variant="outline" style={{ flexGrow: 1, flexBasis: 220 }} />
-        <Button title="AA readiness" icon="bank-transfer" onPress={onExploreAccountAggregator} variant="outline" style={{ flexGrow: 1, flexBasis: 220 }} />
+      <View style={{ flexDirection: isCompact ? 'column' : 'row', flexWrap: isCompact ? 'nowrap' : 'wrap', gap: Spacing.sm, alignItems: isCompact ? 'stretch' : 'center' }}>
+        <Button title="Broker setup" icon="chart-line" onPress={onStartZerodha} variant="outline" style={isCompact ? undefined : { flexGrow: 1, flexBasis: 220 }} />
+        <Button title="AA setup" icon="bank-transfer" onPress={onExploreAccountAggregator} variant="outline" style={isCompact ? undefined : { flexGrow: 1, flexBasis: 220 }} />
       </View>
     </Card>
   );

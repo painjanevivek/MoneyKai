@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
@@ -19,6 +19,7 @@ import { formatDate } from '@/utils/dateUtils';
 
 export default function BudgetsScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { settings, adjustments } = useBudgetStore();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
@@ -26,6 +27,7 @@ export default function BudgetsScreen() {
   const remaining = allowance - totalSpent;
   const usage = allowance > 0 ? Math.min(100, (totalSpent / allowance) * 100) : 0;
   const recentAdjustments = useMemo(() => adjustments.slice(0, 6), [adjustments]);
+  const isWide = width >= 1100;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -55,10 +57,21 @@ export default function BudgetsScreen() {
             <ProgressBar progress={usage} showLabel label="Budget usage" height={10} />
           </Card>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl, alignItems: 'flex-start' }}>
-            <View style={{ flex: 1, minWidth: 360, gap: Spacing.xl }}>
-              <BudgetHealth />
-              <BudgetCoachPanel />
+          <View style={{ gap: Spacing.xl }}>
+            <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.xl, alignItems: 'stretch' }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <BudgetHealth />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <MonthlyReset />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.xl, alignItems: 'stretch' }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <BudgetCoachPanel />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
               <Card>
                 <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
                   Budget adjustments
@@ -103,21 +116,9 @@ export default function BudgetsScreen() {
                   />
                 )}
               </Card>
-            </View>
-
-            <View style={{ flex: 1, minWidth: 360 }}>
-              <MonthlyReset />
+              </View>
             </View>
           </View>
-
-          <Card>
-            <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
-              Budget controls live in settings
-            </Text>
-            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
-              MoneyKai keeps the actual budget editing flow inside Settings so the dashboard can stay calm while the data remains real and user-owned.
-            </Text>
-          </Card>
         </View>
       </ScrollView>
     </SafeAreaView>

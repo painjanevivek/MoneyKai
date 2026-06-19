@@ -62,7 +62,10 @@ const INCOME_KEYWORDS: { category: string; terms: string[] }[] = [
 
 const validExpenseCategories = new Set(EXPENSE_CATEGORIES.map((category) => category.id));
 const validIncomeCategories = new Set(INCOME_CATEGORIES.map((category) => category.id));
-const validPaymentMethods = new Set(PAYMENT_METHODS.map((method) => method.id));
+type PaymentMethodId = (typeof PAYMENT_METHODS)[number]['id'];
+const validPaymentMethods = new Set<PaymentMethodId>(PAYMENT_METHODS.map((method) => method.id));
+const isPaymentMethodId = (value?: string): value is PaymentMethodId =>
+  typeof value === 'string' && validPaymentMethods.has(value as PaymentMethodId);
 
 const normalizeWhitespace = (value: string) => value.replace(/\s+/g, ' ').trim();
 
@@ -172,7 +175,7 @@ const inferTransactionType = (text: string, debit?: number, credit?: number): Tr
   return undefined;
 };
 
-const detectPaymentMethod = (description: string) => {
+const detectPaymentMethod = (description: string): PaymentMethodId => {
   const lowered = description.toLowerCase();
   if (/\bupi\b|@[a-z][a-z0-9.-]+\b|vpa/.test(lowered)) return 'upi';
   if (/\bcard\b|pos|visa|mastercard|credit card|debit card/.test(lowered)) return 'card';
@@ -281,7 +284,7 @@ const createDraft = (params: {
     amount: Math.round(params.amount * 100) / 100,
     category: categorize(description, params.type),
     description,
-    payment_method: params.paymentMethod && validPaymentMethods.has(params.paymentMethod) ? params.paymentMethod : detectPaymentMethod(description),
+    payment_method: isPaymentMethodId(params.paymentMethod) ? params.paymentMethod : detectPaymentMethod(description),
     transaction_date: params.date,
     source_file: params.fileName,
     source_account: params.accountLabel,

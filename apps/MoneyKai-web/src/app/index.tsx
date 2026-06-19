@@ -613,7 +613,7 @@ export default function LandingScreen() {
                     </h2>
                   </div>
                   <p style={paragraphStyle}>
-                    Every section is modular so the Expo page can ship now and the Framer version can later reuse the same story, visuals, and interaction model.
+                    Every section is modular so the Expo/Vercel site can ship quickly while keeping the story, visuals, and interaction model consistent.
                   </p>
                 </div>
                 <div style={{ display: 'grid', gap: 16, gridTemplateColumns: isWide ? 'repeat(4, minmax(0, 1fr))' : isCompact ? '1fr' : 'repeat(2, minmax(0, 1fr))' }}>

@@ -5,6 +5,26 @@ import type { PortfolioAccount, PortfolioHolding, PortfolioStateResponse, Portfo
 import type { WealthOverview } from '@/types/wealth';
 import { buildWealthOverview } from '@/utils/wealthAnalytics';
 
+const PLACEHOLDER_ACCOUNT_IDS = new Set(['local-zerodha-sandbox', 'local-account-aggregator-readiness']);
+const PLACEHOLDER_HOLDING_SOURCES = new Set(['zerodha_local_sandbox']);
+const PLACEHOLDER_TRANSACTION_SOURCES = new Set(['local-zerodha-sandbox-reliance', 'local-zerodha-sandbox-tcs', 'local-zerodha-sandbox-niftybees']);
+
+const isPlaceholderAccount = (account: PortfolioAccount): boolean => PLACEHOLDER_ACCOUNT_IDS.has(account.id);
+
+const isPlaceholderHolding = (holding: PortfolioHolding): boolean =>
+  PLACEHOLDER_ACCOUNT_IDS.has(holding.accountId) || PLACEHOLDER_HOLDING_SOURCES.has(holding.source);
+
+const isPlaceholderTransaction = (transaction: PortfolioTransaction): boolean =>
+  PLACEHOLDER_ACCOUNT_IDS.has(transaction.accountId) ||
+  Boolean(transaction.providerReference && PLACEHOLDER_TRANSACTION_SOURCES.has(transaction.providerReference));
+
+const removeProviderPlaceholders = <T extends PortfolioStateResponse>(payload: T): T => ({
+  ...payload,
+  accounts: payload.accounts.filter((account) => !isPlaceholderAccount(account)),
+  holdings: payload.holdings.filter((holding) => !isPlaceholderHolding(holding)),
+  transactions: payload.transactions.filter((transaction) => !isPlaceholderTransaction(transaction)),
+});
+
 interface PortfolioState {
   accounts: PortfolioAccount[];
   holdings: PortfolioHolding[];
@@ -29,30 +49,48 @@ export const usePortfolioStore = create<PortfolioState>()(
       holdings: [],
       transactions: [],
 
-      setPortfolioState: (payload) =>
+      setPortfolioState: (payload) => {
+        const cleanedPayload = removeProviderPlaceholders(payload);
         set({
-          accounts: payload.accounts,
-          holdings: payload.holdings,
-          transactions: payload.transactions,
-          snapshot: payload.snapshot,
-          lastUpdatedAt: payload.snapshot.date,
-        }),
+          accounts: cleanedPayload.accounts,
+          holdings: cleanedPayload.holdings,
+          transactions: cleanedPayload.transactions,
+          snapshot: cleanedPayload.snapshot,
+          lastUpdatedAt: cleanedPayload.snapshot.date,
+        });
+      },
 
-      setAccounts: (accounts) => set({ accounts, lastUpdatedAt: new Date().toISOString() }),
+      setAccounts: (accounts) => set({ accounts: accounts.filter((account) => !isPlaceholderAccount(account)), lastUpdatedAt: new Date().toISOString() }),
 
       upsertAccount: (account) =>
-        set((state) => ({
-          accounts: [account, ...state.accounts.filter((existing) => existing.id !== account.id)],
-          lastUpdatedAt: new Date().toISOString(),
-        })),
+        set((state) =>
+          isPlaceholderAccount(account)
+            ? {
+                accounts: state.accounts.filter((existing) => existing.id !== account.id),
+                holdings: state.holdings.filter((holding) => holding.accountId !== account.id),
+                transactions: state.transactions.filter((transaction) => transaction.accountId !== account.id),
+                lastUpdatedAt: new Date().toISOString(),
+              }
+            : {
+                accounts: [account, ...state.accounts.filter((existing) => existing.id !== account.id && !isPlaceholderAccount(existing))],
+                lastUpdatedAt: new Date().toISOString(),
+              }
+        ),
 
-      setHoldings: (holdings) => set({ holdings, lastUpdatedAt: new Date().toISOString() }),
+      setHoldings: (holdings) => set({ holdings: holdings.filter((holding) => !isPlaceholderHolding(holding)), lastUpdatedAt: new Date().toISOString() }),
 
       upsertHolding: (holding) =>
-        set((state) => ({
-          holdings: [holding, ...state.holdings.filter((existing) => existing.id !== holding.id)],
-          lastUpdatedAt: new Date().toISOString(),
-        })),
+        set((state) =>
+          isPlaceholderHolding(holding)
+            ? {
+                holdings: state.holdings.filter((existing) => existing.id !== holding.id),
+                lastUpdatedAt: new Date().toISOString(),
+              }
+            : {
+                holdings: [holding, ...state.holdings.filter((existing) => existing.id !== holding.id && !isPlaceholderHolding(existing))],
+                lastUpdatedAt: new Date().toISOString(),
+              }
+        ),
 
       removeHolding: (holdingId) =>
         set((state) => ({
@@ -60,19 +98,26 @@ export const usePortfolioStore = create<PortfolioState>()(
           lastUpdatedAt: new Date().toISOString(),
         })),
 
-      setTransactions: (transactions) => set({ transactions, lastUpdatedAt: new Date().toISOString() }),
+      setTransactions: (transactions) => set({ transactions: transactions.filter((transaction) => !isPlaceholderTransaction(transaction)), lastUpdatedAt: new Date().toISOString() }),
 
       setSnapshot: (snapshot) => set({ snapshot, lastUpdatedAt: snapshot.date }),
 
-      getWealthOverview: (userId) => buildWealthOverview(userId, get().accounts, get().holdings),
+      getWealthOverview: (userId) => {
+        const state = get();
+        return buildWealthOverview(
+          userId,
+          state.accounts.filter((account) => !isPlaceholderAccount(account)),
+          state.holdings.filter((holding) => !isPlaceholderHolding(holding))
+        );
+      },
     }),
     {
       name: 'moneykai-portfolio',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        accounts: state.accounts,
-        holdings: state.holdings,
-        transactions: state.transactions,
+        accounts: state.accounts.filter((account) => !isPlaceholderAccount(account)),
+        holdings: state.holdings.filter((holding) => !isPlaceholderHolding(holding)),
+        transactions: state.transactions.filter((transaction) => !isPlaceholderTransaction(transaction)),
         snapshot: state.snapshot,
         lastUpdatedAt: state.lastUpdatedAt,
       }),

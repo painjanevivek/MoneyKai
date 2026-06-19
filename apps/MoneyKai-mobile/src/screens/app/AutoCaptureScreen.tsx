@@ -17,15 +17,15 @@ import {
   setNativeCaptureSourcesEnabled,
 } from '@/services/nativeCaptureBridge';
 import {
-  SMS_IMPORT_RANGES,
-  type SmsImportRangeId,
   ingestSmsCapture,
   importRecentSmsTransactionsFromInbox,
 } from '@/services/autoCaptureService';
+import { SMS_IMPORT_RANGE_OPTIONS } from '@/constants/smsImportRanges';
 import { formatMonitoredAccountLabel } from '@/services/captureAccountIdentifier';
 import { getDraftCategoryOptions } from '@/services/captureCategoryRules';
 import { Spacing } from '@/constants/theme';
 import { titleCase } from '@/utils/labels';
+import type { SmsImportRangeId } from '@/types/smsImport';
 import { createAppScreenStyles } from './screenStyles';
 
 const buildImportSummary = (summary: Awaited<ReturnType<typeof importRecentSmsTransactionsFromInbox>>) => {
@@ -66,14 +66,14 @@ export function AutoCaptureScreen() {
   const [nativeReady, setNativeReady] = useState(false);
   const [smsText, setSmsText] = useState('');
   const [isImportingSms, setIsImportingSms] = useState(false);
-  const [smsImportRange, setSmsImportRange] = useState<SmsImportRangeId>('1m');
+  const [smsImportRange, setSmsImportRange] = useState<SmsImportRangeId>('1_month');
   const [showRangeMenu, setShowRangeMenu] = useState(false);
   const [draftCategorySelections, setDraftCategorySelections] = useState<Record<string, string>>({});
 
   const pendingDrafts = drafts.filter((draft) => draft.status === 'pending');
   const pendingAccounts = monitoredAccounts.filter((account) => account.status === 'pending');
   const approvedAccounts = monitoredAccounts.filter((account) => account.status === 'approved');
-  const selectedRange = SMS_IMPORT_RANGES.find((range) => range.id === smsImportRange) ?? SMS_IMPORT_RANGES[1];
+  const selectedRange = SMS_IMPORT_RANGE_OPTIONS.find((range) => range.id === smsImportRange) ?? SMS_IMPORT_RANGE_OPTIONS[1];
   const smsResearchAvailable = isSmsResearchBuildEnabled();
   const nativeSmsAvailable = isNativeSmsResearchBuildEnabled();
 
@@ -306,7 +306,7 @@ export function AutoCaptureScreen() {
             </TouchableOpacity>
             {showRangeMenu && (
               <View style={{ borderColor: colors.borderLight, borderRadius: 12, borderWidth: 1, marginBottom: Spacing.md, overflow: 'hidden' }}>
-                {SMS_IMPORT_RANGES.map((range) => (
+                {SMS_IMPORT_RANGE_OPTIONS.map((range) => (
                   <TouchableOpacity
                     key={range.id}
                     accessibilityRole="button"
@@ -317,7 +317,7 @@ export function AutoCaptureScreen() {
                     style={{
                       backgroundColor: range.id === smsImportRange ? colors.primaryBg : colors.card,
                       borderTopColor: colors.borderLight,
-                      borderTopWidth: range.id === SMS_IMPORT_RANGES[0].id ? 0 : 1,
+                      borderTopWidth: range.id === SMS_IMPORT_RANGE_OPTIONS[0].id ? 0 : 1,
                       padding: Spacing.md,
                     }}
                   >
@@ -330,7 +330,7 @@ export function AutoCaptureScreen() {
             )}
             <Button
               title={isImportingSms ? 'Importing...' : 'Import Recent SMS'}
-              onPress={importSmsInbox}
+              onPress={() => void importSmsInbox()}
               icon="message-processing-outline"
               loading={isImportingSms}
               disabled={isImportingSms}

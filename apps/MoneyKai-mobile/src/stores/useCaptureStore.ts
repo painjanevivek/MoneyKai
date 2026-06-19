@@ -133,6 +133,7 @@ interface CaptureState {
   declineMonitoredAccount: (accountId: string) => void;
   pauseMonitoredAccount: (accountId: string) => void;
   resumeMonitoredAccount: (accountId: string) => void;
+  unselectMonitoredAccount: (accountId: string) => void;
   ingestSignal: (input: CaptureSignalInput) => CaptureIngestionResult;
   confirmDraft: (draftId: string, category: string) => boolean;
   ignoreDraft: (draftId: string) => void;

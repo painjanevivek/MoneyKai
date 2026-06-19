@@ -116,20 +116,19 @@ export default function PricingPage() {
   const [billingMessage, setBillingMessage] = useState('');
   const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<BillingPlanKey | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-
-  useEffect(() => {
-    if (checkout === 'success') {
-      setBillingMessage('Checkout completed. Premium access updates after Stripe confirms the subscription event.');
-    } else if (checkout === 'cancelled') {
-      setBillingMessage('Checkout was cancelled. No payment method was changed.');
-    }
-  }, [checkout]);
+  const checkoutMessage =
+    checkout === 'success'
+      ? 'Checkout completed. Premium access updates after Stripe confirms the subscription event.'
+      : checkout === 'cancelled'
+        ? 'Checkout was cancelled. No payment method was changed.'
+        : '';
+  const visibleBillingMessage = billingMessage || checkoutMessage;
+  const visibleBillingStatus = isAuthenticated ? billingStatus : null;
 
   useEffect(() => {
     let mounted = true;
 
     if (!isAuthenticated) {
-      setBillingStatus(null);
       return () => {
         mounted = false;
       };
@@ -160,7 +159,7 @@ export default function PricingPage() {
     }
 
     if (!planKey) {
-      router.push('/(tabs)' as any);
+      router.push('/dashboard' as any);
       return;
     }
 
@@ -225,7 +224,7 @@ export default function PricingPage() {
             </Text>
           </View>
 
-          {(isAuthenticated || billingMessage) ? (
+          {(isAuthenticated || visibleBillingMessage) ? (
             <SectionCard>
               <View style={{ flexDirection: isWide ? 'row' : 'column', alignItems: isWide ? 'center' : 'stretch', justifyContent: 'space-between', gap: Spacing.md }}>
                 <View style={{ flex: 1 }}>
@@ -233,11 +232,11 @@ export default function PricingPage() {
                     BILLING STATUS
                   </Text>
                   <Text style={{ marginTop: 6, fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-                    {statusCopy(billingStatus)}
+                    {statusCopy(visibleBillingStatus)}
                   </Text>
-                  {billingMessage ? (
+                  {visibleBillingMessage ? (
                     <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-                      {billingMessage}
+                      {visibleBillingMessage}
                     </Text>
                   ) : null}
                 </View>
@@ -248,7 +247,7 @@ export default function PricingPage() {
                     icon="receipt-text-outline"
                     variant="outline"
                     loading={portalLoading}
-                    disabled={billingStatus?.status === 'none'}
+                    disabled={visibleBillingStatus?.status === 'none'}
                   />
                 ) : null}
               </View>
@@ -337,7 +336,7 @@ export default function PricingPage() {
                 </Text>
                 <Button
                   title="Start the free review loop"
-                  onPress={() => router.push((isAuthenticated ? '/(tabs)' : '/(auth)/signup') as any)}
+                  onPress={() => router.push((isAuthenticated ? '/dashboard' : '/(auth)/signup') as any)}
                   icon="arrow-right"
                   iconPosition="right"
                   testID="pricing-free-review-cta"

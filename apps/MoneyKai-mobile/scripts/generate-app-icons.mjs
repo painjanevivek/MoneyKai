@@ -12,7 +12,6 @@ const SIZE = 1024;
 const FOREGROUND_SCALE = 0.62;
 const WHITE = Jimp.rgbaToInt(255, 255, 255, 255);
 const TRANSPARENT = Jimp.rgbaToInt(255, 255, 255, 0);
-const BLACK = Jimp.rgbaToInt(0, 0, 0, 255);
 
 const isNearWhite = ({ r, g, b }) => r >= 245 && g >= 245 && b >= 245;
 

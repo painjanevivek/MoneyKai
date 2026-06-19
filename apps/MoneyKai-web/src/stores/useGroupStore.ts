@@ -146,7 +146,7 @@ export const useGroupStore = create<GroupState>()(
           title: 'Group created',
           body: newGroup.name,
           type: 'system',
-          actionRoute: '/(tabs)/groups',
+          actionRoute: '/groups',
         });
       },
 

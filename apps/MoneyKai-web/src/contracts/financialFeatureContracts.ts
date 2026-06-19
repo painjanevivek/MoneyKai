@@ -1,6 +1,11 @@
 import type { GmailSyncRequest } from '@/types/gmail';
 
-export type FinancialFeatureKey = 'manual_portfolio' | 'gmail_sync' | 'financial_documents' | 'financial_ai';
+export type FinancialFeatureKey =
+  | 'manual_portfolio'
+  | 'linked_accounts'
+  | 'gmail_sync'
+  | 'financial_documents'
+  | 'financial_ai';
 
 export type FinancialFeatureReadiness = 'placeholder' | 'contract_ready' | 'backend_required' | 'provider_required';
 
@@ -29,8 +34,8 @@ export const financialFeatureContracts: Record<FinancialFeatureKey, FinancialFea
     requiresUserConsent: false,
     reviewRequiredBeforeImport: false,
     sourceOfTruth: 'backend',
-    mobileSurface: ['/(tabs)/portfolio', '/(tabs)/wealth'],
-    webSurface: ['/(tabs)/portfolio', '/(tabs)/wealth'],
+    mobileSurface: ['/portfolio', '/wealth'],
+    webSurface: ['/portfolio', '/wealth'],
     backendCapabilities: [
       'Persist manual holdings',
       'Maintain provider connection metadata',
@@ -38,6 +43,30 @@ export const financialFeatureContracts: Record<FinancialFeatureKey, FinancialFea
       'Import reviewed document holdings',
     ],
     manualIntervention: ['User enters holding details and confirms edits or deletes'],
+  },
+  linked_accounts: {
+    key: 'linked_accounts',
+    title: 'Provider-backed linked bank accounts',
+    readiness: 'provider_required',
+    featureFlag: 'EXPO_PUBLIC_LINKED_ACCOUNT_PROVIDER_ENABLED',
+    requiresSignedInUser: true,
+    requiresUserConsent: true,
+    reviewRequiredBeforeImport: true,
+    sourceOfTruth: 'backend',
+    mobileSurface: ['Accounts', 'Dashboard linked account snapshot'],
+    webSurface: ['/accounts', '/dashboard linked account snapshot'],
+    backendCapabilities: [
+      'Start provider consent session',
+      'Store provider tokens and sync cursors server-side',
+      'Refresh balances from consented accounts',
+      'Import transactions into reviewable drafts',
+      'Verify provider webhooks and de-duplicate imports',
+    ],
+    manualIntervention: [
+      'User completes provider consent',
+      'User reviews imported transaction drafts before saving',
+      'User can disconnect or pause account sync',
+    ],
   },
   gmail_sync: {
     key: 'gmail_sync',
@@ -101,6 +130,12 @@ export const financialFeatureContracts: Record<FinancialFeatureKey, FinancialFea
 };
 
 export const financialFeatureEndpoints = {
+  linkedAccounts: {
+    providerStatus: '/v1/linked-accounts/provider/status',
+    connectStart: '/v1/linked-accounts/connect/start',
+    syncAll: '/v1/linked-accounts/sync',
+    syncAccount: (accountId: string) => `/v1/linked-accounts/${encodeURIComponent(accountId)}/sync`,
+  },
   gmail: {
     status: '/v1/gmail/status',
     connectStart: (metadataScanAcceptedAt: string, returnTo?: string) => {

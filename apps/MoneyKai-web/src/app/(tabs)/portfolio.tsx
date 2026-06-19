@@ -40,9 +40,9 @@ export default function PortfolioScreen() {
     aaStatus,
     zerodhaRequestToken,
     zerodhaExpiresAt,
-    zerodhaMode,
     zerodhaConnectMessage,
     zerodhaSetupItems,
+    zerodhaSetupOnly,
     setShowManualEntry,
     setShowZerodhaSheet,
     setAaStatus,
@@ -132,21 +132,23 @@ export default function PortfolioScreen() {
       ) : null}
       <ModalSheet
         visible={showZerodhaSheet}
-        title={zerodhaMode === 'local_sandbox' ? 'Zerodha sandbox' : 'Complete Zerodha'}
+        title={zerodhaSetupOnly ? 'Broker setup required' : 'Complete Zerodha'}
         subtitle={
-          zerodhaMode === 'local_sandbox'
-            ? 'Production Kite credentials are not configured yet. Complete this local broker account to test holdings, sync, and review flows.'
+          zerodhaSetupOnly
+            ? 'Live broker sync needs backend credentials, callback routes, and provider review before users can connect real accounts.'
             : 'Authorize in Zerodha, then paste the request token here to finish connecting this broker account.'
         }
         onClose={() => setShowZerodhaSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm }}>
-            <Button
-              title={zerodhaMode === 'local_sandbox' ? 'Connect Sandbox' : 'Complete Connection'}
-              icon="check-circle-outline"
-              loading={busy === 'zerodha'}
-              onPress={handleCompleteZerodha}
-            />
+            {!zerodhaSetupOnly ? (
+              <Button
+                title="Complete Connection"
+                icon="check-circle-outline"
+                loading={busy === 'zerodha'}
+                onPress={handleCompleteZerodha}
+              />
+            ) : null}
             <Button title="Close" onPress={() => setShowZerodhaSheet(false)} variant="outline" />
           </View>
         }
@@ -174,21 +176,22 @@ export default function PortfolioScreen() {
               ))}
             </View>
           ) : null}
-          <Input
-            label={zerodhaMode === 'local_sandbox' ? 'Sandbox token' : 'Request token'}
-            placeholder={zerodhaMode === 'local_sandbox' ? 'Generated locally' : 'Paste Zerodha request token'}
-            value={zerodhaRequestToken}
-            onChangeText={setZerodhaRequestToken}
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={zerodhaMode !== 'local_sandbox'}
-          />
+          {!zerodhaSetupOnly ? (
+            <Input
+              label="Request token"
+              placeholder="Paste Zerodha request token"
+              value={zerodhaRequestToken}
+              onChangeText={setZerodhaRequestToken}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          ) : null}
         </View>
       </ModalSheet>
       <ModalSheet
         visible={Boolean(aaStatus)}
-        title="Account Aggregator"
-        subtitle="Exploratory provider status for consented financial data sharing."
+        title="Account Aggregator setup"
+        subtitle="Production status for consented financial data sharing."
         onClose={() => setAaStatus(null)}
         footer={
           <View style={{ gap: Spacing.sm }}>
@@ -217,11 +220,6 @@ export default function PortfolioScreen() {
               ? 'A production Account Aggregator path is configured.'
               : 'Production AA connectivity requires an FIU/TSP partner and consent-flow onboarding.'}
           </Text>
-          {aaStatus?.readinessAccountId ? (
-            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textPrimary, lineHeight: 20 }}>
-              Readiness tracker added to Connected accounts.
-            </Text>
-          ) : null}
           {aaStatus?.partnerName ? (
             <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textPrimary }}>
               Partner: {aaStatus.partnerName}

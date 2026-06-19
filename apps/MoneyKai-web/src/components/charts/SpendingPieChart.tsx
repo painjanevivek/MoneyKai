@@ -106,7 +106,7 @@ export const SpendingPieChart: React.FC = () => {
         </View>
       </View>
       <TouchableOpacity
-        onPress={() => router.push('/(tabs)/savings' as any)}
+        onPress={() => router.push('/savings')}
         accessibilityRole="button"
         accessibilityLabel="View spending analytics in Savings"
         style={{

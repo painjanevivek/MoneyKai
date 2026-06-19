@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV } from 'react-native-mmkv';
 
 const CACHE_PREFIX = 'moneykai:data-cache:v1:';
 const CACHE_ENCRYPTION_KEY = 'moneykai-backend-cache-v1';
@@ -173,7 +173,7 @@ function createCacheStore(): {
   set: (key: string, value: string) => Promise<void>;
 } {
   try {
-    const mmkv = new MMKV({
+    const mmkv = createMMKV({
       id: 'moneykai-backend-cache',
       encryptionKey: CACHE_ENCRYPTION_KEY,
     });

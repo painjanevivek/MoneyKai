@@ -52,22 +52,23 @@ interface AiModelConsoleProps {
 
 export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiModelConsoleProps) {
   const { colors } = useTheme();
-  const modelStatus = useAiModelStatus(!requiresSignIn);
-  const chat = useAiChat();
-  const [selectedModel, setSelectedModel] = React.useState(MODEL_PRESETS[0].id);
+  const [selectedModelOverride, setSelectedModelOverride] = React.useState<string | null>(null);
   const [prompt, setPrompt] = React.useState('Summarize three MoneyKai ways to reduce food delivery spend this week.');
-
-  React.useEffect(() => {
-    if (!providerStatus?.defaultTextModel) {
-      return;
-    }
-    setSelectedModel(providerStatus.defaultTextModel);
-  }, [providerStatus?.defaultTextModel]);
 
   const overrideEnabled = Boolean(providerStatus?.modelOverrideEnabled);
   const backendReady = Boolean(providerStatus?.enabled && providerStatus.configured);
+  const modelStatus = useAiModelStatus(backendReady && !requiresSignIn);
+  const chat = useAiChat();
+  const selectedModel = selectedModelOverride ?? providerStatus?.defaultTextModel ?? MODEL_PRESETS[0].id;
   const canAsk = backendReady && !requiresSignIn && prompt.trim().length > 0 && !chat.loading;
   const activeModel = overrideEnabled ? selectedModel : providerStatus?.defaultTextModel;
+
+  const handleRefresh = () => {
+    if (!backendReady || requiresSignIn) {
+      return;
+    }
+    void modelStatus.refresh();
+  };
 
   const handleAsk = async () => {
     const message = prompt.trim();
@@ -104,7 +105,15 @@ export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiMod
               : 'Backend AI is not ready'}
           </Text>
         </View>
-        <Button title="Refresh" icon="refresh" size="sm" variant="outline" onPress={() => void modelStatus.refresh()} loading={modelStatus.loading} />
+        <Button
+          title="Refresh"
+          icon="refresh"
+          size="sm"
+          variant="outline"
+          onPress={handleRefresh}
+          loading={modelStatus.loading}
+          disabled={!backendReady || requiresSignIn}
+        />
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
@@ -114,7 +123,7 @@ export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiMod
             <TouchableOpacity
               key={preset.id}
               activeOpacity={0.85}
-              onPress={() => setSelectedModel(preset.id)}
+              onPress={() => setSelectedModelOverride(preset.id)}
               disabled={!overrideEnabled}
               style={{
                 flex: 1,
@@ -146,6 +155,18 @@ export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiMod
       </View>
 
       <View style={{ gap: Spacing.sm }}>
+        {!backendReady || requiresSignIn ? (
+          <View style={{ borderRadius: BorderRadius.sm, backgroundColor: colors.surface, padding: Spacing.md, gap: Spacing.xs }}>
+            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              AI backend unavailable
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+              {requiresSignIn
+                ? 'Sign in to check model availability.'
+                : 'Connect the MoneyKai backend with AI enabled before running model checks.'}
+            </Text>
+          </View>
+        ) : null}
         {modelStatus.data?.models.map((model) => (
           <ModelStatusRow key={model.key} model={model} />
         ))}

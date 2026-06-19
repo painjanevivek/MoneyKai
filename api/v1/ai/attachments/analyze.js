@@ -1,11 +1,34 @@
-const { requireMethod, sendJson } = require('../../../_lib/http');
+const { readJsonBody, requireMethod, sendJson } = require('../../../_lib/http');
+const { analyzeInlineImages } = require('../../../_lib/ai-runtime');
 
 module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'POST')) {
     return;
   }
 
-  return sendJson(res, 410, {
-    error: 'AI attachments now run through the MoneyKai backend. Set EXPO_PUBLIC_BACKEND_BASE_URL to the FastAPI backend origin.',
-  });
+  try {
+    const payload = await readJsonBody(req, { limitBytes: 6 * 1024 * 1024 });
+    if (!Array.isArray(payload.inlineAttachments) || payload.inlineAttachments.length === 0) {
+      return sendJson(res, 400, {
+        error: {
+          code: 'AI_ATTACHMENT_REQUIRED',
+          message: 'Attach an image before requesting analysis.',
+        },
+      });
+    }
+
+    const result = await analyzeInlineImages({
+      task: payload.task === 'image_analysis' ? 'image_analysis' : 'receipt_extract',
+      message: payload.message,
+      inlineAttachments: payload.inlineAttachments,
+    });
+    return sendJson(res, 200, result);
+  } catch (error) {
+    return sendJson(res, error.statusCode || 500, {
+      error: {
+        code: error.code || 'AI_ATTACHMENT_ANALYSIS_FAILED',
+        message: error.message || 'Unable to analyse this attachment.',
+      },
+    });
+  }
 };

@@ -2,6 +2,17 @@ import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { flushAutomaticBackup } from '@/services/backupService';
 
+type BrowserDocumentLike = {
+  visibilityState?: string;
+  addEventListener: (eventName: string, handler: () => void) => void;
+  removeEventListener: (eventName: string, handler: () => void) => void;
+};
+
+type BrowserWindowLike = {
+  addEventListener: (eventName: string, handler: () => void) => void;
+  removeEventListener: (eventName: string, handler: () => void) => void;
+};
+
 export function AutoBackupCoordinator() {
   useEffect(() => {
     void flushAutomaticBackup({ force: false });
@@ -12,9 +23,16 @@ export function AutoBackupCoordinator() {
       }
     });
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const browserGlobals = globalThis as typeof globalThis & {
+      document?: BrowserDocumentLike;
+      window?: BrowserWindowLike;
+    };
+    const browserDocument = browserGlobals.document;
+    const browserWindow = browserGlobals.window;
+
+    if (Platform.OS === 'web' && browserWindow && browserDocument) {
       const handleVisibilityChange = () => {
-        if (document.visibilityState === 'hidden') {
+        if (browserDocument.visibilityState === 'hidden') {
           void flushAutomaticBackup({ force: true });
         }
       };
@@ -23,13 +41,13 @@ export function AutoBackupCoordinator() {
         void flushAutomaticBackup({ force: true });
       };
 
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('beforeunload', handleBeforeUnload);
+      browserDocument.addEventListener('visibilitychange', handleVisibilityChange);
+      browserWindow.addEventListener('beforeunload', handleBeforeUnload);
 
       return () => {
         subscription.remove();
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('beforeunload', handleBeforeUnload);
+        browserDocument.removeEventListener('visibilitychange', handleVisibilityChange);
+        browserWindow.removeEventListener('beforeunload', handleBeforeUnload);
       };
     }
 

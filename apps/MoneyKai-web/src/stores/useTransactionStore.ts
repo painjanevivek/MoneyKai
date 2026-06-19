@@ -27,6 +27,7 @@ interface TransactionState {
   upsertImportedTransactions: (transactions: Transaction[]) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
+  removeImportedTransactionsForAccounts: (accountIds: string[]) => void;
   setFilter: (filter: Partial<TransactionFilter>) => void;
   resetFilter: () => void;
   /** Removes seeded sample rows and resets the isSeeded flag. Call on sign-out. */
@@ -277,14 +278,14 @@ export const useTransactionStore = create<TransactionState>()(
                 title: 'Budget exhausted',
                 body: 'You have used your full monthly budget.',
                 type: 'budget',
-                actionRoute: '/(tabs)/savings',
+                actionRoute: '/savings',
               });
             } else if (spendRate >= 80) {
               void recordAppNotification({
                 title: 'Spending alert',
                 body: `You have used ${Math.round(spendRate)}% of your monthly budget.`,
                 type: 'budget',
-                actionRoute: '/(tabs)/savings',
+                actionRoute: '/savings',
               });
             }
           }
@@ -348,6 +349,26 @@ export const useTransactionStore = create<TransactionState>()(
           void requestAutomaticBackup('transaction deleted');
         },
 
+        removeImportedTransactionsForAccounts: (accountIds) => {
+          if (accountIds.length === 0) return;
+
+          const accountIdSet = new Set(accountIds);
+          let removedTransactions: Transaction[] = [];
+          set((state) => {
+            removedTransactions = state.transactions.filter((transaction) =>
+              transaction.captureAccountId ? accountIdSet.has(transaction.captureAccountId) : false
+            );
+            return {
+              transactions: state.transactions.filter((transaction) =>
+                transaction.captureAccountId ? !accountIdSet.has(transaction.captureAccountId) : true
+              ),
+            };
+          });
+
+          removedTransactions.forEach((transaction) => syncTransactionDelete(transaction.id));
+          void requestAutomaticBackup('linked account imported transactions removed');
+        },
+
         setFilter: (filter) => {
           set((state) => ({ filter: { ...state.filter, ...filter } }));
         },
@@ -373,6 +394,3 @@ export const useTransactionStore = create<TransactionState>()(
     }
   )
 );
-
-
-

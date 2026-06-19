@@ -75,6 +75,8 @@ export const Button: React.FC<ButtonProps> = ({
           justifyContent: 'center',
           backgroundColor: isUnavailable ? colors.surfaceElevated : !isUnavailable && hovered ? v.hoverBg : v.bg,
           minHeight: s.minHeight,
+          minWidth: 0,
+          maxWidth: '100%',
           paddingHorizontal: s.paddingHorizontal,
           borderRadius: BorderRadius.sm,
           opacity: isUnavailable ? ComponentTokens.disabledOpacity : 1,
@@ -106,9 +108,12 @@ export const Button: React.FC<ButtonProps> = ({
                 fontSize: s.fontSize,
                 fontFamily: Typography.fontFamily.semiBold,
                 color: contentColor,
+                flexShrink: 1,
+                minWidth: 0,
               },
               textStyle,
             ]}
+            numberOfLines={1}
           >
             {title}
           </Text>

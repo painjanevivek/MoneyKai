@@ -7,6 +7,7 @@ export interface CaptureAccountIdentity {
   bankLabel: string;
   accountHint?: string;
   sender?: string;
+  sampleMessage?: string;
   discoverySample?: SmsDiscoverySample;
 }
 
@@ -86,6 +87,7 @@ export const identifyCaptureAccount = (input: CaptureSignalInput): CaptureAccoun
     bankLabel,
     accountHint,
     sender,
+    sampleMessage,
     discoverySample: buildDiscoverySample(input),
   };
 };

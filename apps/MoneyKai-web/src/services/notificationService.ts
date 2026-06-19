@@ -104,7 +104,7 @@ export const recordAppNotification = async (params: {
     content: {
       title: params.title,
       body: params.body,
-      data: { actionRoute: params.actionRoute ?? '/(tabs)/notifications' },
+      data: { actionRoute: params.actionRoute ?? '/notifications' },
       sound: false,
     },
     trigger: null,
@@ -117,7 +117,7 @@ export const installNotificationListeners = (onResponse?: (route?: string) => vo
   }
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    const route = (response.notification.request.content.data?.actionRoute as string | undefined) ?? '/(tabs)/notifications';
+    const route = (response.notification.request.content.data?.actionRoute as string | undefined) ?? '/notifications';
     onResponse?.(route);
   });
 

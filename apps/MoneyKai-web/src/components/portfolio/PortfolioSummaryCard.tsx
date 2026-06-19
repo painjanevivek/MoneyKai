@@ -24,10 +24,10 @@ export const PortfolioSummaryCard: React.FC<PortfolioSummaryCardProps> = ({ snap
           Wealth overview
         </Text>
       </View>
-      <Text style={{ fontSize: Typography.fontSize['3xl'], fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
+      <Text style={{ fontSize: Typography.fontSize['3xl'], fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }} numberOfLines={1}>
         {formatCurrency(snapshot.netWorth, currencySymbol)}
       </Text>
-      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
         <Metric label="Assets" value={formatCurrency(snapshot.totalAssets, currencySymbol)} />
         <Metric label="Invested" value={formatCurrency(snapshot.totalInvested, currencySymbol)} />
       </View>
@@ -42,9 +42,9 @@ const Metric = ({ label, value }: { label: string; value: string }) => {
   const { colors } = useTheme();
 
   return (
-    <View style={{ flex: 1, gap: 2 }}>
+    <View style={{ flex: 1, minWidth: 140, gap: 2 }}>
       <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>{label}</Text>
-      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
         {value}
       </Text>
     </View>
