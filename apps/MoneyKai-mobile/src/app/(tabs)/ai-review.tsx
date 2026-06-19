@@ -19,6 +19,7 @@ import {
   validateReceiptReviewDraft,
   type ReceiptReviewDraft,
 } from '@/features/ai/attachmentReview';
+import { formatAiResponseText, withPlainTextAiStyle } from '@/features/ai/responseText';
 import {
   useAiAttachmentAnalysis,
   useAiAttachmentUpload,
@@ -72,7 +73,9 @@ export default function AiReviewScreen() {
 
   const attachmentsReady = providerStatus?.enabled && providerStatus.attachmentsEnabled;
   const requiresSignIn = !isHydratingSession && !isAuthenticated;
-  const canAnalyze = Boolean(selectedAsset) && !uploadState.loading && !analyzeState.loading && attachmentsReady && isAuthenticated;
+  const analysisPending = uploadState.loading || analyzeState.loading;
+  const analysisError = uploadState.error || analyzeState.error;
+  const canAnalyze = Boolean(selectedAsset) && !analysisPending && attachmentsReady && isAuthenticated;
 
   const resetReviewState = React.useCallback((nextTask?: AiAttachmentAnalyzeTask) => {
     setReceiptDraft(null);
@@ -148,7 +151,7 @@ export default function AiReviewScreen() {
       const uploaded = await uploadState.upload(formData);
       const response = await analyzeState.analyze({
         task,
-        message: prompt.trim() || buildDefaultAttachmentPrompt(task),
+        message: withPlainTextAiStyle(prompt.trim() || buildDefaultAttachmentPrompt(task)),
         attachmentIds: [uploaded.attachmentId],
         context: {
           surface: 'mobile_ai_review',
@@ -359,10 +362,10 @@ export default function AiReviewScreen() {
 
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
             <Button
-              title={task === 'receipt_extract' ? 'Analyze receipt' : 'Analyze image'}
+              title="Analyse"
               icon="brain"
               fullWidth
-              loading={uploadState.loading || analyzeState.loading}
+              loading={analysisPending}
               disabled={!canAnalyze}
               onPress={analyzeSelectedAsset}
               style={{ flex: 1 }}
@@ -386,13 +389,13 @@ export default function AiReviewScreen() {
                 AI review
               </Text>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                Request {analyzeState.data.requestId} | Model {analyzeState.data.model}
+                Review the result before using it.
               </Text>
             </View>
 
             <View style={{ borderRadius: BorderRadius.lg, backgroundColor: colors.surface, padding: Spacing.md, gap: Spacing.sm }}>
               <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textPrimary }}>
-                {analyzeState.data.message}
+                {formatAiResponseText(analyzeState.data.message)}
               </Text>
               <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
                 Review required before using any of these details.
@@ -530,13 +533,13 @@ export default function AiReviewScreen() {
           </Card>
         ) : null}
 
-        {analyzeState.error ? (
+        {analysisError ? (
           <Card style={{ gap: Spacing.sm }}>
             <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               Analysis unavailable
             </Text>
             <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
-              {analyzeState.error}
+              {analysisError}
             </Text>
           </Card>
         ) : null}

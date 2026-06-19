@@ -18,8 +18,10 @@ import {
 } from '@/features/ai/attachmentReview';
 import {
   useAiAttachmentAnalysis,
+  useAiAttachmentFileUpload,
   useAiProviderStatus,
 } from '@/features/ai/hooks';
+import { formatAiResponseText, withPlainTextAiStyle } from '@/features/ai/responseText';
 import type { AiAttachmentAnalyzeTask } from '@/features/ai/types';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -67,6 +69,7 @@ export default function AiReviewScreen() {
   const requiresSignIn = !isHydratingSession && !isAuthenticated;
   const canLoadAiStatus = !isHydratingSession && isAuthenticated;
   const { data: providerStatus, error: providerError, loading: loadingProviderStatus } = useAiProviderStatus(canLoadAiStatus);
+  const uploadState = useAiAttachmentFileUpload();
   const analyzeState = useAiAttachmentAnalysis();
 
   const attachmentsReady = Boolean(
@@ -75,7 +78,9 @@ export default function AiReviewScreen() {
     providerStatus.attachmentsEnabled &&
     providerStatus.defaultVisionModelConfigured
   );
-  const canAnalyze = Boolean(selectedAsset) && !requiresSignIn && !analyzeState.loading;
+  const analysisPending = uploadState.loading || analyzeState.loading;
+  const analysisError = uploadState.error || analyzeState.error;
+  const canAnalyze = Boolean(selectedAsset) && attachmentsReady && !requiresSignIn && !analysisPending;
 
   React.useEffect(() => {
     return () => {
@@ -89,11 +94,12 @@ export default function AiReviewScreen() {
     setReceiptDraft(null);
     setSaveMessage(null);
     setPickerError(null);
+    uploadState.reset();
     analyzeState.reset();
     if (nextTask) {
       setPrompt(buildDefaultAttachmentPrompt(nextTask));
     }
-  }, [analyzeState]);
+  }, [analyzeState, uploadState]);
 
   const handleSelectTask = (nextTask: AiAttachmentAnalyzeTask) => {
     setTask(nextTask);
@@ -154,18 +160,11 @@ export default function AiReviewScreen() {
     }
 
     try {
-      const dataUrl = await readFileAsDataUrl(selectedAsset.file);
+      const uploaded = await uploadState.uploadFile(selectedAsset.file);
       const response = await analyzeState.analyze({
         task,
-        message: prompt.trim() || buildDefaultAttachmentPrompt(task),
-        attachmentIds: [],
-        inlineAttachments: [
-          {
-            filename: selectedAsset.filename,
-            mimeType: selectedAsset.mimeType,
-            dataUrl,
-          },
-        ],
+        message: withPlainTextAiStyle(prompt.trim() || buildDefaultAttachmentPrompt(task)),
+        attachmentIds: [uploaded.attachmentId],
         context: {
           surface: 'web_ai_review',
           filename: selectedAsset.filename,
@@ -356,7 +355,7 @@ export default function AiReviewScreen() {
         <Button
           title="Analyse"
           icon="brain"
-          loading={analyzeState.loading}
+          loading={analysisPending}
           disabled={!canAnalyze}
           onPress={analyzeSelectedAsset}
         />
@@ -374,13 +373,13 @@ export default function AiReviewScreen() {
               AI review
             </Text>
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-              Request {analyzeState.data.requestId} | Model {analyzeState.data.model}
+              Review the result before using it.
             </Text>
           </View>
 
           <View style={{ borderRadius: BorderRadius.lg, backgroundColor: colors.surface, padding: Spacing.md, gap: Spacing.sm }}>
             <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textPrimary }}>
-              {analyzeState.data.message}
+              {formatAiResponseText(analyzeState.data.message)}
             </Text>
             <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
               Review required before using any of these details.
@@ -518,13 +517,13 @@ export default function AiReviewScreen() {
         </Card>
       ) : null}
 
-      {analyzeState.error ? (
+      {analysisError ? (
         <Card style={{ gap: Spacing.sm }}>
           <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
             Analysis unavailable
           </Text>
           <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-            {analyzeState.error}
+            {analysisError}
           </Text>
         </Card>
       ) : null}
@@ -540,19 +539,4 @@ function formatBytes(bytes: number): string {
     return `${(bytes / 1024).toFixed(1)} KB`;
   }
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-        return;
-      }
-      reject(new Error('Unable to read the selected image.'));
-    };
-    reader.onerror = () => reject(reader.error ?? new Error('Unable to read the selected image.'));
-    reader.readAsDataURL(file);
-  });
 }

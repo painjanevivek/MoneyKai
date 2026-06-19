@@ -48,7 +48,7 @@ export interface GmailSyncConsent {
   metadataScanAcceptedAt?: string;
   attachmentDownloadAcceptedAt?: string;
   allowedCategories: FinancialEmailCategory[];
-  syncWindow: '15d' | '30d' | '90d' | '180d' | '365d';
+  syncWindow: '15d' | '30d' | '90d' | '180d' | '365d' | 'all';
 }
 
 export interface GmailSyncStatus {

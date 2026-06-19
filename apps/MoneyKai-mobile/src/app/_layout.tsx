@@ -112,6 +112,8 @@ function NativeNotificationResponseRouter() {
 
 export default function RootLayout() {
   const theme = useSettingsStore((s) => s.theme);
+  const currencyRenderToken = useSettingsStore((s) => `${s.currency}:${s.currencySymbol}:${s.exchangeRatesUpdatedAt ?? ''}`);
+  const refreshExchangeRates = useSettingsStore((s) => s.refreshExchangeRates);
   const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
@@ -176,6 +178,10 @@ export default function RootLayout() {
     return uninstall;
   }, []);
 
+  useEffect(() => {
+    void refreshExchangeRates();
+  }, [currencyRenderToken, refreshExchangeRates]);
+
   if (!fontsLoaded && !fontError) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
@@ -220,7 +226,7 @@ export default function RootLayout() {
       {Platform.OS !== 'web' ? <NativeNotificationResponseRouter /> : null}
       <SyncCoordinator />
       <AppLockGate>
-        <View style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
+        <View key={currencyRenderToken} style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
       </AppLockGate>
     </AppErrorBoundary>
   );

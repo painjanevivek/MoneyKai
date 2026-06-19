@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useChallengeStore } from '@/stores/useChallengeStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -16,7 +17,7 @@ import { getCategoryById } from '@/constants/categories';
 import { CHALLENGE_TEMPLATES } from '@/types/challenge';
 import { calculateSavingsProjection, calculateEmergencyBudget } from '@/utils/savingsEngine';
 import { getDaysLeftInMonth } from '@/utils/dateUtils';
-import { formatCurrency } from '@/utils/formatCurrency';
+import { convertFromInrForDisplay, formatCurrency } from '@/utils/formatCurrency';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import type { CategoryReduction } from '@/types/budget';
 
@@ -24,6 +25,7 @@ const TABS = ['Savings Predictor', 'Challenges', 'Emergency'] as const;
 
 export default function SavingsScreen() {
   const { colors, isDark } = useTheme();
+  const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const { width } = useWindowDimensions();
   const isWide = width > 900;
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
@@ -74,8 +76,8 @@ export default function SavingsScreen() {
 
   const comparisonData = React.useMemo(
     () => [
-      { value: Math.max(0, projection.currentSavings), label: 'Current', frontColor: colors.textTertiary },
-      { value: Math.max(0, projection.projectedSavings), label: 'Projected', frontColor: colors.primary },
+      { value: convertFromInrForDisplay(Math.max(0, projection.currentSavings)), label: 'Current', frontColor: colors.textTertiary },
+      { value: convertFromInrForDisplay(Math.max(0, projection.projectedSavings)), label: 'Projected', frontColor: colors.primary },
     ],
     [projection, colors]
   );
@@ -141,7 +143,7 @@ export default function SavingsScreen() {
               yAxisColor="transparent"
               xAxisColor="transparent"
               isAnimated
-              yAxisLabelPrefix="₹"
+              yAxisLabelPrefix={currencySymbol}
             />
           </View>
         </Card>
@@ -574,4 +576,3 @@ export default function SavingsScreen() {
     </SafeAreaView>
   );
 }
-

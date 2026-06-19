@@ -5,6 +5,7 @@ import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useBudgetStore } from '../../stores/useBudgetStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { getNextResetDate, formatDate } from '../../utils/dateUtils';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
@@ -12,6 +13,7 @@ import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 export const MonthlyReset: React.FC = () => {
   const { colors, isDark } = useTheme();
   const { settings, updateSettings, addAdjustment } = useBudgetStore();
+  const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const nextReset = getNextResetDate(settings.reset_day);
   const resetDateInputValue = formatDate(nextReset, 'yyyy-MM-dd');
 
@@ -175,6 +177,9 @@ export const MonthlyReset: React.FC = () => {
           }}
         >
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+            {currencySymbol}
+          </Text>
+          <Text style={{ display: 'none', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
             ₹
           </Text>
           <TextInput

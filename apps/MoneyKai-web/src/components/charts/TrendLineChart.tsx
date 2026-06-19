@@ -6,6 +6,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { Typography, Spacing } from '../../constants/theme';
 import { useTransactionStore } from '../../stores/useTransactionStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { convertFromInrForDisplay } from '@/utils/formatCurrency';
 
 type ChartPoint = {
   value: number;
@@ -37,6 +39,7 @@ export const TrendLineChart: React.FC = () => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const transactions = useTransactionStore((s) => s.transactions);
+  const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const isWeb = Platform.OS === 'web';
   const chartWidth = Math.max(320, Math.min(width - 120, 760));
   const chartSpacing = Math.max(48, Math.min(78, Math.floor(chartWidth / 9)));
@@ -60,6 +63,7 @@ export const TrendLineChart: React.FC = () => {
 
   const currentData = weeklyTrend.current.map((item) => ({
     ...item,
+    value: convertFromInrForDisplay(item.value),
     customDataPoint: isWeb
       ? () => (
           <View
@@ -78,6 +82,7 @@ export const TrendLineChart: React.FC = () => {
 
   const previousData = weeklyTrend.previous.map((item) => ({
     ...item,
+    value: convertFromInrForDisplay(item.value),
     customDataPoint: isWeb
       ? () => (
           <View
@@ -211,7 +216,7 @@ export const TrendLineChart: React.FC = () => {
             startFillColor2={`${colors.textTertiary}10`}
             endFillColor2={`${colors.textTertiary}02`}
             noOfSections={3}
-            yAxisLabelPrefix="₹ "
+            yAxisLabelPrefix={`${currencySymbol} `}
           />
         </>
       )}

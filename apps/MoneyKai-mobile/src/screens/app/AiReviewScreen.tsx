@@ -31,9 +31,9 @@ export function AiReviewScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.eyebrow}>AI workspace</Text>
-          <Text style={styles.title}>Model console and review</Text>
+          <Text style={styles.title}>AI review</Text>
           <Text style={styles.subtitle}>
-            Use DeepSeek, Kimi, and Gemma through the MoneyKai backend. Backend status and model checks are authenticated and never expose provider keys.
+            Ask MoneyKai AI for practical help, then review receipt and image analysis before using it.
           </Text>
         </View>
 
@@ -53,24 +53,23 @@ export function AiReviewScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.value}>
-                {loadingProviderStatus ? 'Checking AI status' : providerStatus?.configured ? 'Backend AI configured' : 'Backend AI not ready'}
+                {loadingProviderStatus ? 'Checking AI status' : providerStatus?.configured ? 'MoneyKai AI ready' : 'MoneyKai AI not ready'}
               </Text>
               <Text style={styles.muted}>
                 {attachmentsReady
                   ? 'Attachment analysis is enabled on the backend.'
-                  : providerError ?? 'Chat/model status works when the backend AI provider is configured.'}
+                  : providerError ?? 'MoneyKai AI works when the backend is configured.'}
               </Text>
             </View>
           </View>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md }}>
-            <StatusChip label={providerStatus?.provider ?? 'OpenRouter'} tone={providerStatus?.configured ? 'success' : 'warning'} />
-            <StatusChip label={providerStatus?.modelOverrideEnabled ? 'Model picker on' : 'Backend default'} tone="neutral" />
+            <StatusChip label={providerStatus?.configured ? 'AI ready' : 'Setup needed'} tone={providerStatus?.configured ? 'success' : 'warning'} />
             <StatusChip label={attachmentsReady ? 'Attachments ready' : 'Attachments gated'} tone={attachmentsReady ? 'success' : 'warning'} />
           </View>
 
           <Button
-            title="Refresh AI Status"
+            title="Refresh"
             icon="refresh"
             variant="secondary"
             loading={loadingProviderStatus}
@@ -83,7 +82,7 @@ export function AiReviewScreen() {
           <View style={styles.panel}>
             <Text style={styles.sectionTitle}>Sign in required</Text>
             <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>
-              AI calls use your Firebase session so the backend can rate-limit requests and keep provider keys off the device.
+              AI calls use your signed-in session so MoneyKai can protect access and keep requests accountable.
             </Text>
           </View>
         ) : null}
@@ -93,7 +92,7 @@ export function AiReviewScreen() {
         <View style={styles.panel}>
           <Text style={styles.sectionTitle}>Receipt/image attachment review</Text>
           <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>
-            The backend upload and analysis APIs are available. This mobile shell now exposes AI status and model tests; native image selection is the remaining UI step.
+            The active AI review tab supports image selection, upload, analysis, and review before saving anything.
           </Text>
           <Button
             title={attachmentsReady ? 'Image Picker Pending' : 'Attachment Analysis Unavailable'}

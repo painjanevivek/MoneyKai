@@ -12,9 +12,22 @@ import { gmailSyncApi } from '@/services/gmailSyncApi';
 import { financialDocumentApi } from '@/services/financialDocumentApi';
 import { useFinancialDocumentStore } from '@/stores/useFinancialDocumentStore';
 import { useGmailSyncStore } from '@/stores/useGmailSyncStore';
-import type { FinancialEmailCategory, FinancialEmailRecord } from '@/types/gmail';
+import type { FinancialEmailCategory, FinancialEmailRecord, GmailSyncConsent } from '@/types/gmail';
 
 const CATEGORY_LABELS = Object.fromEntries(FINANCIAL_EMAIL_CATEGORIES.map((category) => [category.key, category.label]));
+
+const GMAIL_SYNC_WINDOW_OPTIONS: Array<{
+  value: GmailSyncConsent['syncWindow'];
+  label: string;
+  detail: string;
+  maxResults: number;
+}> = [
+  { value: '15d', label: '15 days', detail: 'Fast check for recent statements and receipts.', maxResults: 50 },
+  { value: '30d', label: '1 month', detail: 'Balanced monthly inbox review.', maxResults: 75 },
+  { value: '90d', label: '3 months', detail: 'Quarterly financial email scan.', maxResults: 150 },
+  { value: '180d', label: '6 months', detail: 'Wider review for older statements.', maxResults: 250 },
+  { value: 'all', label: 'All time', detail: 'Scans matching financial emails across Gmail, capped at 500 messages per run.', maxResults: 500 },
+];
 
 const isGoogleAuthorizationUrl = (url: string) => {
   try {
@@ -29,6 +42,8 @@ const getWebLocation = () =>
   globalThis as typeof globalThis & {
     location?: { href?: string; origin?: string; pathname?: string };
     history?: { replaceState?: (data: unknown, unused: string, url?: string | URL | null) => void };
+    addEventListener?: (type: string, listener: () => void) => void;
+    removeEventListener?: (type: string, listener: () => void) => void;
   };
 
 const getGmailOAuthReturnTo = (): string | undefined => {
@@ -45,6 +60,7 @@ export const GmailConnectionCard: React.FC = () => {
   const featureEnabled = isGmailSyncEnabled();
   const [showConsent, setShowConsent] = React.useState(false);
   const [showEmails, setShowEmails] = React.useState(false);
+  const [showSyncWindow, setShowSyncWindow] = React.useState(false);
   const [busy, setBusy] = React.useState<'connect' | 'refresh' | 'sync' | 'disconnect' | null>(null);
   const consent = useGmailSyncStore((state) => state.consent);
   const connection = useGmailSyncStore((state) => state.connection);
@@ -52,6 +68,7 @@ export const GmailConnectionCard: React.FC = () => {
   const emails = useGmailSyncStore((state) => state.emails);
   const lastSyncSummary = useGmailSyncStore((state) => state.lastSyncSummary);
   const setAllowedCategories = useGmailSyncStore((state) => state.setAllowedCategories);
+  const setSyncWindow = useGmailSyncStore((state) => state.setSyncWindow);
   const acceptMetadataScan = useGmailSyncStore((state) => state.acceptMetadataScan);
   const acceptAttachmentDownloads = useGmailSyncStore((state) => state.acceptAttachmentDownloads);
   const setStatus = useGmailSyncStore((state) => state.setStatus);
@@ -132,6 +149,30 @@ export const GmailConnectionCard: React.FC = () => {
     return () => subscription.remove();
   }, [consumeOAuthReturn, providerReady, metadataAccepted]);
 
+  React.useEffect(() => {
+    if (!providerReady || !metadataAccepted || Platform.OS !== 'web') {
+      return undefined;
+    }
+
+    const refreshAfterOAuth = () => {
+      void hydrateStatus();
+    };
+    const web = getWebLocation();
+    web.addEventListener?.('focus', refreshAfterOAuth);
+    web.addEventListener?.('visibilitychange', refreshAfterOAuth);
+
+    return () => {
+      web.removeEventListener?.('focus', refreshAfterOAuth);
+      web.removeEventListener?.('visibilitychange', refreshAfterOAuth);
+    };
+  }, [hydrateStatus, metadataAccepted, providerReady]);
+
+  const refreshAfterConnectAttempt = React.useCallback(() => {
+    globalThis.setTimeout(() => {
+      void hydrateStatus();
+    }, 2500);
+  }, [hydrateStatus]);
+
   const toggleCategory = (category: FinancialEmailCategory, selected: boolean) => {
     const next = selected
       ? [...consent.allowedCategories, category]
@@ -178,6 +219,7 @@ export const GmailConnectionCard: React.FC = () => {
       if (!opened) {
         Alert.alert('Open Gmail consent', response.authorizationUrl);
       }
+      refreshAfterConnectAttempt();
     } catch (error) {
       Alert.alert('Gmail connect failed', error instanceof Error ? error.message : 'Could not start Gmail connection.');
     } finally {
@@ -185,7 +227,7 @@ export const GmailConnectionCard: React.FC = () => {
     }
   };
 
-  const handleSync = async () => {
+  const handleSync = async (option: (typeof GMAIL_SYNC_WINDOW_OPTIONS)[number]) => {
     if (!consent.metadataScanAcceptedAt) {
       setShowConsent(true);
       return;
@@ -196,17 +238,19 @@ export const GmailConnectionCard: React.FC = () => {
     }
 
     setBusy('sync');
+    setShowSyncWindow(false);
     try {
+      setSyncWindow(option.value);
       const summary = await gmailSyncApi.syncMetadata({
         metadataScanAcceptedAt: consent.metadataScanAcceptedAt,
         allowedCategories: consent.allowedCategories,
-        syncWindow: consent.syncWindow,
-        maxResults: 25,
+        syncWindow: option.value,
+        maxResults: option.maxResults,
       });
       setLastSyncSummary(summary);
       setEmails(summary.items);
       await hydrateStatus();
-      Alert.alert('Gmail sync complete', `${summary.financialEmailCount} financial emails need review.`);
+      Alert.alert('Gmail sync complete', `${summary.financialEmailCount} financial emails need review from ${option.label.toLowerCase()}.`);
     } catch (error) {
       Alert.alert('Gmail sync failed', error instanceof Error ? error.message : 'Could not sync Gmail metadata.');
     } finally {
@@ -331,12 +375,23 @@ export const GmailConnectionCard: React.FC = () => {
             disabled={!providerReady || !metadataAccepted}
             style={{ flexGrow: 1 }}
           />
+          {!isConnected ? (
+            <Button
+              title="Refresh"
+              icon="refresh"
+              onPress={refreshStatus}
+              loading={busy === 'refresh'}
+              disabled={!providerReady}
+              variant="outline"
+              style={{ flexGrow: 1 }}
+            />
+          ) : null}
         </View>
         <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.sm }}>
           <Button
             title="Sync"
             icon="sync"
-            onPress={handleSync}
+            onPress={() => setShowSyncWindow(true)}
             loading={busy === 'sync'}
             disabled={!providerReady || !isConnected || !metadataAccepted}
             style={{ flexGrow: 1 }}
@@ -465,6 +520,35 @@ export const GmailConnectionCard: React.FC = () => {
           ) : (
             emails.map((item) => <EmailRow key={item.id} item={item} onQueue={handleQueueAttachments} />)
           )}
+        </View>
+      </ModalSheet>
+
+      <ModalSheet
+        visible={showSyncWindow}
+        title="Choose sync range"
+        subtitle="MoneyKai scans matching financial email metadata only. Larger ranges can take longer."
+        onClose={() => setShowSyncWindow(false)}
+        footer={<Button title="Cancel" onPress={() => setShowSyncWindow(false)} variant="outline" />}
+      >
+        <View style={{ gap: Spacing.sm }}>
+          {GMAIL_SYNC_WINDOW_OPTIONS.map((option) => {
+            const selected = consent.syncWindow === option.value;
+            return (
+              <Button
+                key={option.value}
+                title={`${option.label} (${option.maxResults} max)`}
+                icon={selected ? 'check-circle' : 'clock-outline'}
+                onPress={() => handleSync(option)}
+                loading={busy === 'sync' && selected}
+                disabled={busy === 'sync'}
+                variant={selected ? 'primary' : 'outline'}
+                fullWidth
+              />
+            );
+          })}
+          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, lineHeight: 18 }}>
+            All time uses Gmail's full matching history but still limits each run to 500 messages so the sync stays responsive.
+          </Text>
         </View>
       </ModalSheet>
     </>

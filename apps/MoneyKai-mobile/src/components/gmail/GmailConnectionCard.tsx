@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Linking, Platform, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Platform, Switch, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -12,9 +12,22 @@ import { gmailSyncApi } from '@/services/gmailSyncApi';
 import { financialDocumentApi } from '@/services/financialDocumentApi';
 import { useFinancialDocumentStore } from '@/stores/useFinancialDocumentStore';
 import { useGmailSyncStore } from '@/stores/useGmailSyncStore';
-import type { FinancialEmailCategory, FinancialEmailRecord } from '@/types/gmail';
+import type { FinancialEmailCategory, FinancialEmailRecord, GmailSyncConsent } from '@/types/gmail';
 
 const CATEGORY_LABELS = Object.fromEntries(FINANCIAL_EMAIL_CATEGORIES.map((category) => [category.key, category.label]));
+
+const GMAIL_SYNC_WINDOW_OPTIONS: Array<{
+  value: GmailSyncConsent['syncWindow'];
+  label: string;
+  detail: string;
+  maxResults: number;
+}> = [
+  { value: '15d', label: '15 days', detail: 'Fast check for recent statements and receipts.', maxResults: 50 },
+  { value: '30d', label: '1 month', detail: 'Balanced monthly inbox review.', maxResults: 75 },
+  { value: '90d', label: '3 months', detail: 'Quarterly financial email scan.', maxResults: 150 },
+  { value: '180d', label: '6 months', detail: 'Wider review for older statements.', maxResults: 250 },
+  { value: 'all', label: 'All time', detail: 'Scans matching financial emails across Gmail, capped at 500 messages per run.', maxResults: 500 },
+];
 
 const isGoogleAuthorizationUrl = (url: string) => {
   try {
@@ -45,6 +58,7 @@ export const GmailConnectionCard: React.FC = () => {
   const featureEnabled = isGmailSyncEnabled();
   const [showConsent, setShowConsent] = React.useState(false);
   const [showEmails, setShowEmails] = React.useState(false);
+  const [showSyncWindow, setShowSyncWindow] = React.useState(false);
   const [busy, setBusy] = React.useState<'connect' | 'refresh' | 'sync' | 'disconnect' | null>(null);
   const consent = useGmailSyncStore((state) => state.consent);
   const connection = useGmailSyncStore((state) => state.connection);
@@ -52,6 +66,7 @@ export const GmailConnectionCard: React.FC = () => {
   const emails = useGmailSyncStore((state) => state.emails);
   const lastSyncSummary = useGmailSyncStore((state) => state.lastSyncSummary);
   const setAllowedCategories = useGmailSyncStore((state) => state.setAllowedCategories);
+  const setSyncWindow = useGmailSyncStore((state) => state.setSyncWindow);
   const acceptMetadataScan = useGmailSyncStore((state) => state.acceptMetadataScan);
   const acceptAttachmentDownloads = useGmailSyncStore((state) => state.acceptAttachmentDownloads);
   const setStatus = useGmailSyncStore((state) => state.setStatus);
@@ -63,6 +78,8 @@ export const GmailConnectionCard: React.FC = () => {
   const metadataAccepted = Boolean(consent.metadataScanAcceptedAt);
   const attachmentDownloadsAccepted = Boolean(consent.attachmentDownloadAcceptedAt);
   const isConnected = connection?.status === 'connected';
+  const selectedSyncWindow =
+    GMAIL_SYNC_WINDOW_OPTIONS.find((option) => option.value === consent.syncWindow) ?? GMAIL_SYNC_WINDOW_OPTIONS[1];
 
   const hydrateStatus = React.useCallback(async () => {
     if (!enabled) {
@@ -154,6 +171,11 @@ export const GmailConnectionCard: React.FC = () => {
     setBusy('connect');
     try {
       const response = await gmailSyncApi.startConnect(consent.metadataScanAcceptedAt, getGmailOAuthReturnTo());
+      if (response.enabled === false || !response.authorizationUrl) {
+        Alert.alert('Gmail setup required', response.message ?? 'Configure Gmail OAuth before connecting.');
+        setShowConsent(true);
+        return;
+      }
       if (!isGoogleAuthorizationUrl(response.authorizationUrl)) {
         Alert.alert('Gmail connect failed', 'MoneyKai received an unexpected Google authorization URL.');
         return;
@@ -169,7 +191,7 @@ export const GmailConnectionCard: React.FC = () => {
     }
   };
 
-  const handleSync = async () => {
+  const handleSync = async (option: (typeof GMAIL_SYNC_WINDOW_OPTIONS)[number]) => {
     if (!consent.metadataScanAcceptedAt) {
       setShowConsent(true);
       return;
@@ -180,17 +202,19 @@ export const GmailConnectionCard: React.FC = () => {
     }
 
     setBusy('sync');
+    setShowSyncWindow(false);
     try {
+      setSyncWindow(option.value);
       const summary = await gmailSyncApi.syncMetadata({
         metadataScanAcceptedAt: consent.metadataScanAcceptedAt,
         allowedCategories: consent.allowedCategories,
-        syncWindow: consent.syncWindow,
-        maxResults: 25,
+        syncWindow: option.value,
+        maxResults: option.maxResults,
       });
       setLastSyncSummary(summary);
       setEmails(summary.items);
       await hydrateStatus();
-      Alert.alert('Gmail sync complete', `${summary.financialEmailCount} financial emails need review.`);
+      Alert.alert('Gmail sync complete', `${summary.financialEmailCount} financial emails need review from ${option.label.toLowerCase()}.`);
     } catch (error) {
       Alert.alert('Gmail sync failed', error instanceof Error ? error.message : 'Could not sync Gmail metadata.');
     } finally {
@@ -296,7 +320,7 @@ export const GmailConnectionCard: React.FC = () => {
           <Button
             title="Sync"
             icon="sync"
-            onPress={handleSync}
+            onPress={() => setShowSyncWindow(true)}
             loading={busy === 'sync'}
             disabled={!enabled || !isConnected || !metadataAccepted}
             style={{ flexGrow: 1 }}
@@ -330,7 +354,11 @@ export const GmailConnectionCard: React.FC = () => {
           <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
             Last sync scanned {lastSyncSummary.scannedMessageCount} messages with a filtered Gmail query.
           </Text>
-        ) : null}
+        ) : (
+          <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>
+            Sync range: {selectedSyncWindow.label}
+          </Text>
+        )}
       </Card>
 
       <ModalSheet
@@ -381,6 +409,51 @@ export const GmailConnectionCard: React.FC = () => {
               </View>
             ))}
           </View>
+        </View>
+      </ModalSheet>
+
+      <ModalSheet
+        visible={showSyncWindow}
+        title="Sync Gmail"
+        subtitle="Choose how far back MoneyKai should scan financial emails for this run."
+        onClose={() => (busy === 'sync' ? undefined : setShowSyncWindow(false))}
+        footer={<Button title="Cancel" onPress={() => setShowSyncWindow(false)} variant="outline" disabled={busy === 'sync'} />}
+      >
+        <View style={{ gap: Spacing.sm }}>
+          {GMAIL_SYNC_WINDOW_OPTIONS.map((option) => {
+            const active = selectedSyncWindow.value === option.value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active, busy: busy === 'sync' && active, disabled: busy === 'sync' }}
+                activeOpacity={0.82}
+                disabled={busy === 'sync'}
+                onPress={() => void handleSync(option)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: Spacing.md,
+                  borderRadius: BorderRadius.md,
+                  borderWidth: 1,
+                  borderColor: active ? colors.primary : colors.borderLight,
+                  backgroundColor: active ? colors.primaryBg : colors.surface,
+                  padding: Spacing.md,
+                  opacity: busy === 'sync' && !active ? 0.55 : 1,
+                }}
+              >
+                <MaterialCommunityIcons name={active ? 'check-circle-outline' : 'calendar-range'} size={22} color={active ? colors.primary : colors.textSecondary} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    {option.label}
+                  </Text>
+                  <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                    {option.detail}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ModalSheet>
 

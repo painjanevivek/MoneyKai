@@ -5,6 +5,13 @@ import { THEME_OPTIONS, type ThemeMode } from '../constants/theme';
 import { saveUserAppSettings } from '@/services/firestoreData';
 import { useAuthStore } from './useAuthStore';
 import { requestAutomaticBackup } from '@/services/backupService';
+import {
+  FALLBACK_INR_EXCHANGE_RATES,
+  fetchLatestInrExchangeRates,
+  isExchangeRateFresh,
+  normalizeExchangeRates,
+  type CurrencyExchangeRates,
+} from '@/utils/currencyConversion';
 
 export type PersistedAppSettings = {
   theme: ThemeMode;
@@ -40,11 +47,16 @@ interface SettingsState {
   tourCompleted: boolean;
   appLockEnabled: boolean;
   tourCompletedByUserId: TourCompletionMap;
+  exchangeRates: CurrencyExchangeRates;
+  exchangeRatesUpdatedAt?: string;
+  exchangeRatesProvider?: string;
+  exchangeRateError?: string;
 
   // Actions
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
   setCurrency: (currency: string, symbol: string) => void;
+  refreshExchangeRates: (force?: boolean) => Promise<void>;
   toggleNotifications: () => void;
   setNotificationsEnabled: (enabled: boolean) => void;
   toggleHaptic: () => void;
@@ -55,7 +67,7 @@ interface SettingsState {
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       theme: 'light',
       currency: 'INR',
       currencySymbol: '₹',
@@ -64,6 +76,7 @@ export const useSettingsStore = create<SettingsState>()(
       tourCompleted: false,
       appLockEnabled: false,
       tourCompletedByUserId: {},
+      exchangeRates: FALLBACK_INR_EXCHANGE_RATES,
 
       toggleTheme: () =>
         set((state) => {
@@ -115,6 +128,28 @@ export const useSettingsStore = create<SettingsState>()(
           void requestAutomaticBackup('settings updated');
           return { currency, currencySymbol: symbol };
         }),
+
+      refreshExchangeRates: async (force = false) => {
+        const state = get();
+        if (!force && isExchangeRateFresh(state.exchangeRatesUpdatedAt)) {
+          return;
+        }
+
+        try {
+          const result = await fetchLatestInrExchangeRates();
+          set({
+            exchangeRates: result.rates,
+            exchangeRatesUpdatedAt: result.fetchedAt,
+            exchangeRatesProvider: result.provider,
+            exchangeRateError: undefined,
+          });
+        } catch (error) {
+          set({
+            exchangeRates: normalizeExchangeRates(state.exchangeRates),
+            exchangeRateError: error instanceof Error ? error.message : 'Could not refresh currency rates.',
+          });
+        }
+      },
 
       toggleNotifications: () =>
         set((state) => {
@@ -229,6 +264,10 @@ export const useSettingsStore = create<SettingsState>()(
         tourCompleted: state.tourCompleted,
         appLockEnabled: state.appLockEnabled,
         tourCompletedByUserId: state.tourCompletedByUserId,
+        exchangeRates: state.exchangeRates,
+        exchangeRatesUpdatedAt: state.exchangeRatesUpdatedAt,
+        exchangeRatesProvider: state.exchangeRatesProvider,
+        exchangeRateError: state.exchangeRateError,
       }),
     }
   )

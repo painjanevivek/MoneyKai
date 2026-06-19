@@ -218,7 +218,7 @@ export default function BudgetScreen() {
                 Monthly Budget
               </Text>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-                {currencySymbol} {settings.monthly_allowance.toLocaleString('en-IN')}
+                {formatCurrency(settings.monthly_allowance)}
               </Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textTertiary} />

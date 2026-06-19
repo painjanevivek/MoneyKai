@@ -93,6 +93,13 @@ const messageFromPayload = (payload: any, fallback: string): string => {
   }
 
   const detail = payload?.detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0];
+    const path = Array.isArray(first?.loc) ? first.loc.filter((part: unknown) => part !== 'body').join('.') : '';
+    const message = typeof first?.msg === 'string' ? first.msg : 'The request was not accepted.';
+    return path ? `${path}: ${message}` : message;
+  }
+
   return (
     (typeof detail === 'string' ? detail : detail?.message) ||
     payload?.message ||

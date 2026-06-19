@@ -48,7 +48,7 @@ export interface GmailSyncConsent {
   metadataScanAcceptedAt?: string;
   attachmentDownloadAcceptedAt?: string;
   allowedCategories: FinancialEmailCategory[];
-  syncWindow: '15d' | '30d' | '90d' | '180d' | '365d';
+  syncWindow: '15d' | '30d' | '90d' | '180d' | '365d' | 'all';
 }
 
 export interface GmailSyncStatus {
@@ -59,6 +59,10 @@ export interface GmailSyncStatus {
   needsPasswordCount: number;
   importedItemCount: number;
   lastSyncError?: string;
+  message?: string;
+  checklist?: string[];
+  manualSetupRequired?: string[];
+  restrictedScopes?: string[];
 }
 
 export interface GmailSyncSummary {
@@ -71,9 +75,13 @@ export interface GmailSyncSummary {
 }
 
 export interface GmailConnectStartResponse {
-  authorizationUrl: string;
-  state: string;
-  expiresAt: string;
+  enabled?: boolean;
+  authorizationUrl?: string | null;
+  state?: string | null;
+  expiresAt?: string | null;
+  message?: string;
+  checklist?: string[];
+  manualSetupRequired?: string[];
 }
 
 export interface GmailSyncRequest {

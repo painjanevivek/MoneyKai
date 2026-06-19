@@ -94,6 +94,8 @@ class AppErrorBoundary extends React.Component<
 
 export default function RootLayout() {
   const theme = useSettingsStore((s) => s.theme);
+  const currencyRenderToken = useSettingsStore((s) => `${s.currency}:${s.currencySymbol}:${s.exchangeRatesUpdatedAt ?? ''}`);
+  const refreshExchangeRates = useSettingsStore((s) => s.refreshExchangeRates);
   const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -127,6 +129,10 @@ export default function RootLayout() {
   useEffect(() => {
     void identifySentryUser(user);
   }, [user]);
+
+  useEffect(() => {
+    void refreshExchangeRates();
+  }, [currencyRenderToken, refreshExchangeRates]);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -189,7 +195,7 @@ export default function RootLayout() {
           <BudgetResetCoordinator />
         </Suspense>
       ) : null}
-      <View style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
+      <View key={currencyRenderToken} style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
     </AppErrorBoundary>
   );
 }

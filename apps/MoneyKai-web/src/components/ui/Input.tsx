@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { BorderRadius, ComponentTokens, Spacing, Typography } from '../../constants/theme';
 
 interface InputProps {
@@ -68,9 +69,11 @@ export const Input: React.FC<InputProps> = ({
   testID,
 }) => {
   const { colors } = useTheme();
+  const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const [isFocused, setIsFocused] = useState(false);
   const [isSecureVisible, setIsSecureVisible] = useState(!secureTextEntry);
   const resolvedAutoCorrect = autoCorrect ?? (!secureTextEntry && keyboardType !== 'email-address');
+  const displayPrefix = prefix === '₹' ? currencySymbol : prefix;
 
   const borderColor = error
     ? colors.error
@@ -115,7 +118,7 @@ export const Input: React.FC<InputProps> = ({
             style={{ marginRight: Spacing.sm }}
           />
         )}
-        {prefix && (
+        {displayPrefix && (
           <Text
             style={{
               fontSize: Typography.fontSize.md,
@@ -124,7 +127,7 @@ export const Input: React.FC<InputProps> = ({
               marginRight: 4,
             }}
           >
-            {prefix}
+            {displayPrefix}
           </Text>
         )}
         <TextInput

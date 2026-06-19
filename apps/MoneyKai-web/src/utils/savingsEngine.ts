@@ -1,7 +1,8 @@
-import type { CategoryReduction, SavingsProjection } from '../types/budget';
+﻿import type { CategoryReduction, SavingsProjection } from '../types/budget';
 import type { CategoryTotal } from '../types/transaction';
 import type { ColorScheme } from '../constants/theme';
 import { getDaysLeftInMonth, getDaysPassed, getDaysInCurrentMonth } from './dateUtils';
+import { formatCurrency } from './formatCurrency';
 
 /**
  * Savings Prediction Engine
@@ -36,7 +37,7 @@ export const calculateSavingsProjection = (
       if (savedAmount > 500) {
         const categoryName = reduction.category.charAt(0).toUpperCase() + reduction.category.slice(1);
         recommendations.push(
-          `Reducing ${categoryName} by ${reduction.reductionPercent}% could save ₹${Math.round(savedAmount).toLocaleString('en-IN')} this month.`
+          `Reducing ${categoryName} by ${reduction.reductionPercent}% could save ${formatCurrency(savedAmount)} this month.`
         );
       }
     }
@@ -58,7 +59,7 @@ export const calculateSavingsProjection = (
     recommendations.push('Your daily spending is running ahead of your budget. Try trimming a few non-essential expenses.');
   }
   if (daysLeft > 0 && projectedSavings > 0) {
-    recommendations.push(`A comfortable daily spend for the rest of the month is ₹${Math.round(projectedSavings / daysLeft).toLocaleString('en-IN')}.`);
+    recommendations.push(`A comfortable daily spend for the rest of the month is ${formatCurrency(projectedSavings / daysLeft)}.`);
   }
 
   return {

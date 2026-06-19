@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Modal, Alert, TextInput, Platform, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, TextInput, Platform, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
@@ -401,148 +401,146 @@ export default function TransactionsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base }}>
-        <WorkspaceHeader
-          icon="swap-horizontal"
-          eyebrow="TRANSACTION LEDGER"
-          title="Reviewed money movement"
-          description="Search, filter, edit, and approve the records shaping MoneyKai reports and budget decisions."
-          metrics={[
-            { label: 'Visible records', value: String(displayTransactions.length) },
-            { label: 'Spent', value: formatCurrency(totalSpent), tone: 'danger' },
-            { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
-            { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'warning' : 'positive' },
-          ]}
-          chips={[
-            { icon: 'filter-variant', label: `${activeFilterCount} active filters` },
-            { icon: 'sort', label: sortLabel },
-          ]}
-          actions={<Button title="Add Transaction" icon="plus" onPress={handleOpenAddModal} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />}
-        />
-      </View>
-
-      <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.sm }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: colors.card,
-            borderRadius: BorderRadius.md,
-            paddingHorizontal: Spacing.md,
-            height: 44,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <MaterialCommunityIcons name="magnify" size={20} color={colors.textTertiary} />
-          <TextInput
-            placeholder="Search transactions..."
-            placeholderTextColor={colors.textTertiary}
-            value={searchQuery}
-            onChangeText={handleSearch}
-            style={{ flex: 1, marginLeft: 8, fontSize: Typography.fontSize.base, color: colors.textPrimary, fontFamily: Typography.fontFamily.regular }}
+      <ScrollView
+        stickyHeaderIndices={[1]}
+        showsVerticalScrollIndicator={true}
+        contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['4xl'] }}
+      >
+        <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md, paddingBottom: Spacing.base }}>
+          <WorkspaceHeader
+            icon="swap-horizontal"
+            eyebrow="TRANSACTION LEDGER"
+            title="Reviewed money movement"
+            description="Search, filter, edit, and approve the records shaping MoneyKai reports and budget decisions."
+            metrics={[
+              { label: 'Visible records', value: String(displayTransactions.length) },
+              { label: 'Spent', value: formatCurrency(totalSpent), tone: 'danger' },
+              { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
+              { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'warning' : 'positive' },
+            ]}
+            chips={[
+              { icon: 'filter-variant', label: `${activeFilterCount} active filters` },
+              { icon: 'sort', label: sortLabel },
+            ]}
+            actions={<Button title="Add Transaction" icon="plus" onPress={handleOpenAddModal} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />}
           />
         </View>
-      </View>
 
-      <View style={{ flexDirection: 'row', paddingHorizontal: Spacing.base, gap: Spacing.sm, marginBottom: Spacing.md, alignItems: 'center' }}>
-        <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', flex: 1 }}>
-          {FILTER_TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => handleTabChange(tab)}
-              style={{
-                paddingHorizontal: Spacing.base,
-                paddingVertical: Spacing.sm,
-                borderRadius: BorderRadius.full,
-                backgroundColor: activeTab === tab ? colors.primary : colors.card,
-                borderWidth: activeTab === tab ? 0 : 1,
-                borderColor: colors.border,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: Typography.fontSize.sm,
-                  fontFamily: Typography.fontFamily.medium,
-                  color: activeTab === tab ? colors.textInverse : colors.textSecondary,
-                }}
-              >
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-          <TouchableOpacity
-            onPress={() => setShowFilterModal(true)}
+        <View
+          style={{
+            backgroundColor: colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderLight,
+            paddingHorizontal: Spacing.base,
+            paddingTop: Spacing.sm,
+            paddingBottom: Spacing.md,
+            zIndex: 10,
+          }}
+        >
+          <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 6,
-              paddingHorizontal: Spacing.md,
-              paddingVertical: Spacing.sm,
-              borderRadius: BorderRadius.full,
-              backgroundColor: activeFilterCount > 0 ? colors.primaryBg : colors.card,
-              borderWidth: 1,
-              borderColor: activeFilterCount > 0 ? colors.primary : colors.border,
-            }}
-          >
-            <MaterialCommunityIcons name="filter-variant" size={16} color={activeFilterCount > 0 ? colors.primary : colors.textSecondary} />
-            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: activeFilterCount > 0 ? colors.primary : colors.textSecondary }}>
-              {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setShowSortModal(true)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-              paddingHorizontal: Spacing.md,
-              paddingVertical: Spacing.sm,
-              borderRadius: BorderRadius.full,
               backgroundColor: colors.card,
+              borderRadius: BorderRadius.md,
+              paddingHorizontal: Spacing.md,
+              height: 44,
               borderWidth: 1,
               borderColor: colors.border,
             }}
           >
-            <MaterialCommunityIcons name="sort" size={16} color={colors.textSecondary} />
-            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-              {sortLabel}
-            </Text>
-          </TouchableOpacity>
+            <MaterialCommunityIcons name="magnify" size={20} color={colors.textTertiary} />
+            <TextInput
+              placeholder="Search transactions..."
+              placeholderTextColor={colors.textTertiary}
+              value={searchQuery}
+              onChangeText={handleSearch}
+              style={{ flex: 1, marginLeft: 8, fontSize: Typography.fontSize.base, color: colors.textPrimary, fontFamily: Typography.fontFamily.regular }}
+            />
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm, alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', flex: 1 }}>
+              {FILTER_TABS.map((tab) => (
+                <TouchableOpacity
+                  key={tab}
+                  onPress={() => handleTabChange(tab)}
+                  style={{
+                    paddingHorizontal: Spacing.base,
+                    paddingVertical: Spacing.sm,
+                    borderRadius: BorderRadius.full,
+                    backgroundColor: activeTab === tab ? colors.primary : colors.card,
+                    borderWidth: activeTab === tab ? 0 : 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: Typography.fontSize.sm,
+                      fontFamily: Typography.fontFamily.medium,
+                      color: activeTab === tab ? colors.textInverse : colors.textSecondary,
+                    }}
+                  >
+                    {tab}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <TouchableOpacity
+                onPress={() => setShowFilterModal(true)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: Spacing.sm,
+                  borderRadius: BorderRadius.full,
+                  backgroundColor: activeFilterCount > 0 ? colors.primaryBg : colors.card,
+                  borderWidth: 1,
+                  borderColor: activeFilterCount > 0 ? colors.primary : colors.border,
+                }}
+              >
+                <MaterialCommunityIcons name="filter-variant" size={16} color={activeFilterCount > 0 ? colors.primary : colors.textSecondary} />
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: activeFilterCount > 0 ? colors.primary : colors.textSecondary }}>
+                  {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowSortModal(true)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: Spacing.sm,
+                  borderRadius: BorderRadius.full,
+                  backgroundColor: colors.card,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <MaterialCommunityIcons name="sort" size={16} color={colors.textSecondary} />
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
+                  {sortLabel}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
 
-      <FlatList
-        data={displayTransactions}
-        renderItem={renderTransaction}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }}
-        ListEmptyComponent={<EmptyState icon="receipt" title="No Transactions" message="Start tracking by adding your first transaction." />}
-      />
-
-      <Pressable
-        onPress={handleOpenAddModal}
-        style={({ hovered, pressed }: any) => ({
-          position: 'absolute',
-          bottom: insets.bottom + 96,
-          right: 16,
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          ...Shadows.lg,
-          shadowColor: colors.primary,
-          borderWidth: 1,
-          borderColor: hovered ? colors.primaryLight : colors.primary,
-          transform: hovered && !pressed ? [{ translateY: -2 }, { scale: 1.04 }] : [{ translateY: 0 }, { scale: 1 }],
-        })}
-      >
-        <MaterialCommunityIcons name="plus" size={28} color={colors.textInverse} />
-      </Pressable>
+        <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md }}>
+          {displayTransactions.length > 0 ? (
+            displayTransactions.map((transaction) => (
+              <React.Fragment key={transaction.id}>
+                {renderTransaction({ item: transaction })}
+              </React.Fragment>
+            ))
+          ) : (
+            <EmptyState icon="receipt" title="No Transactions" message="Start tracking by adding your first transaction." />
+          )}
+        </View>
+      </ScrollView>
 
       <Modal visible={showFilterModal} animationType="fade" transparent>
         <Pressable style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }} onPress={() => setShowFilterModal(false)}>
@@ -872,7 +870,7 @@ export default function TransactionsScreen() {
                 prefix="₹"
                 keyboardType="number-pad"
                 inputMode="numeric"
-                icon="currency-inr"
+                icon="cash"
               />
               <Input label="Description" placeholder="What was this for?" value={txnDescription} onChangeText={setTxnDescription} icon="text-short" />
 

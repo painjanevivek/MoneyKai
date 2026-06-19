@@ -24,6 +24,37 @@ interface SettingItemProps {
   onPress?: () => void;
 }
 
+const CURRENCY_OPTIONS = [
+  {
+    code: 'INR',
+    symbol: '\u20B9',
+    label: 'Indian Rupee',
+    icon: 'currency-inr',
+    description: 'India-first default for budgets, transactions, and reports.',
+  },
+  {
+    code: 'USD',
+    symbol: '$',
+    label: 'US Dollar',
+    icon: 'currency-usd',
+    description: 'Use dollars across MoneyKai balances and exports.',
+  },
+  {
+    code: 'EUR',
+    symbol: '\u20AC',
+    label: 'Euro',
+    icon: 'currency-eur',
+    description: 'Use euros for European accounts and reports.',
+  },
+  {
+    code: 'JPY',
+    symbol: '\u00A5',
+    label: 'Japanese Yen',
+    icon: 'currency-jpy',
+    description: 'Use yen for Japan-based spending and balances.',
+  },
+] as const;
+
 const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, title, subtitle, right, onPress }) => {
   const { colors } = useTheme();
   return (
@@ -64,8 +95,20 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
 export default function SettingsScreen() {
   const { colors, theme, setTheme } = useTheme();
   const { user, signOut } = useAuthStore();
-  const { notificationsEnabled, hapticEnabled, toggleHaptic, currency, currencySymbol } = useSettingsStore();
+  const {
+    notificationsEnabled,
+    hapticEnabled,
+    toggleHaptic,
+    currency,
+    currencySymbol,
+    exchangeRatesUpdatedAt,
+    exchangeRateError,
+    refreshExchangeRates,
+    setCurrency,
+  } = useSettingsStore();
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
+  const [showCurrencySheet, setShowCurrencySheet] = useState(false);
+  const [currencyBusy, setCurrencyBusy] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const switchTrack = { false: colors.border, true: colors.primary } as const;
   const switchThumb = colors.textInverse;
@@ -74,6 +117,21 @@ export default function SettingsScreen() {
     const granted = await setNotificationEnabled(enabled);
     if (enabled && !granted) {
       Alert.alert('Permission denied', 'Turn on notifications from your device settings to receive alerts.');
+    }
+  };
+
+  const handleCurrencySelect = async (option: (typeof CURRENCY_OPTIONS)[number]) => {
+    if (currencyBusy) {
+      return;
+    }
+
+    setCurrencyBusy(true);
+    try {
+      await refreshExchangeRates(true);
+    } finally {
+      setCurrency(option.code, option.symbol);
+      setShowCurrencySheet(false);
+      setCurrencyBusy(false);
     }
   };
 
@@ -187,7 +245,14 @@ export default function SettingsScreen() {
               })}
             </View>
           </View>
-          <SettingItem icon="currency-inr" iconColor="#707070" iconBg="#F1F1F1" title="Currency" subtitle={`${currency} (${currencySymbol})`} />
+          <SettingItem
+            icon="currency-inr"
+            iconColor="#707070"
+            iconBg="#F1F1F1"
+            title="Display Currency"
+            subtitle={`${currency} (${currencySymbol}) from INR${exchangeRatesUpdatedAt ? `, rates ${new Date(exchangeRatesUpdatedAt).toLocaleDateString()}` : ''}`}
+            onPress={() => setShowCurrencySheet(true)}
+          />
         </Card>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Notifications</Text>
@@ -235,6 +300,72 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.emergency }}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <ModalSheet
+        visible={showCurrencySheet}
+        title="Display currency"
+        subtitle="MoneyKai stores amounts in INR and converts displayed values with live cached rates."
+        onClose={() => (currencyBusy ? undefined : setShowCurrencySheet(false))}
+        footer={<Button title="Done" onPress={() => setShowCurrencySheet(false)} variant="outline" disabled={currencyBusy} />}
+      >
+        <View style={{ gap: Spacing.sm }}>
+          {exchangeRateError ? (
+            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+              Live rates could not refresh last time. MoneyKai will use the latest cached rate.
+            </Text>
+          ) : null}
+          {CURRENCY_OPTIONS.map((option) => {
+            const active = currency === option.code;
+            return (
+              <TouchableOpacity
+                key={option.code}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                disabled={currencyBusy}
+                accessibilityLabel={`Use ${option.label}`}
+                activeOpacity={0.82}
+                onPress={() => void handleCurrencySelect(option)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: Spacing.md,
+                  borderRadius: BorderRadius.md,
+                  borderWidth: 1.5,
+                  borderColor: active ? colors.primary : colors.borderLight,
+                  backgroundColor: active ? colors.primaryBg : colors.surface,
+                  padding: Spacing.md,
+                  opacity: currencyBusy ? 0.58 : 1,
+                }}
+              >
+                <View
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: BorderRadius.sm,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: colors.card,
+                  }}
+                >
+                  <MaterialCommunityIcons name={option.icon as any} size={22} color={active ? colors.primary : colors.textSecondary} />
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    {option.code} ({option.symbol})
+                  </Text>
+                  <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                    {option.label}
+                  </Text>
+                  <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textTertiary }}>
+                    {option.description}
+                  </Text>
+                </View>
+                {active ? <MaterialCommunityIcons name="check-circle" size={22} color={colors.primary} /> : null}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ModalSheet>
 
       <ModalSheet
         visible={showSignOutSheet}

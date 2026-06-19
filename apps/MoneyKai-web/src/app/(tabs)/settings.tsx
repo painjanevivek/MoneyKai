@@ -20,6 +20,7 @@ import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupServ
 import { setNotificationEnabled } from '@/services/notificationService';
 import { resetLocalAppState } from '@/services/remoteSync';
 import { getStoreReviewUrl } from '@/config/environment';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 interface SettingItemProps {
   icon: string;
@@ -34,6 +35,37 @@ interface SettingItemProps {
 type ExportFormat = 'word' | 'excel' | 'pdf';
 
 const EXPORT_COLUMNS = ['Date', 'Type', 'Category', 'Description', 'Amount', 'Payment Method'] as const;
+
+const CURRENCY_OPTIONS = [
+  {
+    code: 'INR',
+    symbol: '₹',
+    label: 'Indian Rupee',
+    icon: 'currency-inr',
+    description: 'India-first default for MoneyKai budgets and reports.',
+  },
+  {
+    code: 'USD',
+    symbol: '$',
+    label: 'US Dollar',
+    icon: 'currency-usd',
+    description: 'Use dollars across budgets, transactions, and exports.',
+  },
+  {
+    code: 'EUR',
+    symbol: '€',
+    label: 'Euro',
+    icon: 'currency-eur',
+    description: 'Use euros for European accounts and reports.',
+  },
+  {
+    code: 'JPY',
+    symbol: '¥',
+    label: 'Japanese Yen',
+    icon: 'currency-jpy',
+    description: 'Use yen for Japan-based spending and balances.',
+  },
+] as const;
 
 const escapeHtml = (value: string): string =>
   value
@@ -57,15 +89,14 @@ const downloadBlob = (content: string, mimeType: string, filename: string) => {
 };
 
 const buildTransactionRows = (
-  transactions: ReturnType<typeof useTransactionStore.getState>['transactions'],
-  currencySymbol: string
+  transactions: ReturnType<typeof useTransactionStore.getState>['transactions']
 ) =>
   transactions.map((transaction) => [
     transaction.transaction_date,
     transaction.type,
     transaction.category,
     transaction.description,
-    `${currencySymbol} ${Number(transaction.amount).toLocaleString('en-IN')}`,
+    formatCurrency(Number(transaction.amount), undefined, true),
     transaction.payment_method ?? '',
   ]);
 
@@ -291,19 +322,93 @@ function ExportFormatOption({
   );
 }
 
+function CurrencyOption({
+  active,
+  disabled = false,
+  option,
+  onPress,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  option: (typeof CURRENCY_OPTIONS)[number];
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ checked: active, disabled }}
+      accessibilityLabel={`Use ${option.label}`}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ hovered, pressed }: any) => ({
+        minHeight: 72,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.md,
+        padding: Spacing.md,
+        borderRadius: BorderRadius.md,
+        borderWidth: 1,
+        borderColor: active ? colors.primary : hovered ? `${colors.primary}66` : colors.borderLight,
+        backgroundColor: active ? colors.primaryBg : hovered ? colors.surfaceElevated : colors.surface,
+        opacity: disabled ? 0.58 : 1,
+        transform: hovered && !pressed && !disabled ? [{ translateY: -1 }] : [{ translateY: 0 }],
+      })}
+    >
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: BorderRadius.sm,
+          backgroundColor: active ? colors.primary : colors.primaryBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <MaterialCommunityIcons name={option.icon as any} size={22} color={active ? colors.textInverse : colors.primary} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' }}>
+          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+            {option.code} ({option.symbol})
+          </Text>
+          <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>{option.label}</Text>
+        </View>
+        <Text style={{ marginTop: 4, fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+          {option.description}
+        </Text>
+      </View>
+      <MaterialCommunityIcons name={active ? 'check-circle' : 'circle-outline'} size={20} color={active ? colors.primary : colors.textTertiary} />
+    </Pressable>
+  );
+}
+
 export default function SettingsScreen() {
   const { colors, theme, setTheme } = useTheme();
   const { user, signOut } = useAuthStore();
-  const { notificationsEnabled, hapticEnabled, toggleHaptic, currency, currencySymbol } = useSettingsStore();
+  const {
+    notificationsEnabled,
+    hapticEnabled,
+    toggleHaptic,
+    currency,
+    currencySymbol,
+    exchangeRatesUpdatedAt,
+    exchangeRateError,
+    refreshExchangeRates,
+    setCurrency,
+  } = useSettingsStore();
   const transactions = useTransactionStore((s) => s.transactions);
 
   const [showBackupSheet, setShowBackupSheet] = useState(false);
   const [showExportSheet, setShowExportSheet] = useState(false);
   const [showChangePasswordSheet, setShowChangePasswordSheet] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
   const [showDeleteAccountSheet, setShowDeleteAccountSheet] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [currencyBusy, setCurrencyBusy] = useState(false);
   const [changePasswordBusy, setChangePasswordBusy] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -314,6 +419,21 @@ export default function SettingsScreen() {
   } as const;
   const switchThumb = colors.textInverse;
   const selectedTheme = THEME_OPTIONS.find((option) => option.id === theme) ?? THEME_OPTIONS[0];
+
+  const handleCurrencySelect = async (option: (typeof CURRENCY_OPTIONS)[number]) => {
+    if (currencyBusy) {
+      return;
+    }
+
+    setCurrencyBusy(true);
+    try {
+      await refreshExchangeRates(true);
+    } finally {
+      setCurrency(option.code, option.symbol);
+      setShowCurrencyPicker(false);
+      setCurrencyBusy(false);
+    }
+  };
 
   const handleSignOut = async () => {
     if (signOutBusy) return;
@@ -336,7 +456,7 @@ export default function SettingsScreen() {
         return;
       }
 
-      const rows = buildTransactionRows(transactions, currencySymbol);
+      const rows = buildTransactionRows(transactions);
       const html = buildExportHtml(rows, 'MoneyKai Transactions');
       setShowExportSheet(false);
 
@@ -566,7 +686,14 @@ export default function SettingsScreen() {
               ))}
             </View>
           ) : null}
-          <SettingItem icon="currency-inr" iconColor="#707070" iconBg="#F1F1F1" title="Currency" subtitle={`${currency} (${currencySymbol})`} />
+          <SettingItem
+            icon="currency-usd"
+            iconColor="#707070"
+            iconBg="#F1F1F1"
+            title="Display Currency"
+            subtitle={`${currency} (${currencySymbol}) from INR${exchangeRatesUpdatedAt ? `, rates ${new Date(exchangeRatesUpdatedAt).toLocaleDateString()}` : ''}`}
+            onPress={() => setShowCurrencyPicker(true)}
+          />
         </Card>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Notifications</Text>
@@ -671,6 +798,31 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, lineHeight: 18 }}>
             {transactions.length} transactions available for export.
           </Text>
+        </View>
+      </ModalSheet>
+
+      <ModalSheet
+        visible={showCurrencyPicker}
+        title="Display currency"
+        subtitle="MoneyKai stores amounts in INR and converts displayed values with live cached rates."
+        onClose={() => (currencyBusy ? undefined : setShowCurrencyPicker(false))}
+        footer={<Button title="Cancel" onPress={() => setShowCurrencyPicker(false)} variant="outline" disabled={currencyBusy} />}
+      >
+        <View style={{ gap: Spacing.sm }}>
+          {exchangeRateError ? (
+            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+              Live rates could not refresh last time. MoneyKai will use the latest cached rate.
+            </Text>
+          ) : null}
+          {CURRENCY_OPTIONS.map((option) => (
+            <CurrencyOption
+              key={option.code}
+              option={option}
+              active={currency === option.code}
+              disabled={currencyBusy}
+              onPress={() => void handleCurrencySelect(option)}
+            />
+          ))}
         </View>
       </ModalSheet>
 

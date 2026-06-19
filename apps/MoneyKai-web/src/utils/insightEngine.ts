@@ -1,5 +1,6 @@
-import type { CategoryTotal } from '../types/transaction';
+﻿import type { CategoryTotal } from '../types/transaction';
 import { getDaysPassed } from './dateUtils';
+import { formatCurrency } from './formatCurrency';
 
 export interface Insight {
   id: string;
@@ -101,7 +102,7 @@ export const generateInsights = (
     insights.push({
       id: 'daily_overspend',
       icon: 'speedometer',
-      message: `Daily average (₹${Math.round(dailyAvg).toLocaleString('en-IN')}) exceeds your safe limit.`,
+      message: `Daily average (${formatCurrency(dailyAvg)}) exceeds your safe limit.`,
       type: 'warning',
       priority: 1,
     });
@@ -125,7 +126,7 @@ export const generateInsights = (
       insights.push({
         id: 'savings_tip',
         icon: 'lightbulb-on-outline',
-        message: `You can save up to ₹${saveable.toLocaleString('en-IN')} if you reduce ${top.category} by 20%.`,
+        message: `You can save up to ${formatCurrency(saveable)} if you reduce ${top.category} by 20%.`,
         type: 'tip',
         priority: 2,
         actionLabel: 'View Predictor',

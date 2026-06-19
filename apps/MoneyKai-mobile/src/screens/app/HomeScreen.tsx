@@ -43,6 +43,10 @@ type ActivationStep = {
 function FirstValuePanel({ steps }: { steps: ActivationStep[] }) {
   const { colors } = useTheme();
   const completed = steps.filter((step) => step.done).length;
+  if (completed >= steps.length) {
+    return null;
+  }
+
   const nextStep = steps.find((step) => !step.done) ?? steps[steps.length - 1];
   const progress = `${Math.round((completed / steps.length) * 100)}%`;
 

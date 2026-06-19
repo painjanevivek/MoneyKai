@@ -1,7 +1,7 @@
 import React, { type PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
-import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -9,7 +9,7 @@ import { useTransactionStore } from '@/stores/useTransactionStore';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Button } from '@/components/ui/Button';
-import { endOfMonth, formatDate, getLastSixMonths, startOfMonth } from '@/utils/dateUtils';
+import { endOfMonth, formatDate, startOfMonth } from '@/utils/dateUtils';
 
 type NavItem = {
   href: string;
@@ -52,6 +52,23 @@ const isRouteActive = (pathname: string, href: string) => {
   return normalized === href || normalized.startsWith(`${href}/`);
 };
 
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
+  index,
+  label: formatDate(new Date(2026, index, 1), 'MMM'),
+  fullLabel: formatDate(new Date(2026, index, 1), 'MMMM'),
+}));
+
+const toMonthKey = (year: number, monthIndex: number) => `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+
+const getCurrentMonthKey = () => formatDate(new Date(), 'yyyy-MM');
+
+const parseMonthKey = (monthKey: string) => {
+  const [yearValue, monthValue] = monthKey.split('-').map((part) => Number(part));
+  const safeYear = Number.isFinite(yearValue) && yearValue > 1900 ? yearValue : new Date().getFullYear();
+  const safeMonthIndex = Number.isFinite(monthValue) ? Math.min(Math.max(monthValue - 1, 0), 11) : new Date().getMonth();
+  return new Date(safeYear, safeMonthIndex, 1);
+};
+
 export function DesktopShell({ children }: PropsWithChildren) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -60,18 +77,22 @@ export function DesktopShell({ children }: PropsWithChildren) {
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const setTransactionFilter = useTransactionStore((s) => s.setFilter);
-  const months = useMemo(() => getLastSixMonths(), []);
-  const [selectedMonthKey, setSelectedMonthKey] = useState(months[months.length - 1]?.key ?? '');
+  const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
+  const [selectedMonthKey, setSelectedMonthKey] = useState(currentMonthKey);
   const [showMonthMenu, setShowMonthMenu] = useState(false);
+  const [visibleYear, setVisibleYear] = useState(() => parseMonthKey(currentMonthKey).getFullYear());
 
   const sidebarWidth = width >= 1440 ? 300 : 268;
   const activeMeta = ROUTE_META.find((item) => isRouteActive(pathname, item.href)) ?? ROUTE_META[0];
-  const selectedMonthDate = useMemo(
-    () => months.find((month) => month.key === selectedMonthKey)?.date ?? months[months.length - 1]?.date ?? new Date(),
-    [months, selectedMonthKey]
-  );
+  const selectedMonthDate = useMemo(() => parseMonthKey(selectedMonthKey), [selectedMonthKey]);
   const monthRangeLabel = `${formatDate(startOfMonth(selectedMonthDate), 'MMM d')} - ${formatDate(endOfMonth(selectedMonthDate), 'MMM d, yyyy')}`;
   const isCompact = width < 900;
+
+  useEffect(() => {
+    if (showMonthMenu) {
+      setVisibleYear(selectedMonthDate.getFullYear());
+    }
+  }, [selectedMonthDate, showMonthMenu]);
 
   useEffect(() => {
     setTransactionFilter({
@@ -84,6 +105,17 @@ export function DesktopShell({ children }: PropsWithChildren) {
   const handleSignOut = async () => {
     await signOut();
     router.replace('/login');
+  };
+
+  const handleSelectMonth = (monthKey: string) => {
+    setSelectedMonthKey(monthKey);
+    setShowMonthMenu(false);
+  };
+
+  const handleResetToCurrentMonth = () => {
+    setSelectedMonthKey(currentMonthKey);
+    setVisibleYear(parseMonthKey(currentMonthKey).getFullYear());
+    setShowMonthMenu(false);
   };
 
   if (isCompact) {
@@ -239,48 +271,16 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </Pressable>
 
               {showMonthMenu && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 52,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: colors.surface,
-                    borderRadius: BorderRadius.lg,
-                    borderWidth: 1,
-                    borderColor: colors.borderLight,
-                    ...Shadows.lg,
-                    shadowColor: colors.shadowColor,
-                    padding: Spacing.sm,
-                    zIndex: 20,
-                  }}
-                >
-                  {months.map((month) => {
-                    const active = month.key === selectedMonthKey;
-                    return (
-                      <Pressable
-                        key={month.key}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Show ${month.label}`}
-                        accessibilityState={{ selected: active }}
-                        onPress={() => {
-                          setSelectedMonthKey(month.key);
-                          setShowMonthMenu(false);
-                        }}
-                        style={({ hovered }: any) => ({
-                          paddingHorizontal: Spacing.md,
-                          paddingVertical: 11,
-                          borderRadius: BorderRadius.md,
-                          backgroundColor: active ? colors.primaryBg : hovered ? `${colors.primary}10` : 'transparent',
-                        })}
-                      >
-                        <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                          {month.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <MonthYearPickerPopover
+                  selectedMonthKey={selectedMonthKey}
+                  currentMonthKey={currentMonthKey}
+                  visibleYear={visibleYear}
+                  onChangeYear={setVisibleYear}
+                  onSelect={handleSelectMonth}
+                  onResetToCurrentMonth={handleResetToCurrentMonth}
+                  onClose={() => setShowMonthMenu(false)}
+                  style={{ top: 52, left: 0, right: 0 }}
+                />
               )}
             </View>
 
@@ -606,48 +606,16 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </Pressable>
 
               {showMonthMenu && (
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 54,
-                    right: 108,
-                    width: 260,
-                    backgroundColor: colors.surface,
-                    borderRadius: BorderRadius.lg,
-                    borderWidth: 1,
-                    borderColor: colors.borderLight,
-                    ...Shadows.lg,
-                    shadowColor: colors.shadowColor,
-                    padding: Spacing.sm,
-                    zIndex: 20,
-                  }}
-                >
-                  {months.map((month) => {
-                    const active = month.key === selectedMonthKey;
-                    return (
-                      <Pressable
-                        key={month.key}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Show ${month.label}`}
-                        accessibilityState={{ selected: active }}
-                        onPress={() => {
-                          setSelectedMonthKey(month.key);
-                          setShowMonthMenu(false);
-                        }}
-                        style={({ hovered }: any) => ({
-                          paddingHorizontal: Spacing.md,
-                          paddingVertical: 10,
-                          borderRadius: BorderRadius.md,
-                          backgroundColor: active ? colors.primaryBg : hovered ? `${colors.primary}10` : 'transparent',
-                        })}
-                      >
-                        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                          {month.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <MonthYearPickerPopover
+                  selectedMonthKey={selectedMonthKey}
+                  currentMonthKey={currentMonthKey}
+                  visibleYear={visibleYear}
+                  onChangeYear={setVisibleYear}
+                  onSelect={handleSelectMonth}
+                  onResetToCurrentMonth={handleResetToCurrentMonth}
+                  onClose={() => setShowMonthMenu(false)}
+                  style={{ top: 54, right: 108, width: 340 }}
+                />
               )}
             </View>
           </View>
@@ -674,6 +642,168 @@ export function DesktopShell({ children }: PropsWithChildren) {
         </View>
       </View>
     </SafeAreaView>
+  );
+}
+
+type MonthYearPickerPopoverProps = {
+  selectedMonthKey: string;
+  currentMonthKey: string;
+  visibleYear: number;
+  onChangeYear: (year: number) => void;
+  onSelect: (monthKey: string) => void;
+  onResetToCurrentMonth: () => void;
+  onClose: () => void;
+  style?: StyleProp<ViewStyle>;
+};
+
+function MonthYearPickerPopover({
+  selectedMonthKey,
+  currentMonthKey,
+  visibleYear,
+  onChangeYear,
+  onSelect,
+  onResetToCurrentMonth,
+  onClose,
+  style,
+}: MonthYearPickerPopoverProps) {
+  const { colors } = useTheme();
+
+  return (
+    <View
+      style={[
+        {
+          position: 'absolute',
+          backgroundColor: colors.surface,
+          borderRadius: BorderRadius.lg,
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+          ...Shadows.lg,
+          shadowColor: colors.shadowColor,
+          padding: Spacing.md,
+          zIndex: 20,
+          gap: Spacing.md,
+        },
+        style,
+      ]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Previous year"
+          onPress={() => onChangeYear(visibleYear - 1)}
+          style={({ hovered, pressed }: any) => ({
+            width: 38,
+            height: 38,
+            borderRadius: BorderRadius.md,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+            borderWidth: 1,
+            borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+          })}
+        >
+          <MaterialCommunityIcons name="chevron-left" size={22} color={colors.textPrimary} />
+        </Pressable>
+
+        <View style={{ flex: 1, alignItems: 'center', minWidth: 0 }}>
+          <Text style={{ fontSize: Typography.fontSize.lg, lineHeight: 24, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+            {visibleYear}
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>
+            Select reporting month
+          </Text>
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Next year"
+          onPress={() => onChangeYear(visibleYear + 1)}
+          style={({ hovered, pressed }: any) => ({
+            width: 38,
+            height: 38,
+            borderRadius: BorderRadius.md,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+            borderWidth: 1,
+            borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+          })}
+        >
+          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textPrimary} />
+        </Pressable>
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+        {MONTH_OPTIONS.map((month) => {
+          const monthKey = toMonthKey(visibleYear, month.index);
+          const active = monthKey === selectedMonthKey;
+          const isCurrent = monthKey === currentMonthKey;
+
+          return (
+            <Pressable
+              key={monthKey}
+              accessibilityRole="button"
+              accessibilityLabel={`Show ${month.fullLabel} ${visibleYear}`}
+              accessibilityState={{ selected: active }}
+              onPress={() => onSelect(monthKey)}
+              style={({ hovered, pressed }: any) => ({
+                width: '31.4%',
+                minHeight: 58,
+                borderRadius: BorderRadius.md,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                backgroundColor: active ? colors.primary : hovered ? `${colors.primary}10` : colors.card,
+                borderWidth: 1,
+                borderColor: active ? colors.primary : isCurrent ? colors.primaryLight : colors.borderLight,
+                transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+              })}
+            >
+              <Text
+                style={{
+                  fontSize: Typography.fontSize.sm,
+                  lineHeight: 20,
+                  fontFamily: Typography.fontFamily.semiBold,
+                  color: active ? colors.textInverse : colors.textPrimary,
+                }}
+              >
+                {month.label}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontSize: Typography.fontSize.xs,
+                  lineHeight: 16,
+                  color: active ? colors.textInverse : isCurrent ? colors.primary : colors.textTertiary,
+                }}
+              >
+                {isCurrent ? 'Current' : month.fullLabel}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+        <Button
+          title="Current Month"
+          icon="calendar-today-outline"
+          variant="outline"
+          size="sm"
+          onPress={onResetToCurrentMonth}
+          style={{ flex: 1 }}
+        />
+        <Button
+          title="Done"
+          icon="check"
+          size="sm"
+          onPress={onClose}
+          style={{ flex: 1 }}
+        />
+      </View>
+    </View>
   );
 }
 

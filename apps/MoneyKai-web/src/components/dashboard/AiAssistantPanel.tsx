@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Card } from '@/components/ui/Card';
 import { Spacing, Typography, BorderRadius } from '@/constants/theme';
 import { useAiStreamingChat } from '@/features/ai/hooks';
+import { formatAiResponseText, withPlainTextAiStyle } from '@/features/ai/responseText';
 import type { AiChatMessage } from '@/features/ai/types';
 import { useTheme } from '@/hooks/useTheme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -50,7 +51,11 @@ export const AiAssistantPanel: React.FC = () => {
     try {
       const response = await send({
         task: 'general_chat',
-        messages: nextMessages.slice(-8),
+        messages: nextMessages.slice(-8).map((message, index, recentMessages) => (
+          index === recentMessages.length - 1 && message.role === 'user'
+            ? { ...message, content: withPlainTextAiStyle(message.content) }
+            : message
+        )),
         context,
       });
       setMessages((current) => [...current, { role: 'assistant', content: response.message }]);
@@ -111,7 +116,7 @@ export const AiAssistantPanel: React.FC = () => {
                     color: isUser ? colors.textInverse : colors.textPrimary,
                   }}
                 >
-                  {message.content}
+                  {isUser ? message.content : formatAiResponseText(message.content)}
                 </Text>
               </View>
             );
@@ -130,7 +135,7 @@ export const AiAssistantPanel: React.FC = () => {
               }}
             >
               <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textPrimary }}>
-                {partialMessage || 'Thinking...'}
+                {partialMessage ? formatAiResponseText(partialMessage) : 'Thinking...'}
               </Text>
             </View>
           ) : null}

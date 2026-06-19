@@ -213,7 +213,7 @@ export const SplitBillSheet: React.FC<SplitBillSheetProps> = ({ visible, groupNa
           onChangeText={(value) => setAmount(value.replace(/[^0-9.]/g, ''))}
           keyboardType="numeric"
           prefix="₹"
-          icon="currency-inr"
+          icon="cash"
         />
         <Input label="Note" placeholder="Optional note for the people you're sharing with" value={note} onChangeText={setNote} icon="note-text-outline" />
 

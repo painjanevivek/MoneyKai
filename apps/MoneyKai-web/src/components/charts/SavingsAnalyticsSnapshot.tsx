@@ -8,12 +8,15 @@ import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { useBudgetStore } from '../../stores/useBudgetStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 import { getCategoryById } from '../../constants/categories';
 import { generateInsights } from '../../utils/insightEngine';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
+import { convertFromInrForDisplay } from '@/utils/formatCurrency';
 
 export const SavingsAnalyticsSnapshot: React.FC = () => {
   const { colors } = useTheme();
+  const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
   const transactions = useTransactionStore((s) => s.transactions);
@@ -42,7 +45,7 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
         }, 0);
 
       return {
-        value,
+        value: convertFromInrForDisplay(value),
         label: ['M', 'T', 'W', 'T', 'F', 'S', 'S'][index],
         frontColor: index >= 5 ? colors.accent : colors.primary,
       };
@@ -133,7 +136,7 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
             yAxisColor="transparent"
             xAxisColor={colors.borderLight}
             isAnimated
-            yAxisLabelPrefix="₹"
+            yAxisLabelPrefix={currencySymbol}
           />
         ) : (
           <View style={{
