@@ -6,16 +6,16 @@ import { SITE } from '@/constants/site';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 const palette = {
-  page: '#07110F',
-  pageSoft: '#0B1713',
-  surface: '#101D18',
-  surfaceHigh: '#16261F',
+  page: '#06110E',
+  pageSoft: '#0A1814',
+  surface: '#10231D',
+  surfaceHigh: '#173228',
   surfaceWarm: '#F5F0E5',
-  border: 'rgba(210, 226, 218, 0.16)',
-  borderStrong: 'rgba(210, 226, 218, 0.28)',
+  border: 'rgba(190, 222, 212, 0.22)',
+  borderStrong: 'rgba(190, 222, 212, 0.38)',
   text: '#F5FBF8',
-  muted: '#B9CCC4',
-  faint: '#7F958C',
+  muted: '#C7DAD2',
+  faint: '#92AAA0',
   ink: '#15231E',
   green: '#7DD3C7',
   greenDeep: '#0F766E',
@@ -148,7 +148,7 @@ const badgeStyle: CSSProperties = {
   gap: 8,
   border: `1px solid ${palette.border}`,
   borderRadius: 999,
-  background: 'rgba(245, 251, 248, 0.06)',
+  background: 'rgba(14, 34, 28, 0.92)',
   color: palette.muted,
   fontSize: 13,
   fontWeight: 700,
@@ -159,8 +159,8 @@ const badgeStyle: CSSProperties = {
 const cardStyle: CSSProperties = {
   border: `1px solid ${palette.border}`,
   borderRadius: 8,
-  background: 'linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.035))',
-  boxShadow: '0 24px 70px rgba(0,0,0,0.28)',
+  background: 'linear-gradient(180deg, rgba(23, 50, 40, 0.96), rgba(9, 24, 19, 0.98))',
+  boxShadow: '0 24px 70px rgba(0,0,0,0.34)',
 };
 
 function cxGrid(isWide: boolean, min = '260px'): CSSProperties {
@@ -187,6 +187,7 @@ function Section({
       id={id}
       aria-labelledby={labelledBy}
       style={{
+        background: 'linear-gradient(180deg, #091A15 0%, #07130F 100%)',
         padding: compact ? '52px 0' : '84px 0',
         borderTop: `1px solid ${palette.border}`,
       }}
@@ -270,18 +271,20 @@ function LandingHeader({ compact }: { compact: boolean }) {
               aria-hidden="true"
               style={{
                 alignItems: 'center',
-                background: palette.green,
+                background: '#FFFFFF',
                 borderRadius: 8,
-                color: '#06211B',
                 display: 'inline-flex',
-                fontSize: 14,
-                fontWeight: 900,
                 height: 40,
                 justifyContent: 'center',
+                overflow: 'hidden',
                 width: 40,
               }}
             >
-              MK
+              <img
+                alt=""
+                src="/brand/moneykai-mark.jpeg"
+                style={{ display: 'block', height: 32, objectFit: 'contain', width: 32 }}
+              />
             </span>
             <span style={{ display: 'grid', gap: 1 }}>
               <strong style={{ color: palette.text, fontSize: 17, lineHeight: '20px' }}>{SITE.name}</strong>
@@ -475,7 +478,7 @@ export default function LandingScreen() {
       '@type': 'Organization',
       name: SITE.name,
       url: SITE.url,
-      logo: `${SITE.url}/favicon.png`,
+      logo: `${SITE.url}/brand/moneykai-mark.jpeg`,
       contactPoint: {
         '@type': 'ContactPoint',
         contactType: 'customer support',
@@ -509,15 +512,29 @@ export default function LandingScreen() {
         keywords={['personal finance India', 'expense tracker', 'budget app', 'private finance reports', 'shared expenses']}
         structuredData={structuredData}
       />
-      <div style={{ background: palette.page, color: palette.text, fontFamily: 'Inter, Poppins_400Regular, system-ui, sans-serif', minHeight: '100vh' }}>
+      <div
+        style={{
+          background:
+            'linear-gradient(180deg, #06110E 0%, #091A15 42%, #07130F 100%)',
+          color: palette.text,
+          colorScheme: 'dark',
+          fontFamily: 'Inter, Poppins_400Regular, system-ui, sans-serif',
+          minHeight: '100vh',
+        }}
+      >
         <LandingHeader compact={isCompact} />
 
-        <main id="main-content">
+        <main
+          id="main-content"
+          style={{
+            background: 'linear-gradient(180deg, #06110E 0%, #091A15 42%, #07130F 100%)',
+          }}
+        >
           <section
             aria-labelledby="hero-title"
             style={{
               background:
-                'radial-gradient(circle at 20% 10%, rgba(125,211,199,0.16), transparent 30%), radial-gradient(circle at 88% 18%, rgba(218,179,93,0.13), transparent 28%), #07110F',
+                'radial-gradient(circle at 20% 10%, rgba(125,211,199,0.17), transparent 30%), radial-gradient(circle at 88% 18%, rgba(218,179,93,0.14), transparent 28%), #06110E',
               padding: isCompact ? '48px 18px 52px' : '82px 24px 88px',
             }}
           >
@@ -549,7 +566,7 @@ export default function LandingScreen() {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 26 }}>
                   {trustItems.map((item) => (
-                    <span key={item} style={{ ...badgeStyle, background: 'rgba(245, 251, 248, 0.04)', fontSize: 12, padding: '8px 11px' }}>
+                    <span key={item} style={{ ...badgeStyle, background: 'rgba(14, 34, 28, 0.78)', fontSize: 12, padding: '8px 11px' }}>
                       {item}
                     </span>
                   ))}
@@ -560,7 +577,7 @@ export default function LandingScreen() {
             </div>
           </section>
 
-          <div style={{ margin: '0 auto', maxWidth: 1180, padding: isCompact ? '0 18px' : '0 24px' }}>
+          <div style={{ background: 'transparent', margin: '0 auto', maxWidth: 1180, padding: isCompact ? '0 18px' : '0 24px' }}>
             <Section compact={isCompact} labelledBy="problem-title">
               <div style={{ display: 'grid', gap: 28 }}>
                 <div style={{ display: 'grid', gap: 14, maxWidth: 760 }}>
@@ -650,7 +667,7 @@ export default function LandingScreen() {
                 </div>
                 <div style={{ display: 'grid', gap: 12 }}>
                   {['Reviewable drafts before report updates', 'Plain summaries instead of advice claims', 'Support and legal pages linked from every public page', 'Reduced motion and accessible contrast by default'].map((item) => (
-                    <div key={item} style={{ alignItems: 'center', background: 'rgba(255,255,255,0.06)', border: `1px solid ${palette.border}`, borderRadius: 8, display: 'flex', gap: 12, padding: 14 }}>
+                    <div key={item} style={{ alignItems: 'center', background: 'rgba(8, 24, 19, 0.66)', border: `1px solid ${palette.border}`, borderRadius: 8, display: 'flex', gap: 12, padding: 14 }}>
                       <span aria-hidden="true" style={{ background: palette.green, borderRadius: 999, height: 9, width: 9 }} />
                       <span style={{ color: palette.text, fontSize: 15, fontWeight: 700 }}>{item}</span>
                     </div>
@@ -704,7 +721,7 @@ export default function LandingScreen() {
                     ['Starter', 'For personal tracking and light monthly review.', 'Create account'],
                     ['Kai Plus', 'For deeper reports, shared spends, and advanced review habits.', 'View pricing'],
                   ].map(([plan, body, cta], index) => (
-                    <article key={plan} style={{ ...cardStyle, background: index === 1 ? `linear-gradient(180deg, ${palette.greenSoft}, rgba(255,255,255,0.04))` : cardStyle.background, padding: 22 }}>
+                    <article key={plan} style={{ ...cardStyle, background: index === 1 ? `linear-gradient(180deg, rgba(125, 211, 199, 0.18), rgba(9, 24, 19, 0.98))` : cardStyle.background, padding: 22 }}>
                       <h3 style={{ color: palette.text, fontSize: 24, lineHeight: '30px', margin: 0 }}>{plan}</h3>
                       <p style={{ ...paragraphStyle, marginTop: 10 }}>{body}</p>
                       <div style={{ marginTop: 22 }}>
@@ -740,6 +757,7 @@ export default function LandingScreen() {
             <section
               aria-labelledby="final-cta-title"
               style={{
+                background: '#07130F',
                 padding: isCompact ? '54px 0 72px' : '84px 0 104px',
               }}
             >
@@ -769,7 +787,7 @@ export default function LandingScreen() {
           </div>
         </main>
 
-        <footer style={{ borderTop: `1px solid ${palette.border}`, padding: isCompact ? '28px 18px' : '32px 24px' }}>
+        <footer style={{ background: '#06110E', borderTop: `1px solid ${palette.border}`, padding: isCompact ? '28px 18px' : '32px 24px' }}>
           <div
             style={{
               alignItems: isWide ? 'center' : 'start',

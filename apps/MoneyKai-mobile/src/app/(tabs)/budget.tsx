@@ -136,7 +136,7 @@ export default function BudgetScreen() {
                 onPress={() => setShowMonthPicker(true)}
                 variant="outline"
                 size="sm"
-                style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }}
+                tone="onDark"
               />
               <Button
                 title="Edit Budget"
@@ -147,7 +147,7 @@ export default function BudgetScreen() {
                 }}
                 variant="outline"
                 size="sm"
-                style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }}
+                tone="onDark"
               />
             </>
           }

@@ -316,7 +316,7 @@ export default function TransactionsScreen() {
               onPress={() => router.push('/(tabs)/auto-capture' as never)}
               variant="outline"
               size="sm"
-              style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }}
+              tone="onDark"
             />
           }
         />

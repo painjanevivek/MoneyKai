@@ -297,9 +297,30 @@ export default function DashboardScreen() {
         ]}
         actions={
           <>
-            <Button title="Transactions" onPress={() => router.push('/transactions' as any)} variant="outline" icon="swap-horizontal" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
-            <Button title="AI Review" onPress={() => router.push('/ai-review' as any)} variant="outline" icon="receipt-text-outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
-            <Button title="Portfolio" onPress={() => router.push('/portfolio' as any)} variant="outline" icon="briefcase-outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+            <Button
+              title="Transactions"
+              onPress={() => router.push('/transactions' as any)}
+              variant="outline"
+              tone="onDark"
+              icon="swap-horizontal"
+              style={{ flexGrow: 1, flexShrink: 1, flexBasis: 168 }}
+            />
+            <Button
+              title="AI Review"
+              onPress={() => router.push('/ai-review' as any)}
+              variant="outline"
+              tone="onDark"
+              icon="receipt-text-outline"
+              style={{ flexGrow: 1, flexShrink: 1, flexBasis: 168 }}
+            />
+            <Button
+              title="Portfolio"
+              onPress={() => router.push('/portfolio' as any)}
+              variant="outline"
+              tone="onDark"
+              icon="briefcase-outline"
+              style={{ flexGrow: 1, flexShrink: 1, flexBasis: 168 }}
+            />
           </>
         }
       />

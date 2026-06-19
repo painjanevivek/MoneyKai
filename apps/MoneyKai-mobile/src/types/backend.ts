@@ -5,11 +5,13 @@ import type { Group, GroupExpense } from './group';
 import type { Challenge } from './challenge';
 import type { Badge } from './badge';
 import type { AppNotification } from './notification';
-import type { ThemeMode } from '@/constants/theme';
+import type { ThemeMode, ThemePaletteId } from '@/constants/theme';
 import type { LinkedAccount } from '@moneykai/domain';
 
 export interface BackendAppSettings {
   theme: ThemeMode;
+  themePalette?: ThemePaletteId;
+  darkModeEnabled?: boolean;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;

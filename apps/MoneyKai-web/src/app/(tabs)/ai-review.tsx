@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
@@ -55,6 +55,7 @@ const TASK_OPTIONS: { id: AiAttachmentAnalyzeTask; title: string; subtitle: stri
 
 export default function AiReviewScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? 'local');
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isHydratingSession = useAuthStore((state) => state.isHydratingSession);
@@ -81,6 +82,7 @@ export default function AiReviewScreen() {
   const analysisPending = uploadState.loading || analyzeState.loading;
   const analysisError = uploadState.error || analyzeState.error;
   const canAnalyze = Boolean(selectedAsset) && attachmentsReady && !requiresSignIn && !analysisPending;
+  const isWide = width >= 1120;
 
   React.useEffect(() => {
     return () => {
@@ -216,32 +218,34 @@ export default function AiReviewScreen() {
         style={{ display: 'none' }}
       />
 
-      <Card style={{ gap: Spacing.md }}>
-        <View style={{ gap: Spacing.xs }}>
-          <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-            AI Attachment Review
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-            Upload a receipt or image, review the AI output, and decide what happens next. MoneyKai never saves transaction data from AI automatically.
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-          <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg }}>
-            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-              {loadingProviderStatus
-                ? 'Checking AI status'
-                : attachmentsReady
-                  ? 'Attachment analysis ready'
-                  : 'Attachment analysis unavailable'}
+      <Card style={{ gap: Spacing.md, padding: Spacing.md }}>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', alignItems: isWide ? 'center' : 'stretch', justifyContent: 'space-between', gap: Spacing.md }}>
+          <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+            <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              AI review workspace
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+              Ask a question, upload an image, then review every AI result before using it.
             </Text>
           </View>
-          {providerStatus?.defaultVisionModelConfigured ? (
-            <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: colors.surface }}>
-              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                Vision model configured
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+            <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: colors.glassBorder }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                {loadingProviderStatus
+                  ? 'Checking AI status'
+                  : attachmentsReady
+                    ? 'Analysis ready'
+                    : 'Analysis unavailable'}
               </Text>
             </View>
-          ) : null}
+            {providerStatus?.defaultVisionModelConfigured ? (
+              <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                  Vision ready
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
         {providerError ? (
           <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
@@ -254,117 +258,139 @@ export default function AiReviewScreen() {
         ) : null}
       </Card>
 
-      <AiModelConsole providerStatus={providerStatus} requiresSignIn={requiresSignIn} />
+      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.xl, alignItems: 'stretch' }}>
+        <AiModelConsole
+          providerStatus={providerStatus}
+          requiresSignIn={requiresSignIn}
+          containerStyle={{ flex: isWide ? 0.86 : undefined, minWidth: 0 }}
+        />
 
-      <Card style={{ gap: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-          Review mode
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-          {TASK_OPTIONS.map((option) => {
-            const active = task === option.id;
-            return (
-              <TouchableOpacity
-                key={option.id}
-                activeOpacity={0.85}
-                onPress={() => handleSelectTask(option.id)}
-                style={{
-                  flex: 1,
-                  minWidth: 260,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: Spacing.md,
-                  borderRadius: BorderRadius.lg,
-                  borderWidth: 1,
-                  borderColor: active ? colors.primary : colors.borderLight,
-                  backgroundColor: active ? colors.primaryBg : colors.surface,
-                  padding: Spacing.md,
-                }}
-              >
-                <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
-                  <MaterialCommunityIcons name={option.icon} size={20} color={active ? colors.primary : colors.textSecondary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                    {option.title}
-                  </Text>
-                  <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-                    {option.subtitle}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </Card>
-
-      <Card style={{ gap: Spacing.md }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.md }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-              Attachment
-            </Text>
-            <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-              Receipts work best when the merchant, date, and amount are clearly visible.
-            </Text>
-          </View>
-          <Button title={selectedAsset ? 'Replace' : 'Pick image'} icon="image-plus" size="sm" variant="outline" onPress={handlePickImage} />
-        </View>
-
-        {selectedAsset ? (
-          <View style={{ gap: Spacing.md }}>
-            <Image
-              source={selectedAsset.previewUri}
-              contentFit="cover"
-              style={{ width: '100%', height: 260, borderRadius: BorderRadius.lg, backgroundColor: colors.surface }}
-            />
-            <View style={{ gap: 4 }}>
-              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                {selectedAsset.filename}
+        <Card style={{ flex: isWide ? 1.14 : undefined, minWidth: 0, gap: Spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.md }}>
+            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Image review
               </Text>
-              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                {selectedAsset.mimeType} | {formatBytes(selectedAsset.sizeBytes)}
+              <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                Add an image, choose a review mode, adjust the prompt, then analyse.
               </Text>
             </View>
+            <Button title={selectedAsset ? 'Replace' : 'Pick image'} icon="image-plus" size="sm" variant="outline" onPress={handlePickImage} />
           </View>
-        ) : (
-          <EmptyState
-            icon="file-image-outline"
-            title="No image selected"
-            message="Choose a receipt or screenshot to start a review-only AI analysis."
-            style={{ paddingVertical: Spacing.xl, paddingHorizontal: 0 }}
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+            {TASK_OPTIONS.map((option) => {
+              const active = task === option.id;
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  activeOpacity={0.85}
+                  onPress={() => handleSelectTask(option.id)}
+                  style={{
+                    flex: 1,
+                    minWidth: 180,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: Spacing.sm,
+                    borderRadius: BorderRadius.md,
+                    borderWidth: 1,
+                    borderColor: active ? colors.primary : colors.glassBorder,
+                    backgroundColor: active ? colors.primaryBg : colors.surface,
+                    padding: Spacing.sm,
+                  }}
+                >
+                  <View style={{ width: 34, height: 34, borderRadius: BorderRadius.md, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name={option.icon} size={18} color={active ? colors.primary : colors.textSecondary} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
+                      {option.title}
+                    </Text>
+                    <Text style={{ marginTop: 1, fontSize: 11, lineHeight: 15, color: colors.textSecondary }} numberOfLines={2}>
+                      {option.subtitle}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {selectedAsset ? (
+            <View style={{ gap: Spacing.sm }}>
+              <Image
+                source={selectedAsset.previewUri}
+                contentFit="cover"
+                style={{ width: '100%', height: isWide ? 220 : 260, borderRadius: BorderRadius.lg, backgroundColor: colors.surface }}
+              />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.sm }}>
+                <Text style={{ flex: 1, minWidth: 180, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
+                  {selectedAsset.filename}
+                </Text>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                  {selectedAsset.mimeType} | {formatBytes(selectedAsset.sizeBytes)}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.86}
+              onPress={handlePickImage}
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: isWide ? 220 : 260,
+                borderRadius: BorderRadius.lg,
+                borderWidth: 1.5,
+                borderStyle: 'dashed',
+                borderColor: colors.glassBorder,
+                backgroundColor: colors.surface,
+                padding: Spacing.xl,
+                gap: Spacing.sm,
+              }}
+            >
+              <View style={{ width: 52, height: 52, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="image-plus" size={24} color={colors.primary} />
+              </View>
+              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Add image
+              </Text>
+              <Text style={{ maxWidth: 320, textAlign: 'center', fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                Choose a receipt or screenshot. Results stay review-only until you save them.
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {pickerError ? (
+            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+              {pickerError}
+            </Text>
+          ) : null}
+
+          <Input
+            label="Prompt"
+            value={prompt}
+            onChangeText={setPrompt}
+            multiline
+            numberOfLines={3}
+            autoCapitalize="sentences"
+            placeholder={buildDefaultAttachmentPrompt(task)}
+            style={{ marginBottom: 0 }}
           />
-        )}
 
-        {pickerError ? (
-          <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-            {pickerError}
-          </Text>
-        ) : null}
-
-        <Input
-          label="AI prompt"
-          value={prompt}
-          onChangeText={setPrompt}
-          multiline
-          numberOfLines={4}
-          autoCapitalize="sentences"
-          placeholder={buildDefaultAttachmentPrompt(task)}
-        />
-
-        <Button
-          title="Analyse"
-          icon="brain"
-          loading={analysisPending}
-          disabled={!canAnalyze}
-          onPress={analyzeSelectedAsset}
-        />
-        {!attachmentsReady ? (
-          <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-            Analyse will run through the backend vision provider. If credentials are missing, MoneyKai will show the setup issue instead of silently doing nothing.
-          </Text>
-        ) : null}
-      </Card>
+          <Button
+            title="Analyse"
+            icon="brain"
+            loading={analysisPending}
+            disabled={!canAnalyze}
+            onPress={analyzeSelectedAsset}
+          />
+          {!attachmentsReady ? (
+            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+              Analyse will run through the backend vision provider. If credentials are missing, MoneyKai will show the setup issue instead of silently doing nothing.
+            </Text>
+          ) : null}
+        </Card>
+      </View>
 
       {analyzeState.data ? (
         <Card style={{ gap: Spacing.md }}>

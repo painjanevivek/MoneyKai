@@ -34,7 +34,8 @@ export function AppScreenHeader({
   metrics = [],
   title,
 }: AppScreenHeaderProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const headerBg = isDark ? colors.primaryBg : colors.primaryDark;
 
   const resolveMetricColor = (tone: HeaderMetric['tone']) => {
     if (tone === 'positive') return '#D9FFF2';
@@ -48,7 +49,7 @@ export function AppScreenHeader({
       style={{
         borderRadius: BorderRadius.xl,
         padding: Spacing.lg,
-        backgroundColor: colors.primaryDark,
+        backgroundColor: headerBg,
         borderWidth: 1,
         borderColor: `${colors.primaryLight}30`,
         gap: Spacing.lg,

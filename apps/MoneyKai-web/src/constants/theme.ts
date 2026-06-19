@@ -78,6 +78,114 @@ export const Colors = {
     glassBg: 'rgba(18, 18, 18, 0.9)',
     glassBorder: 'rgba(48, 48, 48, 0.65)',
   },
+  emeraldMistDark: {
+    primary: '#8FE8D8',
+    primaryLight: '#C8FFF4',
+    primaryDark: '#1FB8A6',
+    primaryBg: '#153A35',
+    accent: '#A9D7FF',
+    accentLight: '#183149',
+    emergency: '#FDA4AF',
+    emergencyBg: '#3B151B',
+    background: '#071310',
+    surface: '#10201C',
+    surfaceElevated: '#142A25',
+    card: '#12251F',
+    border: '#355A51',
+    borderLight: '#223B35',
+    textPrimary: '#F4FFF9',
+    textSecondary: '#C9E0D8',
+    textTertiary: '#8BA29B',
+    textInverse: '#06110E',
+    success: '#8FE8B4',
+    warning: '#F8D774',
+    error: '#FDA4AF',
+    info: '#A9D7FF',
+    chart1: '#8FE8D8',
+    chart2: '#A9D7FF',
+    chart3: '#F8D774',
+    chart4: '#C4B5FD',
+    chart5: '#FDA4AF',
+    chart6: '#8FE8B4',
+    chart7: '#A8B8B2',
+    chart8: '#7DD3FC',
+    shadowColor: '#000000',
+    overlay: 'rgba(0, 0, 0, 0.72)',
+    glassBg: 'rgba(16, 32, 28, 0.72)',
+    glassBorder: 'rgba(143, 232, 216, 0.28)',
+  },
+  monsoonGlassDark: {
+    primary: '#7FD8E7',
+    primaryLight: '#BAF4FF',
+    primaryDark: '#1297AC',
+    primaryBg: '#102F37',
+    accent: '#86EFAC',
+    accentLight: '#153727',
+    emergency: '#FDA4AF',
+    emergencyBg: '#3B151B',
+    background: '#061117',
+    surface: '#0D1D25',
+    surfaceElevated: '#122934',
+    card: '#10242D',
+    border: '#335461',
+    borderLight: '#213944',
+    textPrimary: '#F4FBFC',
+    textSecondary: '#C6DDE2',
+    textTertiary: '#8DA3A9',
+    textInverse: '#041014',
+    success: '#86EFAC',
+    warning: '#FACC15',
+    error: '#FDA4AF',
+    info: '#7FD8E7',
+    chart1: '#7FD8E7',
+    chart2: '#86EFAC',
+    chart3: '#FACC15',
+    chart4: '#B7A4FF',
+    chart5: '#FDA4AF',
+    chart6: '#5EEAD4',
+    chart7: '#9FB4BA',
+    chart8: '#93C5FD',
+    shadowColor: '#000000',
+    overlay: 'rgba(1, 12, 18, 0.74)',
+    glassBg: 'rgba(13, 29, 37, 0.72)',
+    glassBorder: 'rgba(127, 216, 231, 0.27)',
+  },
+  ivoryEmeraldDark: {
+    primary: '#D6C889',
+    primaryLight: '#FFF0B3',
+    primaryDark: '#6FBBA9',
+    primaryBg: '#302D20',
+    accent: '#8FE8D8',
+    accentLight: '#153A35',
+    emergency: '#FDA4AF',
+    emergencyBg: '#3B151B',
+    background: '#0D100C',
+    surface: '#191C15',
+    surfaceElevated: '#22261D',
+    card: '#1C2018',
+    border: '#4A4A38',
+    borderLight: '#313327',
+    textPrimary: '#FFFDF2',
+    textSecondary: '#DAD2B9',
+    textTertiary: '#A59F8A',
+    textInverse: '#11140E',
+    success: '#9AE6B4',
+    warning: '#F8D774',
+    error: '#FDA4AF',
+    info: '#A9D7FF',
+    chart1: '#D6C889',
+    chart2: '#8FE8D8',
+    chart3: '#F8D774',
+    chart4: '#C4B5FD',
+    chart5: '#FDA4AF',
+    chart6: '#9AE6B4',
+    chart7: '#B8B09A',
+    chart8: '#A9D7FF',
+    shadowColor: '#000000',
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    glassBg: 'rgba(28, 32, 24, 0.72)',
+    glassBorder: 'rgba(214, 200, 137, 0.28)',
+  },
   emerald: {
     primary: '#047857',
     primaryLight: '#10B981',
@@ -527,9 +635,36 @@ export type ThemeMode = keyof typeof Colors;
 export type ColorScheme = {
   [Key in keyof typeof Colors.light]: string;
 };
+export type ThemePaletteId = 'emeraldMist' | 'deepJade' | 'monsoonGlass' | 'ivoryEmerald';
+
+export const DEFAULT_THEME_PALETTE: ThemePaletteId = 'ivoryEmerald';
+
+export const THEME_MODE_BY_PALETTE: Record<ThemePaletteId, { light: ThemeMode; dark: ThemeMode }> = {
+  emeraldMist: { light: 'emerald', dark: 'emeraldMistDark' },
+  deepJade: { light: 'sage', dark: 'dark' },
+  monsoonGlass: { light: 'ocean', dark: 'monsoonGlassDark' },
+  ivoryEmerald: { light: 'light', dark: 'ivoryEmeraldDark' },
+};
+
+export const isThemeModeDark = (theme: ThemeMode): boolean =>
+  theme === 'dark' || theme === 'emeraldMistDark' || theme === 'monsoonGlassDark' || theme === 'ivoryEmeraldDark';
+
+export const getPaletteForThemeMode = (theme?: ThemeMode): ThemePaletteId => {
+  if (!theme) return DEFAULT_THEME_PALETTE;
+  const match = (Object.keys(THEME_MODE_BY_PALETTE) as ThemePaletteId[]).find((palette) => {
+    const modes = THEME_MODE_BY_PALETTE[palette];
+    return modes.light === theme || modes.dark === theme;
+  });
+  return match ?? DEFAULT_THEME_PALETTE;
+};
+
+export const getThemeModeForPalette = (palette: ThemePaletteId, darkModeEnabled: boolean): ThemeMode => {
+  const modes = THEME_MODE_BY_PALETTE[palette] ?? THEME_MODE_BY_PALETTE[DEFAULT_THEME_PALETTE];
+  return darkModeEnabled ? modes.dark : modes.light;
+};
 
 type ThemeOption = {
-  id: ThemeMode;
+  id: ThemePaletteId;
   label: string;
   description: string;
   icon: string;
@@ -538,80 +673,31 @@ type ThemeOption = {
 
 export const THEME_OPTIONS: readonly ThemeOption[] = [
   {
-    id: 'light',
-    label: 'Ledger',
-    description: 'Crisp fintech daylight',
-    icon: 'brightness-6',
-    swatches: ['#0F766E', '#F4F7F5', '#2563EB'],
+    id: 'emeraldMist',
+    label: 'Emerald Mist',
+    description: 'Light frosted mint glass',
+    icon: 'blur',
+    swatches: ['#8FE8D8', '#F7FBF7', '#A9D7FF'],
   },
   {
-    id: 'dark',
-    label: 'Midnight',
-    description: 'Low-light contrast',
+    id: 'deepJade',
+    label: 'Deep Jade',
+    description: 'Premium low-light glass',
     icon: 'weather-night',
-    swatches: ['#07110F', '#7DD3C7', '#93C5FD'],
+    swatches: ['#07110F', '#7DD3C7', '#D6C889'],
   },
   {
-    id: 'emerald',
-    label: 'Emerald',
-    description: 'Fresh and calm',
-    icon: 'leaf',
-    swatches: ['#047857', '#D1FAE5', '#0284C7'],
+    id: 'monsoonGlass',
+    label: 'Monsoon Glass',
+    description: 'Cool teal rainy depth',
+    icon: 'weather-pouring',
+    swatches: ['#7FD8E7', '#061117', '#86EFAC'],
   },
   {
-    id: 'sunset',
-    label: 'Sunset',
-    description: 'Warm and expressive',
-    icon: 'weather-sunset',
-    swatches: ['#B45309', '#FEF3C7', '#2563EB'],
-  },
-  {
-    id: 'ocean',
-    label: 'Ocean',
-    description: 'Clear and cool',
-    icon: 'waves',
-    swatches: ['#0369A1', '#E0F2FE', '#0F766E'],
-  },
-  {
-    id: 'rose',
-    label: 'Rose',
-    description: 'Soft and confident',
-    icon: 'flower-tulip-outline',
-    swatches: ['#BE123C', '#FFE4E6', '#7C3AED'],
-  },
-  {
-    id: 'aurora',
-    label: 'Aurora',
-    description: 'Bright violet calm',
-    icon: 'auto-fix',
-    swatches: ['#6D28D9', '#EDE9FE', '#0F766E'],
-  },
-  {
-    id: 'pearl',
-    label: 'Pearl',
-    description: 'Clean product white',
-    icon: 'circle-slice-8',
-    swatches: ['#1D4ED8', '#FAFBFF', '#0F766E'],
-  },
-  {
-    id: 'sage',
-    label: 'Sage',
-    description: 'Quiet natural contrast',
-    icon: 'sprout-outline',
-    swatches: ['#4D7C0F', '#F9FBF4', '#0369A1'],
-  },
-  {
-    id: 'graphite',
-    label: 'Graphite',
-    description: 'Neutral operations look',
-    icon: 'contrast-circle',
-    swatches: ['#334155', '#F8FAFC', '#0F766E'],
-  },
-  {
-    id: 'cobalt',
-    label: 'Cobalt',
-    description: 'Crisp blue focus',
-    icon: 'hexagon-outline',
-    swatches: ['#4338CA', '#F7F8FF', '#0891B2'],
+    id: 'ivoryEmerald',
+    label: 'Ivory Emerald',
+    description: 'Warm trust-first glass',
+    icon: 'leaf-circle-outline',
+    swatches: ['#D6C889', '#FFFDF2', '#6FBBA9'],
   },
 ] as const;

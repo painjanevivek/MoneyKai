@@ -50,7 +50,7 @@ export default function BudgetsScreen() {
               { icon: 'progress-check', label: `${Math.round(usage)}% used` },
               { icon: 'shield-check-outline', label: 'User-owned budget settings' },
             ]}
-            actions={<Button title="Open Settings" onPress={() => router.push('/settings' as any)} icon="cog-outline" variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />}
+            actions={<Button title="Open Settings" onPress={() => router.push('/settings' as any)} icon="cog-outline" variant="outline" tone="onDark" />}
           />
 
           <Card>

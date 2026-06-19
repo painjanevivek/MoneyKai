@@ -12,7 +12,7 @@ import { TransactionsScreen } from '@/screens/app/TransactionsScreen';
 import { AddTransactionScreen } from '@/screens/app/AddTransactionScreen';
 import { BudgetScreen } from '@/screens/app/BudgetScreen';
 import { MoreScreen } from '@/screens/app/MoreScreen';
-import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
@@ -80,13 +80,21 @@ export function AppTabs() {
           fontSize: Typography.fontSize.xs,
         },
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderColor: colors.borderLight,
+          backgroundColor: colors.glassBg,
+          borderColor: colors.glassBorder,
+          borderWidth: 1,
           borderTopWidth: 1,
-          height: 64 + Math.max(insets.bottom, Spacing.sm),
+          borderRadius: BorderRadius['2xl'],
+          height: 68 + Math.max(insets.bottom, Spacing.sm),
           paddingBottom: Math.max(insets.bottom, Spacing.sm),
           paddingTop: Spacing.xs,
+          paddingHorizontal: Spacing.xs,
           position: 'absolute',
+          left: Spacing.md,
+          right: Spacing.md,
+          bottom: Math.max(insets.bottom, Spacing.sm),
+          ...Shadows.lg,
+          shadowColor: colors.shadowColor,
         },
         tabBarItemStyle: {
           borderRadius: BorderRadius.md,

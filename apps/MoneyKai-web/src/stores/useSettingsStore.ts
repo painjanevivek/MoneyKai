@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { THEME_OPTIONS, type ThemeMode } from '../constants/theme';
+import {
+  DEFAULT_THEME_PALETTE,
+  getPaletteForThemeMode,
+  getThemeModeForPalette,
+  isThemeModeDark,
+  type ThemeMode,
+  type ThemePaletteId,
+} from '../constants/theme';
 import { useAuthStore } from './useAuthStore';
 import { saveUserAppSettings } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
@@ -15,6 +22,10 @@ import {
 
 type PersistedAppSettings = {
   theme: ThemeMode;
+  themePalette: ThemePaletteId;
+  darkModeEnabled: boolean;
+  dashboardTrendRange: DashboardTrendRange;
+  dashboardTrendMetric: DashboardTrendMetric;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;
@@ -23,6 +34,8 @@ type PersistedAppSettings = {
 };
 
 type TourCompletionMap = Record<string, boolean>;
+export type DashboardTrendRange = '1d' | '1w' | '1m' | '3m' | '6m' | '1y' | 'all';
+export type DashboardTrendMetric = 'spending' | 'income' | 'netFlow' | 'transactionCount';
 
 const persistAppSettings = (settings: PersistedAppSettings) => {
   const userId = useAuthStore.getState().user?.id;
@@ -36,6 +49,10 @@ const persistAppSettings = (settings: PersistedAppSettings) => {
 
 interface SettingsState {
   theme: ThemeMode;
+  themePalette: ThemePaletteId;
+  darkModeEnabled: boolean;
+  dashboardTrendRange: DashboardTrendRange;
+  dashboardTrendMetric: DashboardTrendMetric;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;
@@ -50,6 +67,9 @@ interface SettingsState {
   // Actions
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
+  setThemePalette: (themePalette: ThemePaletteId) => void;
+  setDarkModeEnabled: (enabled: boolean) => void;
+  setDashboardTrendPreferences: (preferences: Partial<Pick<SettingsState, 'dashboardTrendRange' | 'dashboardTrendMetric'>>) => void;
   setCurrency: (currency: string, symbol: string) => void;
   refreshExchangeRates: (force?: boolean) => Promise<void>;
   toggleNotifications: () => void;
@@ -62,7 +82,11 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
-      theme: 'dark',
+      theme: getThemeModeForPalette(DEFAULT_THEME_PALETTE, true),
+      themePalette: DEFAULT_THEME_PALETTE,
+      darkModeEnabled: true,
+      dashboardTrendRange: '1m',
+      dashboardTrendMetric: 'spending',
       currency: 'INR',
       currencySymbol: '₹',
       notificationsEnabled: true,
@@ -73,11 +97,14 @@ export const useSettingsStore = create<SettingsState>()(
 
       toggleTheme: () =>
         set((state) => {
-          const currentIndex = THEME_OPTIONS.findIndex((option) => option.id === state.theme);
-          const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % THEME_OPTIONS.length : 0;
-          const theme = THEME_OPTIONS[nextIndex].id;
+          const darkModeEnabled = !state.darkModeEnabled;
+          const theme = getThemeModeForPalette(state.themePalette, darkModeEnabled);
           const next: PersistedAppSettings = {
             theme,
+            themePalette: state.themePalette,
+            darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -86,13 +113,20 @@ export const useSettingsStore = create<SettingsState>()(
           };
           persistAppSettings(next);
           void requestAutomaticBackup('settings updated');
-          return { theme };
+          return { theme, darkModeEnabled };
         }),
 
       setTheme: (theme) =>
         set((state) => {
+          const themePalette = getPaletteForThemeMode(theme);
+          const darkModeEnabled = isThemeModeDark(theme);
+          const resolvedTheme = getThemeModeForPalette(themePalette, darkModeEnabled);
           const next: PersistedAppSettings = {
-            theme,
+            theme: resolvedTheme,
+            themePalette,
+            darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -101,13 +135,78 @@ export const useSettingsStore = create<SettingsState>()(
           };
           persistAppSettings(next);
           void requestAutomaticBackup('settings updated');
-          return { theme };
+          return { theme: resolvedTheme, themePalette, darkModeEnabled };
+        }),
+
+      setThemePalette: (themePalette) =>
+        set((state) => {
+          const theme = getThemeModeForPalette(themePalette, state.darkModeEnabled);
+          const next: PersistedAppSettings = {
+            theme,
+            themePalette,
+            darkModeEnabled: state.darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+            tourCompleted: state.tourCompleted,
+          };
+          persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
+          return { theme, themePalette };
+        }),
+
+      setDarkModeEnabled: (darkModeEnabled) =>
+        set((state) => {
+          const theme = getThemeModeForPalette(state.themePalette, darkModeEnabled);
+          const next: PersistedAppSettings = {
+            theme,
+            themePalette: state.themePalette,
+            darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+            tourCompleted: state.tourCompleted,
+          };
+          persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
+          return { theme, darkModeEnabled };
+        }),
+
+      setDashboardTrendPreferences: (preferences) =>
+        set((state) => {
+          const dashboardTrendRange = preferences.dashboardTrendRange ?? state.dashboardTrendRange;
+          const dashboardTrendMetric = preferences.dashboardTrendMetric ?? state.dashboardTrendMetric;
+          const next: PersistedAppSettings = {
+            theme: state.theme,
+            themePalette: state.themePalette,
+            darkModeEnabled: state.darkModeEnabled,
+            dashboardTrendRange,
+            dashboardTrendMetric,
+            currency: state.currency,
+            currencySymbol: state.currencySymbol,
+            notificationsEnabled: state.notificationsEnabled,
+            hapticEnabled: state.hapticEnabled,
+            tourCompleted: state.tourCompleted,
+          };
+          persistAppSettings(next);
+          void requestAutomaticBackup('settings updated');
+          return { dashboardTrendRange, dashboardTrendMetric };
         }),
 
       setCurrency: (currency, symbol) =>
         set((state) => {
           const next: PersistedAppSettings = {
             theme: state.theme,
+            themePalette: state.themePalette,
+            darkModeEnabled: state.darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
             currency,
             currencySymbol: symbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -145,6 +244,10 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => {
           const next: PersistedAppSettings = {
             theme: state.theme,
+            themePalette: state.themePalette,
+            darkModeEnabled: state.darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: !state.notificationsEnabled,
@@ -160,6 +263,10 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => {
           const next: PersistedAppSettings = {
             theme: state.theme,
+            themePalette: state.themePalette,
+            darkModeEnabled: state.darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: enabled,
@@ -175,6 +282,10 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => {
           const next: PersistedAppSettings = {
             theme: state.theme,
+            themePalette: state.themePalette,
+            darkModeEnabled: state.darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -190,6 +301,10 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => {
           const next: PersistedAppSettings = {
             theme: state.theme,
+            themePalette: state.themePalette,
+            darkModeEnabled: state.darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -205,6 +320,10 @@ export const useSettingsStore = create<SettingsState>()(
         set((state) => {
           const next: PersistedAppSettings = {
             theme: state.theme,
+            themePalette: state.themePalette,
+            darkModeEnabled: state.darkModeEnabled,
+            dashboardTrendRange: state.dashboardTrendRange,
+            dashboardTrendMetric: state.dashboardTrendMetric,
             currency: state.currency,
             currencySymbol: state.currencySymbol,
             notificationsEnabled: state.notificationsEnabled,
@@ -227,8 +346,12 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         theme: state.theme,
+        themePalette: state.themePalette,
+        darkModeEnabled: state.darkModeEnabled,
         currency: state.currency,
         currencySymbol: state.currencySymbol,
+        dashboardTrendRange: state.dashboardTrendRange,
+        dashboardTrendMetric: state.dashboardTrendMetric,
         notificationsEnabled: state.notificationsEnabled,
         hapticEnabled: state.hapticEnabled,
         tourCompleted: state.tourCompleted,
@@ -238,6 +361,22 @@ export const useSettingsStore = create<SettingsState>()(
         exchangeRatesProvider: state.exchangeRatesProvider,
         exchangeRateError: state.exchangeRateError,
       }),
+      merge: (persisted, current) => {
+        const persistedState = persisted as Partial<SettingsState> | undefined;
+        const themePalette = persistedState?.themePalette ?? getPaletteForThemeMode(persistedState?.theme);
+        const darkModeEnabled = persistedState?.darkModeEnabled ?? isThemeModeDark(persistedState?.theme ?? current.theme);
+        const theme = getThemeModeForPalette(themePalette, darkModeEnabled);
+
+        return {
+          ...current,
+          ...persistedState,
+          theme,
+          themePalette,
+          darkModeEnabled,
+          dashboardTrendRange: persistedState?.dashboardTrendRange ?? current.dashboardTrendRange,
+          dashboardTrendMetric: persistedState?.dashboardTrendMetric ?? current.dashboardTrendMetric,
+        };
+      },
     }
   )
 );

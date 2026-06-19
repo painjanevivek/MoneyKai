@@ -17,7 +17,7 @@ import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { AppNotification } from '@/types/notification';
-import type { ThemeMode } from '@/constants/theme';
+import { getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark, type ThemeMode, type ThemePaletteId } from '@/constants/theme';
 import type { LinkedAccount } from '@moneykai/domain';
 import { getLatestUserBackup, isFirebaseConfigured, saveUserBackup } from './firestoreService';
 import { backendApi, isBackendConfigured } from './backendApi';
@@ -30,6 +30,8 @@ const AUTO_BACKUP_MIN_INTERVAL_MS = 60_000;
 
 interface BackupAppSettings {
   theme: ThemeMode;
+  themePalette?: ThemePaletteId;
+  darkModeEnabled?: boolean;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;
@@ -286,6 +288,8 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
     settings: {
       app: {
         theme: useSettingsStore.getState().theme,
+        themePalette: useSettingsStore.getState().themePalette,
+        darkModeEnabled: useSettingsStore.getState().darkModeEnabled,
         currency: useSettingsStore.getState().currency,
         currencySymbol: useSettingsStore.getState().currencySymbol,
         notificationsEnabled: useSettingsStore.getState().notificationsEnabled,
@@ -416,8 +420,13 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
 
   void clearAutomaticBackupQueue().catch(() => undefined);
 
+  const restoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
+  const restoredDarkMode = snapshot.settings.app.darkModeEnabled ?? isThemeModeDark(snapshot.settings.app.theme);
+
   useSettingsStore.setState({
-    theme: snapshot.settings.app.theme,
+    theme: getThemeModeForPalette(restoredPalette, restoredDarkMode),
+    themePalette: restoredPalette,
+    darkModeEnabled: restoredDarkMode,
     currency: snapshot.settings.app.currency,
     currencySymbol: snapshot.settings.app.currencySymbol,
     notificationsEnabled: snapshot.settings.app.notificationsEnabled,

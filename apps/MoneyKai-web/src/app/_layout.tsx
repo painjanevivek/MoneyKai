@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { Colors, type ColorScheme } from '@/constants/theme';
+import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { captureSentryException, identifySentryUser } from '@/services/sentry';
 
@@ -94,9 +94,11 @@ class AppErrorBoundary extends React.Component<
 
 export default function RootLayout() {
   const theme = useSettingsStore((s) => s.theme);
+  const darkModeEnabled = useSettingsStore((s) => s.darkModeEnabled);
   const currencyRenderToken = useSettingsStore((s) => `${s.currency}:${s.currencySymbol}:${s.exchangeRatesUpdatedAt ?? ''}`);
   const refreshExchangeRates = useSettingsStore((s) => s.refreshExchangeRates);
   const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
+  const isDark = darkModeEnabled || isThemeModeDark(theme);
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
@@ -188,7 +190,7 @@ export default function RootLayout() {
 
   return (
     <AppErrorBoundary colors={colors}>
-      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       {isAuthenticated ? (
         <Suspense fallback={null}>
           <AutoBackupCoordinator />

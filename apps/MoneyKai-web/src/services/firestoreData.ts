@@ -13,11 +13,16 @@ import type { Note } from '../types/note';
 import type { Group, GroupExpense } from '../types/group';
 import type { Challenge } from '../types/challenge';
 import type { Badge } from '../types/badge';
-import type { ThemeMode } from '../constants/theme';
+import { DEFAULT_THEME_PALETTE, getThemeModeForPalette, type ThemeMode, type ThemePaletteId } from '../constants/theme';
+import type { DashboardTrendMetric, DashboardTrendRange } from '@/stores/useSettingsStore';
 import type { LinkedAccount } from '@moneykai/domain';
 
 type AppSettingsDoc = {
   theme: ThemeMode;
+  themePalette: ThemePaletteId;
+  darkModeEnabled: boolean;
+  dashboardTrendRange: DashboardTrendRange;
+  dashboardTrendMetric: DashboardTrendMetric;
   currency: string;
   currencySymbol: string;
   notificationsEnabled: boolean;
@@ -58,7 +63,11 @@ export type FirestoreUserSnapshot = {
 };
 
 const DEFAULT_APP_SETTINGS: AppSettingsDoc = {
-  theme: 'light',
+  theme: getThemeModeForPalette(DEFAULT_THEME_PALETTE, false),
+  themePalette: DEFAULT_THEME_PALETTE,
+  darkModeEnabled: false,
+  dashboardTrendRange: '1m',
+  dashboardTrendMetric: 'spending',
   currency: 'INR',
   currencySymbol: '₹',
   notificationsEnabled: true,

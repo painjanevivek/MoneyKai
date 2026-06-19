@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View } from 'react-native';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { Colors } from '@/constants/theme';
+import { Colors, isThemeModeDark } from '@/constants/theme';
 import { ScreenState } from '@/components/ui/ScreenState';
 import type { RootStackParamList } from './types';
 import { AuthNavigator } from './AuthNavigator';
@@ -25,7 +25,9 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const theme = useSettingsStore((state) => state.theme);
+  const darkModeEnabled = useSettingsStore((state) => state.darkModeEnabled);
   const colors = Colors[theme];
+  const isDark = darkModeEnabled || isThemeModeDark(theme);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isHydratingSession = useAuthStore((state) => state.isHydratingSession);
   const hydrateSession = useAuthStore((state) => state.hydrateSession);
@@ -43,9 +45,9 @@ export function RootNavigator() {
   }
 
   const navigationTheme = {
-    ...(theme === 'dark' ? DarkTheme : DefaultTheme),
+    ...(isDark ? DarkTheme : DefaultTheme),
     colors: {
-      ...(theme === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
       background: colors.background,
       card: colors.card,
       primary: colors.primary,

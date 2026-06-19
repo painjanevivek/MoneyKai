@@ -1,5 +1,6 @@
 import React, { type PropsWithChildren, useEffect, useMemo, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router, usePathname } from 'expo-router';
 import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +11,7 @@ import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Button } from '@/components/ui/Button';
 import { endOfMonth, formatDate, startOfMonth } from '@/utils/dateUtils';
+import { glassBackdropStyle } from '@/utils/glassStyle';
 
 type NavItem = {
   href: string;
@@ -27,7 +29,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/portfolio', label: 'Portfolio', icon: 'briefcase-outline' },
   { href: '/reports', label: 'Reports', icon: 'chart-bar' },
   { href: '/accounts', label: 'Accounts', icon: 'credit-card-outline' },
-  { href: '/settings', label: 'Settings', icon: 'cog-outline' },
 ] as const;
 
 const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
@@ -41,8 +42,20 @@ const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
   { href: '/reports', title: 'Reports', subtitle: 'Spot patterns in your spending' },
   { href: '/accounts', title: 'Accounts', subtitle: 'Linked balances, sync health, and account controls' },
   { href: '/categories', title: 'Categories', subtitle: 'See where money goes by category' },
+  { href: '/subscriptions', title: 'Subscriptions', subtitle: 'Choose the MoneyKai plan that fits your workspace' },
   { href: '/settings', title: 'Settings', subtitle: 'Profile, privacy, and backups' },
 ];
+
+function MoneyKaiBrandMark({ size }: { size: number }) {
+  return (
+    <Image
+      source={{ uri: '/brand/moneykai-mark.jpeg' }}
+      contentFit="contain"
+      accessibilityIgnoresInvertColors
+      style={{ width: Math.round(size * 0.78), height: Math.round(size * 0.78) }}
+    />
+  );
+}
 
 const normalizePath = (pathname: string) => pathname.replace('/(tabs)', '') || '/';
 
@@ -139,14 +152,17 @@ export function DesktopShell({ children }: PropsWithChildren) {
           <View
             style={{
               borderBottomWidth: 1,
-              borderBottomColor: colors.borderLight,
-              backgroundColor: colors.background,
+              borderBottomColor: colors.glassBorder,
+              backgroundColor: colors.glassBg,
               paddingHorizontal: Spacing.base,
               paddingTop: Spacing.sm,
               paddingBottom: Spacing.md,
               gap: Spacing.md,
               position: 'relative',
               zIndex: 40,
+              ...Shadows.md,
+              shadowColor: colors.shadowColor,
+              ...(glassBackdropStyle ?? {}),
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
@@ -177,9 +193,10 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     justifyContent: 'center',
                     borderWidth: 1,
                     borderColor: colors.borderLight,
+                    overflow: 'hidden',
                   }}
                 >
-                  <MaterialCommunityIcons name="wallet-outline" size={22} color={colors.primary} />
+                  <MoneyKaiBrandMark size={42} />
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text
@@ -208,9 +225,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     borderRadius: 20,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+                    backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
                     borderWidth: 1,
-                    borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+                    borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
                     transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                   })}
                 >
@@ -227,9 +244,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     borderRadius: 20,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+                    backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
                     borderWidth: 1,
-                    borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+                    borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
                     transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                   })}
                 >
@@ -249,9 +266,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: Spacing.sm,
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
                   borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}38` : colors.borderLight,
+                  borderColor: hovered ? `${colors.primary}38` : colors.glassBorder,
                   borderRadius: BorderRadius.md,
                   paddingHorizontal: Spacing.md,
                   paddingVertical: 11,
@@ -305,9 +322,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                       paddingHorizontal: Spacing.md,
                       paddingVertical: 10,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: active ? colors.primaryBg : hovered ? `${colors.primary}12` : colors.card,
+                      backgroundColor: active ? colors.primaryBg : hovered ? `${colors.primary}12` : colors.glassBg,
                       borderWidth: 1,
-                      borderColor: active ? `${colors.primary}45` : hovered ? `${colors.primary}24` : colors.borderLight,
+                      borderColor: active ? `${colors.primary}45` : hovered ? `${colors.primary}24` : colors.glassBorder,
                       transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                     })}
                   >
@@ -360,11 +377,18 @@ export function DesktopShell({ children }: PropsWithChildren) {
         <View
           style={{
             width: sidebarWidth,
-            borderRightWidth: 1,
-            borderRightColor: colors.borderLight,
-            backgroundColor: colors.surface,
+            margin: Spacing.base,
+            marginRight: 0,
+            borderWidth: 1,
+            borderColor: colors.glassBorder,
+            borderRadius: BorderRadius['2xl'],
+            backgroundColor: colors.glassBg,
             paddingVertical: Spacing.base,
             paddingHorizontal: Spacing.base,
+            overflow: 'hidden',
+            ...Shadows.lg,
+            shadowColor: colors.shadowColor,
+            ...(glassBackdropStyle ?? {}),
           }}
         >
           <View style={{ flex: 1, paddingBottom: insets.bottom + 20 }}>
@@ -393,12 +417,13 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderWidth: 1,
-                  borderColor: colors.borderLight,
+                  borderColor: colors.glassBorder,
+                  overflow: 'hidden',
                   ...Shadows.md,
                   shadowColor: colors.shadowColor,
                 }}
               >
-                <MaterialCommunityIcons name="wallet-outline" size={24} color={colors.primary} />
+                <MoneyKaiBrandMark size={48} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
@@ -454,13 +479,14 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
             <View
               style={{
-                backgroundColor: colors.card,
+                backgroundColor: colors.glassBg,
                 borderRadius: BorderRadius.lg,
-                padding: Spacing.base,
+                padding: Spacing.md,
                 borderWidth: 1,
-                borderColor: colors.borderLight,
-                ...Shadows.sm,
+                borderColor: colors.glassBorder,
+                ...Shadows.md,
                 shadowColor: colors.shadowColor,
+                ...(glassBackdropStyle ?? {}),
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -468,35 +494,141 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   name={user?.full_name}
                   email={user?.email}
                   avatarUrl={user?.avatar_url}
-                  size={44}
+                  size={42}
                 />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={{
+                      fontSize: Typography.fontSize.sm,
+                      lineHeight: 20,
+                      fontFamily: Typography.fontFamily.semiBold,
+                      color: colors.textPrimary,
+                    }}
+                    numberOfLines={1}
+                  >
                     {user?.full_name || 'Signed in user'}
                   </Text>
-                  <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }} numberOfLines={1}>
+                  <Text
+                    style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}
+                    numberOfLines={1}
+                  >
                     {user?.email || 'No email available'}
                   </Text>
                 </View>
               </View>
 
-              <View style={{ gap: 10, marginTop: Spacing.base }}>
-                <Button
-                  title="Settings"
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Open MoneyKai Plus premium membership"
+                onPress={() => router.push('/subscriptions' as any)}
+                style={({ hovered, pressed }: any) => ({
+                  minHeight: 40,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: Spacing.sm,
+                  marginTop: Spacing.md,
+                  paddingHorizontal: Spacing.md,
+                  borderRadius: BorderRadius.md,
+                  backgroundColor: hovered ? 'rgba(245, 197, 90, 0.22)' : 'rgba(245, 197, 90, 0.14)',
+                  borderWidth: 1,
+                  borderColor: hovered ? 'rgba(245, 197, 90, 0.62)' : 'rgba(245, 197, 90, 0.42)',
+                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                })}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <MaterialCommunityIcons name="crown-outline" size={17} color="#F5C55A" />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontSize: Typography.fontSize.sm,
+                      lineHeight: 20,
+                      fontFamily: Typography.fontFamily.bold,
+                      color: '#F5C55A',
+                    }}
+                  >
+                    MoneyKai+
+                  </Text>
+                </View>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: Typography.fontSize.xs,
+                    lineHeight: 16,
+                    fontFamily: Typography.fontFamily.medium,
+                    color: '#FFE6A6',
+                  }}
+                >
+                  Premium
+                </Text>
+              </Pressable>
+
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open settings"
                   onPress={() => router.push('/settings' as any)}
-                  variant="outline"
-                  size="sm"
-                  fullWidth
-                  icon="cog-outline"
-                />
-                <Button
-                  title="Sign out"
+                  style={({ hovered, pressed }: any) => ({
+                    flex: 1,
+                    minHeight: 38,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 7,
+                    paddingHorizontal: Spacing.sm,
+                    borderRadius: BorderRadius.md,
+                    backgroundColor: hovered ? `${colors.primary}14` : 'rgba(255, 255, 255, 0.04)',
+                    borderWidth: 1,
+                    borderColor: hovered ? `${colors.primary}36` : colors.glassBorder,
+                    transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                  })}
+                >
+                  <MaterialCommunityIcons name="cog-outline" size={16} color={colors.primary} />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontSize: Typography.fontSize.xs,
+                      lineHeight: 18,
+                      fontFamily: Typography.fontFamily.semiBold,
+                      color: colors.textPrimary,
+                    }}
+                  >
+                    Settings
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out"
                   onPress={handleSignOut}
-                  variant="ghost"
-                  size="sm"
-                  fullWidth
-                  icon="logout"
-                />
+                  style={({ hovered, pressed }: any) => ({
+                    flex: 1,
+                    minHeight: 38,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 7,
+                    paddingHorizontal: Spacing.sm,
+                    borderRadius: BorderRadius.md,
+                    backgroundColor: hovered ? `${colors.error}12` : 'rgba(255, 255, 255, 0.04)',
+                    borderWidth: 1,
+                    borderColor: hovered ? `${colors.error}34` : colors.glassBorder,
+                    transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                  })}
+                >
+                  <MaterialCommunityIcons name="logout" size={16} color={colors.textSecondary} />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontSize: Typography.fontSize.xs,
+                      lineHeight: 18,
+                      fontFamily: Typography.fontFamily.semiBold,
+                      color: colors.textSecondary,
+                    }}
+                  >
+                    Sign out
+                  </Text>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -519,9 +651,13 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
           <View
             style={{
-              borderBottomWidth: 1,
-              borderBottomColor: colors.borderLight,
-              backgroundColor: colors.background,
+              marginTop: Spacing.base,
+              marginRight: Spacing.base,
+              marginLeft: Spacing.base,
+              borderWidth: 1,
+              borderColor: colors.glassBorder,
+              borderRadius: BorderRadius['2xl'],
+              backgroundColor: colors.glassBg,
               position: 'relative',
               zIndex: 40,
               overflow: 'visible',
@@ -531,6 +667,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: Spacing.lg,
+              ...Shadows.sm,
+              shadowColor: colors.shadowColor,
+              ...(glassBackdropStyle ?? {}),
             }}
           >
             <View style={{ flex: 1 }}>
@@ -552,9 +691,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 8,
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
                   borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}38` : colors.borderLight,
+                  borderColor: hovered ? `${colors.primary}38` : colors.glassBorder,
                   borderRadius: BorderRadius.md,
                   paddingHorizontal: Spacing.md,
                   paddingVertical: 10,
@@ -578,9 +717,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   borderRadius: 21,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
                   borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+                  borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
                   transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                 })}
               >
@@ -596,9 +735,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   borderRadius: 21,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
                   borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+                  borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
                   transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                 })}
               >
@@ -627,7 +766,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               position: 'relative',
               zIndex: 1,
               paddingHorizontal: Spacing['2xl'],
-              paddingTop: Spacing['2xl'],
+              paddingTop: Spacing.xl,
               paddingBottom: insets.bottom + Spacing['2xl'],
             }}
           >
@@ -673,15 +812,17 @@ function MonthYearPickerPopover({
       style={[
         {
           position: 'absolute',
-          backgroundColor: colors.surface,
+          backgroundColor: colors.glassBg,
           borderRadius: BorderRadius.lg,
           borderWidth: 1,
-          borderColor: colors.borderLight,
+          borderColor: colors.glassBorder,
           ...Shadows.lg,
           shadowColor: colors.shadowColor,
           padding: Spacing.md,
           zIndex: 20,
           gap: Spacing.md,
+          overflow: 'hidden',
+          ...(glassBackdropStyle ?? {}),
         },
         style,
       ]}
@@ -697,9 +838,9 @@ function MonthYearPickerPopover({
             borderRadius: BorderRadius.md,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+            backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
             borderWidth: 1,
-            borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+            borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
             transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
           })}
         >
@@ -725,9 +866,9 @@ function MonthYearPickerPopover({
             borderRadius: BorderRadius.md,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: hovered ? colors.surfaceElevated : colors.card,
+            backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
             borderWidth: 1,
-            borderColor: hovered ? `${colors.primary}40` : colors.borderLight,
+            borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
             transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
           })}
         >
@@ -755,9 +896,9 @@ function MonthYearPickerPopover({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 2,
-                backgroundColor: active ? colors.primary : hovered ? `${colors.primary}10` : colors.card,
+                backgroundColor: active ? colors.primary : hovered ? `${colors.primary}10` : colors.glassBg,
                 borderWidth: 1,
-                borderColor: active ? colors.primary : isCurrent ? colors.primaryLight : colors.borderLight,
+                borderColor: active ? colors.primary : isCurrent ? colors.primaryLight : colors.glassBorder,
                 transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
               })}
             >

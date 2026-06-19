@@ -407,12 +407,12 @@ export default function AccountsScreen() {
             ]}
             actions={
               <>
-                <Button title="Connect live bank" icon="bank-plus" onPress={handleConnectLiveBank} loading={isProviderActionPending} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
-                <Button title="Add Manual Account" icon="plus" onPress={() => setShowManualModal(true)} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+                <Button title="Connect live bank" icon="bank-plus" onPress={handleConnectLiveBank} loading={isProviderActionPending} variant="outline" tone="onDark" />
+                <Button title="Add Manual Account" icon="plus" onPress={() => setShowManualModal(true)} variant="outline" tone="onDark" />
                 {demoDataEnabled ? (
-                  <Button title="Load demo data" icon="database-import-outline" onPress={handleLoadDemoData} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+                  <Button title="Load demo data" icon="database-import-outline" onPress={handleLoadDemoData} variant="outline" tone="onDark" />
                 ) : null}
-                <Button title="Sync All" icon="sync" onPress={handleSyncAllAccounts} variant="outline" style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }} />
+                <Button title="Sync All" icon="sync" onPress={handleSyncAllAccounts} variant="outline" tone="onDark" />
               </>
             }
           />

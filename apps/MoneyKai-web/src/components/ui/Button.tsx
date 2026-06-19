@@ -15,6 +15,7 @@ interface ButtonProps {
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  tone?: 'default' | 'onDark';
   size?: 'sm' | 'md' | 'lg';
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
   iconPosition?: 'left' | 'right';
@@ -30,6 +31,7 @@ export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
   variant = 'primary',
+  tone = 'default',
   size = 'md',
   icon,
   iconPosition = 'left',
@@ -48,7 +50,15 @@ export const Button: React.FC<ButtonProps> = ({
     lg: { minHeight: ComponentTokens.controlHeight.lg, paddingHorizontal: ComponentTokens.controlPaddingX.lg, fontSize: Typography.fontSize.md, iconSize: 20 },
   };
 
-  const variantStyles: Record<string, { bg: string; text: string; border?: string; hoverBg: string; hoverBorder?: string }> = {
+  const variantStyles: Record<string, { bg: string; text: string; border?: string; hoverBg: string; hoverBorder?: string }> = tone === 'onDark'
+    ? {
+        primary: { bg: 'rgba(255, 255, 255, 0.94)', text: colors.primaryDark, hoverBg: '#FFFFFF', hoverBorder: 'rgba(255, 255, 255, 0.7)' },
+        secondary: { bg: 'rgba(255, 255, 255, 0.16)', text: '#FFFFFF', hoverBg: 'rgba(255, 255, 255, 0.24)', hoverBorder: 'rgba(255, 255, 255, 0.34)' },
+        outline: { bg: 'rgba(255, 255, 255, 0.14)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.26)', hoverBg: 'rgba(255, 255, 255, 0.22)', hoverBorder: 'rgba(255, 255, 255, 0.42)' },
+        ghost: { bg: 'transparent', text: 'rgba(255, 255, 255, 0.82)', hoverBg: 'rgba(255, 255, 255, 0.12)', hoverBorder: 'rgba(255, 255, 255, 0.22)' },
+        danger: { bg: 'rgba(255, 225, 229, 0.94)', text: '#7F1D1D', hoverBg: '#FFFFFF', hoverBorder: 'rgba(255, 255, 255, 0.6)' },
+      }
+    : {
     primary: { bg: colors.primary, text: colors.textInverse, hoverBg: colors.primaryDark, hoverBorder: colors.primaryDark },
     secondary: { bg: colors.primaryBg, text: colors.primary, hoverBg: `${colors.primary}18`, hoverBorder: `${colors.primary}28` },
     outline: { bg: colors.card, text: colors.primary, border: colors.borderLight, hoverBg: `${colors.primary}12`, hoverBorder: colors.primary },

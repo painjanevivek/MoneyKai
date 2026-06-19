@@ -93,7 +93,7 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
 };
 
 export default function SettingsScreen() {
-  const { colors, theme, setTheme } = useTheme();
+  const { colors, darkModeEnabled, setDarkModeEnabled, setThemePalette, themePalette } = useTheme();
   const { user, signOut } = useAuthStore();
   const {
     notificationsEnabled,
@@ -176,6 +176,14 @@ export default function SettingsScreen() {
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Appearance</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
+          <SettingItem
+            icon={darkModeEnabled ? 'weather-night' : 'white-balance-sunny'}
+            iconColor={colors.primary}
+            iconBg={colors.primaryBg}
+            title="Dark Mode"
+            subtitle={darkModeEnabled ? 'Using the dark glass version of your palette' : 'Using the light glass version of your palette'}
+            right={<Switch value={darkModeEnabled} onValueChange={setDarkModeEnabled} trackColor={switchTrack} thumbColor={switchThumb} ios_backgroundColor={colors.borderLight} />}
+          />
           <View style={{ paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight, gap: Spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
               <View
@@ -197,7 +205,7 @@ export default function SettingsScreen() {
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
               {THEME_OPTIONS.map((option) => {
-                const active = theme === option.id;
+                const active = themePalette === option.id;
                 return (
                   <TouchableOpacity
                     key={option.id}
@@ -205,7 +213,7 @@ export default function SettingsScreen() {
                     accessibilityState={{ selected: active }}
                     accessibilityLabel={`Use ${option.label} theme`}
                     activeOpacity={0.82}
-                    onPress={() => setTheme(option.id)}
+                    onPress={() => setThemePalette(option.id)}
                     style={{
                       width: '48%',
                       minWidth: 132,

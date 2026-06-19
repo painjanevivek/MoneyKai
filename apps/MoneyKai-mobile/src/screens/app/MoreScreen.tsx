@@ -38,7 +38,7 @@ interface FeatureItem {
 
 export function MoreScreen() {
   const navigation = useNavigation<MoreNavigation>();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = createAppScreenStyles(colors);
   const user = useAuthStore((state) => state.user);
   const unreadCount = useNotificationStore((state) => state.unreadCount);
@@ -47,7 +47,6 @@ export function MoreScreen() {
   const activeChallenges = useChallengeStore((state) => state.challenges.filter((item) => item.status === 'active').length);
   const captureSettings = useCaptureStore((state) => state.settings);
   const draftCount = useCaptureStore((state) => state.drafts.filter((draft) => draft.status === 'pending').length);
-  const theme = useSettingsStore((state) => state.theme);
 
   const toneColor = {
     primary: colors.primary,
@@ -116,7 +115,7 @@ export function MoreScreen() {
     {
       title: 'Settings',
       body: 'Profile, backup, security, and app preferences.',
-      metric: theme === 'dark' ? 'Dark mode' : 'Light mode',
+      metric: isDark ? 'Dark mode' : 'Light mode',
       icon: 'cog-outline',
       route: 'Settings',
       tone: 'primary',

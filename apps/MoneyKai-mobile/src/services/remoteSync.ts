@@ -13,6 +13,7 @@ import { clearSyncQueue } from './syncQueue';
 import { clearAutomaticBackupQueue } from './backupService';
 import { loadUserFirestoreSnapshot, type FirestoreUserSnapshot } from './firestoreData';
 import { getNetworkStatus, readDataCache, retryAsync, writeDataCache } from './networkClient';
+import { DEFAULT_THEME_PALETTE, getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark } from '@/constants/theme';
 
 const REMOTE_SNAPSHOT_CACHE_TTL_MS = 10 * 60 * 1000;
 
@@ -50,8 +51,11 @@ const getUserProfile = () => {
 };
 
 export const resetLocalAppState = () => {
+  const theme = getThemeModeForPalette(DEFAULT_THEME_PALETTE, false);
   useSettingsStore.setState({
-    theme: 'light',
+    theme,
+    themePalette: DEFAULT_THEME_PALETTE,
+    darkModeEnabled: false,
     currency: 'INR',
     currencySymbol: '₹',
     notificationsEnabled: true,
@@ -102,8 +106,13 @@ export const resetLocalAppState = () => {
 const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot) => {
   resetLocalAppState();
 
+  const restoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
+  const restoredDarkMode = snapshot.settings.app.darkModeEnabled ?? isThemeModeDark(snapshot.settings.app.theme);
+
   useSettingsStore.setState({
-    theme: snapshot.settings.app.theme,
+    theme: getThemeModeForPalette(restoredPalette, restoredDarkMode),
+    themePalette: restoredPalette,
+    darkModeEnabled: restoredDarkMode,
     currency: snapshot.settings.app.currency,
     currencySymbol: snapshot.settings.app.currencySymbol,
     notificationsEnabled: snapshot.settings.app.notificationsEnabled,

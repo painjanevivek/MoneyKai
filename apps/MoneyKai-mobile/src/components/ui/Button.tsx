@@ -14,6 +14,7 @@ interface ButtonProps {
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  tone?: 'default' | 'onDark';
   size?: 'sm' | 'md' | 'lg';
   icon?: string;
   iconPosition?: 'left' | 'right';
@@ -28,6 +29,7 @@ export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
   variant = 'primary',
+  tone = 'default',
   size = 'md',
   icon,
   iconPosition = 'left',
@@ -45,13 +47,21 @@ export const Button: React.FC<ButtonProps> = ({
     lg: { minHeight: ComponentTokens.controlHeight.lg, paddingHorizontal: ComponentTokens.controlPaddingX.lg, fontSize: Typography.fontSize.md, iconSize: 20 },
   };
 
-  const variantStyles: Record<string, { bg: string; text: string; border?: string }> = {
-    primary: { bg: colors.primary, text: colors.textInverse },
-    secondary: { bg: colors.primaryBg, text: colors.primary },
-    outline: { bg: colors.card, text: colors.primary, border: colors.borderLight },
-    ghost: { bg: 'transparent', text: colors.textSecondary },
-    danger: { bg: colors.emergency, text: colors.textInverse },
-  };
+  const variantStyles: Record<string, { bg: string; text: string; border?: string }> = tone === 'onDark'
+    ? {
+        primary: { bg: 'rgba(255, 255, 255, 0.94)', text: colors.primaryDark, border: 'rgba(255, 255, 255, 0.38)' },
+        secondary: { bg: 'rgba(255, 255, 255, 0.16)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.28)' },
+        outline: { bg: 'rgba(255, 255, 255, 0.14)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.28)' },
+        ghost: { bg: 'transparent', text: 'rgba(255, 255, 255, 0.84)', border: 'transparent' },
+        danger: { bg: 'rgba(255, 225, 229, 0.94)', text: '#7F1D1D', border: 'rgba(255, 255, 255, 0.38)' },
+      }
+    : {
+        primary: { bg: colors.primary, text: colors.textInverse },
+        secondary: { bg: colors.primaryBg, text: colors.primary },
+        outline: { bg: colors.card, text: colors.primary, border: colors.borderLight },
+        ghost: { bg: 'transparent', text: colors.textSecondary },
+        danger: { bg: colors.emergency, text: colors.textInverse },
+      };
 
   const s = sizeStyles[size];
   const v = variantStyles[variant];

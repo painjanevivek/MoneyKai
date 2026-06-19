@@ -1,4 +1,5 @@
 import React, { type PropsWithChildren } from 'react';
+import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,25 +33,25 @@ function BrandMark({ colors, lightMode }: { colors: ColorScheme; lightMode: bool
         width: 42,
         height: 42,
         borderRadius: BorderRadius.sm,
-        backgroundColor: lightMode ? colors.primary : '#FFFFFF',
+        backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: lightMode ? `${colors.primary}22` : 'rgba(255, 255, 255, 0.24)',
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
         ...Shadows.md,
         shadowColor: colors.shadowColor,
       }}
     >
-      <Text
+      <Image
+        source={{ uri: '/brand/moneykai-mark.jpeg' }}
+        contentFit="contain"
+        accessibilityIgnoresInvertColors
         style={{
-          fontSize: 15,
-          lineHeight: 18,
-          fontFamily: Typography.fontFamily.bold,
-          color: lightMode ? '#FFFFFF' : colors.primaryDark,
+          width: 34,
+          height: 34,
         }}
-      >
-        MK
-      </Text>
+      />
     </View>
   );
 }

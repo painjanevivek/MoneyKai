@@ -3,6 +3,7 @@ import { Text, View, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
+import { strongGlassBackdropStyle, withAlpha } from '@/utils/glassStyle';
 
 type WorkspaceMetric = {
   label: string;
@@ -34,9 +35,11 @@ export function WorkspaceHeader({
   metrics = [],
   title,
 }: WorkspaceHeaderProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const isCompact = width < 760;
+  const isConstrainedDesktop = width < 1180;
+  const headerBg = withAlpha(isDark ? colors.primaryBg : colors.primaryDark, isDark ? 0.78 : 0.88);
 
   const resolveMetricColor = (tone: WorkspaceMetric['tone']) => {
     if (tone === 'positive') return '#D9FFF2';
@@ -50,14 +53,15 @@ export function WorkspaceHeader({
       style={{
         borderRadius: isCompact ? BorderRadius.md : BorderRadius.xl,
         padding: isCompact ? Spacing.base : Spacing.xl,
-        backgroundColor: colors.primaryDark,
+        backgroundColor: headerBg,
         borderWidth: 1,
-        borderColor: 'rgba(234, 246, 240, 0.18)',
+        borderColor: withAlpha(colors.primaryLight, isDark ? 0.3 : 0.24),
         gap: isCompact ? Spacing.md : Spacing.lg,
         minWidth: 0,
         overflow: 'hidden',
         ...Shadows.lg,
         shadowColor: colors.shadowColor,
+        ...(strongGlassBackdropStyle ?? {}),
       }}
     >
       <View
@@ -76,10 +80,22 @@ export function WorkspaceHeader({
           flexDirection: isCompact ? 'column' : 'row',
           alignItems: isCompact ? 'stretch' : 'flex-start',
           gap: isCompact ? Spacing.md : Spacing.lg,
+          flexWrap: isCompact ? 'nowrap' : 'wrap',
           minWidth: 0,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, flex: 1, minWidth: 0 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: Spacing.md,
+            flexGrow: 1,
+            flexShrink: 1,
+            flexBasis: isCompact || isConstrainedDesktop ? 'auto' : 520,
+            minWidth: 0,
+            maxWidth: '100%',
+          }}
+        >
           <View
             style={{
               width: isCompact ? 42 : 48,
@@ -94,8 +110,8 @@ export function WorkspaceHeader({
           >
             <MaterialCommunityIcons name={icon} size={isCompact ? 22 : 24} color="#FFFFFF" />
           </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: 'rgba(255, 255, 255, 0.68)' }}>
+          <View style={{ flex: 1, minWidth: 0, maxWidth: 900 }}>
+            <Text numberOfLines={1} style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: 'rgba(255, 255, 255, 0.68)' }}>
               {eyebrow}
             </Text>
             <Text style={{ marginTop: 4, fontSize: isCompact ? 26 : 34, lineHeight: isCompact ? 32 : 40, fontFamily: Typography.fontFamily.display, color: '#FFFFFF' }}>
@@ -112,9 +128,12 @@ export function WorkspaceHeader({
               flexDirection: isCompact ? 'column' : 'row',
               flexWrap: isCompact ? 'nowrap' : 'wrap',
               justifyContent: isCompact ? 'flex-start' : 'flex-end',
-              alignItems: isCompact ? 'stretch' : 'center',
-              alignSelf: isCompact ? 'stretch' : 'flex-start',
+              alignItems: 'stretch',
+              alignSelf: isCompact || isConstrainedDesktop ? 'stretch' : 'flex-start',
               gap: Spacing.sm,
+              flexGrow: isConstrainedDesktop ? 1 : 0,
+              flexShrink: 1,
+              flexBasis: isCompact ? 'auto' : isConstrainedDesktop ? '100%' : 360,
               maxWidth: '100%',
               minWidth: 0,
             }}

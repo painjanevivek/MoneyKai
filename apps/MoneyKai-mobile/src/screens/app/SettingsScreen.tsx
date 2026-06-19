@@ -8,7 +8,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useSyncStore } from '@/stores/useSyncStore';
 import { isFirebaseConfigured } from '@/firebase/firebaseConfig';
 import { useTheme } from '@/hooks/useTheme';
-import { Spacing } from '@/constants/theme';
+import { BorderRadius, Spacing, THEME_OPTIONS, Typography } from '@/constants/theme';
 import { createAppScreenStyles } from './screenStyles';
 
 const formatDateTime = (value: string | null) => {
@@ -24,14 +24,13 @@ const formatDateTime = (value: string | null) => {
 };
 
 export function SettingsScreen() {
-  const { colors, theme } = useTheme();
+  const { colors, darkModeEnabled, setDarkModeEnabled, setThemePalette, themePalette } = useTheme();
   const styles = createAppScreenStyles(colors);
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
   const notificationsEnabled = useSettingsStore((state) => state.notificationsEnabled);
   const hapticEnabled = useSettingsStore((state) => state.hapticEnabled);
   const appLockEnabled = useSettingsStore((state) => state.appLockEnabled);
-  const toggleTheme = useSettingsStore((state) => state.toggleTheme);
   const toggleNotifications = useSettingsStore((state) => state.toggleNotifications);
   const toggleHaptic = useSettingsStore((state) => state.toggleHaptic);
   const setAppLockEnabled = useSettingsStore((state) => state.setAppLockEnabled);
@@ -134,11 +133,61 @@ export function SettingsScreen() {
           <View style={[styles.row, { marginBottom: Spacing.md }]}>
             <Text style={styles.muted}>Dark mode</Text>
             <Switch
-              value={theme === 'dark'}
-              onValueChange={toggleTheme}
+              value={darkModeEnabled}
+              onValueChange={setDarkModeEnabled}
               trackColor={{ false: colors.border, true: colors.primaryBg }}
-              thumbColor={theme === 'dark' ? colors.primary : colors.textTertiary}
+              thumbColor={darkModeEnabled ? colors.primary : colors.textTertiary}
             />
+          </View>
+          <View style={{ gap: Spacing.sm, marginBottom: Spacing.md }}>
+            <Text style={styles.muted}>Theme palette</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+              {THEME_OPTIONS.map((option) => {
+                const active = themePalette === option.id;
+                return (
+                  <TouchableOpacity
+                    key={option.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    activeOpacity={0.82}
+                    onPress={() => setThemePalette(option.id)}
+                    style={{
+                      width: '48%',
+                      minWidth: 132,
+                      flexGrow: 1,
+                      borderRadius: BorderRadius.md,
+                      borderWidth: 1,
+                      borderColor: active ? colors.primary : colors.border,
+                      backgroundColor: active ? colors.primaryBg : colors.surface,
+                      padding: Spacing.sm,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', marginBottom: Spacing.xs }}>
+                      {option.swatches.map((swatch) => (
+                        <View
+                          key={swatch}
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 8,
+                            backgroundColor: swatch,
+                            borderWidth: 1,
+                            borderColor: colors.borderLight,
+                            marginRight: -3,
+                          }}
+                        />
+                      ))}
+                    </View>
+                    <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm }}>
+                      {option.label}
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.xs, marginTop: 2 }} numberOfLines={2}>
+                      {option.description}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
           <View style={[styles.row, { marginBottom: Spacing.md }]}>
             <Text style={styles.muted}>Notifications</Text>

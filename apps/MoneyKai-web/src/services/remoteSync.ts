@@ -10,6 +10,7 @@ import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
 import { clearAutomaticBackupQueue } from './backupService';
 import { loadUserFirestoreSnapshot } from './firestoreData';
+import { DEFAULT_THEME_PALETTE, getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark } from '@/constants/theme';
 
 const EMPTY_BUDGET_SETTINGS = {
   monthly_allowance: 0,
@@ -20,8 +21,11 @@ const EMPTY_BUDGET_SETTINGS = {
 };
 
 export const resetLocalAppState = () => {
+  const theme = getThemeModeForPalette(DEFAULT_THEME_PALETTE, false);
   useSettingsStore.setState({
-    theme: 'light',
+    theme,
+    themePalette: DEFAULT_THEME_PALETTE,
+    darkModeEnabled: false,
     currency: 'INR',
     currencySymbol: '₹',
     notificationsEnabled: true,
@@ -84,8 +88,13 @@ export const syncRemoteState = async () => {
 
   resetLocalAppState();
 
+  const restoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
+  const restoredDarkMode = snapshot.settings.app.darkModeEnabled ?? isThemeModeDark(snapshot.settings.app.theme);
+
   useSettingsStore.setState({
-    theme: snapshot.settings.app.theme,
+    theme: getThemeModeForPalette(restoredPalette, restoredDarkMode),
+    themePalette: restoredPalette,
+    darkModeEnabled: restoredDarkMode,
     currency: snapshot.settings.app.currency,
     currencySymbol: snapshot.settings.app.currencySymbol,
     notificationsEnabled: snapshot.settings.app.notificationsEnabled,

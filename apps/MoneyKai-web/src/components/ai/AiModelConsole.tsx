@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, type ViewStyle } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -10,11 +10,12 @@ import type { AiProviderStatus } from '@/features/ai/types';
 import { useTheme } from '@/hooks/useTheme';
 
 interface AiModelConsoleProps {
+  containerStyle?: ViewStyle;
   providerStatus?: AiProviderStatus | null;
   requiresSignIn?: boolean;
 }
 
-export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiModelConsoleProps) {
+export function AiModelConsole({ containerStyle, providerStatus, requiresSignIn = false }: AiModelConsoleProps) {
   const { colors } = useTheme();
   const [prompt, setPrompt] = React.useState('Summarize three MoneyKai ways to reduce food delivery spend this week.');
 
@@ -42,7 +43,7 @@ export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiMod
   };
 
   return (
-    <Card style={{ gap: Spacing.md }}>
+    <Card style={{ gap: Spacing.md, ...containerStyle }}>
       <View style={{ gap: Spacing.xs }}>
         <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
           Ask MoneyKai AI

@@ -385,7 +385,7 @@ function CurrencyOption({
 }
 
 export default function SettingsScreen() {
-  const { colors, theme, setTheme } = useTheme();
+  const { colors, darkModeEnabled, setDarkModeEnabled, setThemePalette, themePalette } = useTheme();
   const { user, signOut } = useAuthStore();
   const {
     notificationsEnabled,
@@ -418,7 +418,7 @@ export default function SettingsScreen() {
     true: colors.primary,
   } as const;
   const switchThumb = colors.textInverse;
-  const selectedTheme = THEME_OPTIONS.find((option) => option.id === theme) ?? THEME_OPTIONS[0];
+  const selectedTheme = THEME_OPTIONS.find((option) => option.id === themePalette) ?? THEME_OPTIONS[0];
 
   const handleCurrencySelect = async (option: (typeof CURRENCY_OPTIONS)[number]) => {
     if (currencyBusy) {
@@ -616,6 +616,22 @@ export default function SettingsScreen() {
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Appearance</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
+          <SettingItem
+            icon={darkModeEnabled ? 'weather-night' : 'white-balance-sunny'}
+            iconColor={colors.primary}
+            iconBg={colors.primaryBg}
+            title="Dark Mode"
+            subtitle={darkModeEnabled ? 'Using the dark glass version of your palette' : 'Using the light glass version of your palette'}
+            right={
+              <Switch
+                value={darkModeEnabled}
+                onValueChange={setDarkModeEnabled}
+                trackColor={switchTrack}
+                thumbColor={switchThumb}
+                ios_backgroundColor={colors.borderLight}
+              />
+            }
+          />
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ expanded: showThemePicker }}
@@ -677,9 +693,9 @@ export default function SettingsScreen() {
                 <ThemeDropdownOption
                   key={option.id}
                   option={option}
-                  active={theme === option.id}
+                  active={themePalette === option.id}
                   onSelect={() => {
-                    setTheme(option.id);
+                    setThemePalette(option.id);
                     setShowThemePicker(false);
                   }}
                 />
