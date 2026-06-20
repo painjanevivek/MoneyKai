@@ -188,11 +188,11 @@ function Section({
       aria-labelledby={labelledBy}
       style={{
         background: 'linear-gradient(180deg, #091A15 0%, #07130F 100%)',
-        padding: compact ? '52px 0' : '84px 0',
+        padding: compact ? '52px 18px' : '84px 24px',
         borderTop: `1px solid ${palette.border}`,
       }}
     >
-      {children}
+      <div style={{ margin: '0 auto', maxWidth: 1180 }}>{children}</div>
     </section>
   );
 }
@@ -368,7 +368,7 @@ function ProductPreview({ compact }: { compact: boolean }) {
         ...cardStyle,
         background: `linear-gradient(180deg, ${palette.surfaceWarm}, #E9DFCC)`,
         color: palette.ink,
-        minHeight: compact ? 440 : 540,
+        minHeight: compact ? 380 : 500,
         overflow: 'hidden',
         padding: compact ? 18 : 24,
         position: 'relative',
@@ -577,7 +577,7 @@ export default function LandingScreen() {
             </div>
           </section>
 
-          <div style={{ background: 'transparent', margin: '0 auto', maxWidth: 1180, padding: isCompact ? '0 18px' : '0 24px' }}>
+          <>
             <Section compact={isCompact} labelledBy="problem-title">
               <div style={{ display: 'grid', gap: 28 }}>
                 <div style={{ display: 'grid', gap: 14, maxWidth: 760 }}>
@@ -635,9 +635,9 @@ export default function LandingScreen() {
                 </div>
                 <div style={{ display: 'grid', gap: 16, gridTemplateColumns: isWide ? 'repeat(4, minmax(0, 1fr))' : isCompact ? '1fr' : 'repeat(2, minmax(0, 1fr))' }}>
                   {featureCards.map((item) => (
-                    <article key={item.title} style={{ ...cardStyle, minHeight: 220, padding: 20 }}>
+                    <article key={item.title} style={{ ...cardStyle, minHeight: isCompact ? 'auto' : 196, padding: 20 }}>
                       <span style={{ color: palette.gold, fontSize: 12, fontWeight: 900 }}>{item.metric}</span>
-                      <h3 style={{ color: palette.text, fontSize: 21, lineHeight: '27px', margin: '40px 0 0' }}>{item.title}</h3>
+                      <h3 style={{ color: palette.text, fontSize: 21, lineHeight: '27px', margin: '28px 0 0' }}>{item.title}</h3>
                       <p style={{ ...paragraphStyle, fontSize: 14, lineHeight: '23px', marginTop: 10 }}>{item.body}</p>
                     </article>
                   ))}
@@ -758,33 +758,40 @@ export default function LandingScreen() {
               aria-labelledby="final-cta-title"
               style={{
                 background: '#07130F',
-                padding: isCompact ? '54px 0 72px' : '84px 0 104px',
+                padding: isCompact ? '54px 18px 72px' : '84px 24px 104px',
               }}
             >
               <div
                 style={{
-                  ...cardStyle,
-                  alignItems: 'center',
-                  background: `linear-gradient(135deg, ${palette.greenSoft}, ${palette.redSoft}), ${palette.surfaceHigh}`,
-                  display: 'grid',
-                  gap: 22,
-                  justifyItems: 'center',
-                  padding: isCompact ? 24 : 42,
-                  textAlign: 'center',
+                  margin: '0 auto',
+                  maxWidth: 1180,
                 }}
               >
-                <h2 id="final-cta-title" style={{ ...sectionTitleStyle(isCompact), maxWidth: 820 }}>
-                  Build a calmer money review habit today.
-                </h2>
-                <p style={{ ...paragraphStyle, maxWidth: 700 }}>
-                  Create a MoneyKai account, review your own records, and turn everyday money activity into reports you can actually understand.
-                </p>
-                <LinkButton href="/signup" primary>
-                  Create secure account
-                </LinkButton>
+                <div
+                  style={{
+                    ...cardStyle,
+                    alignItems: 'center',
+                    background: `linear-gradient(135deg, ${palette.greenSoft}, ${palette.redSoft}), ${palette.surfaceHigh}`,
+                    display: 'grid',
+                    gap: 22,
+                    justifyItems: 'center',
+                    padding: isCompact ? 24 : 42,
+                    textAlign: 'center',
+                  }}
+                >
+                  <h2 id="final-cta-title" style={{ ...sectionTitleStyle(isCompact), maxWidth: 820 }}>
+                    Build a calmer money review habit today.
+                  </h2>
+                  <p style={{ ...paragraphStyle, maxWidth: 700 }}>
+                    Create a MoneyKai account, review your own records, and turn everyday money activity into reports you can actually understand.
+                  </p>
+                  <LinkButton href="/signup" primary>
+                    Create secure account
+                  </LinkButton>
+                </div>
               </div>
             </section>
-          </div>
+          </>
         </main>
 
         <footer style={{ background: '#06110E', borderTop: `1px solid ${palette.border}`, padding: isCompact ? '28px 18px' : '32px 24px' }}>
