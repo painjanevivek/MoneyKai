@@ -1,0 +1,4 @@
+# The frontend deploy is a static Expo export. Runtime feature APIs live on the
+# MoneyKai backend, so do not package the disabled/duplicate v1 API shims as
+# Vercel Functions in this deployment.
+api/v1/**
