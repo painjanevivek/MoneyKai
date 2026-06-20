@@ -26,7 +26,15 @@ import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { AppNotification } from '@/types/notification';
-import { getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark, type ThemeMode, type ThemePaletteId } from '@/constants/theme';
+import {
+  DEFAULT_THEME_PALETTE,
+  getDefaultedThemePalette,
+  getPaletteForThemeMode,
+  getThemeModeForPalette,
+  isThemeModeDark,
+  type ThemeMode,
+  type ThemePaletteId,
+} from '@/constants/theme';
 import type { LinkedAccount } from '@moneykai/domain';
 import { firebaseDb, isFirebaseConfigured } from './firebase';
 import { backendApi, isBackendConfigured } from './backendApi';
@@ -429,8 +437,10 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
 
   void clearAutomaticBackupQueue().catch(() => undefined);
 
-  const restoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
-  const restoredDarkMode = snapshot.settings.app.darkModeEnabled ?? isThemeModeDark(snapshot.settings.app.theme);
+  const rawRestoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
+  const restoredPalette = getDefaultedThemePalette(rawRestoredPalette, snapshot.settings.app.theme);
+  const migratedToDefault = restoredPalette === DEFAULT_THEME_PALETTE && rawRestoredPalette !== DEFAULT_THEME_PALETTE;
+  const restoredDarkMode = migratedToDefault ? true : snapshot.settings.app.darkModeEnabled ?? isThemeModeDark(snapshot.settings.app.theme);
 
   useSettingsStore.setState({
     theme: getThemeModeForPalette(restoredPalette, restoredDarkMode),

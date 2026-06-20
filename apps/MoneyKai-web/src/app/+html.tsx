@@ -10,28 +10,28 @@ export default function RootHtml({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="theme-color" content="#0F766E" />
+        <meta name="theme-color" content="#030303" />
         <meta name="color-scheme" content="light dark" />
         {headNodes}
         <ScrollViewStyleReset />
         <style>{`
           :root {
-            --mk-scrollbar-track: rgba(15, 118, 110, 0.08);
-            --mk-scrollbar-track-hover: rgba(15, 118, 110, 0.12);
-            --mk-scrollbar-thumb: rgba(15, 118, 110, 0.34);
-            --mk-scrollbar-thumb-hover: rgba(15, 118, 110, 0.52);
-            --mk-scrollbar-thumb-active: rgba(15, 78, 74, 0.68);
-            --mk-focus-ring: #14B8A6;
+            --mk-scrollbar-track: rgba(9, 9, 9, 0.08);
+            --mk-scrollbar-track-hover: rgba(9, 9, 9, 0.12);
+            --mk-scrollbar-thumb: rgba(9, 9, 9, 0.34);
+            --mk-scrollbar-thumb-hover: rgba(9, 9, 9, 0.52);
+            --mk-scrollbar-thumb-active: rgba(9, 9, 9, 0.68);
+            --mk-focus-ring: #B68A2C;
           }
 
           @media (prefers-color-scheme: dark) {
             :root {
-              --mk-scrollbar-track: rgba(221, 247, 241, 0.08);
-              --mk-scrollbar-track-hover: rgba(221, 247, 241, 0.12);
-              --mk-scrollbar-thumb: rgba(125, 211, 199, 0.38);
-              --mk-scrollbar-thumb-hover: rgba(125, 211, 199, 0.56);
-              --mk-scrollbar-thumb-active: rgba(191, 245, 234, 0.72);
-              --mk-focus-ring: #7DD3C7;
+              --mk-scrollbar-track: rgba(248, 248, 245, 0.08);
+              --mk-scrollbar-track-hover: rgba(248, 248, 245, 0.12);
+              --mk-scrollbar-thumb: rgba(248, 248, 245, 0.32);
+              --mk-scrollbar-thumb-hover: rgba(214, 184, 102, 0.52);
+              --mk-scrollbar-thumb-active: rgba(214, 184, 102, 0.72);
+              --mk-focus-ring: #D6B866;
             }
           }
 

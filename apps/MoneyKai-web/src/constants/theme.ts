@@ -78,6 +78,78 @@ export const Colors = {
     glassBg: 'rgba(18, 18, 18, 0.9)',
     glassBorder: 'rgba(48, 48, 48, 0.65)',
   },
+  jetLuxuryDark: {
+    primary: '#F8F8F5',
+    primaryLight: '#FFFFFF',
+    primaryDark: '#D6B866',
+    primaryBg: '#1A1710',
+    accent: '#D6B866',
+    accentLight: '#2A2415',
+    emergency: '#FF8A8A',
+    emergencyBg: '#321313',
+    background: '#030303',
+    surface: '#090909',
+    surfaceElevated: '#111111',
+    card: '#0D0D0D',
+    border: '#2B2B2B',
+    borderLight: '#1A1A1A',
+    textPrimary: '#F7F7F2',
+    textSecondary: '#C8C8BF',
+    textTertiary: '#888880',
+    textInverse: '#050505',
+    success: '#9BE7C2',
+    warning: '#E9C46A',
+    error: '#FF8A8A',
+    info: '#B7D7FF',
+    chart1: '#F8F8F5',
+    chart2: '#D6B866',
+    chart3: '#9BE7C2',
+    chart4: '#B7D7FF',
+    chart5: '#FF8A8A',
+    chart6: '#C8C8BF',
+    chart7: '#777777',
+    chart8: '#FFFFFF',
+    shadowColor: '#000000',
+    overlay: 'rgba(0, 0, 0, 0.78)',
+    glassBg: 'rgba(10, 10, 10, 0.72)',
+    glassBorder: 'rgba(248, 248, 245, 0.18)',
+  },
+  jetLuxuryLight: {
+    primary: '#090909',
+    primaryLight: '#1A1A1A',
+    primaryDark: '#000000',
+    primaryBg: '#F4F1E8',
+    accent: '#B68A2C',
+    accentLight: '#F8F0D8',
+    emergency: '#B42318',
+    emergencyBg: '#FDECEC',
+    background: '#F7F7F2',
+    surface: '#FFFFFF',
+    surfaceElevated: '#FAFAF7',
+    card: '#FFFFFF',
+    border: '#D8D8D0',
+    borderLight: '#ECECE6',
+    textPrimary: '#090909',
+    textSecondary: '#4E4E48',
+    textTertiary: '#85857D',
+    textInverse: '#FFFFFF',
+    success: '#047857',
+    warning: '#B7791F',
+    error: '#B42318',
+    info: '#2563EB',
+    chart1: '#090909',
+    chart2: '#B68A2C',
+    chart3: '#047857',
+    chart4: '#2563EB',
+    chart5: '#B42318',
+    chart6: '#64748B',
+    chart7: '#A1A1AA',
+    chart8: '#52525B',
+    shadowColor: '#111111',
+    overlay: 'rgba(5, 5, 5, 0.48)',
+    glassBg: 'rgba(255, 255, 255, 0.82)',
+    glassBorder: 'rgba(9, 9, 9, 0.14)',
+  },
   emeraldMistDark: {
     primary: '#8FE8D8',
     primaryLight: '#C8FFF4',
@@ -635,11 +707,14 @@ export type ThemeMode = keyof typeof Colors;
 export type ColorScheme = {
   [Key in keyof typeof Colors.light]: string;
 };
-export type ThemePaletteId = 'emeraldMist' | 'deepJade' | 'monsoonGlass' | 'ivoryEmerald';
+export type ThemePaletteId = 'jetLuxury' | 'emeraldMist' | 'deepJade' | 'monsoonGlass' | 'ivoryEmerald';
 
-export const DEFAULT_THEME_PALETTE: ThemePaletteId = 'ivoryEmerald';
+export const DEFAULT_THEME_PALETTE: ThemePaletteId = 'jetLuxury';
+export const LEGACY_DEFAULT_THEME_PALETTE: ThemePaletteId = 'ivoryEmerald';
+const LEGACY_DEFAULT_THEME_PALETTES: readonly ThemePaletteId[] = [LEGACY_DEFAULT_THEME_PALETTE, 'emeraldMist'];
 
 export const THEME_MODE_BY_PALETTE: Record<ThemePaletteId, { light: ThemeMode; dark: ThemeMode }> = {
+  jetLuxury: { light: 'jetLuxuryLight', dark: 'jetLuxuryDark' },
   emeraldMist: { light: 'emerald', dark: 'emeraldMistDark' },
   deepJade: { light: 'sage', dark: 'dark' },
   monsoonGlass: { light: 'ocean', dark: 'monsoonGlassDark' },
@@ -647,7 +722,7 @@ export const THEME_MODE_BY_PALETTE: Record<ThemePaletteId, { light: ThemeMode; d
 };
 
 export const isThemeModeDark = (theme: ThemeMode): boolean =>
-  theme === 'dark' || theme === 'emeraldMistDark' || theme === 'monsoonGlassDark' || theme === 'ivoryEmeraldDark';
+  theme === 'dark' || theme === 'jetLuxuryDark' || theme === 'emeraldMistDark' || theme === 'monsoonGlassDark' || theme === 'ivoryEmeraldDark';
 
 export const getPaletteForThemeMode = (theme?: ThemeMode): ThemePaletteId => {
   if (!theme) return DEFAULT_THEME_PALETTE;
@@ -656,6 +731,17 @@ export const getPaletteForThemeMode = (theme?: ThemeMode): ThemePaletteId => {
     return modes.light === theme || modes.dark === theme;
   });
   return match ?? DEFAULT_THEME_PALETTE;
+};
+
+export const getDefaultedThemePalette = (themePalette?: ThemePaletteId, theme?: ThemeMode): ThemePaletteId => {
+  const resolvedPalette = themePalette ?? getPaletteForThemeMode(theme);
+  const legacyDefaultModes: readonly ThemeMode[] = ['light', 'ivoryEmeraldDark', 'emerald', 'emeraldMistDark'];
+
+  if (LEGACY_DEFAULT_THEME_PALETTES.includes(resolvedPalette) && (!theme || legacyDefaultModes.includes(theme))) {
+    return DEFAULT_THEME_PALETTE;
+  }
+
+  return resolvedPalette;
 };
 
 export const getThemeModeForPalette = (palette: ThemePaletteId, darkModeEnabled: boolean): ThemeMode => {
@@ -672,6 +758,13 @@ type ThemeOption = {
 };
 
 export const THEME_OPTIONS: readonly ThemeOption[] = [
+  {
+    id: 'jetLuxury',
+    label: 'Jet Luxury',
+    description: 'Pitch black, white, and restrained gold',
+    icon: 'diamond-stone',
+    swatches: ['#030303', '#F8F8F5', '#D6B866'],
+  },
   {
     id: 'emeraldMist',
     label: 'Emerald Mist',

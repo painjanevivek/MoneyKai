@@ -63,7 +63,7 @@ export function SeoHead({
       <meta name="robots" content={robots} />
       <meta name="application-name" content={SITE.name} />
       <meta name="apple-mobile-web-app-title" content={SITE.name} />
-      <meta name="theme-color" content="#0F766E" />
+      <meta name="theme-color" content="#030303" />
       <meta property="og:type" content="website" />
       <meta property="og:site_name" content={SITE.name} />
       <meta property="og:title" content={title} />

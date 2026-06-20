@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DEFAULT_THEME_PALETTE,
+  getDefaultedThemePalette,
   getPaletteForThemeMode,
   getThemeModeForPalette,
   isThemeModeDark,
@@ -380,8 +381,11 @@ export const useSettingsStore = create<SettingsState>()(
       }),
       merge: (persisted, current) => {
         const persistedState = persisted as Partial<SettingsState> | undefined;
-        const themePalette = persistedState?.themePalette ?? getPaletteForThemeMode(persistedState?.theme);
-        const darkModeEnabled = persistedState?.darkModeEnabled ?? isThemeModeDark(persistedState?.theme ?? current.theme);
+        const themePalette = getDefaultedThemePalette(persistedState?.themePalette, persistedState?.theme);
+        const migratedToDefault = themePalette === DEFAULT_THEME_PALETTE && persistedState?.themePalette !== DEFAULT_THEME_PALETTE;
+        const darkModeEnabled = migratedToDefault
+          ? true
+          : persistedState?.darkModeEnabled ?? isThemeModeDark(persistedState?.theme ?? current.theme);
         const theme = getThemeModeForPalette(themePalette, darkModeEnabled);
 
         return {

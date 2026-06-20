@@ -16,6 +16,18 @@ export default function ForgotPasswordScreen() {
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleBackToLogin = () => {
+    router.replace('/login');
+  };
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    handleBackToLogin();
+  };
+
   const handleReset = async () => {
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
@@ -55,7 +67,7 @@ export default function ForgotPasswordScreen() {
             paddingVertical: Spacing['2xl'],
           }}
         >
-          <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: Spacing.lg }}>
+          <TouchableOpacity onPress={handleBack} accessibilityRole="button" accessibilityLabel="Go back" style={{ marginBottom: Spacing.lg }}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
 
@@ -130,7 +142,7 @@ export default function ForgotPasswordScreen() {
                 }}>We&apos;ve sent a password reset link to {email}</Text>
                 <Button
                   title="Back to Login"
-                  onPress={() => router.back()}
+                  onPress={handleBackToLogin}
                   variant="secondary"
                   style={{ marginTop: Spacing.xl }}
                 />

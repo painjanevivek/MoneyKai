@@ -64,9 +64,9 @@ export type FirestoreUserSnapshot = {
 };
 
 const DEFAULT_APP_SETTINGS: AppSettingsDoc = {
-  theme: getThemeModeForPalette(DEFAULT_THEME_PALETTE, false),
+  theme: getThemeModeForPalette(DEFAULT_THEME_PALETTE, true),
   themePalette: DEFAULT_THEME_PALETTE,
-  darkModeEnabled: false,
+  darkModeEnabled: true,
   dashboardTrendRange: '1m',
   dashboardTrendMetric: 'spending',
   dashboardTrendChartType: 'line',

@@ -2,14 +2,15 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { router } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
@@ -46,6 +47,7 @@ const getFriendlyAuthMessage = (error: unknown) => {
 
 export default function LoginScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const { signIn, signInWithGoogle, isLoading, isAuthenticated } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -99,6 +101,8 @@ export default function LoginScreen() {
     yellow: '#FBBC05',
     green: '#34A853',
   };
+  const isWide = width >= 900;
+  const cardRadius = isWide ? 28 : BorderRadius.xl;
 
   return (
     <>
@@ -112,56 +116,92 @@ export default function LoginScreen() {
         eyebrow="SECURE SIGN IN"
         title="Pick up exactly where your money left off."
         subtitle="Return to reviewed transactions, budgets, portfolio records, and AI summaries in one private workspace."
+        showHero={false}
       >
       <KeyboardAvoidingView
         style={{ width: '100%' }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={{ width: '100%' }}>
-          <View style={{
-            backgroundColor: colors.card,
-            borderRadius: BorderRadius.xl,
-            padding: Spacing.xl,
-            borderWidth: 1,
-            borderColor: colors.borderLight,
-            ...Shadows.lg,
-            shadowColor: colors.shadowColor,
-          }}>
-            <Text style={{
-              fontSize: Typography.fontSize.xl,
-              fontFamily: Typography.fontFamily.display,
-              color: colors.textPrimary,
-              marginBottom: Spacing.xs,
-            }}>Welcome back</Text>
-            <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 21, color: colors.textSecondary, marginBottom: Spacing.xl }}>
-              Sign in to continue your reviewed money workspace.
-            </Text>
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: cardRadius,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+              flexDirection: isWide ? 'row' : 'column',
+              gap: isWide ? Spacing['3xl'] : Spacing.xl,
+              justifyContent: 'space-between',
+              minHeight: isWide ? 390 : undefined,
+              padding: isWide ? Spacing['3xl'] : Spacing.xl,
+              ...Shadows.lg,
+              shadowColor: colors.shadowColor,
+            }}
+          >
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: Spacing.sm,
-                backgroundColor: colors.primaryBg,
-                borderRadius: BorderRadius.sm,
-                borderWidth: 1,
-                borderColor: `${colors.primary}22`,
-                marginBottom: Spacing.lg,
-                padding: Spacing.md,
+                flex: 1,
+                justifyContent: 'space-between',
+                maxWidth: isWide ? 470 : undefined,
+                minHeight: isWide ? 270 : undefined,
               }}
             >
-              <MaterialCommunityIcons name="shield-check-outline" size={18} color={colors.primary} />
-              <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textPrimary }}>
-                We will take you straight back to budgets, records, and reports. No reset, no tour loop.
-              </Text>
+            <View
+              style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: BorderRadius.md,
+                  backgroundColor: '#FFFFFF',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                  ...Shadows.sm,
+                  shadowColor: colors.shadowColor,
+              }}
+            >
+              <Image
+                source={require('../../../assets/images/moneykai-logo.png')}
+                  style={{ width: 42, height: 42 }}
+                resizeMode="contain"
+                accessibilityLabel="MoneyKai logo"
+              />
             </View>
 
+              <View style={{ marginTop: isWide ? Spacing['2xl'] : Spacing.lg }}>
+                <Text
+                  style={{
+                    color: colors.textPrimary,
+                    fontFamily: Typography.fontFamily.display,
+                    fontSize: isWide ? 44 : Typography.fontSize['3xl'],
+                    lineHeight: isWide ? 52 : 40,
+                  }}
+                >
+                  Sign in
+                </Text>
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontFamily: Typography.fontFamily.regular,
+                    fontSize: Typography.fontSize.md,
+                    lineHeight: 25,
+                    marginTop: Spacing.md,
+                    maxWidth: 420,
+                  }}
+                >
+                  with your MoneyKai account. Your private workspace stays available across budgets, records, and reports.
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ flex: 1.12, justifyContent: 'space-between', maxWidth: isWide ? 560 : undefined }}>
+              <View>
             <Input
               label="Email"
-              placeholder="Enter your email"
+                    placeholder="Email"
               value={email}
               onChangeText={setEmail}
               error={errors.email}
-              icon="email-outline"
               testID="login-email"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -172,11 +212,10 @@ export default function LoginScreen() {
 
             <Input
               label="Password"
-              placeholder="Enter your password"
+                    placeholder="Password"
               value={password}
               onChangeText={setPassword}
               error={errors.password}
-              icon="lock-outline"
               testID="login-password"
               secureTextEntry
               autoComplete="password"
@@ -194,28 +233,50 @@ export default function LoginScreen() {
 
             <TouchableOpacity
               onPress={() => router.push('/(auth)/forgot-password')}
-              style={{ alignSelf: 'flex-end', marginBottom: Spacing.lg, marginTop: -Spacing.sm }}
+                    accessibilityRole="link"
+                    accessibilityLabel="Reset your MoneyKai password"
+                    style={{ alignSelf: 'flex-start', marginBottom: Spacing.xl, marginTop: -Spacing.sm }}
             >
               <Text style={{
                 fontSize: Typography.fontSize.sm,
-                fontFamily: Typography.fontFamily.medium,
+                      fontFamily: Typography.fontFamily.semiBold,
                 color: colors.primary,
               }}>Forgot Password?</Text>
             </TouchableOpacity>
+              </View>
 
+              <Text
+                style={{
+                  color: colors.textSecondary,
+                  fontSize: Typography.fontSize.sm,
+                  lineHeight: 21,
+                  marginBottom: Spacing.lg,
+                }}
+              >
+                Use MoneyKai only on devices you trust. Review sign-in activity from settings after you enter your workspace.
+              </Text>
+
+              <View style={{ alignItems: 'center', flexDirection: isWide ? 'row' : 'column-reverse', gap: Spacing.md, justifyContent: 'flex-end' }}>
+                <TouchableOpacity onPress={() => router.push('/(auth)/signup')} accessibilityRole="link" accessibilityLabel="Create a MoneyKai account">
+                  <Text style={{
+                    fontSize: Typography.fontSize.base,
+                    fontFamily: Typography.fontFamily.semiBold,
+                    color: colors.primary,
+                  }}>Create account</Text>
+                </TouchableOpacity>
             <Button
               title="Sign In"
               onPress={handleLogin}
               loading={isLoading}
               disabled={isLoading || googleLoading}
-              fullWidth
+                  fullWidth={!isWide}
               size="lg"
-              icon="login"
               testID="login-submit"
+                  style={{ minWidth: isWide ? 132 : undefined }}
             />
+              </View>
 
-            {/* Divider */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.xl }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.lg }}>
               <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
               <Text style={{
                 marginHorizontal: Spacing.md,
@@ -226,8 +287,6 @@ export default function LoginScreen() {
               <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
             </View>
 
-            {/* Social Login Buttons */}
-            <View style={{ gap: Spacing.md }}>
               <TouchableOpacity
                 onPress={handleGoogleSignIn}
                 testID="login-google"
@@ -278,22 +337,29 @@ export default function LoginScreen() {
                 )}
               </TouchableOpacity>
             </View>
-
           </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.xl }}>
+          <View style={{ alignItems: 'center', flexDirection: isWide ? 'row' : 'column', gap: isWide ? 0 : Spacing.md, justifyContent: 'space-between', marginTop: Spacing.lg, paddingHorizontal: isWide ? Spacing.lg : 0 }}>
             <Text style={{
-              fontSize: Typography.fontSize.base,
+              fontSize: Typography.fontSize.sm,
               fontFamily: Typography.fontFamily.regular,
               color: colors.textSecondary,
-            }}>Don&apos;t have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
+            }}>English (India)</Text>
+            <View style={{ flexDirection: 'row', gap: Spacing.lg }}>
+              {[
+                ['Help', '/contact'],
+                ['Privacy', '/privacy-policy'],
+                ['Terms', '/terms'],
+              ].map(([label, href]) => (
+                <TouchableOpacity key={label} onPress={() => router.push(href as any)} accessibilityRole="link" accessibilityLabel={label}>
               <Text style={{
-                fontSize: Typography.fontSize.base,
+                    fontSize: Typography.fontSize.sm,
                 fontFamily: Typography.fontFamily.semiBold,
-                color: colors.primary,
-              }}>Sign Up</Text>
+                    color: colors.textSecondary,
+                  }}>{label}</Text>
             </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>

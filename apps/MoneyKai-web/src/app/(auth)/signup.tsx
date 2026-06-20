@@ -1,7 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
@@ -27,21 +35,18 @@ const getFriendlySignupMessage = (error: unknown) => {
   return 'Please check the form and try again.';
 };
 
-const SETUP_PROMISES = [
-  'Create your private workspace',
-  'Set a budget or add one record',
-  'Review dashboard insights before acting',
-] as const;
-
 export default function SignupScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const { signUp, isLoading, isAuthenticated } = useAuthStore();
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const submitting = useRef(false);
+  const isWide = width >= 900;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -49,10 +54,15 @@ export default function SignupScreen() {
     }
   }, [isAuthenticated]);
 
+  const handleSignInPress = () => {
+    router.replace('/login');
+  };
+
   const handleSignUp = async () => {
     if (submitting.current) return;
     const newErrors: Record<string, string> = {};
-    if (!fullName || fullName.length < 2) newErrors.fullName = 'Name must be at least 2 characters';
+    const fullName = `${firstName.trim()} ${surname.trim()}`.trim();
+    if (!firstName.trim() || firstName.trim().length < 2) newErrors.firstName = 'First name must be at least 2 characters';
     if (!email || !/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Enter a valid email';
     if (!password || password.length < 8) newErrors.password = 'Minimum 8 characters';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
@@ -81,158 +91,199 @@ export default function SignupScreen() {
         eyebrow="PRIVATE ONBOARDING"
         title="Start with the records you trust MoneyKai with."
         subtitle="Create a workspace for budgets, imports, holdings, shared expenses, and calm monthly review."
+        showHero={false}
       >
       <KeyboardAvoidingView style={{ width: '100%' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={{ width: '100%' }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: Spacing.lg }}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-
-          <View style={{ marginBottom: Spacing['2xl'] }}>
-            <Text style={{
-              fontSize: Typography.fontSize['2xl'],
-              fontFamily: Typography.fontFamily.display,
-              color: colors.textPrimary,
-            }}>Create account</Text>
-            <Text style={{
-              fontSize: Typography.fontSize.base,
-              fontFamily: Typography.fontFamily.regular,
-              color: colors.textSecondary,
-              marginTop: 4,
-            }}>Create a home for your money.</Text>
-          </View>
-
           <View
             style={{
-              backgroundColor: colors.primaryBg,
-              borderRadius: BorderRadius.sm,
+              backgroundColor: colors.card,
+              borderRadius: isWide ? 28 : BorderRadius.xl,
               borderWidth: 1,
-              borderColor: `${colors.primary}22`,
-              marginBottom: Spacing.lg,
-              padding: Spacing.md,
-              gap: Spacing.sm,
+              borderColor: colors.borderLight,
+              flexDirection: isWide ? 'row' : 'column',
+              gap: isWide ? Spacing['3xl'] : Spacing.xl,
+              justifyContent: 'space-between',
+              minHeight: isWide ? 430 : undefined,
+              padding: isWide ? Spacing['3xl'] : Spacing.xl,
+              ...Shadows.lg,
+              shadowColor: colors.shadowColor,
             }}
           >
-            {SETUP_PROMISES.map((promise, index) => (
-              <View key={promise} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-                <View
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'space-between',
+                maxWidth: isWide ? 520 : undefined,
+                minHeight: isWide ? 300 : undefined,
+              }}
+            >
+              <View
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: BorderRadius.md,
+                  backgroundColor: '#FFFFFF',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                  ...Shadows.sm,
+                  shadowColor: colors.shadowColor,
+                }}
+              >
+                <Image
+                  source={require('../../../assets/images/moneykai-logo.png')}
+                  style={{ width: 42, height: 42 }}
+                  resizeMode="contain"
+                  accessibilityLabel="MoneyKai logo"
+                />
+              </View>
+
+              <View style={{ marginTop: isWide ? Spacing['2xl'] : Spacing.lg }}>
+                <Text
                   style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: BorderRadius.full,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: colors.card,
-                    borderWidth: 1,
-                    borderColor: colors.borderLight,
+                    color: colors.textPrimary,
+                    fontFamily: Typography.fontFamily.display,
+                    fontSize: isWide ? 44 : Typography.fontSize['3xl'],
+                    lineHeight: isWide ? 52 : 40,
                   }}
                 >
-                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.bold, color: colors.primary }}>
-                    {index + 1}
-                  </Text>
-                </View>
-                <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: colors.textPrimary }}>
-                  {promise}
+                  Create a MoneyKai Account
+                </Text>
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontFamily: Typography.fontFamily.regular,
+                    fontSize: Typography.fontSize.lg,
+                    lineHeight: 28,
+                    marginTop: Spacing.lg,
+                  }}
+                >
+                  Enter your details
                 </Text>
               </View>
-            ))}
-          </View>
+            </View>
 
-          <View style={{
-            backgroundColor: colors.card,
-            borderRadius: BorderRadius.xl,
-            padding: Spacing.xl,
-            borderWidth: 1,
-            borderColor: colors.borderLight,
-            ...Shadows.lg,
-            shadowColor: colors.shadowColor,
-          }}>
-            <Input
-              label="Full Name"
-              placeholder="Enter your name"
-              value={fullName}
-              onChangeText={setFullName}
-              error={errors.fullName}
-              icon="account-outline"
-              testID="signup-full-name"
-              autoComplete="name"
-              textContentType="name"
-              returnKeyType="next"
-            />
-            <Input
-              label="Email"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              error={errors.email}
-              icon="email-outline"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              testID="signup-email"
-              autoComplete="email"
-              textContentType="emailAddress"
-              returnKeyType="next"
-            />
-            <Input
-              label="Password"
-              placeholder="Create a strong password"
-              value={password}
-              onChangeText={setPassword}
-              error={errors.password}
-              icon="lock-outline"
-              secureTextEntry
-              testID="signup-password"
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="next"
-            />
-            <Input
-              label="Confirm Password"
-              placeholder="Re-enter password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              error={errors.confirmPassword}
-              icon="lock-check-outline"
-              secureTextEntry
-              testID="signup-confirm-password"
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="done"
-              onSubmitEditing={() => {
-                void handleSignUp();
-              }}
-              onKeyPress={(event) => {
-                if (event.nativeEvent.key === 'Enter') {
-                  void handleSignUp();
-                }
-              }}
-            />
+            <View style={{ flex: 1.12, justifyContent: 'space-between', maxWidth: isWide ? 590 : undefined }}>
+              <View>
+                <View style={{ flexDirection: isWide ? 'row' : 'column', gap: isWide ? Spacing.md : 0 }}>
+                  <View style={{ flex: 1 }}>
+                    <Input
+                      label="First name"
+                      placeholder="First name"
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      error={errors.firstName}
+                      testID="signup-first-name"
+                      autoComplete="given-name"
+                      textContentType="givenName"
+                      returnKeyType="next"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Input
+                      label="Surname (optional)"
+                      placeholder="Surname"
+                      value={surname}
+                      onChangeText={setSurname}
+                      testID="signup-surname"
+                      autoComplete="family-name"
+                      textContentType="familyName"
+                      returnKeyType="next"
+                    />
+                  </View>
+                </View>
+                <Input
+                  label="Email"
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  error={errors.email}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  testID="signup-email"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  returnKeyType="next"
+                />
+                <Input
+                  label="Password"
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  error={errors.password}
+                  secureTextEntry
+                  testID="signup-password"
+                  autoComplete="new-password"
+                  textContentType="newPassword"
+                  returnKeyType="next"
+                />
+                <Input
+                  label="Confirm Password"
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  error={errors.confirmPassword}
+                  secureTextEntry
+                  testID="signup-confirm-password"
+                  autoComplete="new-password"
+                  textContentType="newPassword"
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    void handleSignUp();
+                  }}
+                  onKeyPress={(event) => {
+                    if (event.nativeEvent.key === 'Enter') {
+                      void handleSignUp();
+                    }
+                  }}
+                />
+              </View>
+
+              <View style={{ alignItems: 'center', flexDirection: isWide ? 'row' : 'column-reverse', gap: Spacing.md, justifyContent: 'flex-end', marginTop: Spacing.md }}>
+                <TouchableOpacity onPress={handleSignInPress} accessibilityRole="link" accessibilityLabel="Sign in to your MoneyKai account">
+                  <Text style={{
+                    fontSize: Typography.fontSize.base,
+                    fontFamily: Typography.fontFamily.semiBold,
+                    color: colors.primary,
+                  }}>Sign in instead</Text>
+                </TouchableOpacity>
             <Button
               title="Create Account"
               onPress={handleSignUp}
               loading={isLoading}
               disabled={isLoading}
-              fullWidth
+                  fullWidth={!isWide}
               size="lg"
-              icon="account-plus-outline"
               testID="signup-submit"
-              style={{ marginTop: Spacing.md }}
+                  style={{ minWidth: isWide ? 172 : undefined }}
             />
+              </View>
+            </View>
           </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.xl }}>
+          <View style={{ alignItems: 'center', flexDirection: isWide ? 'row' : 'column', gap: isWide ? 0 : Spacing.md, justifyContent: 'space-between', marginTop: Spacing.lg, paddingHorizontal: isWide ? Spacing.lg : 0 }}>
             <Text style={{
-              fontSize: Typography.fontSize.base,
+              fontSize: Typography.fontSize.sm,
               fontFamily: Typography.fontFamily.regular,
               color: colors.textSecondary,
-            }}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.back()}>
+            }}>English (India)</Text>
+            <View style={{ flexDirection: 'row', gap: Spacing.lg }}>
+              {[
+                ['Help', '/contact'],
+                ['Privacy', '/privacy-policy'],
+                ['Terms', '/terms'],
+              ].map(([label, href]) => (
+                <TouchableOpacity key={label} onPress={() => router.push(href as any)} accessibilityRole="link" accessibilityLabel={label}>
               <Text style={{
-                fontSize: Typography.fontSize.base,
+                    fontSize: Typography.fontSize.sm,
                 fontFamily: Typography.fontFamily.semiBold,
-                color: colors.primary,
-              }}>Sign In</Text>
+                    color: colors.textSecondary,
+                  }}>{label}</Text>
             </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
