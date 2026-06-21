@@ -43,7 +43,7 @@ export function AuthShell({ children, eyebrow, title, subtitle, showHero = true 
             alignItems: formOnly ? 'center' : 'stretch',
             flexDirection: formOnly ? 'column' : isWide ? 'row' : 'column',
             gap: formOnly ? 0 : Spacing.lg,
-            justifyContent: formOnly ? 'flex-start' : undefined,
+            justifyContent: formOnly ? 'center' : undefined,
           }}
         >
           {showHero ? (
@@ -148,7 +148,7 @@ export function AuthShell({ children, eyebrow, title, subtitle, showHero = true 
               flex: formOnly ? undefined : isWide ? 0.8 : undefined,
               justifyContent: 'center',
               maxWidth: formOnly ? 1360 : isWide ? 560 : undefined,
-              alignSelf: 'stretch',
+              alignSelf: formOnly ? 'center' : 'stretch',
               width: formOnly ? '100%' : undefined,
             }}
           >

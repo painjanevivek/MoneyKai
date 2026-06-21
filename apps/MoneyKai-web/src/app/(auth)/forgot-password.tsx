@@ -67,87 +67,89 @@ export default function ForgotPasswordScreen() {
             paddingVertical: Spacing['2xl'],
           }}
         >
-          <TouchableOpacity onPress={handleBack} accessibilityRole="button" accessibilityLabel="Go back" style={{ marginBottom: Spacing.lg }}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
+          <View style={{ alignSelf: 'center', width: '100%', maxWidth: 480 }}>
+            <TouchableOpacity onPress={handleBack} accessibilityRole="button" accessibilityLabel="Go back" style={{ marginBottom: Spacing.lg }}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
+            </TouchableOpacity>
 
-          <View style={{
-            backgroundColor: colors.card,
-            borderRadius: BorderRadius.xl,
-            padding: Spacing.xl,
-            ...Shadows.lg,
-            shadowColor: colors.shadowColor,
-          }}>
-            {!sent ? (
-              <>
-                <View style={{
-                  width: 64, height: 64, borderRadius: 32,
-                  backgroundColor: colors.primaryBg,
-                  alignItems: 'center', justifyContent: 'center',
-                  alignSelf: 'center', marginBottom: Spacing.lg,
-                }}>
-                  <MaterialCommunityIcons name="lock-reset" size={32} color={colors.primary} />
-                </View>
-                <Text style={{
-                  fontSize: Typography.fontSize.xl,
-                  fontFamily: Typography.fontFamily.semiBold,
-                  color: colors.textPrimary,
-                  textAlign: 'center',
-                  marginBottom: Spacing.sm,
-                }}>Forgot Password?</Text>
-                <Text style={{
-                  fontSize: Typography.fontSize.sm,
-                  fontFamily: Typography.fontFamily.regular,
-                  color: colors.textSecondary,
-                  textAlign: 'center',
-                  marginBottom: Spacing.xl,
-                  lineHeight: 22,
-                }}>No worries! Enter your email and we&apos;ll send you a link to reset your password.</Text>
-                <Input
-                  label="Email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChangeText={setEmail}
-                  icon="email-outline"
-                  testID="forgot-password-email"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-                <Button title="Send Reset Link" onPress={handleReset} fullWidth size="lg" loading={isLoading} testID="forgot-password-submit" />
+            <View style={{
+              backgroundColor: colors.card,
+              borderRadius: BorderRadius.xl,
+              padding: Spacing.xl,
+              ...Shadows.lg,
+              shadowColor: colors.shadowColor,
+            }}>
+              {!sent ? (
+                <>
+                  <View style={{
+                    width: 64, height: 64, borderRadius: 32,
+                    backgroundColor: colors.primaryBg,
+                    alignItems: 'center', justifyContent: 'center',
+                    alignSelf: 'center', marginBottom: Spacing.lg,
+                  }}>
+                    <MaterialCommunityIcons name="lock-reset" size={32} color={colors.primary} />
+                  </View>
+                  <Text style={{
+                    fontSize: Typography.fontSize.xl,
+                    fontFamily: Typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                    textAlign: 'center',
+                    marginBottom: Spacing.sm,
+                  }}>Forgot Password?</Text>
+                  <Text style={{
+                    fontSize: Typography.fontSize.sm,
+                    fontFamily: Typography.fontFamily.regular,
+                    color: colors.textSecondary,
+                    textAlign: 'center',
+                    marginBottom: Spacing.xl,
+                    lineHeight: 22,
+                  }}>No worries! Enter your email and we&apos;ll send you a link to reset your password.</Text>
+                  <Input
+                    label="Email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChangeText={setEmail}
+                    icon="email-outline"
+                    testID="forgot-password-email"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                  <Button title="Send Reset Link" onPress={handleReset} fullWidth size="lg" loading={isLoading} testID="forgot-password-submit" />
 
-              </>
-            ) : (
-              <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
-                <View style={{
-                  width: 80, height: 80, borderRadius: 40,
-                  backgroundColor: colors.primaryBg,
-                  alignItems: 'center', justifyContent: 'center',
-                  marginBottom: Spacing.lg,
-                }}>
-                  <MaterialCommunityIcons name="email-check-outline" size={40} color={colors.primary} />
+                </>
+              ) : (
+                <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
+                  <View style={{
+                    width: 80, height: 80, borderRadius: 40,
+                    backgroundColor: colors.primaryBg,
+                    alignItems: 'center', justifyContent: 'center',
+                    marginBottom: Spacing.lg,
+                  }}>
+                    <MaterialCommunityIcons name="email-check-outline" size={40} color={colors.primary} />
+                  </View>
+                  <Text style={{
+                    fontSize: Typography.fontSize.xl,
+                    fontFamily: Typography.fontFamily.semiBold,
+                    color: colors.textPrimary,
+                    textAlign: 'center',
+                    marginBottom: Spacing.sm,
+                  }}>Check your email</Text>
+                  <Text style={{
+                    fontSize: Typography.fontSize.sm,
+                    fontFamily: Typography.fontFamily.regular,
+                    color: colors.textSecondary,
+                    textAlign: 'center',
+                    lineHeight: 22,
+                  }}>We&apos;ve sent a password reset link to {email}</Text>
+                  <Button
+                    title="Back to Login"
+                    onPress={handleBackToLogin}
+                    variant="secondary"
+                    style={{ marginTop: Spacing.xl }}
+                  />
                 </View>
-                <Text style={{
-                  fontSize: Typography.fontSize.xl,
-                  fontFamily: Typography.fontFamily.semiBold,
-                  color: colors.textPrimary,
-                  textAlign: 'center',
-                  marginBottom: Spacing.sm,
-                }}>Check your email</Text>
-                <Text style={{
-                  fontSize: Typography.fontSize.sm,
-                  fontFamily: Typography.fontFamily.regular,
-                  color: colors.textSecondary,
-                  textAlign: 'center',
-                  lineHeight: 22,
-                }}>We&apos;ve sent a password reset link to {email}</Text>
-                <Button
-                  title="Back to Login"
-                  onPress={handleBackToLogin}
-                  variant="secondary"
-                  style={{ marginTop: Spacing.xl }}
-                />
-              </View>
-            )}
+              )}
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

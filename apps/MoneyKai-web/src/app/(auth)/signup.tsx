@@ -15,6 +15,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { AuthShell } from '@/components/auth/AuthShell';
+import { AuthFooter } from '@/components/auth/AuthFooter';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 
@@ -263,28 +264,7 @@ export default function SignupScreen() {
             </View>
           </View>
 
-          <View style={{ alignItems: 'center', flexDirection: isWide ? 'row' : 'column', gap: isWide ? 0 : Spacing.md, justifyContent: 'space-between', marginTop: Spacing.lg, paddingHorizontal: isWide ? Spacing.lg : 0 }}>
-            <Text style={{
-              fontSize: Typography.fontSize.sm,
-              fontFamily: Typography.fontFamily.regular,
-              color: colors.textSecondary,
-            }}>English (India)</Text>
-            <View style={{ flexDirection: 'row', gap: Spacing.lg }}>
-              {[
-                ['Help', '/contact'],
-                ['Privacy', '/privacy-policy'],
-                ['Terms', '/terms'],
-              ].map(([label, href]) => (
-                <TouchableOpacity key={label} onPress={() => router.push(href as any)} accessibilityRole="link" accessibilityLabel={label}>
-              <Text style={{
-                    fontSize: Typography.fontSize.sm,
-                fontFamily: Typography.fontFamily.semiBold,
-                    color: colors.textSecondary,
-                  }}>{label}</Text>
-            </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          <AuthFooter />
         </View>
       </KeyboardAvoidingView>
       </AuthShell>
