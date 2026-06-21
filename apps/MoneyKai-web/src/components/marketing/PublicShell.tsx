@@ -1,6 +1,6 @@
 import React, { type PropsWithChildren } from 'react';
 import { Image } from 'expo-image';
-import { Link, router } from 'expo-router';
+import { Link, router, usePathname } from 'expo-router';
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
@@ -110,6 +110,7 @@ function ShellAction({
 export function PublicShell({ eyebrow, title, description, children, tone = 'default' }: ShellProps) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const isWide = width >= 960;
   const isCompact = width < 640;
@@ -122,6 +123,10 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
   const navMuted = lightMode ? shellColors.textSecondary : 'rgba(255, 255, 255, 0.68)';
   const navHover = lightMode ? `${shellColors.primary}0F` : 'rgba(234, 246, 240, 0.08)';
   const showMobileMenu = !isCompact || mobileMenuOpen;
+  const isNavItemActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: shellColors.background }}>
@@ -232,35 +237,58 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                     style={{
                       flexDirection: 'row',
                       flexWrap: 'wrap',
-                      gap: 4,
-                      padding: 4,
+                      columnGap: Spacing.xs,
+                      rowGap: Spacing.xs,
+                      padding: 6,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: lightMode ? shellColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)',
+                      backgroundColor: lightMode ? 'rgba(255, 255, 255, 0.88)' : 'rgba(255, 255, 255, 0.045)',
                       borderWidth: 1,
-                      borderColor: lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.08)',
+                      borderColor: lightMode ? 'rgba(9, 9, 9, 0.1)' : 'rgba(255, 255, 255, 0.12)',
                     }}
                   >
-                    {PRIMARY_LINKS.map((item) => (
-                      <Link key={`${item.href}-${item.label}`} href={item.href as any} asChild>
-                        <Pressable
-                          accessibilityRole="link"
-                          accessibilityLabel={`Open ${item.label}`}
-                          style={({ hovered, pressed }: any) => ({
-                            paddingHorizontal: Spacing.md,
-                            paddingVertical: 9,
-                            borderRadius: BorderRadius.full,
-                            backgroundColor: hovered ? (lightMode ? '#FFFFFF' : 'rgba(234, 246, 240, 0.12)') : 'transparent',
-                            borderWidth: 1,
-                            borderColor: hovered ? (lightMode ? shellColors.border : 'rgba(234, 246, 240, 0.18)') : 'transparent',
-                            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-                          })}
-                        >
-                          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: navText }}>
-                            {item.label}
-                          </Text>
-                        </Pressable>
-                      </Link>
-                    ))}
+                    {PRIMARY_LINKS.map((item) => {
+                      const active = isNavItemActive(item.href);
+                      return (
+                        <Link key={`${item.href}-${item.label}`} href={item.href as any} asChild>
+                          <Pressable
+                            accessibilityRole="link"
+                            accessibilityLabel={`Open ${item.label}`}
+                            accessibilityState={{ selected: active }}
+                            style={({ hovered, pressed }: any) => {
+                              const highlighted = active || hovered;
+                              return {
+                                minHeight: 34,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                paddingHorizontal: 14,
+                                paddingVertical: 8,
+                                borderRadius: BorderRadius.full,
+                                backgroundColor: highlighted
+                                  ? (lightMode ? '#FFFFFF' : 'rgba(248, 248, 245, 0.11)')
+                                  : 'transparent',
+                                borderWidth: 1,
+                                borderColor: highlighted
+                                  ? (lightMode ? 'rgba(9, 9, 9, 0.16)' : 'rgba(248, 248, 245, 0.18)')
+                                  : 'transparent',
+                                transform: pressed ? [{ scale: 0.98 }] : hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                              };
+                            }}
+                          >
+                            <Text
+                              numberOfLines={1}
+                              style={{
+                                color: active ? navText : lightMode ? shellColors.textSecondary : 'rgba(255, 255, 255, 0.82)',
+                                fontFamily: active ? Typography.fontFamily.semiBold : Typography.fontFamily.medium,
+                                fontSize: Typography.fontSize.sm,
+                                lineHeight: 18,
+                              }}
+                            >
+                              {item.label}
+                            </Text>
+                          </Pressable>
+                        </Link>
+                      );
+                    })}
                   </View>
                 ) : null}
 
