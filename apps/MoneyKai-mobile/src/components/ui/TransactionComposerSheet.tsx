@@ -581,12 +581,11 @@ export function TransactionComposerSheet({
                   onPress={handleSubmitTransaction}
                   fullWidth
                   size="lg"
-                  icon="content-save-outline"
                   style={{ flex: 1 }}
                 />
               </View>
             ) : (
-              <Button title="Add Transaction" onPress={handleSubmitTransaction} fullWidth size="lg" icon="check" />
+              <Button title="Add transaction" onPress={handleSubmitTransaction} fullWidth size="lg" icon="check" />
             )}
           </ScrollView>
           )}
@@ -607,9 +606,8 @@ export function TransactionComposerSheet({
               style={{ flex: 1 }}
             />
             <Button
-              title="Save Budget"
+              title="Save budget"
               onPress={handleSaveBudgetFromDialog}
-              icon="content-save-outline"
               style={{ flex: 1 }}
             />
           </View>

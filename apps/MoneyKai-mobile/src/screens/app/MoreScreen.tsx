@@ -14,7 +14,6 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useGroupStore } from '@/stores/useGroupStore';
 import { useNotesStore } from '@/stores/useNotesStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
-import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import type { AppTabParamList, RootStackParamList } from '@/navigation/types';
@@ -47,6 +46,7 @@ export function MoreScreen() {
   const activeChallenges = useChallengeStore((state) => state.challenges.filter((item) => item.status === 'active').length);
   const captureSettings = useCaptureStore((state) => state.settings);
   const draftCount = useCaptureStore((state) => state.drafts.filter((draft) => draft.status === 'pending').length);
+  const openMoneyKaiPlus = () => navigation.navigate('Subscriptions');
 
   const toneColor = {
     primary: colors.primary,
@@ -58,7 +58,7 @@ export function MoreScreen() {
   const features: FeatureItem[] = [
     {
       title: 'Savings',
-      body: 'Challenges, streaks, and saved-money progress.',
+      body: 'Challenges and streaks linked to reviewed records.',
       metric: activeChallenges > 0 ? `${activeChallenges} active` : 'Start a streak',
       icon: 'piggy-bank-outline',
       route: 'Savings',
@@ -66,7 +66,7 @@ export function MoreScreen() {
     },
     {
       title: 'Groups',
-      body: 'Shared spending for trips, rooms, and events.',
+      body: 'Shared expenses for trips, rooms, and events.',
       metric: groupsCount > 0 ? `${groupsCount} active` : 'Create group',
       icon: 'account-group-outline',
       route: 'Groups',
@@ -74,7 +74,7 @@ export function MoreScreen() {
     },
     {
       title: 'MoneyKai Learn',
-      body: 'Short guides for budgeting, saving, and calmer money habits.',
+      body: 'Short guides for SMS review, budgets, and saving.',
       metric: 'Fresh guides',
       icon: 'school-outline',
       route: 'Learn',
@@ -82,7 +82,7 @@ export function MoreScreen() {
     },
     {
       title: 'Notes',
-      body: 'Plans, checklists, and quick money reminders.',
+      body: 'Plans, checklists, and quick reminders.',
       metric: notesCount > 0 ? `${notesCount} notes` : 'Add note',
       icon: 'notebook-outline',
       route: 'Notes',
@@ -90,7 +90,7 @@ export function MoreScreen() {
     },
     {
       title: 'Auto Capture',
-      body: 'Review transaction drafts captured from signals.',
+      body: 'Review drafts from SMS and notification capture.',
       metric: draftCount > 0 ? `${draftCount} pending` : captureSettings.autoCaptureEnabled ? 'Enabled' : 'Off',
       icon: 'radar',
       route: 'AutoCapture',
@@ -114,7 +114,7 @@ export function MoreScreen() {
     },
     {
       title: 'Settings',
-      body: 'Profile, backup, security, and app preferences.',
+      body: 'Backup, security, sync, and app preferences.',
       metric: isDark ? 'Dark mode' : 'Light mode',
       icon: 'cog-outline',
       route: 'Settings',
@@ -126,10 +126,77 @@ export function MoreScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>MoneyKai tools</Text>
-          <Text style={styles.title}>Everything in one place</Text>
-          <Text style={styles.subtitle}>Open the features that support your daily budget, shared costs, savings, and account safety.</Text>
+          <Text style={styles.title}>More tools</Text>
+          <Text style={styles.subtitle}>Open SMS capture, review helpers, shared expenses, savings, notes, and account settings.</Text>
         </View>
+
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Open MoneyKai Plus premium membership"
+          onPress={openMoneyKaiPlus}
+          style={{
+            backgroundColor: 'rgba(245, 197, 90, 0.14)',
+            borderColor: 'rgba(245, 197, 90, 0.42)',
+            borderRadius: BorderRadius.lg,
+            borderWidth: 1,
+            marginBottom: Spacing.base,
+            minHeight: 92,
+            padding: Spacing.base,
+          }}
+        >
+          <View style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.md }}>
+            <View
+              style={{
+                alignItems: 'center',
+                backgroundColor: 'rgba(245, 197, 90, 0.18)',
+                borderColor: 'rgba(245, 197, 90, 0.36)',
+                borderRadius: BorderRadius.md,
+                borderWidth: 1,
+                height: 48,
+                justifyContent: 'center',
+                width: 48,
+              }}
+            >
+              <MaterialCommunityIcons name="crown-outline" size={24} color="#F5C55A" />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.sm }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: '#F5C55A',
+                    flex: 1,
+                    fontFamily: Typography.fontFamily.bold,
+                    fontSize: Typography.fontSize.lg,
+                  }}
+                >
+                  MoneyKai+
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    backgroundColor: 'rgba(245, 197, 90, 0.14)',
+                    borderColor: 'rgba(245, 197, 90, 0.34)',
+                    borderRadius: BorderRadius.full,
+                    borderWidth: 1,
+                    color: '#FFE6A6',
+                    fontFamily: Typography.fontFamily.semiBold,
+                    fontSize: Typography.fontSize.xs,
+                    overflow: 'hidden',
+                    paddingHorizontal: Spacing.sm,
+                    paddingVertical: 4,
+                  }}
+                >
+                  Premium
+                </Text>
+              </View>
+              <Text numberOfLines={2} style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: 20, marginTop: 4 }}>
+                Expanded AI review, more report context, and priority feature access.
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={22} color="#FFE6A6" />
+          </View>
+        </PressableScale>
 
         <PressableScale
           accessibilityRole="button"
@@ -158,11 +225,11 @@ export function MoreScreen() {
           >
             <UserAvatar name={user?.full_name} email={user?.email} avatarUrl={user?.avatar_url} size={44} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.textInverse, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.md }}>
-              Profile and identity
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ color: colors.textInverse, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.md }}>
+              Profile
             </Text>
-            <Text style={{ color: colors.textInverse, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm, opacity: 0.82 }}>
+            <Text numberOfLines={1} style={{ color: colors.textInverse, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm, opacity: 0.82 }}>
               Keep your account details current
             </Text>
           </View>
@@ -206,16 +273,18 @@ export function MoreScreen() {
                 >
                   <MaterialCommunityIcons name={feature.icon} size={24} color={featureColor} />
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <View style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.sm }}>
-                    <Text style={styles.value}>{feature.title}</Text>
+                    <Text style={[styles.value, { flex: 1 }]} numberOfLines={1}>{feature.title}</Text>
                     <Text
+                      numberOfLines={1}
                       style={{
                         backgroundColor: colors.primaryBg,
                         borderRadius: BorderRadius.full,
                         color: featureColor,
                         fontFamily: Typography.fontFamily.semiBold,
                         fontSize: Typography.fontSize.xs,
+                        maxWidth: 112,
                         overflow: 'hidden',
                         paddingHorizontal: Spacing.sm,
                         paddingVertical: 3,
@@ -224,7 +293,7 @@ export function MoreScreen() {
                       {feature.metric}
                     </Text>
                   </View>
-                  <Text style={[styles.muted, { marginTop: 3 }]}>{feature.body}</Text>
+                  <Text style={[styles.muted, { marginTop: 3 }]} numberOfLines={2}>{feature.body}</Text>
                 </View>
                 <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textTertiary} />
                 </PressableScale>

@@ -12,6 +12,15 @@ class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     installSplashScreen()
     super.onCreate(null)
+    preferHighRefreshDisplay()
+  }
+
+  private fun preferHighRefreshDisplay() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      val attributes = window.attributes
+      attributes.preferredRefreshRate = 144f
+      window.attributes = attributes
+    }
   }
 
   override fun getMainComponentName(): String = "MoneyKai"

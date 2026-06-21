@@ -22,22 +22,19 @@ export const createAppScreenStyles = (colors: {
       backgroundColor: colors.background,
     },
     scrollContent: {
-      padding: Spacing.lg,
-      paddingBottom: Spacing['3xl'],
+      paddingHorizontal: Spacing.lg,
+      paddingTop: Spacing.sm,
+      paddingBottom: Spacing['2xl'],
     },
     header: {
-      marginBottom: Spacing.lg,
-    },
-    eyebrow: {
-      color: colors.textSecondary,
-      fontFamily: Typography.fontFamily.medium,
-      fontSize: Typography.fontSize.sm,
-      marginBottom: 4,
+      marginBottom: Spacing.base,
     },
     title: {
       color: colors.textPrimary,
+      flexShrink: 1,
       fontFamily: Typography.fontFamily.bold,
       fontSize: Typography.fontSize['2xl'],
+      lineHeight: 34,
     },
     subtitle: {
       color: colors.textSecondary,
@@ -48,8 +45,10 @@ export const createAppScreenStyles = (colors: {
     },
     sectionTitle: {
       color: colors.textPrimary,
+      flexShrink: 1,
       fontFamily: Typography.fontFamily.bold,
       fontSize: Typography.fontSize.lg,
+      lineHeight: 24,
       marginBottom: Spacing.md,
     },
     panel: {
@@ -63,6 +62,7 @@ export const createAppScreenStyles = (colors: {
     row: {
       alignItems: 'center',
       flexDirection: 'row',
+      gap: Spacing.md,
       justifyContent: 'space-between',
     },
     muted: {
@@ -72,8 +72,10 @@ export const createAppScreenStyles = (colors: {
     },
     value: {
       color: colors.textPrimary,
+      flexShrink: 1,
       fontFamily: Typography.fontFamily.semiBold,
       fontSize: Typography.fontSize.lg,
+      lineHeight: 24,
     },
     chipRow: {
       flexDirection: 'row',

@@ -31,89 +31,6 @@ type HomeNavigation = CompositeNavigationProp<
 
 type ShortcutRoute = 'Savings' | 'Groups' | 'AutoCapture' | 'Learn';
 
-type ActivationStep = {
-  done: boolean;
-  icon: string;
-  title: string;
-  body: string;
-  action: string;
-  onPress: () => void;
-};
-
-function FirstValuePanel({ steps }: { steps: ActivationStep[] }) {
-  const { colors } = useTheme();
-  const completed = steps.filter((step) => step.done).length;
-  if (completed >= steps.length) {
-    return null;
-  }
-
-  const nextStep = steps.find((step) => !step.done) ?? steps[steps.length - 1];
-  const progress = `${Math.round((completed / steps.length) * 100)}%`;
-
-  return (
-    <Animated.View entering={FadeInDown.duration(260)} layout={Layout.springify()} style={{ backgroundColor: colors.card, borderColor: colors.borderLight, borderRadius: BorderRadius.sm, borderWidth: 1, marginBottom: Spacing.base, padding: Spacing.base }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.primary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.xs }}>
-            FIRST VALUE LOOP
-          </Text>
-          <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.lg, marginTop: 2 }}>
-            Make the dashboard useful
-          </Text>
-          <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, marginTop: 4 }}>
-            Finish these once to unlock cleaner monthly review.
-          </Text>
-        </View>
-        <View style={{ alignItems: 'flex-end', minWidth: 76 }}>
-          <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.xl }}>
-            {completed}/{steps.length}
-          </Text>
-          <Text style={{ color: colors.textTertiary, fontSize: Typography.fontSize.xs }}>
-            {progress}
-          </Text>
-        </View>
-      </View>
-
-      <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>
-        {steps.map((step) => (
-          <PressableScale
-            key={step.title}
-            accessibilityRole="button"
-            accessibilityState={{ selected: !step.done && step.title === nextStep.title }}
-            accessibilityLabel={`${step.done ? 'Complete' : 'Incomplete'}: ${step.title}`}
-            onPress={step.onPress}
-            style={{
-              alignItems: 'center',
-              backgroundColor: step.done ? `${colors.success}12` : colors.surfaceElevated,
-              borderColor: step.done ? `${colors.success}44` : colors.borderLight,
-              borderRadius: BorderRadius.sm,
-              borderWidth: 1,
-              flexDirection: 'row',
-              gap: Spacing.sm,
-              minHeight: 58,
-              padding: Spacing.md,
-            }}
-          >
-            <View style={{ alignItems: 'center', backgroundColor: step.done ? `${colors.success}20` : colors.primaryBg, borderRadius: BorderRadius.full, height: 34, justifyContent: 'center', width: 34 }}>
-              <MaterialCommunityIcons name={step.done ? 'check' : step.icon} size={18} color={step.done ? colors.success : colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm }}>
-                {step.title}
-              </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.xs, lineHeight: 18, marginTop: 2 }}>
-                {step.body}
-              </Text>
-            </View>
-            {!step.done && <Text style={{ color: colors.primary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.xs }}>{step.action}</Text>}
-          </PressableScale>
-        ))}
-      </View>
-
-      <Button title={nextStep.action} onPress={nextStep.onPress} icon="arrow-right" iconPosition="right" style={{ marginTop: Spacing.md }} />
-    </Animated.View>
-  );
-}
 export function HomeScreen() {
   const navigation = useNavigation<HomeNavigation>();
   const { colors } = useTheme();
@@ -164,32 +81,6 @@ export function HomeScreen() {
         .slice(0, 4),
     [currentMonthTransactions]
   );
-  const activationSteps: ActivationStep[] = [
-    {
-      done: monthlyAllowance > 0,
-      icon: 'target',
-      title: 'Set a monthly budget',
-      body: 'Give MoneyKai a guardrail before judging spending.',
-      action: 'Set budget',
-      onPress: () => navigation.navigate('Budget'),
-    },
-    {
-      done: currentMonthTransactions.length > 0,
-      icon: 'receipt-text-plus-outline',
-      title: 'Add one transaction',
-      body: 'Start with one real income or expense from this month.',
-      action: 'Add record',
-      onPress: () => navigation.navigate('Add'),
-    },
-    {
-      done: currentMonthTransactions.length >= 3,
-      icon: 'chart-box-outline',
-      title: 'Review first pattern',
-      body: 'A few records reveal category and cashflow signals.',
-      action: 'Review',
-      onPress: () => navigation.navigate('Transactions'),
-    },
-  ];
   const shortcuts: Array<{ title: string; route: ShortcutRoute; icon: string; caption: string; color: string }> = [
     { title: 'Savings', route: 'Savings', icon: 'piggy-bank-outline', caption: 'Streaks', color: colors.primary },
     { title: 'Groups', route: 'Groups', icon: 'account-group-outline', caption: 'Split bills', color: colors.textPrimary },
@@ -209,13 +100,12 @@ export function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.header, { flexDirection: 'row', gap: Spacing.md }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.eyebrow}>Dashboard</Text>
-            <Text style={styles.title}>Hi, {user?.full_name?.split(' ')[0] || 'there'}</Text>
-            <Text style={styles.subtitle}>{selectedMonthLabel} money picture, synced to your account.</Text>
+        <View style={[styles.header, { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' }]}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.title} numberOfLines={2}>Hi, {user?.full_name?.split(' ')[0] || 'there'}</Text>
+            <Text style={styles.subtitle}>Review {selectedMonthLabel} SMS records, categories, and budget checks from here.</Text>
           </View>
-          <View style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.sm }}>
+          <View style={{ alignItems: 'center', flexDirection: 'row', flexShrink: 0, gap: Spacing.sm }}>
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel="Choose dashboard month"
@@ -279,13 +169,13 @@ export function HomeScreen() {
           />
         )}
 
-        <FirstValuePanel steps={activationSteps} />
-
         <Animated.View entering={FadeInDown.duration(260)} layout={Layout.springify()} style={styles.panel}>
           <View style={styles.row}>
-            <View>
+            <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.sm }}>
               <Text style={styles.muted}>{isOverspent ? 'Overspent' : 'Available to spend'}</Text>
               <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
                 style={{
                   ...styles.value,
                   color: isOverspent ? colors.error : colors.success,
@@ -301,20 +191,22 @@ export function HomeScreen() {
           <View style={{ flexDirection: 'row', gap: Spacing.md }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.muted}>Income</Text>
-              <Text style={styles.value}>{formatMoney(totalIncome)}</Text>
+              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(totalIncome)}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.muted}>Expenses</Text>
-              <Text style={styles.value}>{formatMoney(totalSpent)}</Text>
+              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(totalSpent)}</Text>
             </View>
           </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(60).duration(260)} layout={Layout.springify()} style={styles.panel}>
           <View style={styles.row}>
-            <View>
+            <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.sm }}>
               <Text style={styles.muted}>Monthly budget</Text>
-              <Text style={styles.value}>{monthlyAllowance > 0 ? formatMoney(remainingBudget) : 'Not set'}</Text>
+              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
+                {monthlyAllowance > 0 ? formatMoney(remainingBudget) : 'Not set'}
+              </Text>
             </View>
             <Button title="Edit" variant="secondary" size="sm" onPress={() => navigation.navigate('Budget')} />
           </View>
@@ -334,8 +226,8 @@ export function HomeScreen() {
           </Text>
         </Animated.View>
 
-        <View style={styles.row}>
-          <Text style={styles.sectionTitle}>Quick tools</Text>
+        <View style={[styles.row, { marginBottom: Spacing.md }]}>
+          <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Quick tools</Text>
           <PressableScale accessibilityRole="button" onPress={() => navigation.navigate('More')}>
             <Text style={{ ...styles.muted, color: colors.primary }}>More</Text>
           </PressableScale>
@@ -375,15 +267,15 @@ export function HomeScreen() {
               >
                 <MaterialCommunityIcons name={shortcut.icon} size={20} color={shortcut.color} />
               </View>
-              <Text style={styles.value}>{shortcut.title}</Text>
+              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{shortcut.title}</Text>
               <Text style={styles.muted}>{shortcut.caption}</Text>
               </PressableScale>
             </Animated.View>
           ))}
         </View>
 
-        <View style={styles.row}>
-          <Text style={styles.sectionTitle}>Recent transactions</Text>
+        <View style={[styles.row, { marginBottom: Spacing.md }]}>
+          <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Recent records</Text>
           <PressableScale onPress={() => navigation.navigate('Transactions')}>
             <Text style={{ ...styles.muted, color: colors.primary }}>View all</Text>
           </PressableScale>
@@ -391,11 +283,11 @@ export function HomeScreen() {
 
         {recentTransactions.length === 0 ? (
           <ScreenState
-            actionLabel="Add Transaction"
-            body="Add your first income or expense to start tracking this month."
+            actionLabel="Add transaction"
+            body="Confirm an SMS draft or add one income or expense manually."
             icon="receipt-text-plus-outline"
             onAction={() => navigation.navigate('Add')}
-            title="No transactions yet"
+            title="No SMS records yet"
             tone="primary"
           />
         ) : (
@@ -403,12 +295,16 @@ export function HomeScreen() {
             <Animated.View key={item.id} entering={FadeInDown.delay(120 + index * 35).duration(240)} layout={Layout.springify()} style={styles.panel}>
               <View style={styles.row}>
                 <View style={{ flex: 1, paddingRight: Spacing.md }}>
-                  <Text style={styles.value}>{item.description || formatCategory(item.category)}</Text>
+                  <Text style={styles.value} numberOfLines={1}>{item.description || formatCategory(item.category)}</Text>
                   <Text style={styles.muted}>
                     {formatCategory(item.category)} - {formatDate(item.transaction_date)}
                   </Text>
                 </View>
-                <Text style={{ ...styles.value, color: item.type === 'income' ? colors.success : colors.textPrimary }}>
+                <Text
+                  adjustsFontSizeToFit
+                  numberOfLines={1}
+                  style={{ ...styles.value, color: item.type === 'income' ? colors.success : colors.textPrimary, maxWidth: 118 }}
+                >
                   {item.type === 'income' ? '+' : '-'}
                   {formatMoney(item.amount)}
                 </Text>

@@ -103,9 +103,8 @@ export function AddTransactionScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>Add</Text>
-          <Text style={styles.title}>New transaction</Text>
-          <Text style={styles.subtitle}>Capture income or expenses directly in MoneyKai.</Text>
+          <Text style={styles.title}>Add transaction</Text>
+          <Text style={styles.subtitle}>Add income or expenses directly when an SMS alert is missing or needs correction.</Text>
         </View>
 
         <View style={styles.panel}>
@@ -145,7 +144,6 @@ export function AddTransactionScreen() {
             }}
             keyboardType="decimal-pad"
             inputMode="decimal"
-            icon="currency-inr"
             prefix={currencySymbol}
           />
           <Input
@@ -246,11 +244,11 @@ export function AddTransactionScreen() {
             <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, marginTop: Spacing.sm }}>
               {hasPreview
                 ? `${type === 'income' ? 'Income' : 'Expense'} of ${currencySymbol}${previewAmount.toLocaleString('en-IN')} will update this month, dashboard totals, and category review.`
-                : 'Add an amount and description, then MoneyKai will update your monthly dashboard immediately.'}
+                : 'Add an amount and description, then MoneyKai will include this record across your dashboard, budgets, and reports.'}
             </Text>
           </View>
 
-          <Button title="Save Transaction" onPress={submit} icon="content-save-outline" loading={isSaving} style={{ marginTop: Spacing.sm }} />
+          <Button title="Save transaction" onPress={submit} loading={isSaving} style={{ marginTop: Spacing.sm }} />
         </View>
       </ScrollView>
     </SafeAreaView>

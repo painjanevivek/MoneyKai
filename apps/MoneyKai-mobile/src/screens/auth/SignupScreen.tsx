@@ -13,9 +13,9 @@ import type { AuthStackParamList } from '@/navigation/types';
 type SignupScreenProps = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 const SETUP_PROMISES = [
-  'Create your private workspace',
-  'Set a budget or add one record',
-  'Review dashboard insights before acting',
+  'Create your private SMS parsing workspace',
+  'Review one parsed money record',
+  'Let budgets and reports follow confirmed records',
 ] as const;
 
 export function SignupScreen({ navigation }: SignupScreenProps) {
@@ -96,7 +96,7 @@ export function SignupScreen({ navigation }: SignupScreenProps) {
                 marginTop: 4,
               }}
             >
-              Create a home for your money.
+              Turn bank and payment SMS alerts into reviewable money records.
             </Text>
           </View>
 

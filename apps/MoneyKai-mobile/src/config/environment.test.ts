@@ -4,6 +4,13 @@ type EnvironmentModule = typeof import('./environment');
 
 const trackedEnvKeys = [
   'EXPO_PUBLIC_BACKEND_BASE_URL',
+  'EXPO_PUBLIC_FIREBASE_API_KEY',
+  'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
+  'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'EXPO_PUBLIC_FIREBASE_APP_ID',
+  'EXPO_PUBLIC_FIREBASE_ANDROID_APP_ID',
   'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
   'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
   'EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID',
@@ -51,6 +58,52 @@ describe('app environment', () => {
     });
 
     expect(environment.getBackendBaseUrl()).toBe('http://localhost:8000');
+  });
+
+  it('normalizes Firebase placeholders without treating them as real cloud credentials', async () => {
+    const environment = await loadEnvironment({
+      EXPO_PUBLIC_FIREBASE_API_KEY: '',
+      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: 'your-project.firebaseapp.com',
+      EXPO_PUBLIC_FIREBASE_PROJECT_ID: '',
+      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: '',
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '',
+      EXPO_PUBLIC_FIREBASE_APP_ID: '',
+    });
+
+    expect(environment.appEnvironment.firebase.projectId).toBe('placeholder-project');
+    expect(environment.appEnvironment.firebase.appId).toBe('1:000000000000:android:placeholder');
+    expect(environment.hasFirebaseEnvironment()).toBe(false);
+  });
+
+  it('does not treat a web Firebase app id as native Android config', async () => {
+    const environment = await loadEnvironment({
+      EXPO_PUBLIC_FIREBASE_API_KEY: 'firebase-api-key',
+      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: 'moneykai.firebaseapp.com',
+      EXPO_PUBLIC_FIREBASE_PROJECT_ID: 'moneykai',
+      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: 'moneykai.firebasestorage.app',
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '123456789012',
+      EXPO_PUBLIC_FIREBASE_APP_ID: '1:123456789012:web:abcdef123456',
+      EXPO_PUBLIC_FIREBASE_ANDROID_APP_ID: '',
+    });
+
+    expect(environment.hasFirebaseEnvironment()).toBe(false);
+    expect(environment.hasFirebaseRuntimeConfig()).toBe(true);
+    expect(environment.hasFirebaseWebAppIdOnly()).toBe(true);
+  });
+
+  it('uses the Android Firebase app id when present', async () => {
+    const environment = await loadEnvironment({
+      EXPO_PUBLIC_FIREBASE_API_KEY: 'firebase-api-key',
+      EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: 'moneykai.firebaseapp.com',
+      EXPO_PUBLIC_FIREBASE_PROJECT_ID: 'moneykai',
+      EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: 'moneykai.firebasestorage.app',
+      EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '123456789012',
+      EXPO_PUBLIC_FIREBASE_APP_ID: '1:123456789012:web:abcdef123456',
+      EXPO_PUBLIC_FIREBASE_ANDROID_APP_ID: '1:123456789012:android:abcdef123456',
+    });
+
+    expect(environment.appEnvironment.firebase.appId).toBe('1:123456789012:android:abcdef123456');
+    expect(environment.hasFirebaseEnvironment()).toBe(true);
   });
 
   it('treats Android Google sign-in as configured without an iOS client ID', async () => {

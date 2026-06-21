@@ -24,4 +24,5 @@ export type RootStackParamList = {
   AiReview: undefined;
   Settings: undefined;
   AutoCapture: undefined;
+  Subscriptions: undefined;
 };

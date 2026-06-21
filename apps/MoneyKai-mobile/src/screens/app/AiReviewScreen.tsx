@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { AiModelConsole } from '@/components/ai/AiModelConsole';
 import { Button } from '@/components/ui/Button';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
 import { useAiProviderStatus } from '@/features/ai/hooks';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -18,6 +19,10 @@ export function AiReviewScreen() {
   const { data: providerStatus, error: providerError, loading: loadingProviderStatus, refresh } = useAiProviderStatus(isAuthenticated);
   const requiresSignIn = !isHydratingSession && !isAuthenticated;
   const attachmentsReady = Boolean(providerStatus?.enabled && providerStatus.attachmentsEnabled && providerStatus.defaultVisionModelConfigured);
+  const aiReady = Boolean(providerStatus?.configured);
+  const statusMessage = providerError
+    ? 'Text review is available. Image analysis needs backend attachment support.'
+    : 'Model checks and text review are available here.';
 
   const explainAttachmentPicker = () => {
     Alert.alert(
@@ -27,10 +32,10 @@ export function AiReviewScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>AI workspace</Text>
+          <ScreenBackButton />
           <Text style={styles.title}>AI review</Text>
           <Text style={styles.subtitle}>
             Ask MoneyKai AI for practical help, then review receipt and image analysis before using it.
@@ -53,19 +58,19 @@ export function AiReviewScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.value}>
-                {loadingProviderStatus ? 'Checking AI status' : providerStatus?.configured ? 'MoneyKai AI ready' : 'MoneyKai AI not ready'}
+                {loadingProviderStatus ? 'Checking AI status' : aiReady ? 'MoneyKai AI ready' : 'AI review'}
               </Text>
               <Text style={styles.muted}>
                 {attachmentsReady
-                  ? 'Attachment analysis is enabled on the backend.'
-                  : providerError ?? 'MoneyKai AI works when the backend is configured.'}
+                  ? 'Image analysis is ready for review.'
+                  : statusMessage}
               </Text>
             </View>
           </View>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md }}>
-            <StatusChip label={providerStatus?.configured ? 'AI ready' : 'Setup needed'} tone={providerStatus?.configured ? 'success' : 'warning'} />
-            <StatusChip label={attachmentsReady ? 'Attachments ready' : 'Attachments gated'} tone={attachmentsReady ? 'success' : 'warning'} />
+            <StatusChip label={aiReady ? 'AI ready' : 'AI review'} tone={aiReady ? 'success' : 'neutral'} />
+            <StatusChip label={attachmentsReady ? 'Image analysis ready' : 'Image review'} tone={attachmentsReady ? 'success' : 'neutral'} />
           </View>
 
           <Button
@@ -95,8 +100,8 @@ export function AiReviewScreen() {
             The active AI review tab supports image selection, upload, analysis, and review before saving anything.
           </Text>
           <Button
-            title={attachmentsReady ? 'Image Picker Pending' : 'Attachment Analysis Unavailable'}
-            icon={attachmentsReady ? 'image-search-outline' : 'lock-outline'}
+            title={attachmentsReady ? 'Image picker pending' : 'Image review'}
+            icon="image-search-outline"
             variant="outline"
             onPress={explainAttachmentPicker}
           />

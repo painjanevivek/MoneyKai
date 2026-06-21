@@ -99,7 +99,7 @@ function BudgetSpendingPieChart({
           </View>
         </View>
 
-        <View style={{ flex: 1, gap: Spacing.sm }}>
+        <View style={{ flex: 1, minWidth: 0, gap: Spacing.sm }}>
           {spentTotals.length === 0 ? (
             <Text style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm }}>
               Add expenses to see where your money is going.
@@ -203,9 +203,8 @@ export function BudgetScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>Budget</Text>
-          <Text style={styles.title}>Monthly guardrails</Text>
-          <Text style={styles.subtitle}>Set category limits, watch the split, and keep this month in control.</Text>
+          <Text style={styles.title}>Budget checks</Text>
+          <Text style={styles.subtitle}>Use reviewed SMS records to compare spending against monthly and category limits.</Text>
         </View>
 
         {budgetNotice && (
@@ -220,15 +219,19 @@ export function BudgetScreen() {
 
         <View style={styles.panel}>
           <View style={styles.row}>
-            <View>
+            <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.sm }}>
               <Text style={styles.muted}>Remaining</Text>
-              <Text style={[styles.value, { fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize['2xl'] }]}>
+              <Text
+                adjustsFontSizeToFit
+                numberOfLines={1}
+                style={[styles.value, { fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize['2xl'] }]}
+              >
                 {formatMoney(remaining)}
               </Text>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
+            <View style={{ alignItems: 'flex-end', flexShrink: 0, maxWidth: 142 }}>
               <Text style={styles.muted}>Spent this month</Text>
-              <Text style={styles.value}>{formatMoney(spent)}</Text>
+              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(spent)}</Text>
             </View>
           </View>
           <View style={styles.divider} />
@@ -274,11 +277,11 @@ export function BudgetScreen() {
                     >
                       <MaterialCommunityIcons name={category.icon} size={21} color={colors.primary} />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.base }}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.base }}>
                         {category.name}
                       </Text>
-                      <Text style={styles.muted}>
+                      <Text style={styles.muted} numberOfLines={1}>
                         {limitAmount > 0 ? `${formatMoney(spentAmount)} used - ${percentUsed}%` : `${formatMoney(spentAmount)} spent this month`}
                       </Text>
                     </View>
@@ -365,7 +368,7 @@ export function BudgetScreen() {
               thumbColor={isEmergencyMode ? colors.primary : colors.textTertiary}
             />
           </View>
-          <Button title="Save Budget" onPress={saveBudget} icon="content-save-outline" />
+          <Button title="Save budget" onPress={saveBudget} />
         </View>
 
         <View style={styles.panel}>
@@ -402,10 +405,10 @@ export function BudgetScreen() {
             <View key={`${item.date}-${item.reason}`} style={styles.panel}>
               <View style={styles.row}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.value}>{item.reason}</Text>
+                  <Text style={styles.value} numberOfLines={1}>{item.reason}</Text>
                   <Text style={styles.muted}>{new Date(item.date).toLocaleDateString('en-IN')}</Text>
                 </View>
-                <Text style={styles.value}>
+                <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
                   {item.type === 'add' ? '+' : '-'}
                   {formatMoney(item.amount)}
                 </Text>

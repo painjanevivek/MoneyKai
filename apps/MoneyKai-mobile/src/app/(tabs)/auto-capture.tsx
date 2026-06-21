@@ -672,7 +672,6 @@ export default function AutoCaptureScreen() {
             />
             <Button
               title="Save Budget"
-              icon="content-save-outline"
               onPress={handleSetBudget}
               style={{ flex: 1 }}
             />

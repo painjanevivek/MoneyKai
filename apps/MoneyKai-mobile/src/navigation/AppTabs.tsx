@@ -3,7 +3,6 @@ import { Pressable, useWindowDimensions, type GestureResponderEvent, type StyleP
 import { createBottomTabNavigator, type BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AppTabParamList } from './types';
 import { useTheme } from '@/hooks/useTheme';
 import { useNotificationStore } from '@/stores/useNotificationStore';
@@ -12,13 +11,13 @@ import { TransactionsScreen } from '@/screens/app/TransactionsScreen';
 import { AddTransactionScreen } from '@/screens/app/AddTransactionScreen';
 import { BudgetScreen } from '@/screens/app/BudgetScreen';
 import { MoreScreen } from '@/screens/app/MoreScreen';
-import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-function AnimatedTabButton({ children, onPress, style, accessibilityState, isAdd = false }: BottomTabBarButtonProps & { isAdd?: boolean }) {
+function AnimatedTabButton({ children, onPress, style, accessibilityState }: BottomTabBarButtonProps) {
   const scale = useSharedValue(1);
   const focused = Boolean(accessibilityState?.selected);
 
@@ -31,8 +30,8 @@ function AnimatedTabButton({ children, onPress, style, accessibilityState, isAdd
   };
 
   React.useEffect(() => {
-    animateTo(focused || isAdd ? 1.04 : 1);
-  }, [focused, isAdd]);
+    animateTo(focused ? 1.04 : 1);
+  }, [focused]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -42,15 +41,9 @@ function AnimatedTabButton({ children, onPress, style, accessibilityState, isAdd
     <AnimatedPressable
       accessibilityState={accessibilityState}
       onPress={(event: GestureResponderEvent) => onPress?.(event)}
-      onPressIn={() => animateTo(isAdd ? 1.08 : 0.94)}
-      onPressOut={() => animateTo(focused || isAdd ? 1.04 : 1)}
-      style={[
-        style as StyleProp<ViewStyle>,
-        animatedStyle,
-        {
-          top: isAdd ? -8 : 0,
-        },
-      ]}
+      onPressIn={() => animateTo(0.94)}
+      onPressOut={() => animateTo(focused ? 1.04 : 1)}
+      style={[style as StyleProp<ViewStyle>, animatedStyle]}
     >
       {children}
     </AnimatedPressable>
@@ -59,7 +52,6 @@ function AnimatedTabButton({ children, onPress, style, accessibilityState, isAdd
 
 export function AppTabs() {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const unreadCount = useNotificationStore((state) => state.unreadCount);
   const isWide = width >= 720;
@@ -80,24 +72,17 @@ export function AppTabs() {
           fontSize: Typography.fontSize.xs,
         },
         tabBarStyle: {
-          backgroundColor: colors.glassBg,
-          borderColor: colors.glassBorder,
-          borderWidth: 1,
+          backgroundColor: colors.card,
+          borderColor: colors.borderLight,
+          borderWidth: 0,
           borderTopWidth: 1,
-          borderRadius: BorderRadius['2xl'],
-          height: 68 + Math.max(insets.bottom, Spacing.sm),
-          paddingBottom: Math.max(insets.bottom, Spacing.sm),
+          height: 72,
+          paddingBottom: Spacing.md,
           paddingTop: Spacing.xs,
           paddingHorizontal: Spacing.xs,
-          position: 'absolute',
-          left: Spacing.md,
-          right: Spacing.md,
-          bottom: Math.max(insets.bottom, Spacing.sm),
-          ...Shadows.lg,
-          shadowColor: colors.shadowColor,
         },
         tabBarItemStyle: {
-          borderRadius: BorderRadius.md,
+          borderRadius: BorderRadius.sm,
           maxWidth: isWide ? 148 : undefined,
           marginHorizontal: 2,
         },
@@ -129,26 +114,9 @@ export function AppTabs() {
         component={AddTransactionScreen}
         options={{
           title: 'Add',
-          tabBarLabel: () => null,
-          tabBarIcon: ({ focused }) => (
-            <MaterialCommunityIcons
-              name="plus"
-              color={colors.textInverse}
-              size={30}
-              style={{
-                backgroundColor: focused ? colors.primaryLight : colors.primary,
-                borderColor: colors.background,
-                borderRadius: 26,
-                borderWidth: 4,
-                height: 54,
-                paddingTop: 8,
-                textAlign: 'center',
-                width: 54,
-              }}
-            />
-          ),
+          tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="plus-circle-outline" color={color} size={size} />,
           tabBarLabelStyle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.xs },
-          tabBarButton: (props) => <AnimatedTabButton {...props} isAdd />,
+          tabBarButton: (props) => <AnimatedTabButton {...props} />,
         }}
       />
       <Tab.Screen

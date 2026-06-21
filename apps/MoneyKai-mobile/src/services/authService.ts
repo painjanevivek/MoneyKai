@@ -1,11 +1,12 @@
 import auth, { type FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { isFirebaseConfigured, requireFirebaseConfigured } from '@/firebase/firebaseConfig';
+import { ensureFirebaseApp, isFirebaseConfigured, requireFirebaseConfigured } from '@/firebase/firebaseConfig';
 
 export type NativeFirebaseUser = FirebaseAuthTypes.User;
 export { isFirebaseConfigured };
 
-const getAuth = () => {
+const getAuth = async () => {
   requireFirebaseConfigured();
+  await ensureFirebaseApp();
   return auth();
 };
 
@@ -14,7 +15,11 @@ export const getCurrentFirebaseUser = (): NativeFirebaseUser | null => {
     return null;
   }
 
-  return auth().currentUser;
+  try {
+    return auth().currentUser;
+  } catch {
+    return null;
+  }
 };
 
 export const getCurrentFirebaseIdToken = async (): Promise<string> => {
@@ -31,19 +36,28 @@ export const waitForAuthState = (): Promise<NativeFirebaseUser | null> => {
     return Promise.resolve(null);
   }
 
-  return new Promise((resolve) => {
-    const unsubscribe = auth().onAuthStateChanged((user) => {
-      unsubscribe();
-      resolve(user);
-    });
+  return new Promise((resolve, reject) => {
+    void ensureFirebaseApp()
+      .then((ready) => {
+        if (!ready) {
+          resolve(null);
+          return;
+        }
+
+        const unsubscribe = auth().onAuthStateChanged((user) => {
+          unsubscribe();
+          resolve(user);
+        });
+      })
+      .catch(reject);
   });
 };
 
 export const signInWithEmail = async (email: string, password: string) =>
-  getAuth().signInWithEmailAndPassword(email, password);
+  (await getAuth()).signInWithEmailAndPassword(email, password);
 
 export const createUserWithEmail = async (email: string, password: string) =>
-  getAuth().createUserWithEmailAndPassword(email, password);
+  (await getAuth()).createUserWithEmailAndPassword(email, password);
 
 export const updateFirebaseUserProfile = async (
   user: NativeFirebaseUser,
@@ -51,12 +65,13 @@ export const updateFirebaseUserProfile = async (
 ) => user.updateProfile(updates);
 
 export const sendFirebasePasswordResetEmail = async (email: string) =>
-  getAuth().sendPasswordResetEmail(email);
+  (await getAuth()).sendPasswordResetEmail(email);
 
 export const signOutFromFirebase = async () => {
   if (!isFirebaseConfigured()) {
     return;
   }
 
+  await ensureFirebaseApp();
   await auth().signOut();
 };

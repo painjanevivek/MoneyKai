@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useNotesStore } from '@/stores/useNotesStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -46,7 +47,7 @@ export function NotesScreen() {
       <View style={styles.panel}>
         <View style={styles.row}>
           <View style={{ flex: 1, paddingRight: Spacing.md }}>
-            <Text style={styles.value}>{note.title}</Text>
+            <Text style={styles.value} numberOfLines={1}>{note.title}</Text>
             <Text style={styles.muted}>{formatDate(note.updated_at)}</Text>
           </View>
           <TouchableOpacity onPress={() => togglePin(note.id)} style={{ padding: Spacing.sm }}>
@@ -67,7 +68,7 @@ export function NotesScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <FlatList
         data={notes}
         keyExtractor={(note) => note.id}
@@ -81,7 +82,7 @@ export function NotesScreen() {
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <Text style={styles.eyebrow}>Notes</Text>
+              <ScreenBackButton />
               <Text style={styles.title}>Money notes</Text>
               <Text style={styles.subtitle}>Keep plans, reminders, and decisions synced with your account.</Text>
             </View>
@@ -98,7 +99,7 @@ export function NotesScreen() {
                 multiline
                 numberOfLines={4}
               />
-              <Button title="Save Note" onPress={saveNote} icon="content-save-outline" />
+              <Button title="Save note" onPress={saveNote} />
             </View>
           </>
         }

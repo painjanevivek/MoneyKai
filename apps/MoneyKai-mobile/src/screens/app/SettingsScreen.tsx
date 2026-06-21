@@ -3,10 +3,13 @@ import { Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
+import { ModalSheet } from '@/components/ui/ModalSheet';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { sendFirebasePasswordResetEmail } from '@/services/authService';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useSyncStore } from '@/stores/useSyncStore';
-import { isFirebaseConfigured } from '@/firebase/firebaseConfig';
+import { getFirebaseConfigStatus, isFirebaseConfigured } from '@/firebase/firebaseConfig';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, THEME_OPTIONS, Typography } from '@/constants/theme';
 import { createAppScreenStyles } from './screenStyles';
@@ -15,12 +18,16 @@ const formatDateTime = (value: string | null) => {
   if (!value) {
     return 'Not synced yet';
   }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Not synced yet';
+  }
   return new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value));
+  }).format(date);
 };
 
 export function SettingsScreen() {
@@ -42,6 +49,40 @@ export function SettingsScreen() {
   const isOnline = useSyncStore((state) => state.isOnline);
   const [backupLoading, setBackupLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPasswordSheet, setShowPasswordSheet] = useState(false);
+  const firebaseReady = isFirebaseConfigured();
+  const firebaseConfigStatus = getFirebaseConfigStatus();
+  const nativeFirebaseReady = firebaseConfigStatus === 'native-ready';
+  const firebaseStatusLabel =
+    nativeFirebaseReady
+      ? 'Ready'
+      : firebaseConfigStatus === 'web-app-id-only'
+        ? 'Android app needed'
+        : 'Missing';
+
+  const sendPasswordLink = async () => {
+    if (!user?.email) {
+      Alert.alert('Email unavailable', 'MoneyKai could not find an email address for this account.');
+      return;
+    }
+
+    if (!firebaseReady) {
+      Alert.alert('Password reset unavailable', 'Firebase Authentication is not configured for this build.');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      await sendFirebasePasswordResetEmail(user.email);
+      setShowPasswordSheet(false);
+      Alert.alert('Reset link sent', `We sent a password reset link to ${user.email}.`);
+    } catch (error) {
+      Alert.alert('Reset failed', error instanceof Error ? error.message : 'Could not send the reset link.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const runBackup = async () => {
     setBackupLoading(true);
@@ -89,12 +130,12 @@ export function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>Settings</Text>
-          <Text style={styles.title}>Profile and sync</Text>
-          <Text style={styles.subtitle}>Manage the account, local preferences, and cloud backup state.</Text>
+          <ScreenBackButton />
+          <Text style={styles.title}>Settings and sync</Text>
+          <Text style={styles.subtitle}>Manage security, local preferences, and cloud backup state.</Text>
         </View>
 
         <View style={styles.panel}>
@@ -121,10 +162,30 @@ export function SettingsScreen() {
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
-            <Text style={styles.muted}>Firebase native config</Text>
-            <Text style={{ ...styles.value, color: isFirebaseConfigured() ? colors.primary : colors.error }}>
-              {isFirebaseConfigured() ? 'Ready' : 'Missing'}
+            <Text style={styles.muted}>Firebase config</Text>
+            <Text style={{ ...styles.value, color: nativeFirebaseReady ? colors.primary : colors.warning }}>
+              {firebaseStatusLabel}
             </Text>
+          </View>
+        </View>
+
+        <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Security</Text>
+          <Button
+            title="Change password"
+            onPress={() => setShowPasswordSheet(true)}
+            icon="lock-reset"
+            variant="secondary"
+            style={{ marginBottom: Spacing.sm }}
+          />
+          <View style={styles.row}>
+            <Text style={styles.muted}>App lock</Text>
+            <Switch
+              value={appLockEnabled}
+              onValueChange={setAppLockEnabled}
+              trackColor={{ false: colors.border, true: colors.primaryBg }}
+              thumbColor={appLockEnabled ? colors.primary : colors.textTertiary}
+            />
           </View>
         </View>
 
@@ -198,22 +259,13 @@ export function SettingsScreen() {
               thumbColor={notificationsEnabled ? colors.primary : colors.textTertiary}
             />
           </View>
-          <View style={[styles.row, { marginBottom: Spacing.md }]}>
+          <View style={styles.row}>
             <Text style={styles.muted}>Haptics</Text>
             <Switch
               value={hapticEnabled}
               onValueChange={toggleHaptic}
               trackColor={{ false: colors.border, true: colors.primaryBg }}
               thumbColor={hapticEnabled ? colors.primary : colors.textTertiary}
-            />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.muted}>App lock</Text>
-            <Switch
-              value={appLockEnabled}
-              onValueChange={setAppLockEnabled}
-              trackColor={{ false: colors.border, true: colors.primaryBg }}
-              thumbColor={appLockEnabled ? colors.primary : colors.textTertiary}
             />
           </View>
         </View>
@@ -260,14 +312,14 @@ export function SettingsScreen() {
             </View>
           </View>
           <Button
-            title="Sync Now"
+            title="Sync now"
             onPress={runSync}
             loading={syncLoading || syncStatus === 'syncing'}
             icon="sync"
             variant="secondary"
             style={{ marginBottom: Spacing.sm }}
           />
-          <Button title="Save Cloud Backup" onPress={runBackup} loading={backupLoading} icon="cloud-upload-outline" />
+          <Button title="Save cloud backup" onPress={runBackup} loading={backupLoading} icon="cloud-upload-outline" />
         </View>
 
         <TouchableOpacity
@@ -286,6 +338,45 @@ export function SettingsScreen() {
           <Text style={{ ...styles.value, color: colors.error, marginLeft: Spacing.sm }}>Log out</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <ModalSheet
+        visible={showPasswordSheet}
+        title="Change password"
+        subtitle="MoneyKai will send a secure reset link to your account email."
+        onClose={() => (passwordLoading ? undefined : setShowPasswordSheet(false))}
+        footer={
+          <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
+            <Button
+              title="Cancel"
+              onPress={() => setShowPasswordSheet(false)}
+              variant="outline"
+              style={{ flex: 1 }}
+              disabled={passwordLoading}
+            />
+            <Button
+              title="Send link"
+              onPress={sendPasswordLink}
+              loading={passwordLoading}
+              style={{ flex: 1 }}
+              disabled={!user?.email || !firebaseReady}
+            />
+          </View>
+        }
+      >
+        <View style={{ gap: Spacing.md }}>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
+            The reset email will go to {user?.email || 'your account email'}. After you change your password, use the new password the next time you sign in.
+          </Text>
+          <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: `${colors.primary}22` }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary, marginBottom: 4 }}>
+              Secure reset
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+              MoneyKai does not ask for or store your current password here. Firebase handles the reset link and verification.
+            </Text>
+          </View>
+        </View>
+      </ModalSheet>
     </SafeAreaView>
   );
 }

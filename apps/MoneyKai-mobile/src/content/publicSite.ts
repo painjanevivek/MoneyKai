@@ -247,7 +247,7 @@ export const HOME_FAQS = [
   {
     question: 'What is MoneyKai?',
     answer:
-      'MoneyKai is a personal finance app that helps users track expenses, manage budgets, organize shared spending, monitor savings, and understand spending patterns.',
+      'MoneyKai is an SMS parsing app that helps users turn bank and payment alerts into reviewable income, expense, budget, shared spending, savings, and private report records.',
   },
   {
     question: 'Is MoneyKai free?',
@@ -257,7 +257,7 @@ export const HOME_FAQS = [
   {
     question: 'Can I track expenses with MoneyKai?',
     answer:
-      'Yes. Expense tracking is one of the core product flows and supports day-to-day money visibility.',
+      'Yes. Expense tracking is one of the core product flows, and confirmed SMS records help build the monthly transaction history.',
   },
   {
     question: 'Can I manage shared expenses?',
@@ -273,5 +273,20 @@ export const HOME_FAQS = [
     question: 'Does MoneyKai give financial advice?',
     answer:
       'No. MoneyKai helps users organize personal finance information, but it does not replace professional financial advice.',
+  },
+  {
+    question: 'Who is MoneyKai best for?',
+    answer:
+      'MoneyKai is best for people who want SMS parsing, expense review, budgets, shared costs, savings, portfolio context, and private reports without a complicated accounting system.',
+  },
+  {
+    question: 'How is MoneyKai different from a spreadsheet?',
+    answer:
+      'A spreadsheet is flexible but manual. MoneyKai is designed around SMS parsing and review: confirming records, reviewing budgets, seeing summaries, and keeping money context easier to revisit.',
+  },
+  {
+    question: 'What should I do first after creating a MoneyKai account?',
+    answer:
+      'The best first step is to set a monthly budget or add one real transaction. That gives MoneyKai enough context to make the dashboard and review flow useful.',
   },
 ];

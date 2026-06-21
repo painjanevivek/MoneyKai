@@ -1,6 +1,6 @@
 import React from 'react';
-import { Tabs, router } from 'expo-router';
-import { View, Platform, TouchableOpacity, type ColorValue } from 'react-native';
+import { Tabs } from 'expo-router';
+import { View, Platform, type ColorValue } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
@@ -80,67 +80,15 @@ const TabIcon = ({ name, color, focused }: { name: IconName; color: string | Col
   );
 };
 
-const AddTabButton = ({
-  backgroundColor,
-  foregroundColor,
-  borderColor,
-  onPress,
-}: {
-  backgroundColor: string;
-  foregroundColor: string;
-  borderColor: string;
-  onPress: () => void;
-}) => (
-  <View
-    style={{
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel="Add transaction"
-      style={{
-        marginTop: -18,
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor,
-        borderWidth: 4,
-        borderColor,
-        ...Shadows.lg,
-        shadowColor: backgroundColor,
-      }}
-    >
-      <MaterialCommunityIcons name="plus" size={30} color={foregroundColor} />
-    </TouchableOpacity>
-  </View>
-);
-
 export default function TabLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [isComposerVisible, setIsComposerVisible] = React.useState(false);
-  const addButtonBackground = colors.textPrimary;
-  const addButtonForeground = colors.background;
-  const goBackFromHiddenTab = React.useCallback(() => {
-    if (router.canGoBack()) {
-      router.back();
-      return;
-    }
-
-    router.replace('/(tabs)');
-  }, []);
   const hiddenTabOptions = React.useCallback(
     (title: string) => ({
       href: null,
       title,
-      headerShown: true,
+      headerShown: false,
       headerShadowVisible: false,
       headerStyle: {
         backgroundColor: colors.background,
@@ -153,29 +101,8 @@ export default function TabLayout() {
       contentStyle: {
         backgroundColor: colors.background,
       },
-      headerLeft: () => (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          activeOpacity={0.75}
-          onPress={goBackFromHiddenTab}
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 14,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-            marginLeft: Platform.OS === 'ios' ? 4 : 12,
-          }}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.textPrimary} />
-        </TouchableOpacity>
-      ),
     }),
-    [colors.background, colors.border, colors.card, colors.textPrimary, goBackFromHiddenTab]
+    [colors.background, colors.textPrimary]
   );
 
   return (
@@ -233,16 +160,16 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="add"
+          listeners={{
+            tabPress: (event) => {
+              event.preventDefault();
+              setIsComposerVisible(true);
+            },
+          }}
           options={{
             title: 'Add',
-            tabBarButton: () => (
-              <AddTabButton
-                backgroundColor={addButtonBackground}
-                foregroundColor={addButtonForeground}
-                borderColor={colors.background}
-                onPress={() => setIsComposerVisible(true)}
-              />
-            ),
+            tabBarLabel: ({ color, focused }) => <TabLabel label="Add" color={color} focused={focused} />,
+            tabBarIcon: ({ color, focused }) => <TabIcon name="plus-circle-outline" color={color} focused={focused} />,
           }}
         />
         <Tabs.Screen

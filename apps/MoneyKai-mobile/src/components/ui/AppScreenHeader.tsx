@@ -29,7 +29,6 @@ export function AppScreenHeader({
   actions,
   chips = [],
   description,
-  eyebrow = 'MONEYKAI WORKSPACE',
   icon,
   metrics = [],
   title,
@@ -84,10 +83,7 @@ export function AppScreenHeader({
           <MaterialCommunityIcons name={icon as any} size={22} color="#FFFFFF" />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: 'rgba(255, 255, 255, 0.68)' }}>
-            {eyebrow}
-          </Text>
-          <Text style={{ marginTop: 4, fontSize: Typography.fontSize['2xl'], lineHeight: 31, fontFamily: Typography.fontFamily.display, color: '#FFFFFF' }}>
+          <Text style={{ fontSize: Typography.fontSize['2xl'], lineHeight: 31, fontFamily: Typography.fontFamily.display, color: '#FFFFFF' }}>
             {title}
           </Text>
           <Text style={{ marginTop: 7, fontSize: Typography.fontSize.sm, lineHeight: 20, color: 'rgba(255, 255, 255, 0.74)' }}>

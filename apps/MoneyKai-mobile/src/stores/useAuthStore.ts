@@ -18,6 +18,8 @@ export interface User {
   full_name: string;
   avatar_url?: string;
   auth_provider?: 'email' | 'google';
+  dob?: string;
+  gender?: 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'self_describe';
 }
 
 interface AuthState {
@@ -112,7 +114,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           if (!isFirebaseConfigured()) {
-            throw new Error('Firebase is not configured. Add android/app/google-services.json to enable sign in.');
+            throw new Error('Firebase is not configured. Add Firebase auth keys to enable sign in.');
           }
 
           const credentials = await signInWithEmail(email, password);
@@ -150,7 +152,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           if (!isFirebaseConfigured()) {
-            throw new Error('Firebase is not configured. Add android/app/google-services.json to enable sign up.');
+            throw new Error('Firebase is not configured. Add Firebase auth keys to enable sign up.');
           }
 
           const credentials = await createUserWithEmail(email, password);
@@ -196,7 +198,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           if (!isFirebaseConfigured()) {
-            throw new Error('Firebase is not configured. Add android/app/google-services.json to enable Google sign in.');
+            throw new Error('Firebase is not configured. Add Firebase auth keys to enable Google sign in.');
           }
 
           const { signInWithGoogleAsync } = await import('@/services/googleAuth');

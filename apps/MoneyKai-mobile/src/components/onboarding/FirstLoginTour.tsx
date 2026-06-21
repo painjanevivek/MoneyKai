@@ -17,20 +17,20 @@ type TourStep = {
 const TOUR_STEPS: TourStep[] = [
   {
     icon: 'view-dashboard-outline',
-    title: 'Start on the Dashboard',
-    body: 'This is your quick financial snapshot. Check balances, trends, notes, and recent activity here first.',
-    hint: 'Look here for your daily overview.',
+    title: 'Start with parsed records',
+    body: 'The dashboard is your first read of confirmed SMS records: available money, spending pressure, income, and recent activity.',
+    hint: 'Your daily SMS parsing overview.',
   },
   {
     icon: 'receipt-text-outline',
-    title: 'Use Transactions for everyday entries',
-    body: 'Add spending and income from the Transactions tab when you need to record something right away.',
-    hint: 'This is where your history grows.',
+    title: 'Review parsed transactions',
+    body: 'Use the Transactions tab to search SMS-parsed records, confirm imported entries, and keep categories clean before reports depend on them.',
+    hint: 'Every report starts with reviewed records.',
   },
   {
     icon: 'text-box-check-outline',
-    title: 'Review Transaction Capture drafts',
-    body: 'Auto Capture is optional. When you enable Android notification access, MoneyKai creates reviewable drafts from supported transaction alerts instead of adding transactions automatically.',
+    title: 'Review captured SMS drafts',
+    body: 'Auto Capture is optional. When you enable Android notification access, MoneyKai creates reviewable drafts from supported bank and payment alerts instead of adding them automatically.',
     hint: 'Review drafts before they affect your budget.',
   },
   {
@@ -41,9 +41,9 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     icon: 'chart-line',
-    title: 'Review patterns in Savings',
-    body: 'Savings now contains the analytics and challenge view, so the deeper insights live in one calmer place.',
-    hint: 'Savings is where the analysis lives.',
+    title: 'Read patterns after review',
+    body: 'Savings and analytics become more useful once your parsed history has enough reviewed records to compare.',
+    hint: 'Clean inputs, calmer insights.',
   },
   {
     icon: 'cog-outline',
@@ -69,8 +69,8 @@ export const FirstLoginTour: React.FC<FirstLoginTourProps> = ({ visible, onFinis
   return (
     <ModalSheet
       visible={visible}
-      title="Welcome to MoneyKai"
-      subtitle="A quick guided tour so the app feels familiar from the first login."
+      title="Set up SMS parsing"
+      subtitle="A quick tour of the parsing and review flow that makes MoneyKai useful from the first login."
       onClose={onSkip}
       maxHeight={620}
       footer={

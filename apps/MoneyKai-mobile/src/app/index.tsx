@@ -48,14 +48,14 @@ export default function LandingScreen() {
         title={SITE.title}
         description={SITE.description}
         path="/"
-        keywords={['budget management app', 'personal finance app', 'shared expense tracker', 'financial first aid']}
+        keywords={['sms parsing app', 'expense tracker', 'private finance reports', 'shared expense tracker']}
       />
       <PublicShell>
         <View style={{ gap: Spacing.xl }}>
           <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
             <SectionCard style={{ flex: 1.3 }}>
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                PERSONAL FINANCE AND BUDGET MANAGEMENT
+                SMS PARSING APP
               </Text>
               <Text
                 style={{
@@ -66,10 +66,10 @@ export default function LandingScreen() {
                   color: colors.textPrimary,
                 }}
               >
-                Take control of your money with MoneyKai
+                Parse SMS alerts into clearer money records
               </Text>
               <Text style={{ marginTop: Spacing.md, fontSize: Typography.fontSize.md, lineHeight: 26, color: colors.textSecondary }}>
-                Track expenses, manage budgets, handle shared spending, and build better money habits with a simple personal finance app designed for everyday life.
+                MoneyKai turns bank and payment alerts into reviewable expenses, income, budgets, shared spending, and private reports.
               </Text>
               <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.sm, marginTop: Spacing.lg }}>
                 <Button
@@ -90,14 +90,14 @@ export default function LandingScreen() {
 
             <SectionCard style={{ flex: 0.9 }}>
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                WHY THE PUBLIC SITE MATTERS
+                WHY SMS PARSING MATTERS
               </Text>
               <View style={{ marginTop: Spacing.md, gap: Spacing.md }}>
                 {[
-                  'A public homepage that explains the product clearly',
-                  'Feature pages that support discoverability',
+                  'Captured SMS records before reports',
+                  'Reviewable drafts before budgets depend on them',
                   'Trust, privacy, and security context before signup',
-                  'Original Learn content instead of scraped SEO filler',
+                  'Original Learn content connected to real money habits',
                 ].map((point) => (
                   <View key={point} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                     <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
@@ -112,7 +112,7 @@ export default function LandingScreen() {
 
           <View style={{ gap: Spacing.md }}>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Common money problems feel bigger when there is no clear system
+              Money records get noisy when there is no clear system
             </Text>
             <View style={{ gap: Spacing.md }}>
               {PROBLEMS.map((problem) => (
@@ -141,10 +141,10 @@ export default function LandingScreen() {
 
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              MoneyKai helps turn those problems into a more manageable routine
+              MoneyKai turns SMS alerts into a calmer review routine
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.md, lineHeight: 26, color: colors.textSecondary }}>
-              MoneyKai helps users track expenses, manage budgets, organize shared money, monitor savings, understand spending patterns, and stay prepared for financial emergencies.
+              MoneyKai helps users parse transaction alerts, manage budgets, organize shared money, monitor savings, and understand spending patterns from reviewed records.
             </Text>
           </SectionCard>
 
@@ -328,7 +328,7 @@ export default function LandingScreen() {
 
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Start managing your money with clarity
+              Start parsing money records with clarity
             </Text>
             <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.sm, marginTop: Spacing.lg }}>
               <Button

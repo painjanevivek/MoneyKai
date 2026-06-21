@@ -134,7 +134,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                 marginTop: 4,
               }}
             >
-              Money that feels easier to manage.
+              SMS parsing for everyday money records.
             </Text>
           </View>
 
@@ -158,7 +158,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
               Welcome back
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, marginBottom: Spacing.lg }}>
-              Continue to the same budgets, records, and reports. No setup loop after sign-in.
+              Return to parsed SMS records, captured drafts, budgets, and private reports without rebuilding your month.
             </Text>
 
             <Input

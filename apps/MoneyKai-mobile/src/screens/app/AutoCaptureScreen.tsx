@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
 import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -210,27 +211,27 @@ export function AutoCaptureScreen() {
   const formatMoney = (value: number) => `${currencySymbol}${value.toLocaleString('en-IN')}`;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>Auto Capture</Text>
+          <ScreenBackButton />
           <Text style={styles.title}>Review captured drafts</Text>
-          <Text style={styles.subtitle}>Notifications and approved bank SMS become transaction drafts before they touch your budget.</Text>
+          <Text style={styles.subtitle}>SMS and notification captures stay as drafts until you review them.</Text>
         </View>
 
         <View style={styles.panel}>
           <View style={{ flexDirection: 'row', gap: Spacing.md }}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.muted}>Pending</Text>
-              <Text style={styles.value}>{pendingDrafts.length}</Text>
+              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{pendingDrafts.length}</Text>
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.muted}>Learned rules</Text>
-              <Text style={styles.value}>{merchantRules.length}</Text>
+              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{merchantRules.length}</Text>
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.muted}>SMS access</Text>
-              <Text style={[styles.value, { color: settings.smsAccessStatus === 'granted' ? colors.success : colors.textPrimary }]}>
+              <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.value, { color: settings.smsAccessStatus === 'granted' ? colors.success : colors.textPrimary }]}>
                 {titleCase(settings.smsAccessStatus)}
               </Text>
             </View>
@@ -240,7 +241,7 @@ export function AutoCaptureScreen() {
 
           <View style={styles.row}>
             <Text style={styles.muted}>Native module</Text>
-            <Text style={{ ...styles.value, color: nativeReady ? colors.success : colors.error }}>
+            <Text style={{ ...styles.value, color: nativeReady ? colors.success : colors.error }} numberOfLines={1} adjustsFontSizeToFit>
               {nativeReady ? 'Ready' : 'Unavailable'}
             </Text>
           </View>
@@ -273,8 +274,8 @@ export function AutoCaptureScreen() {
           </View>
 
           <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.md }}>
-            <Button title="Android Access" onPress={() => void openNativeCaptureSettings()} size="sm" style={{ flex: 1 }} />
-            <Button title="Clear Queue" onPress={() => void clearNativeCaptureQueue()} variant="outline" size="sm" style={{ flex: 1 }} />
+            <Button title="Android access" onPress={() => void openNativeCaptureSettings()} size="sm" style={{ flex: 1 }} />
+            <Button title="Clear queue" onPress={() => void clearNativeCaptureQueue()} variant="outline" size="sm" style={{ flex: 1 }} />
           </View>
         </View>
 
@@ -329,7 +330,7 @@ export function AutoCaptureScreen() {
               </View>
             )}
             <Button
-              title={isImportingSms ? 'Importing...' : 'Import Recent SMS'}
+              title={isImportingSms ? 'Importing...' : 'Import recent SMS'}
               onPress={() => void importSmsInbox()}
               icon="message-processing-outline"
               loading={isImportingSms}
@@ -361,7 +362,7 @@ export function AutoCaptureScreen() {
             )}
             {pendingAccounts.map((account) => (
               <View key={account.id} style={{ marginBottom: Spacing.md }}>
-                <Text style={styles.value}>{formatMonitoredAccountLabel(account)}</Text>
+                <Text style={styles.value} numberOfLines={1}>{formatMonitoredAccountLabel(account)}</Text>
                 <Text style={styles.muted}>{account.sampleCount} matching SMS found. Approve to import this account.</Text>
                 <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
                   <Button title="Approve" onPress={() => void approveAndImportAccount(account.id)} size="sm" style={{ flex: 1 }} />
@@ -378,17 +379,17 @@ export function AutoCaptureScreen() {
                       borderWidth: 1,
                       justifyContent: 'center',
                       width: 44,
-                    }}
-                  >
-                    <Text style={{ fontSize: 18 }}>💬</Text>
+                      }}
+                    >
+                    <MaterialCommunityIcons name="message-text-outline" size={20} color={colors.primary} />
                   </TouchableOpacity>
                 </View>
               </View>
             ))}
             {approvedAccounts.map((account) => (
               <View key={account.id} style={[styles.row, { marginBottom: Spacing.sm }]}>
-                <View style={{ flex: 1, paddingRight: Spacing.md }}>
-                  <Text style={styles.value}>{formatMonitoredAccountLabel(account)}</Text>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.md }}>
+                  <Text style={styles.value} numberOfLines={1}>{formatMonitoredAccountLabel(account)}</Text>
                   <Text style={styles.muted}>Approved for SMS auto parsing.</Text>
                 </View>
                 <Button title="Unselect" onPress={() => void unselectAndSyncAccount(account.id)} variant="outline" size="sm" />
@@ -407,8 +408,8 @@ export function AutoCaptureScreen() {
           </View>
         )}
 
-        <View style={styles.row}>
-          <Text style={styles.sectionTitle}>Drafts</Text>
+        <View style={[styles.row, { marginBottom: Spacing.md }]}>
+          <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Drafts</Text>
           <TouchableOpacity onPress={clearCaptureInbox}>
             <Text style={{ ...styles.muted, color: colors.primary }}>Clear reviewed</Text>
           </TouchableOpacity>
@@ -422,9 +423,9 @@ export function AutoCaptureScreen() {
           pendingDrafts.map((draft) => (
             <View key={draft.id} style={styles.panel}>
               <View style={styles.row}>
-                <View style={{ flex: 1, paddingRight: Spacing.md }}>
-                  <Text style={styles.value}>{draft.description}</Text>
-                  <Text style={styles.muted}>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.md }}>
+                  <Text style={styles.value} numberOfLines={1}>{draft.description}</Text>
+                  <Text style={styles.muted} numberOfLines={1}>
                     {formatMoney(draft.amount)} - {draft.category ? titleCase(draft.category) : 'Category needed'} - {titleCase(draft.captureSource)}
                   </Text>
                 </View>

@@ -69,6 +69,7 @@ venv/
 # local validation artifacts
 .codex-artifacts/
 .codex-logs/
+tmp-*.png
 playwright-report/
 apps/*/artifacts/**
 !apps/*/artifacts/

@@ -234,7 +234,7 @@ export const NoteModal: React.FC<NoteModalProps> = ({ visible, onClose }) => {
               }}
             >
               <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
-                Save Note
+                Save note
               </Text>
             </TouchableOpacity>
           </View>

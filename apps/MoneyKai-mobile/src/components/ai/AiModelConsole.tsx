@@ -53,7 +53,7 @@ export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiMod
       </View>
 
       <Input
-        label="Ask MoneyKai AI"
+        placeholder="Ask about spending, budgets, records, or reports"
         value={prompt}
         onChangeText={setPrompt}
         multiline
@@ -75,7 +75,7 @@ export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiMod
         </Text>
       ) : !backendReady ? (
         <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-          MoneyKai AI needs setup before it can answer.
+          Connect backend access before asking MoneyKai AI.
         </Text>
       ) : null}
 

@@ -3,6 +3,7 @@ import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -51,21 +52,21 @@ export function SavingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>Savings</Text>
+          <ScreenBackButton />
           <Text style={styles.title}>Challenges</Text>
-          <Text style={styles.subtitle}>Build streaks, reduce spending, and keep savings tied to your account.</Text>
+          <Text style={styles.subtitle}>Build streaks from reviewed spending patterns and track saved amounts.</Text>
         </View>
 
         <View style={styles.panel}>
           <View style={styles.row}>
-            <View>
+            <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.sm }}>
               <Text style={styles.muted}>Savings earned</Text>
-              <Text style={styles.value}>{formatMoney(totalSavings)}</Text>
+              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(totalSavings)}</Text>
             </View>
-            <View style={{ alignItems: 'flex-end' }}>
+            <View style={{ alignItems: 'flex-end', flexShrink: 0 }}>
               <Text style={styles.muted}>XP</Text>
               <Text style={styles.value}>{totalXP}</Text>
             </View>
@@ -81,16 +82,16 @@ export function SavingsScreen() {
           activeChallenges.map((item) => (
             <View key={item.id} style={styles.panel}>
               <View style={styles.row}>
-                <View style={{ flex: 1, paddingRight: Spacing.md }}>
-                  <Text style={styles.value}>{item.name}</Text>
-                  <Text style={styles.muted}>
+                <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.md }}>
+                  <Text style={styles.value} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.muted} numberOfLines={1}>
                     {item.current_streak}/{item.duration_days} days · ends {formatDate(item.end_date)}
                   </Text>
                 </View>
                 <MaterialCommunityIcons name="fire" size={24} color={colors.primary} />
               </View>
               <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.md }}>
-                <Button title="+1 Day" onPress={() => updateStreak(item.id)} variant="secondary" size="sm" style={{ flex: 1 }} />
+                <Button title="+1 day" onPress={() => updateStreak(item.id)} variant="secondary" size="sm" style={{ flex: 1 }} />
                 <Button title="Complete" onPress={() => complete(item.id, 500)} size="sm" style={{ flex: 1 }} />
                 <TouchableOpacity
                   onPress={() => deactivateChallenge(item.id)}
@@ -107,7 +108,7 @@ export function SavingsScreen() {
         {CHALLENGE_TEMPLATES.slice(0, 8).map((template) => (
           <View key={template.id} style={styles.panel}>
             <View style={styles.row}>
-              <View style={{ flexDirection: 'row', flex: 1, alignItems: 'center', paddingRight: Spacing.md }}>
+              <View style={{ flexDirection: 'row', flex: 1, minWidth: 0, alignItems: 'center', paddingRight: Spacing.md }}>
                 <View
                   style={{
                     alignItems: 'center',
@@ -121,9 +122,9 @@ export function SavingsScreen() {
                 >
                   <MaterialCommunityIcons name={template.icon} size={18} color={colors.primary} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.value}>{template.name}</Text>
-                  <Text style={styles.muted}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.value} numberOfLines={1}>{template.name}</Text>
+                  <Text style={styles.muted} numberOfLines={1}>
                     {template.defaultDuration} days · saves about {formatMoney(template.estimatedSavings)}
                   </Text>
                 </View>

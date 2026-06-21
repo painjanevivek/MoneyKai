@@ -343,7 +343,7 @@ export default function BudgetScreen() {
             {hasSavedCategoryLimits ? (
               <Button title="Clear" icon="close" onPress={handleClearCategoryLimits} variant="outline" style={{ flex: 1 }} />
             ) : null}
-            <Button title="Save Limits" icon="content-save-outline" onPress={handleSaveCategoryLimits} style={{ flex: 1 }} />
+            <Button title="Save Limits" onPress={handleSaveCategoryLimits} style={{ flex: 1 }} />
           </View>
         </Card>
 

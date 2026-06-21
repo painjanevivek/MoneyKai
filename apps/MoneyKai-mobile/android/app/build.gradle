@@ -2,8 +2,10 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+def vectorIconsPackageDir = new File(["node", "--print", "require.resolve('react-native-vector-icons/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
 project.ext.vectoricons = [
     iconFontNames: ["MaterialCommunityIcons.ttf"],
+    iconFontsDir: new File(vectorIconsPackageDir, "Fonts").getAbsolutePath(),
 ]
 def vectorIconsFontsGradle = new File(["node", "--print", "require.resolve('react-native-vector-icons/fonts.gradle')"].execute(null, rootDir).text.trim())
 apply from: vectorIconsFontsGradle
@@ -201,5 +203,5 @@ dependencies {
 if (file("google-services.json").exists()) {
     apply plugin: "com.google.gms.google-services"
 } else {
-    logger.lifecycle("[MoneyKai] google-services.json not found. Firebase native configuration will be disabled until android/app/google-services.json is added.")
+    logger.lifecycle("[MoneyKai] google-services.json not found. Firebase will use EXPO_PUBLIC_FIREBASE_* runtime config when available.")
 }

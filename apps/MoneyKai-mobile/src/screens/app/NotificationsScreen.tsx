@@ -3,6 +3,7 @@ import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Spacing } from '@/constants/theme';
@@ -34,9 +35,9 @@ export function NotificationsScreen() {
           >
             <MaterialCommunityIcons name={item.icon || 'bell-outline'} size={18} color={item.iconColor || colors.primary} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.value}>{item.title}</Text>
-            <Text style={styles.muted}>{item.body}</Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.value} numberOfLines={1}>{item.title}</Text>
+            <Text style={styles.muted} numberOfLines={2}>{item.body}</Text>
             <Text style={{ ...styles.muted, marginTop: 4 }}>{formatDate(item.createdAt)}</Text>
           </View>
         </View>
@@ -46,7 +47,7 @@ export function NotificationsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <FlatList
         data={notifications}
         keyExtractor={(item) => item.id}
@@ -59,13 +60,13 @@ export function NotificationsScreen() {
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <Text style={styles.eyebrow}>Notifications</Text>
-              <Text style={styles.title}>{unreadCount} unread</Text>
-              <Text style={styles.subtitle}>Budget alerts, backups, transaction drafts, and app events.</Text>
+              <ScreenBackButton />
+              <Text style={styles.title}>Notifications</Text>
+              <Text style={styles.subtitle}>{unreadCount} unread alerts, capture drafts, backups, and app events.</Text>
             </View>
 
             <View style={{ flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.base }}>
-              <Button title="Mark Read" onPress={markAllRead} variant="secondary" style={{ flex: 1 }} />
+              <Button title="Mark read" onPress={markAllRead} variant="secondary" style={{ flex: 1 }} />
               <Button title="Clear" onPress={clearNotifications} variant="outline" style={{ flex: 1 }} />
             </View>
           </>

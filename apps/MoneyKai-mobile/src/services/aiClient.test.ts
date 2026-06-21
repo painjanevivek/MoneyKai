@@ -3,6 +3,8 @@ import { aiClient } from './aiClient';
 
 const mocks = vi.hoisted(() => ({
   isBackendConfigured: vi.fn(() => true),
+  getAiProviderStatus: vi.fn(),
+  chatWithAi: vi.fn(),
   getAiTransactionInsights: vi.fn(),
   getAiBudgetCoach: vi.fn(),
 }));
@@ -10,10 +12,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('./backendApi', () => ({
   isBackendConfigured: mocks.isBackendConfigured,
   backendApi: {
-    getAiProviderStatus: vi.fn(),
+    getAiProviderStatus: mocks.getAiProviderStatus,
     getAiModelStatus: vi.fn(),
     getAiOpsStatus: vi.fn(),
-    chatWithAi: vi.fn(),
+    chatWithAi: mocks.chatWithAi,
     uploadAiAttachment: vi.fn(),
     analyzeAiAttachment: vi.fn(),
     summarizeAiDocument: vi.fn(),
@@ -25,8 +27,57 @@ vi.mock('./backendApi', () => ({
 describe('aiClient', () => {
   beforeEach(() => {
     mocks.isBackendConfigured.mockReturnValue(true);
+    mocks.getAiProviderStatus.mockReset();
+    mocks.chatWithAi.mockReset();
     mocks.getAiTransactionInsights.mockReset();
     mocks.getAiBudgetCoach.mockReset();
+  });
+
+  it('uses a mobile fallback status when the backend AI status route is missing', async () => {
+    mocks.getAiProviderStatus.mockRejectedValue(
+      Object.assign(new Error('MoneyKai backend route was not found.'), { status: 404 })
+    );
+
+    await expect(aiClient.getProviderStatus()).resolves.toMatchObject({
+      enabled: true,
+      configured: true,
+      provider: 'moneykai-mobile',
+      attachmentsEnabled: false,
+    });
+  });
+
+  it('returns a practical local chat reply when the backend AI chat route is missing', async () => {
+    mocks.chatWithAi.mockRejectedValue(
+      Object.assign(new Error('MoneyKai backend route was not found.'), { status: 404 })
+    );
+
+    const response = await aiClient.chat({
+      task: 'general_chat',
+      messages: [{ role: 'user', content: 'How do I reduce food delivery spend?' }],
+    });
+
+    expect(response.provider).toBe('moneykai-mobile');
+    expect(response.message).toContain('food delivery spend');
+    expect(response.safety.reviewRequired).toBe(true);
+  });
+
+  it('keeps local fallback replies from showing hidden prompt style instructions', async () => {
+    mocks.chatWithAi.mockRejectedValue(Object.assign(new Error('NOT_FOUND'), { status: 404 }));
+
+    const response = await aiClient.chat({
+      task: 'general_chat',
+      messages: [
+        {
+          role: 'user',
+          content:
+            'How do I reduce food delivery spend?\n\nStyle: Reply in plain, natural text. Do not use Markdown, bold markers, headings, tables, or code formatting. Keep the tone practical and human.',
+        },
+      ],
+    });
+
+    expect(response.message).toContain('food delivery spend');
+    expect(response.message).not.toContain('Style:');
+    expect(response.message).not.toContain('Markdown');
   });
 
   it('delegates transaction insights requests to the backend client', async () => {

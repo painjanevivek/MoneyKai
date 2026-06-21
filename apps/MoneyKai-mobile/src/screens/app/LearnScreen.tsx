@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
 import { LEARN_CATEGORIES, getLatestLearnArticles } from '@/data/learnArticles';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
@@ -13,10 +14,10 @@ export function LearnScreen() {
   const articles = getLatestLearnArticles(6);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>MoneyKai Learn</Text>
+          <ScreenBackButton />
           <Text style={styles.title}>Learn money calmly</Text>
           <Text style={styles.subtitle}>Short guides for budgets, savings, tracking, and everyday decisions. Small reads, big clarity.</Text>
         </View>
@@ -57,7 +58,7 @@ export function LearnScreen() {
                 <MaterialCommunityIcons name="book-open-page-variant-outline" size={22} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.value}>{article.title}</Text>
+                <Text style={styles.value} numberOfLines={2}>{article.title}</Text>
                 <Text style={[styles.muted, { marginTop: 4 }]}>{article.excerpt}</Text>
                 <Text style={[styles.muted, { marginTop: Spacing.sm }]}>
                   {article.category} - {article.readingTime}

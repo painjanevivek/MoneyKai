@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useGroupStore } from '@/stores/useGroupStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -64,8 +65,8 @@ export function GroupsScreen() {
         <View style={styles.panel}>
           <View style={styles.row}>
             <View style={{ flex: 1, paddingRight: Spacing.md }}>
-              <Text style={styles.value}>{group.name}</Text>
-              <Text style={styles.muted}>
+              <Text style={styles.value} numberOfLines={1}>{group.name}</Text>
+              <Text style={styles.muted} numberOfLines={1}>
                 {group.type} - {formatMoney(groupTotal)} - {formatDate(group.created_at)}
               </Text>
             </View>
@@ -91,7 +92,7 @@ export function GroupsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <FlatList
         data={groups}
         keyExtractor={(group) => group.id}
@@ -105,9 +106,9 @@ export function GroupsScreen() {
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <Text style={styles.eyebrow}>Groups</Text>
+              <ScreenBackButton />
               <Text style={styles.title}>Shared expenses</Text>
-              <Text style={styles.subtitle}>Create groups and keep shared money records synced to your account.</Text>
+              <Text style={styles.subtitle}>Create groups and keep shared expense records synced to your account.</Text>
             </View>
 
             <View style={styles.panel}>
@@ -124,7 +125,7 @@ export function GroupsScreen() {
                   );
                 })}
               </View>
-              <Button title="Create Group" onPress={createGroup} icon="plus" />
+              <Button title="Create group" onPress={createGroup} icon="plus" />
             </View>
           </>
         }

@@ -1,28 +1,93 @@
 const PLACEHOLDER_PATTERNS = ['placeholder', 'REPLACE_ME', 'your-project', 'your-api-key'];
 
-const readEnv = (key: string): string => process.env[key]?.trim() ?? '';
+const publicEnv: Record<string, string | undefined> = {
+  EXPO_PUBLIC_FIREBASE_API_KEY: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  EXPO_PUBLIC_FIREBASE_PROJECT_ID: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  EXPO_PUBLIC_FIREBASE_ANDROID_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_ANDROID_APP_ID,
+  EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+  EXPO_PUBLIC_APP_STORE_URL: process.env.EXPO_PUBLIC_APP_STORE_URL,
+  EXPO_PUBLIC_PLAY_STORE_URL: process.env.EXPO_PUBLIC_PLAY_STORE_URL,
+  EXPO_PUBLIC_BACKEND_BASE_URL: process.env.EXPO_PUBLIC_BACKEND_BASE_URL,
+  EXPO_PUBLIC_SMS_RESEARCH_BUILD: process.env.EXPO_PUBLIC_SMS_RESEARCH_BUILD,
+  EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD: process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD,
+  EXPO_PUBLIC_GMAIL_SYNC_ENABLED: process.env.EXPO_PUBLIC_GMAIL_SYNC_ENABLED,
+  EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED: process.env.EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED,
+  EXPO_PUBLIC_WEALTH_TAB_ENABLED: process.env.EXPO_PUBLIC_WEALTH_TAB_ENABLED,
+  EXPO_PUBLIC_FINANCIAL_AI_ENABLED: process.env.EXPO_PUBLIC_FINANCIAL_AI_ENABLED,
+  EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  EXPO_PUBLIC_SENTRY_ENVIRONMENT: process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT,
+  EXPO_PUBLIC_SENTRY_RELEASE: process.env.EXPO_PUBLIC_SENTRY_RELEASE,
+  EXPO_PUBLIC_SENTRY_DIST: process.env.EXPO_PUBLIC_SENTRY_DIST,
+  EXPO_PUBLIC_SENTRY_ENABLED: process.env.EXPO_PUBLIC_SENTRY_ENABLED,
+  EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE,
+  EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE,
+  EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE,
+  EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE,
+  EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE,
+  EXPO_PUBLIC_DEBUG: process.env.EXPO_PUBLIC_DEBUG,
+  EXPO_PUBLIC_DEMO_MODE: process.env.EXPO_PUBLIC_DEMO_MODE,
+  SENTRY_DSN: process.env.SENTRY_DSN,
+  SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT,
+  SENTRY_RELEASE: process.env.SENTRY_RELEASE,
+  SENTRY_DIST: process.env.SENTRY_DIST,
+};
+
+const readPublicEnv = (key: keyof typeof publicEnv): string => publicEnv[key]?.trim() ?? '';
 
 const isRealValue = (value: string): boolean =>
   value.length > 0 && !PLACEHOLDER_PATTERNS.some((pattern) => value.includes(pattern));
 
 const firebaseEnv = {
-  apiKey: readEnv('EXPO_PUBLIC_FIREBASE_API_KEY'),
-  authDomain: readEnv('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-  projectId: readEnv('EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
-  storageBucket: readEnv('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: readEnv('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
-  appId: readEnv('EXPO_PUBLIC_FIREBASE_APP_ID'),
+  apiKey: readPublicEnv('EXPO_PUBLIC_FIREBASE_API_KEY'),
+  authDomain: readPublicEnv('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
+  projectId: readPublicEnv('EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
+  storageBucket: readPublicEnv('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: readPublicEnv('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: readPublicEnv('EXPO_PUBLIC_FIREBASE_APP_ID'),
+  androidAppId: readPublicEnv('EXPO_PUBLIC_FIREBASE_ANDROID_APP_ID'),
+};
+
+const fallbackFirebaseEnv = {
+  apiKey: 'placeholder-api-key',
+  authDomain: 'placeholder.firebaseapp.com',
+  projectId: 'placeholder-project',
+  storageBucket: 'placeholder.appspot.com',
+  messagingSenderId: '000000000000',
+  appId: '1:000000000000:android:placeholder',
+};
+
+const normalizedFirebaseEnv = {
+  apiKey: isRealValue(firebaseEnv.apiKey) ? firebaseEnv.apiKey : fallbackFirebaseEnv.apiKey,
+  authDomain: isRealValue(firebaseEnv.authDomain) ? firebaseEnv.authDomain : fallbackFirebaseEnv.authDomain,
+  projectId: isRealValue(firebaseEnv.projectId) ? firebaseEnv.projectId : fallbackFirebaseEnv.projectId,
+  storageBucket: isRealValue(firebaseEnv.storageBucket) ? firebaseEnv.storageBucket : fallbackFirebaseEnv.storageBucket,
+  messagingSenderId: isRealValue(firebaseEnv.messagingSenderId)
+    ? firebaseEnv.messagingSenderId
+    : fallbackFirebaseEnv.messagingSenderId,
+  appId: isRealValue(firebaseEnv.androidAppId)
+    ? firebaseEnv.androidAppId
+    : isRealValue(firebaseEnv.appId) && firebaseEnv.appId.includes(':android:')
+      ? firebaseEnv.appId
+      : isRealValue(firebaseEnv.appId)
+        ? firebaseEnv.appId
+      : fallbackFirebaseEnv.appId,
 };
 
 const googleEnv = {
-  webClientId: readEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
-  iosClientId: readEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
-  androidClientId: readEnv('EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'),
+  webClientId: readPublicEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
+  iosClientId: readPublicEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
+  androidClientId: readPublicEnv('EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'),
 };
 
 const storeReviewEnv = {
-  iosUrl: readEnv('EXPO_PUBLIC_APP_STORE_URL'),
-  androidUrl: readEnv('EXPO_PUBLIC_PLAY_STORE_URL'),
+  iosUrl: readPublicEnv('EXPO_PUBLIC_APP_STORE_URL'),
+  androidUrl: readPublicEnv('EXPO_PUBLIC_PLAY_STORE_URL'),
 };
 
 const normalizeBackendBaseUrl = (value: string): string => {
@@ -38,36 +103,37 @@ const normalizeBackendBaseUrl = (value: string): string => {
   return `https://${trimmed}`;
 };
 
-const backendBaseUrl = normalizeBackendBaseUrl(readEnv('EXPO_PUBLIC_BACKEND_BASE_URL'));
+const backendBaseUrl = normalizeBackendBaseUrl(readPublicEnv('EXPO_PUBLIC_BACKEND_BASE_URL'));
 const isDevRuntime = (): boolean => typeof __DEV__ !== 'undefined' && __DEV__;
-const smsResearchBuildValue = readEnv('EXPO_PUBLIC_SMS_RESEARCH_BUILD');
-const nativeSmsResearchBuildValue = readEnv('EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD');
-const gmailSyncEnabledValue = readEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
-const pdfStatementParsingEnabledValue = readEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
-const wealthTabEnabledValue = readEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
-const financialAiEnabledValue = readEnv('EXPO_PUBLIC_FINANCIAL_AI_ENABLED');
+const smsResearchBuildValue = readPublicEnv('EXPO_PUBLIC_SMS_RESEARCH_BUILD');
+const nativeSmsResearchBuildValue = readPublicEnv('EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD');
+const gmailSyncEnabledValue = readPublicEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
+const pdfStatementParsingEnabledValue = readPublicEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
+const wealthTabEnabledValue = readPublicEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
+const financialAiEnabledValue = readPublicEnv('EXPO_PUBLIC_FINANCIAL_AI_ENABLED');
 const DEFAULT_PRODUCTION_BACKEND_BASE_URL = 'https://money-kai-backend.vercel.app';
 
 const sentryEnv = {
-  dsn: readEnv('EXPO_PUBLIC_SENTRY_DSN') || readEnv('SENTRY_DSN'),
-  environment: readEnv('EXPO_PUBLIC_SENTRY_ENVIRONMENT') || readEnv('SENTRY_ENVIRONMENT'),
-  release: readEnv('EXPO_PUBLIC_SENTRY_RELEASE') || readEnv('SENTRY_RELEASE'),
-  dist: readEnv('EXPO_PUBLIC_SENTRY_DIST') || readEnv('SENTRY_DIST'),
-  enabled: readEnv('EXPO_PUBLIC_SENTRY_ENABLED'),
-  tracesSampleRate: readEnv('EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE'),
-  profilesSampleRate: readEnv('EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE'),
-  replaySessionSampleRate: readEnv('EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE'),
-  replayErrorSampleRate: readEnv('EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE'),
-  errorSampleRate: readEnv('EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE'),
+  dsn: readPublicEnv('EXPO_PUBLIC_SENTRY_DSN') || readPublicEnv('SENTRY_DSN'),
+  environment: readPublicEnv('EXPO_PUBLIC_SENTRY_ENVIRONMENT') || readPublicEnv('SENTRY_ENVIRONMENT'),
+  release: readPublicEnv('EXPO_PUBLIC_SENTRY_RELEASE') || readPublicEnv('SENTRY_RELEASE'),
+  dist: readPublicEnv('EXPO_PUBLIC_SENTRY_DIST') || readPublicEnv('SENTRY_DIST'),
+  enabled: readPublicEnv('EXPO_PUBLIC_SENTRY_ENABLED'),
+  tracesSampleRate: readPublicEnv('EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE'),
+  profilesSampleRate: readPublicEnv('EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE'),
+  replaySessionSampleRate: readPublicEnv('EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE'),
+  replayErrorSampleRate: readPublicEnv('EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE'),
+  errorSampleRate: readPublicEnv('EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE'),
 };
 
 export const appEnvironment = {
-  firebase: firebaseEnv,
+  firebase: normalizedFirebaseEnv,
+  firebaseSource: firebaseEnv,
   google: googleEnv,
   storeReview: storeReviewEnv,
   backendBaseUrl,
-  debug: readEnv('EXPO_PUBLIC_DEBUG') === 'true',
-  demoMode: readEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
+  debug: readPublicEnv('EXPO_PUBLIC_DEBUG') === 'true',
+  demoMode: readPublicEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
   smsResearchBuild: smsResearchBuildValue === 'true',
   nativeSmsResearchBuild: nativeSmsResearchBuildValue === 'true',
   gmailSyncEnabled: gmailSyncEnabledValue === 'true',
@@ -83,7 +149,19 @@ export const hasFirebaseEnvironment = (): boolean =>
   isRealValue(firebaseEnv.projectId) &&
   isRealValue(firebaseEnv.storageBucket) &&
   isRealValue(firebaseEnv.messagingSenderId) &&
-  isRealValue(firebaseEnv.appId);
+  isRealValue(normalizedFirebaseEnv.appId) &&
+  normalizedFirebaseEnv.appId.includes(':android:');
+
+export const hasFirebaseRuntimeConfig = (): boolean =>
+  isRealValue(firebaseEnv.apiKey) &&
+  isRealValue(firebaseEnv.authDomain) &&
+  isRealValue(firebaseEnv.projectId) &&
+  isRealValue(firebaseEnv.storageBucket) &&
+  isRealValue(firebaseEnv.messagingSenderId) &&
+  (isRealValue(firebaseEnv.androidAppId) || isRealValue(firebaseEnv.appId));
+
+export const hasFirebaseWebAppIdOnly = (): boolean =>
+  isRealValue(firebaseEnv.appId) && firebaseEnv.appId.includes(':web:') && !hasFirebaseEnvironment();
 
 export const isDemoModeEnabled = (): boolean =>
   isDevRuntime() && (appEnvironment.demoMode || !hasFirebaseEnvironment());

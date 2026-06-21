@@ -18,6 +18,7 @@ import { SavingsScreen } from '@/screens/app/SavingsScreen';
 import { AiReviewScreen } from '@/screens/app/AiReviewScreen';
 import { SettingsScreen } from '@/screens/app/SettingsScreen';
 import { AutoCaptureScreen } from '@/screens/app/AutoCaptureScreen';
+import { SubscriptionsScreen } from '@/screens/app/SubscriptionsScreen';
 import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordinator';
 import { SyncCoordinator } from '@/components/sync/SyncCoordinator';
 
@@ -39,7 +40,7 @@ export function RootNavigator() {
   if (isHydratingSession) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', padding: 24 }}>
-        <ScreenState loading title="Opening MoneyKai" body="Restoring your secure session and local budget data." tone="primary" />
+        <ScreenState loading title="Opening MoneyKai" body="Restoring your secure session and parsed SMS workspace." tone="primary" />
       </View>
     );
   }
@@ -63,12 +64,12 @@ export function RootNavigator() {
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.textPrimary,
           headerTitleStyle: { color: colors.textPrimary },
+          headerShown: false,
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
           animation: 'ios_from_right',
           gestureEnabled: true,
           headerBackTitle: 'Back',
-          headerLargeTitle: true,
           headerTransparent: false,
         }}
       >
@@ -77,15 +78,16 @@ export function RootNavigator() {
             <Stack.Group screenOptions={{ headerShown: false }}>
               <Stack.Screen name="App" component={AppTabs} />
             </Stack.Group>
-            <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ title: 'Profile' }} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
-            <Stack.Screen name="Notes" component={NotesScreen} options={{ title: 'Notes' }} />
-            <Stack.Screen name="Groups" component={GroupsScreen} options={{ title: 'Groups' }} />
-            <Stack.Screen name="Learn" component={LearnScreen} options={{ title: 'MoneyKai Learn' }} />
-            <Stack.Screen name="Savings" component={SavingsScreen} options={{ title: 'Savings' }} />
-            <Stack.Screen name="AiReview" component={AiReviewScreen} options={{ title: 'AI Review' }} />
-            <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-            <Stack.Screen name="AutoCapture" component={AutoCaptureScreen} options={{ title: 'Auto Capture' }} />
+            <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Notes" component={NotesScreen} />
+            <Stack.Screen name="Groups" component={GroupsScreen} />
+            <Stack.Screen name="Learn" component={LearnScreen} />
+            <Stack.Screen name="Savings" component={SavingsScreen} />
+            <Stack.Screen name="AiReview" component={AiReviewScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="AutoCapture" component={AutoCaptureScreen} />
+            <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
           </>
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} options={{ headerShown: false }} />
