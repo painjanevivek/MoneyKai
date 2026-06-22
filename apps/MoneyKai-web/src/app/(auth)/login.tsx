@@ -47,7 +47,7 @@ const getFriendlyAuthMessage = (error: unknown) => {
 };
 
 export default function LoginScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const { signIn, signInWithGoogle, isLoading, isAuthenticated } = useAuthStore();
   const [email, setEmail] = useState('');
@@ -102,8 +102,11 @@ export default function LoginScreen() {
     yellow: '#FBBC05',
     green: '#34A853',
   };
-  const isWide = width >= 900;
+  const isWide = width >= 760;
+  const isLargeDesktop = width >= 1100;
   const cardRadius = isWide ? 28 : BorderRadius.xl;
+  const cardBackground = isDark ? '#151515' : '#F1F1ED';
+  const socialBackground = isDark ? '#1C1C1C' : '#FAFAF7';
 
   return (
     <>
@@ -126,25 +129,22 @@ export default function LoginScreen() {
         <View style={{ width: '100%' }}>
           <View
             style={{
-              backgroundColor: colors.card,
+              backgroundColor: cardBackground,
               borderRadius: cardRadius,
               borderWidth: 1,
               borderColor: colors.borderLight,
               flexDirection: isWide ? 'row' : 'column',
-              gap: isWide ? Spacing['3xl'] : Spacing.xl,
+              gap: isLargeDesktop ? Spacing['4xl'] : isWide ? Spacing['2xl'] : Spacing.xl,
               justifyContent: 'space-between',
-              minHeight: isWide ? 390 : undefined,
-              padding: isWide ? Spacing['3xl'] : Spacing.xl,
+              padding: isWide ? Spacing['2xl'] : Spacing.xl,
               ...Shadows.lg,
               shadowColor: colors.shadowColor,
             }}
           >
             <View
               style={{
-                flex: 1,
-                justifyContent: 'space-between',
-                maxWidth: isWide ? 470 : undefined,
-                minHeight: isWide ? 270 : undefined,
+                flex: isWide ? 1 : undefined,
+                maxWidth: isWide ? 430 : undefined,
               }}
             >
             <View
@@ -169,13 +169,13 @@ export default function LoginScreen() {
               />
             </View>
 
-              <View style={{ marginTop: isWide ? Spacing['2xl'] : Spacing.lg }}>
+              <View style={{ marginTop: isWide ? Spacing['4xl'] : Spacing.lg }}>
                 <Text
                   style={{
                     color: colors.textPrimary,
                     fontFamily: Typography.fontFamily.display,
-                    fontSize: isWide ? 44 : Typography.fontSize['3xl'],
-                    lineHeight: isWide ? 52 : 40,
+                    fontSize: isLargeDesktop ? 44 : Typography.fontSize['3xl'],
+                    lineHeight: isLargeDesktop ? 52 : 40,
                   }}
                 >
                   Sign in
@@ -195,7 +195,7 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            <View style={{ flex: 1.12, justifyContent: 'space-between', maxWidth: isWide ? 560 : undefined }}>
+            <View style={{ flex: isWide ? 1.15 : undefined, justifyContent: 'center', maxWidth: isWide ? 590 : undefined }}>
               <View>
             <Input
               label="Email"
@@ -236,26 +236,15 @@ export default function LoginScreen() {
               onPress={() => router.push('/(auth)/forgot-password')}
                     accessibilityRole="link"
                     accessibilityLabel="Reset your MoneyKai password"
-                    style={{ alignSelf: 'flex-start', marginBottom: Spacing.xl, marginTop: -Spacing.sm }}
+                    style={{ alignSelf: 'flex-start', marginBottom: Spacing.lg, marginTop: -Spacing.sm }}
             >
               <Text style={{
                 fontSize: Typography.fontSize.sm,
                       fontFamily: Typography.fontFamily.semiBold,
                 color: colors.primary,
-              }}>Forgot Password?</Text>
+              }}>Forgot password?</Text>
             </TouchableOpacity>
               </View>
-
-              <Text
-                style={{
-                  color: colors.textSecondary,
-                  fontSize: Typography.fontSize.sm,
-                  lineHeight: 21,
-                  marginBottom: Spacing.lg,
-                }}
-              >
-                Use MoneyKai only on devices you trust. Review sign-in activity from settings after you enter your workspace.
-              </Text>
 
               <View style={{ alignItems: 'center', flexDirection: isWide ? 'row' : 'column-reverse', gap: Spacing.md, justifyContent: 'flex-end' }}>
                 <TouchableOpacity onPress={() => router.push('/(auth)/signup')} accessibilityRole="link" accessibilityLabel="Create a MoneyKai account">
@@ -266,7 +255,7 @@ export default function LoginScreen() {
                   }}>Create account</Text>
                 </TouchableOpacity>
             <Button
-              title="Sign In"
+              title="Sign in"
               onPress={handleLogin}
               loading={isLoading}
               disabled={isLoading || googleLoading}
@@ -277,7 +266,7 @@ export default function LoginScreen() {
             />
               </View>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.lg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.base }}>
               <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
               <Text style={{
                 marginHorizontal: Spacing.md,
@@ -302,7 +291,7 @@ export default function LoginScreen() {
                   borderRadius: BorderRadius.xl,
                   borderWidth: 1,
                   borderColor: colors.borderLight,
-                  backgroundColor: colors.surface,
+                  backgroundColor: socialBackground,
                   gap: Spacing.md,
                   opacity: googleLoading ? 0.6 : 1,
                   ...Shadows.sm,

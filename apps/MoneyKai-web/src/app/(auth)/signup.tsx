@@ -37,7 +37,7 @@ const getFriendlySignupMessage = (error: unknown) => {
 };
 
 export default function SignupScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const { signUp, isLoading, isAuthenticated } = useAuthStore();
   const [firstName, setFirstName] = useState('');
@@ -47,7 +47,9 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const submitting = useRef(false);
-  const isWide = width >= 900;
+  const isWide = width >= 760;
+  const isLargeDesktop = width >= 1100;
+  const cardBackground = isDark ? '#151515' : '#F1F1ED';
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -98,25 +100,22 @@ export default function SignupScreen() {
         <View style={{ width: '100%' }}>
           <View
             style={{
-              backgroundColor: colors.card,
+              backgroundColor: cardBackground,
               borderRadius: isWide ? 28 : BorderRadius.xl,
               borderWidth: 1,
               borderColor: colors.borderLight,
               flexDirection: isWide ? 'row' : 'column',
-              gap: isWide ? Spacing['3xl'] : Spacing.xl,
+              gap: isLargeDesktop ? Spacing['4xl'] : isWide ? Spacing['2xl'] : Spacing.xl,
               justifyContent: 'space-between',
-              minHeight: isWide ? 430 : undefined,
-              padding: isWide ? Spacing['3xl'] : Spacing.xl,
+              padding: isWide ? Spacing['2xl'] : Spacing.xl,
               ...Shadows.lg,
               shadowColor: colors.shadowColor,
             }}
           >
             <View
               style={{
-                flex: 1,
-                justifyContent: 'space-between',
-                maxWidth: isWide ? 520 : undefined,
-                minHeight: isWide ? 300 : undefined,
+                flex: isWide ? 1 : undefined,
+                maxWidth: isWide ? 430 : undefined,
               }}
             >
               <View
@@ -141,16 +140,16 @@ export default function SignupScreen() {
                 />
               </View>
 
-              <View style={{ marginTop: isWide ? Spacing['2xl'] : Spacing.lg }}>
+              <View style={{ marginTop: isWide ? Spacing['4xl'] : Spacing.lg }}>
                 <Text
                   style={{
                     color: colors.textPrimary,
                     fontFamily: Typography.fontFamily.display,
-                    fontSize: isWide ? 44 : Typography.fontSize['3xl'],
-                    lineHeight: isWide ? 52 : 40,
+                    fontSize: isLargeDesktop ? 44 : Typography.fontSize['3xl'],
+                    lineHeight: isLargeDesktop ? 52 : 40,
                   }}
                 >
-                  Create a MoneyKai Account
+                  Create a MoneyKai account
                 </Text>
                 <Text
                   style={{
@@ -166,7 +165,7 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            <View style={{ flex: 1.12, justifyContent: 'space-between', maxWidth: isWide ? 590 : undefined }}>
+            <View style={{ flex: isWide ? 1.15 : undefined, justifyContent: 'center', maxWidth: isWide ? 590 : undefined }}>
               <View>
                 <View style={{ flexDirection: isWide ? 'row' : 'column', gap: isWide ? Spacing.md : 0 }}>
                   <View style={{ flex: 1 }}>
@@ -221,7 +220,7 @@ export default function SignupScreen() {
                   returnKeyType="next"
                 />
                 <Input
-                  label="Confirm Password"
+                  label="Confirm password"
                   placeholder="Confirm password"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
@@ -251,7 +250,7 @@ export default function SignupScreen() {
                   }}>Sign in instead</Text>
                 </TouchableOpacity>
             <Button
-              title="Create Account"
+              title="Create account"
               onPress={handleSignUp}
               loading={isLoading}
               disabled={isLoading}

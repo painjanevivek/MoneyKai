@@ -33,8 +33,8 @@ export function AuthShell({ children, eyebrow, title, subtitle, showHero = true 
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{
           flexGrow: 1,
-          paddingHorizontal: isWide ? Spacing['2xl'] : Spacing.base,
-          paddingVertical: formOnly ? (isWide ? Spacing.xl : Spacing.base) : isWide ? Spacing['2xl'] : Spacing.base,
+          paddingHorizontal: formOnly ? (width >= 760 ? Spacing.xl : Spacing.base) : isWide ? Spacing['2xl'] : Spacing.base,
+          paddingVertical: formOnly ? (width >= 760 ? Spacing['2xl'] : Spacing.base) : isWide ? Spacing['2xl'] : Spacing.base,
         }}
       >
         <View
@@ -147,7 +147,7 @@ export function AuthShell({ children, eyebrow, title, subtitle, showHero = true 
             style={{
               flex: formOnly ? undefined : isWide ? 0.8 : undefined,
               justifyContent: 'center',
-              maxWidth: formOnly ? 1360 : isWide ? 560 : undefined,
+              maxWidth: formOnly ? 1200 : isWide ? 560 : undefined,
               alignSelf: formOnly ? 'center' : 'stretch',
               width: formOnly ? '100%' : undefined,
             }}

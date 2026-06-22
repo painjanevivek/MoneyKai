@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -29,16 +29,15 @@ const FOOTER_LINKS = [
 export function AuthFooter() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
-  const isWide = width >= 900;
-  const [selectedLanguage, setSelectedLanguage] = useState<(typeof LANGUAGE_OPTIONS)[number]>('English (India)');
-  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
-
-  useEffect(() => {
+  const isWide = width >= 760;
+  const [selectedLanguage, setSelectedLanguage] = useState<(typeof LANGUAGE_OPTIONS)[number]>(() => {
+    if (typeof window === 'undefined') return 'English (India)';
     const savedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (LANGUAGE_OPTIONS.includes(savedLanguage as (typeof LANGUAGE_OPTIONS)[number])) {
-      setSelectedLanguage(savedLanguage as (typeof LANGUAGE_OPTIONS)[number]);
-    }
-  }, []);
+    return LANGUAGE_OPTIONS.includes(savedLanguage as (typeof LANGUAGE_OPTIONS)[number])
+      ? (savedLanguage as (typeof LANGUAGE_OPTIONS)[number])
+      : 'English (India)';
+  });
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
   const handleLanguageSelect = (language: (typeof LANGUAGE_OPTIONS)[number]) => {
     setSelectedLanguage(language);
@@ -53,8 +52,9 @@ export function AuthFooter() {
         flexDirection: isWide ? 'row' : 'column',
         gap: isWide ? 0 : Spacing.md,
         justifyContent: 'space-between',
-        marginTop: Spacing.lg,
-        paddingHorizontal: isWide ? Spacing.lg : 0,
+        marginTop: Spacing.md,
+        paddingHorizontal: isWide ? Spacing.md : 0,
+        paddingBottom: Spacing.xs,
         zIndex: 20,
       }}
     >
