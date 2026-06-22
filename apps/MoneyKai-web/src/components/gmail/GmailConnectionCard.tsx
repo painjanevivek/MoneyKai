@@ -16,12 +16,12 @@ import type { FinancialEmailCategory, FinancialEmailRecord, GmailSyncConsent } f
 
 const CATEGORY_LABELS = Object.fromEntries(FINANCIAL_EMAIL_CATEGORIES.map((category) => [category.key, category.label]));
 
-const GMAIL_SYNC_WINDOW_OPTIONS: Array<{
+const GMAIL_SYNC_WINDOW_OPTIONS: {
   value: GmailSyncConsent['syncWindow'];
   label: string;
   detail: string;
   maxResults: number;
-}> = [
+}[] = [
   { value: '15d', label: '15 days', detail: 'Fast check for recent statements and receipts.', maxResults: 50 },
   { value: '30d', label: '1 month', detail: 'Balanced monthly inbox review.', maxResults: 75 },
   { value: '90d', label: '3 months', detail: 'Quarterly financial email scan.', maxResults: 150 },
@@ -547,7 +547,7 @@ export const GmailConnectionCard: React.FC = () => {
             );
           })}
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary, lineHeight: 18 }}>
-            All time uses Gmail's full matching history but still limits each run to 500 messages so the sync stays responsive.
+            All time uses Gmail&apos;s full matching history but still limits each run to 500 messages so the sync stays responsive.
           </Text>
         </View>
       </ModalSheet>

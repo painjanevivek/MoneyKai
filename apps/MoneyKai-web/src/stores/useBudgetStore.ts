@@ -6,7 +6,7 @@ import type { BudgetSettings, BudgetAdjustment } from '../types/budget';
 import type { Transaction } from '../types/transaction';
 import { useAuthStore } from './useAuthStore';
 import { saveUserBudgetSettings } from '@/services/firestoreData';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 
 const persistBudgetSettings = (state: {
   settings: BudgetSettings;
@@ -96,7 +96,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory: state.resetHistory,
           };
           persistBudgetSettings(next);
-          void requestAutomaticBackup('budget updated');
+          queueAutomaticBackup('budget updated');
           return { settings: next.settings };
         }),
 
@@ -116,7 +116,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory: state.resetHistory,
           };
           persistBudgetSettings(next);
-          void requestAutomaticBackup('budget updated');
+          queueAutomaticBackup('budget updated');
           return { adjustments, settings };
         }),
 
@@ -129,7 +129,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory: state.resetHistory,
           };
           persistBudgetSettings(next);
-          void requestAutomaticBackup('budget updated');
+          queueAutomaticBackup('budget updated');
           return { isEmergencyMode: next.isEmergencyMode };
         }),
 
@@ -142,7 +142,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory: state.resetHistory,
           };
           persistBudgetSettings(next);
-          void requestAutomaticBackup('budget updated');
+          queueAutomaticBackup('budget updated');
           return { isEmergencyMode: active };
         }),
 
@@ -159,7 +159,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory,
           };
           persistBudgetSettings(next);
-          void requestAutomaticBackup('budget updated');
+          queueAutomaticBackup('budget updated');
           return { resetHistory };
         }),
 
@@ -183,7 +183,7 @@ export const useBudgetStore = create<BudgetState>()(
               resetHistory,
             };
             persistBudgetSettings(next);
-            void requestAutomaticBackup('budget updated');
+            queueAutomaticBackup('budget updated');
             return { resetHistory };
           }
 
@@ -219,7 +219,7 @@ export const useBudgetStore = create<BudgetState>()(
             resetHistory,
           };
           persistBudgetSettings(next);
-          void requestAutomaticBackup('budget updated');
+          queueAutomaticBackup('budget updated');
           return { settings, resetHistory };
         }),
     }),

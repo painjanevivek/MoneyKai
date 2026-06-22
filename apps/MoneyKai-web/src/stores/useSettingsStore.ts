@@ -12,7 +12,7 @@ import {
 } from '../constants/theme';
 import { useAuthStore } from './useAuthStore';
 import { saveUserAppSettings } from '@/services/firestoreData';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 import {
   FALLBACK_INR_EXCHANGE_RATES,
   fetchLatestInrExchangeRates,
@@ -118,7 +118,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { theme, darkModeEnabled };
         }),
 
@@ -141,7 +141,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { theme: resolvedTheme, themePalette, darkModeEnabled };
         }),
 
@@ -162,7 +162,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { theme, themePalette };
         }),
 
@@ -183,7 +183,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { theme, darkModeEnabled };
         }),
 
@@ -206,7 +206,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { dashboardTrendRange, dashboardTrendMetric, dashboardTrendChartType };
         }),
 
@@ -226,7 +226,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { currency, currencySymbol: symbol };
         }),
 
@@ -268,7 +268,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { notificationsEnabled: next.notificationsEnabled };
         }),
 
@@ -288,7 +288,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { notificationsEnabled: enabled };
         }),
 
@@ -308,7 +308,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: state.tourCompleted,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { hapticEnabled: next.hapticEnabled };
         }),
 
@@ -328,7 +328,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: completed,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return { tourCompleted: completed };
         }),
 
@@ -348,7 +348,7 @@ export const useSettingsStore = create<SettingsState>()(
             tourCompleted: completed,
           };
           persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
+          queueAutomaticBackup('settings updated');
           return {
             tourCompleted: completed,
             tourCompletedByUserId: {

@@ -1,4 +1,4 @@
-﻿import type { CategoryReduction, SavingsProjection } from '../types/budget';
+import type { CategoryReduction, SavingsProjection } from '../types/budget';
 import type { CategoryTotal } from '../types/transaction';
 import type { ColorScheme } from '../constants/theme';
 import { getDaysLeftInMonth, getDaysPassed, getDaysInCurrentMonth } from './dateUtils';

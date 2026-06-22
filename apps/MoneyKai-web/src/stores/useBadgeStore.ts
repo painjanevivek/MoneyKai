@@ -5,7 +5,7 @@ import type { Badge } from '../types/badge';
 import { BADGE_DEFINITIONS } from '../constants/badges';
 import { useAuthStore } from './useAuthStore';
 import { upsertUserDoc } from '@/services/firestoreData';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 
 const syncBadgeUpdate = (badge: Badge) => {
   const userId = useAuthStore.getState().user?.id;
@@ -66,7 +66,7 @@ export const useBadgeStore = create<BadgeState>()(
           };
         });
         updated.forEach(syncBadgeUpdate);
-        void requestAutomaticBackup('badge updated');
+        queueAutomaticBackup('badge updated');
       },
 
       updateProgress: (badgeType, progress) => {
@@ -84,7 +84,7 @@ export const useBadgeStore = create<BadgeState>()(
           return { badges };
         });
         updated.forEach(syncBadgeUpdate);
-        void requestAutomaticBackup('badge progress updated');
+        queueAutomaticBackup('badge progress updated');
       },
 
       clearRecentUnlock: () => set({ recentUnlock: null }),

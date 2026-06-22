@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import {
   addDays,
   addHours,
@@ -335,21 +335,37 @@ function TrendSvgChart({
     const cy = height / 2 - (compact ? 6 : 4);
     const outerRadius = Math.min(width, height) * (compact ? 0.28 : 0.31);
     const innerRadius = outerRadius * 0.62;
-    let cursor = -Math.PI / 2;
+    const { slices: donutSlices } = currentData.reduce<{
+      cursor: number;
+      slices: { point: (typeof currentData)[number]; index: number; path: string }[];
+    }>(
+      (state, point, index) => {
+        const value = Math.abs(point.value);
+        if (value <= 0 || total <= 0) return state;
+        const angle = (value / total) * Math.PI * 2;
+        return {
+          cursor: state.cursor + angle,
+          slices: [
+            ...state.slices,
+            {
+              point,
+              index,
+              path: buildDonutArc(cx, cy, outerRadius, innerRadius, state.cursor, state.cursor + angle),
+            },
+          ],
+        };
+      },
+      { cursor: -Math.PI / 2, slices: [] }
+    );
+    const palette = [colors.primary, colors.chart2, colors.chart3, colors.chart4, colors.chart6, colors.chart8];
 
     return (
       <View style={{ height, overflow: 'hidden', borderRadius: BorderRadius.lg }}>
         <Svg width={width} height={height}>
           <Circle cx={cx} cy={cy} r={outerRadius} fill={`${colors.primary}10`} />
-          {currentData.map((point, index) => {
-            const value = Math.abs(point.value);
-            if (value <= 0 || total <= 0) return null;
-            const angle = (value / total) * Math.PI * 2;
-            const path = buildDonutArc(cx, cy, outerRadius, innerRadius, cursor, cursor + angle);
-            cursor += angle;
-            const palette = [colors.primary, colors.chart2, colors.chart3, colors.chart4, colors.chart6, colors.chart8];
-            return <Path key={`${point.label}-${index}`} d={path} fill={palette[index % palette.length]} opacity={0.95} />;
-          })}
+          {donutSlices.map(({ point, index, path }) => (
+            <Path key={`${point.label}-${index}`} d={path} fill={palette[index % palette.length]} opacity={0.95} />
+          ))}
           <Circle cx={cx} cy={cy} r={innerRadius} fill={colors.glassBg} />
           <SvgText x={cx} y={cy - 4} fill={colors.textSecondary} fontSize={compact ? 10 : 12} fontWeight="600" textAnchor="middle">
             Total

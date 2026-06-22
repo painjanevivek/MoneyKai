@@ -7,7 +7,6 @@ import {
   query,
   serverTimestamp,
 } from 'firebase/firestore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -18,7 +17,6 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
-import { recordAppNotification } from './notificationService';
 import type { BudgetAdjustment, BudgetSettings } from '@/types/budget';
 import type { Transaction } from '@/types/transaction';
 import type { Note } from '@/types/note';
@@ -38,10 +36,14 @@ import {
 import type { LinkedAccount } from '@moneykai/domain';
 import { firebaseDb, isFirebaseConfigured } from './firebase';
 import { backendApi, isBackendConfigured } from './backendApi';
-
-const AUTO_BACKUP_STATE_KEY = 'moneykai-auto-backup-state';
-const AUTO_BACKUP_DEBOUNCE_MS = 10_000;
-const AUTO_BACKUP_MIN_INTERVAL_MS = 60_000;
+import {
+  AUTO_BACKUP_MIN_INTERVAL_MS,
+  clearAutomaticBackupQueue,
+  loadAutomaticBackupState,
+  markAutomaticBackupRequested,
+  markAutomaticBackupSaved,
+  scheduleAutomaticBackup,
+} from './automaticBackupQueue';
 
 interface BackupAppSettings {
   theme: ThemeMode;
@@ -53,62 +55,7 @@ interface BackupAppSettings {
   hapticEnabled: boolean;
 }
 
-interface AutomaticBackupState {
-  pending: boolean;
-  sequence: number;
-  queuedAt: number | null;
-  lastBackupAt: number | null;
-  reason: string | null;
-}
-
-const DEFAULT_AUTOMATIC_BACKUP_STATE: AutomaticBackupState = {
-  pending: false,
-  sequence: 0,
-  queuedAt: null,
-  lastBackupAt: null,
-  reason: null,
-};
-
-let automaticBackupState: AutomaticBackupState | null = null;
-let automaticBackupTimer: ReturnType<typeof setTimeout> | null = null;
 let automaticBackupInFlight = false;
-
-const loadAutomaticBackupState = async (): Promise<AutomaticBackupState> => {
-  if (automaticBackupState) {
-    return automaticBackupState;
-  }
-
-  try {
-    const raw = await AsyncStorage.getItem(AUTO_BACKUP_STATE_KEY);
-    automaticBackupState = raw ? { ...DEFAULT_AUTOMATIC_BACKUP_STATE, ...(JSON.parse(raw) as Partial<AutomaticBackupState>) } : { ...DEFAULT_AUTOMATIC_BACKUP_STATE };
-  } catch {
-    automaticBackupState = { ...DEFAULT_AUTOMATIC_BACKUP_STATE };
-  }
-
-  return automaticBackupState;
-};
-
-const persistAutomaticBackupState = async () => {
-  if (!automaticBackupState) {
-    return;
-  }
-
-  await AsyncStorage.setItem(AUTO_BACKUP_STATE_KEY, JSON.stringify(automaticBackupState));
-};
-
-const clearAutomaticBackupTimer = () => {
-  if (automaticBackupTimer) {
-    clearTimeout(automaticBackupTimer);
-    automaticBackupTimer = null;
-  }
-};
-
-const scheduleAutomaticBackup = () => {
-  clearAutomaticBackupTimer();
-  automaticBackupTimer = setTimeout(() => {
-    void flushAutomaticBackup({ force: false });
-  }, AUTO_BACKUP_DEBOUNCE_MS);
-};
 
 export interface MoneyKaiBackupSnapshot {
   version: 1;
@@ -150,6 +97,16 @@ const normalizeUser = () => {
   return user;
 };
 
+const recordBackupNotification = async (notification: {
+  title: string;
+  body: string;
+  type: 'backup';
+  schedule: false;
+}) => {
+  const { recordAppNotification } = await import('./notificationService');
+  await recordAppNotification(notification);
+};
+
 const formatBackupError = (error: unknown, action: 'save' | 'restore'): Error => {
   const code = typeof error === 'object' && error && 'code' in error ? String((error as { code?: string }).code ?? '') : '';
   const baseMessage =
@@ -176,19 +133,6 @@ const formatBackupError = (error: unknown, action: 'save' | 'restore'): Error =>
   }
 };
 
-export const clearAutomaticBackupQueue = async () => {
-  const state = await loadAutomaticBackupState();
-  automaticBackupState = {
-    ...state,
-    pending: false,
-    queuedAt: null,
-    reason: null,
-    sequence: state.sequence + 1,
-  };
-  await persistAutomaticBackupState();
-  clearAutomaticBackupTimer();
-};
-
 export const requestAutomaticBackup = async (reason: string) => {
   const user = useAuthStore.getState().user;
   if (!user) {
@@ -199,16 +143,10 @@ export const requestAutomaticBackup = async (reason: string) => {
     return;
   }
 
-  const state = await loadAutomaticBackupState();
-  automaticBackupState = {
-    ...state,
-    pending: true,
-    queuedAt: Date.now(),
-    reason,
-    sequence: state.sequence + 1,
-  };
-  await persistAutomaticBackupState();
-  scheduleAutomaticBackup();
+  await markAutomaticBackupRequested(reason);
+  scheduleAutomaticBackup(() => {
+    void flushAutomaticBackup({ force: false });
+  });
 };
 
 export const flushAutomaticBackup = async ({ force = false }: { force?: boolean } = {}) => {
@@ -231,7 +169,9 @@ export const flushAutomaticBackup = async ({ force = false }: { force?: boolean 
   }
 
   if (!force && state.lastBackupAt && Date.now() - state.lastBackupAt < AUTO_BACKUP_MIN_INTERVAL_MS) {
-    scheduleAutomaticBackup();
+    scheduleAutomaticBackup(() => {
+      void flushAutomaticBackup({ force: false });
+    });
     return false;
   }
 
@@ -251,17 +191,11 @@ export const flushAutomaticBackup = async ({ force = false }: { force?: boolean 
 
   const latestState = await loadAutomaticBackupState();
   if (latestState.sequence === sequenceAtStart) {
-    automaticBackupState = {
-      ...latestState,
-      pending: false,
-      queuedAt: null,
-      reason: null,
-      lastBackupAt: Date.now(),
-      sequence: latestState.sequence + 1,
-    };
-    await persistAutomaticBackupState();
+    await markAutomaticBackupSaved(sequenceAtStart);
   } else if (latestState.pending) {
-    scheduleAutomaticBackup();
+    scheduleAutomaticBackup(() => {
+      void flushAutomaticBackup({ force: false });
+    });
   }
 
   return true;
@@ -328,7 +262,7 @@ export const saveCloudBackup = async (options: { silent?: boolean; preserveAutom
     const response = await backendApi.createBackup();
     const snapshot = response.item.snapshot;
     if (!options.silent) {
-      await recordAppNotification({
+      await recordBackupNotification({
         title: 'Backup saved',
         body: 'Your MoneyKai data was backed up to the cloud.',
         type: 'backup',
@@ -336,19 +270,7 @@ export const saveCloudBackup = async (options: { silent?: boolean; preserveAutom
       });
     }
     if (!options.preserveAutomaticBackupState) {
-      const latestState = await loadAutomaticBackupState();
-      if (latestState.sequence === sequenceAtStart) {
-        automaticBackupState = {
-          ...latestState,
-          pending: false,
-          queuedAt: null,
-          reason: null,
-          lastBackupAt: Date.now(),
-          sequence: latestState.sequence + 1,
-        };
-        await persistAutomaticBackupState();
-        clearAutomaticBackupTimer();
-      }
+      await markAutomaticBackupSaved(sequenceAtStart);
     }
     return snapshot;
   }
@@ -370,7 +292,7 @@ export const saveCloudBackup = async (options: { silent?: boolean; preserveAutom
   }
 
   if (!options.silent) {
-    await recordAppNotification({
+    await recordBackupNotification({
       title: 'Backup saved',
       body: 'Your MoneyKai data was backed up to the cloud.',
       type: 'backup',
@@ -379,19 +301,7 @@ export const saveCloudBackup = async (options: { silent?: boolean; preserveAutom
   }
 
   if (!options.preserveAutomaticBackupState) {
-    const latestState = await loadAutomaticBackupState();
-    if (latestState.sequence === sequenceAtStart) {
-      automaticBackupState = {
-        ...latestState,
-        pending: false,
-        queuedAt: null,
-        reason: null,
-        lastBackupAt: Date.now(),
-        sequence: latestState.sequence + 1,
-      };
-      await persistAutomaticBackupState();
-      clearAutomaticBackupTimer();
-    }
+    await markAutomaticBackupSaved(sequenceAtStart);
   }
 
   return snapshot;
@@ -498,7 +408,7 @@ export const restoreLatestCloudBackup = async () => {
     const response = await backendApi.restoreLatestBackup();
     restoreBackupSnapshot(response.item);
 
-    await recordAppNotification({
+    await recordBackupNotification({
       title: 'Backup restored',
       body: 'Your cloud backup was restored on this device.',
       type: 'backup',
@@ -511,7 +421,7 @@ export const restoreLatestCloudBackup = async () => {
   const snapshot = await getLatestCloudBackup();
   restoreBackupSnapshot(snapshot);
 
-  await recordAppNotification({
+  await recordBackupNotification({
     title: 'Backup restored',
     body: 'Your cloud backup was restored on this device.',
     type: 'backup',

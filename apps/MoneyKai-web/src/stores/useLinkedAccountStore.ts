@@ -12,6 +12,7 @@ import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
 import { linkedAccountProviderApi } from '@/services/linkedAccountProviderApi';
 import { buildLinkedAccountTransactions } from '@/services/linkedAccountImport';
 import { isLinkedAccountDemoEnabled } from '@/config/environment';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 import type { LinkedAccountConnectStartResponse, LinkedAccountProviderStatus } from '@/types/linkedAccountProvider';
 import { useAuthStore } from './useAuthStore';
 import { useTransactionStore } from './useTransactionStore';
@@ -49,11 +50,7 @@ const COLLECTION = 'linkedAccounts';
 const getOwnerId = (userId?: string) =>
   userId ?? useAuthStore.getState().user?.id ?? 'local';
 
-const queueBackup = (reason: string) => {
-  void import('@/services/backupService')
-    .then(({ requestAutomaticBackup }) => requestAutomaticBackup(reason))
-    .catch(() => undefined);
-};
+const queueBackup = queueAutomaticBackup;
 
 const syncAccountUpsert = (account: LinkedAccount) => {
   const userId = useAuthStore.getState().user?.id;

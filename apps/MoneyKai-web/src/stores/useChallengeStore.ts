@@ -6,7 +6,7 @@ import { MOTIVATIONAL_MESSAGES } from '../types/challenge';
 import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
 import { upsertUserDoc } from '@/services/firestoreData';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 import { isFirebaseConfigured } from '@/services/firebase';
 
 const syncChallengeCreate = (challenge: Challenge) => {
@@ -122,7 +122,7 @@ export const useChallengeStore = create<ChallengeState>()(
         };
         set((state) => ({ challenges: [newChallenge, ...state.challenges] }));
         syncChallengeCreate(newChallenge);
-        void requestAutomaticBackup('challenge started');
+        queueAutomaticBackup('challenge started');
         void recordAppNotification({
           title: 'Challenge started',
           body: newChallenge.name,
@@ -141,7 +141,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
         }));
         syncChallengeUpdate(id, next);
-        void requestAutomaticBackup('challenge updated');
+        queueAutomaticBackup('challenge updated');
       },
 
       failChallenge: (id) => {
@@ -151,7 +151,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
         }));
         syncChallengeUpdate(id, { status: 'failed' });
-        void requestAutomaticBackup('challenge failed');
+        queueAutomaticBackup('challenge failed');
       },
 
       deactivateChallenge: (id) => {
@@ -161,7 +161,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
         }));
         syncChallengeUpdate(id, { status: 'deactivated' });
-        void requestAutomaticBackup('challenge deactivated');
+        queueAutomaticBackup('challenge deactivated');
       },
 
       reactivateChallenge: (id) => {
@@ -171,7 +171,7 @@ export const useChallengeStore = create<ChallengeState>()(
           ),
         }));
         syncChallengeUpdate(id, { status: 'active' });
-        void requestAutomaticBackup('challenge reactivated');
+        queueAutomaticBackup('challenge reactivated');
       },
 
       completeChallenge: (id, xp, savings) => {
@@ -182,7 +182,7 @@ export const useChallengeStore = create<ChallengeState>()(
           totalXP: state.totalXP + xp,
         }));
         syncChallengeUpdate(id, { status: 'completed', xp_earned: xp, savings_earned: savings });
-        void requestAutomaticBackup('challenge completed');
+        queueAutomaticBackup('challenge completed');
       },
     };
   },

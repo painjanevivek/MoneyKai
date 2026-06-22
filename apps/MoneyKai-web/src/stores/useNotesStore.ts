@@ -5,7 +5,7 @@ import type { Note, ChecklistItem } from '../types/note';
 import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
 import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 
 const syncNoteCreate = (note: Note) => {
   const userId = useAuthStore.getState().user?.id;
@@ -103,7 +103,7 @@ export const useNotesStore = create<NotesState>()(
           };
           set((state) => ({ notes: [newNote, ...state.notes] }));
           syncNoteCreate(newNote);
-          void requestAutomaticBackup('note added');
+          queueAutomaticBackup('note added');
           void recordAppNotification({
             title: 'Note saved',
             body: newNote.title,
@@ -120,7 +120,7 @@ export const useNotesStore = create<NotesState>()(
             ),
           }));
           syncNoteUpdate(id, next);
-          void requestAutomaticBackup('note updated');
+          queueAutomaticBackup('note updated');
         },
 
         deleteNote: (id) => {
@@ -128,7 +128,7 @@ export const useNotesStore = create<NotesState>()(
             notes: state.notes.filter(n => n.id !== id),
           }));
           syncNoteDelete(id);
-          void requestAutomaticBackup('note deleted');
+          queueAutomaticBackup('note deleted');
         },
 
         togglePin: (id) => {
@@ -141,7 +141,7 @@ export const useNotesStore = create<NotesState>()(
             ),
           }));
           syncNoteUpdate(id, next);
-          void requestAutomaticBackup('note updated');
+          queueAutomaticBackup('note updated');
         },
 
         toggleChecklistItem: (noteId, itemId) => {
@@ -157,7 +157,7 @@ export const useNotesStore = create<NotesState>()(
             ),
           }));
           syncNoteUpdate(noteId, next);
-          void requestAutomaticBackup('note updated');
+          queueAutomaticBackup('note updated');
         },
 
         addChecklistItem: (noteId, text) => {

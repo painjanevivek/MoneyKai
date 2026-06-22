@@ -11,7 +11,7 @@ import {
   updateProfile as updateFirebaseProfile,
 } from 'firebase/auth';
 import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 
 export interface User {
   id: string;
@@ -216,7 +216,7 @@ export const useAuthStore = create<AuthState>()(
         set((state) => {
           const nextUser = state.user ? { ...state.user, ...updates } : null;
           if (nextUser) {
-            void requestAutomaticBackup('profile updated');
+            queueAutomaticBackup('profile updated');
           }
           return { user: nextUser };
         }),

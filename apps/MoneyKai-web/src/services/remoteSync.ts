@@ -8,7 +8,7 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
-import { clearAutomaticBackupQueue } from './backupService';
+import { clearAutomaticBackupQueue } from './automaticBackupQueue';
 import { loadUserFirestoreSnapshot } from './firestoreData';
 import { DEFAULT_THEME_PALETTE, getDefaultedThemePalette, getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark } from '@/constants/theme';
 

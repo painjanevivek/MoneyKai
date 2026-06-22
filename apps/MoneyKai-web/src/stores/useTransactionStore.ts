@@ -7,7 +7,7 @@ import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
 import { useAuthStore } from './useAuthStore';
 import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 
 interface TransactionState {
   transactions: Transaction[];
@@ -261,7 +261,7 @@ export const useTransactionStore = create<TransactionState>()(
           const nextTransactions = [newTransaction, ...get().transactions];
           set({ transactions: nextTransactions });
           syncTransactionCreate(newTransaction);
-          void requestAutomaticBackup('transaction added');
+          queueAutomaticBackup('transaction added');
 
           if (newTransaction.type === 'expense') {
             const allowance = useBudgetStore.getState().settings.monthly_allowance;
@@ -328,7 +328,7 @@ export const useTransactionStore = create<TransactionState>()(
           });
 
           transactionsToSync.forEach(syncTransactionCreate);
-          void requestAutomaticBackup('linked account transactions imported');
+          queueAutomaticBackup('linked account transactions imported');
         },
 
         updateTransaction: (id, updates) => {
@@ -338,7 +338,7 @@ export const useTransactionStore = create<TransactionState>()(
             ),
           }));
           syncTransactionUpdate(id, updates);
-          void requestAutomaticBackup('transaction updated');
+          queueAutomaticBackup('transaction updated');
         },
 
         deleteTransaction: (id) => {
@@ -346,7 +346,7 @@ export const useTransactionStore = create<TransactionState>()(
             transactions: state.transactions.filter(t => t.id !== id),
           }));
           syncTransactionDelete(id);
-          void requestAutomaticBackup('transaction deleted');
+          queueAutomaticBackup('transaction deleted');
         },
 
         removeImportedTransactionsForAccounts: (accountIds) => {
@@ -366,7 +366,7 @@ export const useTransactionStore = create<TransactionState>()(
           });
 
           removedTransactions.forEach((transaction) => syncTransactionDelete(transaction.id));
-          void requestAutomaticBackup('linked account imported transactions removed');
+          queueAutomaticBackup('linked account imported transactions removed');
         },
 
         setFilter: (filter) => {

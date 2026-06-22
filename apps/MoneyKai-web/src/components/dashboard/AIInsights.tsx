@@ -225,7 +225,7 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ showFooterLink = true, s
               lineHeight: 20,
             }}
           >
-            Add a few transactions and we'll surface personalized insights here.
+            Add a few transactions and we&apos;ll surface personalized insights here.
           </Text>
         </View>
       )}

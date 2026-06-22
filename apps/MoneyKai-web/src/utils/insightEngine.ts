@@ -1,4 +1,4 @@
-﻿import type { CategoryTotal } from '../types/transaction';
+import type { CategoryTotal } from '../types/transaction';
 import { getDaysPassed } from './dateUtils';
 import { formatCurrency } from './formatCurrency';
 

@@ -5,7 +5,7 @@ import type { Group, GroupExpense } from '../types/group';
 import { recordAppNotification } from '@/services/notificationService';
 import { useAuthStore } from './useAuthStore';
 import { deleteUserGroup, upsertUserGroup, upsertUserGroupExpense } from '@/services/firestoreData';
-import { requestAutomaticBackup } from '@/services/backupService';
+import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 import { isFirebaseConfigured } from '@/services/firebase';
 
 const syncGroupCreate = (group: Group) => {
@@ -141,7 +141,7 @@ export const useGroupStore = create<GroupState>()(
         };
         set((state) => ({ groups: [newGroup, ...state.groups] }));
         syncGroupCreate(newGroup);
-        void requestAutomaticBackup('group added');
+        queueAutomaticBackup('group added');
         void recordAppNotification({
           title: 'Group created',
           body: newGroup.name,
@@ -158,7 +158,7 @@ export const useGroupStore = create<GroupState>()(
         };
         set((state) => ({ expenses: [newExpense, ...state.expenses] }));
         syncGroupExpenseCreate(newExpense);
-        void requestAutomaticBackup('group expense added');
+        queueAutomaticBackup('group expense added');
       },
 
       settleExpense: (splitId) => {
@@ -183,7 +183,7 @@ export const useGroupStore = create<GroupState>()(
 
         if (updatedExpense) {
           syncGroupExpenseUpdate(updatedExpense);
-          void requestAutomaticBackup('group expense updated');
+          queueAutomaticBackup('group expense updated');
         }
       },
 
@@ -193,7 +193,7 @@ export const useGroupStore = create<GroupState>()(
           expenses: state.expenses.filter((expense) => expense.group_id !== id),
         }));
         syncGroupDelete(id);
-        void requestAutomaticBackup('group deleted');
+        queueAutomaticBackup('group deleted');
       },
 
       archiveGroup: (id) => {
@@ -203,7 +203,7 @@ export const useGroupStore = create<GroupState>()(
           ),
         }));
         syncGroupUpdate(id, { archived: true });
-        void requestAutomaticBackup('group archived');
+        queueAutomaticBackup('group archived');
       },
 
       restoreGroup: (id) => {
@@ -213,7 +213,7 @@ export const useGroupStore = create<GroupState>()(
           ),
         }));
         syncGroupUpdate(id, { archived: false });
-        void requestAutomaticBackup('group restored');
+        queueAutomaticBackup('group restored');
       },
 
       getGroupExpenses: (groupId) => get().expenses.filter((expense) => expense.group_id === groupId),
