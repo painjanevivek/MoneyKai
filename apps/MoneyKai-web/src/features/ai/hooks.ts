@@ -4,6 +4,7 @@ import { aiClient } from '@/services/aiClient';
 import type {
   AiAttachmentAnalyzeRequest,
   AiAttachmentAnalyzeResponse,
+  AiAttachmentFileAnalyzeRequest,
   AiAttachmentUploadResponse,
   AiBudgetCoachRequest,
   AiChatRequest,
@@ -358,6 +359,14 @@ export function useAiAttachmentAnalysis() {
   return {
     ...state,
     analyze: state.run,
+  };
+}
+
+export function useAiAttachmentFileAnalysis() {
+  const state = useAsyncAction<AiAttachmentFileAnalyzeRequest, AiAttachmentAnalyzeResponse>(aiClient.analyzeAttachmentFile);
+  return {
+    ...state,
+    analyzeFile: state.run,
   };
 }
 

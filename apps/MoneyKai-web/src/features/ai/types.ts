@@ -93,6 +93,7 @@ export interface AiProviderStatus {
   attachmentsEnabled: boolean;
   modelOverrideEnabled: boolean;
   configured: boolean;
+  error?: string | null;
 }
 
 export interface AiConfiguredModelStatus {
@@ -125,11 +126,25 @@ export interface AiAttachmentUploadResponse {
   expiresAt: string;
 }
 
+export interface AiInlineAttachment {
+  filename: string;
+  mimeType: string;
+  dataUrl: string;
+}
+
 export interface AiAttachmentAnalyzeRequest {
   message: string;
-  attachmentIds: string[];
+  attachmentIds?: string[];
+  inlineAttachments?: AiInlineAttachment[];
   task?: AiAttachmentAnalyzeTask;
   context?: Record<string, unknown>;
+}
+
+export interface AiAttachmentFileAnalyzeRequest {
+  file: File;
+  filename?: string;
+  mimeType?: string;
+  request: Omit<AiAttachmentAnalyzeRequest, 'attachmentIds' | 'inlineAttachments'>;
 }
 
 export interface AiReceiptExtraction {

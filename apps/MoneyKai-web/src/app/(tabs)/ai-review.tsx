@@ -17,8 +17,7 @@ import {
   type ReceiptReviewDraft,
 } from '@/features/ai/attachmentReview';
 import {
-  useAiAttachmentAnalysis,
-  useAiAttachmentFileUpload,
+  useAiAttachmentFileAnalysis,
   useAiProviderStatus,
 } from '@/features/ai/hooks';
 import { formatAiResponseText, withPlainTextAiStyle } from '@/features/ai/responseText';
@@ -70,8 +69,7 @@ export default function AiReviewScreen() {
   const requiresSignIn = !isHydratingSession && !isAuthenticated;
   const canLoadAiStatus = !isHydratingSession && isAuthenticated;
   const { data: providerStatus, error: providerError, loading: loadingProviderStatus } = useAiProviderStatus(canLoadAiStatus);
-  const uploadState = useAiAttachmentFileUpload();
-  const analyzeState = useAiAttachmentAnalysis();
+  const analyzeState = useAiAttachmentFileAnalysis();
 
   const attachmentsReady = Boolean(
     providerStatus?.enabled &&
@@ -79,8 +77,8 @@ export default function AiReviewScreen() {
     providerStatus.attachmentsEnabled &&
     providerStatus.defaultVisionModelConfigured
   );
-  const analysisPending = uploadState.loading || analyzeState.loading;
-  const analysisError = uploadState.error || analyzeState.error;
+  const analysisPending = analyzeState.loading;
+  const analysisError = analyzeState.error;
   const canAnalyze = Boolean(selectedAsset) && attachmentsReady && !requiresSignIn && !analysisPending;
   const isWide = width >= 1120;
 
@@ -96,12 +94,11 @@ export default function AiReviewScreen() {
     setReceiptDraft(null);
     setSaveMessage(null);
     setPickerError(null);
-    uploadState.reset();
     analyzeState.reset();
     if (nextTask) {
       setPrompt(buildDefaultAttachmentPrompt(nextTask));
     }
-  }, [analyzeState, uploadState]);
+  }, [analyzeState]);
 
   const handleSelectTask = (nextTask: AiAttachmentAnalyzeTask) => {
     setTask(nextTask);
@@ -162,14 +159,17 @@ export default function AiReviewScreen() {
     }
 
     try {
-      const uploaded = await uploadState.uploadFile(selectedAsset.file);
-      const response = await analyzeState.analyze({
-        task,
-        message: withPlainTextAiStyle(prompt.trim() || buildDefaultAttachmentPrompt(task)),
-        attachmentIds: [uploaded.attachmentId],
-        context: {
-          surface: 'web_ai_review',
-          filename: selectedAsset.filename,
+      const response = await analyzeState.analyzeFile({
+        file: selectedAsset.file,
+        filename: selectedAsset.filename,
+        mimeType: selectedAsset.mimeType,
+        request: {
+          task,
+          message: withPlainTextAiStyle(prompt.trim() || buildDefaultAttachmentPrompt(task)),
+          context: {
+            surface: 'web_ai_review',
+            filename: selectedAsset.filename,
+          },
         },
       });
 
@@ -250,6 +250,10 @@ export default function AiReviewScreen() {
         {providerError ? (
           <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
             {providerError}
+          </Text>
+        ) : providerStatus?.error ? (
+          <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+            {providerStatus.error}
           </Text>
         ) : !providerStatus?.defaultVisionModelConfigured ? (
           <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
