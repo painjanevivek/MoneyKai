@@ -12,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { BorderRadius, ComponentTokens, Spacing, Typography } from '../../constants/theme';
+import { withAlpha } from '@/utils/glassStyle';
 
 interface InputProps {
   label?: string;
@@ -68,7 +69,7 @@ export const Input: React.FC<InputProps> = ({
   autoCorrect,
   testID,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const [isFocused, setIsFocused] = useState(false);
   const [isSecureVisible, setIsSecureVisible] = useState(!secureTextEntry);
@@ -100,7 +101,7 @@ export const Input: React.FC<InputProps> = ({
         style={{
           flexDirection: 'row',
           alignItems: multiline ? 'flex-start' : 'center',
-          backgroundColor: editable ? colors.surface : colors.surfaceElevated,
+          backgroundColor: editable ? colors.glassBg : colors.surfaceElevated,
           borderRadius: BorderRadius.md,
           borderWidth: 1.5,
           borderColor,
@@ -108,6 +109,10 @@ export const Input: React.FC<InputProps> = ({
           paddingVertical: multiline ? Spacing.md : 0,
           minHeight: multiline ? 104 : ComponentTokens.controlHeight.md,
           opacity: editable ? 1 : ComponentTokens.disabledOpacity,
+          shadowColor: isFocused ? colors.primary : colors.shadowColor,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isFocused ? (isDark ? 0.22 : 0.1) : 0,
+          shadowRadius: isFocused ? 12 : 0,
         }}
       >
         {icon && (
@@ -164,6 +169,7 @@ export const Input: React.FC<InputProps> = ({
               color: colors.textPrimary,
               paddingVertical: multiline ? 0 : 12,
               textAlignVertical: multiline ? 'top' : 'center',
+              backgroundColor: 'transparent',
             },
             inputStyle,
           ]}
@@ -195,14 +201,19 @@ export const Input: React.FC<InputProps> = ({
         )}
       </View>
       {error && (
-        <Text
-          style={{
-            fontSize: Typography.fontSize.xs,
-            fontFamily: Typography.fontFamily.medium,
-            color: colors.error,
-            marginTop: Spacing.xs,
-          }}
-        >
+          <Text
+            style={{
+              fontSize: Typography.fontSize.xs,
+              fontFamily: Typography.fontFamily.medium,
+              color: colors.error,
+              marginTop: Spacing.xs,
+              backgroundColor: withAlpha(colors.error, 0.08),
+              alignSelf: 'flex-start',
+              paddingHorizontal: Spacing.sm,
+              paddingVertical: 4,
+              borderRadius: BorderRadius.full,
+            }}
+          >
           {error}
         </Text>
       )}

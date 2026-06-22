@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, ComponentTokens, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, Shadows, Typography } from '../../constants/theme';
+import { withAlpha } from '@/utils/glassStyle';
 
 interface ButtonProps {
   title: string;
@@ -42,7 +43,7 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   testID,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const sizeStyles = {
     sm: { minHeight: ComponentTokens.controlHeight.sm, paddingHorizontal: ComponentTokens.controlPaddingX.sm, fontSize: Typography.fontSize.sm, iconSize: 16 },
@@ -52,17 +53,17 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles: Record<string, { bg: string; text: string; border?: string; hoverBg: string; hoverBorder?: string }> = tone === 'onDark'
     ? {
-        primary: { bg: 'rgba(255, 255, 255, 0.94)', text: colors.primaryDark, hoverBg: '#FFFFFF', hoverBorder: 'rgba(255, 255, 255, 0.7)' },
-        secondary: { bg: 'rgba(255, 255, 255, 0.16)', text: '#FFFFFF', hoverBg: 'rgba(255, 255, 255, 0.24)', hoverBorder: 'rgba(255, 255, 255, 0.34)' },
-        outline: { bg: 'rgba(255, 255, 255, 0.14)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.26)', hoverBg: 'rgba(255, 255, 255, 0.22)', hoverBorder: 'rgba(255, 255, 255, 0.42)' },
+        primary: { bg: '#FFFFFF', text: colors.primaryDark, hoverBg: '#F7FFFD', hoverBorder: withAlpha(colors.primaryLight, 0.7) },
+        secondary: { bg: withAlpha(colors.primary, 0.18), text: '#FFFFFF', hoverBg: withAlpha(colors.primary, 0.28), hoverBorder: withAlpha(colors.primaryLight, 0.34) },
+        outline: { bg: 'rgba(255, 255, 255, 0.12)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.24)', hoverBg: withAlpha(colors.accent, 0.24), hoverBorder: withAlpha(colors.accent, 0.48) },
         ghost: { bg: 'transparent', text: 'rgba(255, 255, 255, 0.82)', hoverBg: 'rgba(255, 255, 255, 0.12)', hoverBorder: 'rgba(255, 255, 255, 0.22)' },
         danger: { bg: 'rgba(255, 225, 229, 0.94)', text: '#7F1D1D', hoverBg: '#FFFFFF', hoverBorder: 'rgba(255, 255, 255, 0.6)' },
       }
     : {
     primary: { bg: colors.primary, text: colors.textInverse, hoverBg: colors.primaryDark, hoverBorder: colors.primaryDark },
-    secondary: { bg: colors.primaryBg, text: colors.primary, hoverBg: `${colors.primary}18`, hoverBorder: `${colors.primary}28` },
-    outline: { bg: colors.card, text: colors.primary, border: colors.borderLight, hoverBg: `${colors.primary}12`, hoverBorder: colors.primary },
-    ghost: { bg: 'transparent', text: colors.textSecondary, hoverBg: `${colors.primary}10`, hoverBorder: `${colors.primary}20` },
+    secondary: { bg: colors.primaryBg, text: colors.primaryDark, hoverBg: withAlpha(colors.primary, isDark ? 0.22 : 0.16), hoverBorder: withAlpha(colors.primary, 0.34) },
+    outline: { bg: colors.glassBg, text: colors.primary, border: colors.glassBorder, hoverBg: withAlpha(colors.accent, isDark ? 0.18 : 0.1), hoverBorder: colors.accent },
+    ghost: { bg: 'transparent', text: colors.textSecondary, hoverBg: withAlpha(colors.primary, 0.1), hoverBorder: withAlpha(colors.primary, 0.2) },
     danger: { bg: colors.emergency, text: colors.textInverse, hoverBg: `${colors.emergency}E6`, hoverBorder: colors.emergency },
   };
 
@@ -88,7 +89,7 @@ export const Button: React.FC<ButtonProps> = ({
           minWidth: 0,
           maxWidth: '100%',
           paddingHorizontal: s.paddingHorizontal,
-          borderRadius: BorderRadius.sm,
+          borderRadius: BorderRadius.md,
           opacity: isUnavailable ? ComponentTokens.disabledOpacity : 1,
           gap: 8,
           transform: pressed ? [{ scale: ComponentTokens.pressedScale }] : !isUnavailable && hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
@@ -100,6 +101,9 @@ export const Button: React.FC<ButtonProps> = ({
               : hovered
                 ? (v.hoverBorder ?? 'transparent')
                 : (v.border ?? 'transparent'),
+          ...(variant === 'primary' && !isUnavailable
+            ? { ...Shadows.md, shadowColor: isDark ? colors.primary : colors.shadowColor }
+            : {}),
           ...(fullWidth ? { width: '100%' } : {}),
         },
         style,

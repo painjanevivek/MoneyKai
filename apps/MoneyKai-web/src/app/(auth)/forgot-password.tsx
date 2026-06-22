@@ -6,12 +6,14 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Card } from '@/components/ui/Card';
+import { Typography, Spacing } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { firebaseAuth, isFirebaseConfigured } from '@/services/firebase';
+import { withAlpha } from '@/utils/glassStyle';
 
 export default function ForgotPasswordScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +59,31 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: -180,
+          right: -110,
+          width: 360,
+          height: 360,
+          borderRadius: 999,
+          backgroundColor: withAlpha(colors.primary, isDark ? 0.14 : 0.1),
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          bottom: -160,
+          left: -110,
+          width: 320,
+          height: 320,
+          borderRadius: 999,
+          backgroundColor: withAlpha(colors.accent, isDark ? 0.16 : 0.1),
+        }}
+      />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={{
@@ -67,25 +93,21 @@ export default function ForgotPasswordScreen() {
             paddingVertical: Spacing['2xl'],
           }}
         >
-          <View style={{ alignSelf: 'center', width: '100%', maxWidth: 480 }}>
+          <View nativeID="main-content" role="main" style={{ alignSelf: 'center', width: '100%', maxWidth: 480 }}>
             <TouchableOpacity onPress={handleBack} accessibilityRole="button" accessibilityLabel="Go back" style={{ marginBottom: Spacing.lg }}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
 
-            <View style={{
-              backgroundColor: colors.card,
-              borderRadius: BorderRadius.xl,
-              padding: Spacing.xl,
-              ...Shadows.lg,
-              shadowColor: colors.shadowColor,
-            }}>
+            <Card padding="xl" borderRadius="xl" tone={sent ? 'success' : 'primary'}>
               {!sent ? (
                 <>
                   <View style={{
                     width: 64, height: 64, borderRadius: 32,
-                    backgroundColor: colors.primaryBg,
+                    backgroundColor: withAlpha(colors.primary, isDark ? 0.18 : 0.14),
                     alignItems: 'center', justifyContent: 'center',
                     alignSelf: 'center', marginBottom: Spacing.lg,
+                    borderWidth: 1,
+                    borderColor: withAlpha(colors.primary, 0.34),
                   }}>
                     <MaterialCommunityIcons name="lock-reset" size={32} color={colors.primary} />
                   </View>
@@ -121,9 +143,11 @@ export default function ForgotPasswordScreen() {
                 <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
                   <View style={{
                     width: 80, height: 80, borderRadius: 40,
-                    backgroundColor: colors.primaryBg,
+                    backgroundColor: withAlpha(colors.success, isDark ? 0.18 : 0.14),
                     alignItems: 'center', justifyContent: 'center',
                     marginBottom: Spacing.lg,
+                    borderWidth: 1,
+                    borderColor: withAlpha(colors.success, 0.34),
                   }}>
                     <MaterialCommunityIcons name="email-check-outline" size={40} color={colors.primary} />
                   </View>
@@ -149,7 +173,7 @@ export default function ForgotPasswordScreen() {
                   />
                 </View>
               )}
-            </View>
+            </Card>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

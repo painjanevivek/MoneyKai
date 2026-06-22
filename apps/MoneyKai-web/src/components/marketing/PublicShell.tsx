@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Colors, Shadows, Spacing, Typography, type ColorScheme } from '@/constants/theme';
 import { SITE } from '@/constants/site';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { glassBackdropStyle, withAlpha } from '@/utils/glassStyle';
 
 type ShellProps = PropsWithChildren<{
   eyebrow?: string;
@@ -82,14 +83,14 @@ function ShellAction({
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: Spacing.lg,
-        borderRadius: BorderRadius.sm,
-        backgroundColor: primary ? colors.primary : hovered ? `${colors.primary}12` : 'transparent',
+        borderRadius: BorderRadius.md,
+        backgroundColor: primary ? colors.primary : hovered ? withAlpha(colors.accent, 0.14) : 'transparent',
         borderWidth: 1,
         borderColor: primary
           ? colors.primary
           : lightMode
-            ? colors.borderLight
-            : 'rgba(255, 255, 255, 0.14)',
+            ? colors.glassBorder
+            : withAlpha(colors.primary, 0.18),
         transform: pressed ? [{ scale: 0.98 }] : hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
       })}
     >
@@ -117,11 +118,11 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const lightMode = tone === 'light';
   const shellColors = lightMode ? Colors.light : tone === 'dark' ? Colors.dark : colors;
-  const navBackground = lightMode ? 'rgba(255, 255, 255, 0.94)' : 'rgba(3, 5, 4, 0.9)';
-  const navBorder = lightMode ? shellColors.borderLight : 'rgba(234, 246, 240, 0.14)';
+  const navBackground = lightMode ? 'rgba(255, 255, 255, 0.94)' : shellColors.surface;
+  const navBorder = lightMode ? shellColors.glassBorder : withAlpha(shellColors.primary, 0.2);
   const navText = lightMode ? shellColors.textPrimary : '#FFFFFF';
   const navMuted = lightMode ? shellColors.textSecondary : 'rgba(255, 255, 255, 0.68)';
-  const navHover = lightMode ? `${shellColors.primary}0F` : 'rgba(234, 246, 240, 0.08)';
+  const navHover = lightMode ? withAlpha(shellColors.primary, 0.1) : withAlpha(shellColors.primary, 0.14);
   const showMobileMenu = !isCompact || mobileMenuOpen;
   const isNavItemActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -177,6 +178,9 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                   backgroundColor: navBackground,
                   borderWidth: 1,
                   borderColor: navBorder,
+                  ...Shadows.lg,
+                  shadowColor: shellColors.shadowColor,
+                  ...(glassBackdropStyle ?? {}),
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
@@ -241,9 +245,9 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                       rowGap: Spacing.xs,
                       padding: 6,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: lightMode ? 'rgba(255, 255, 255, 0.88)' : 'rgba(255, 255, 255, 0.045)',
-                      borderWidth: 1,
-                      borderColor: lightMode ? 'rgba(9, 9, 9, 0.1)' : 'rgba(255, 255, 255, 0.12)',
+          backgroundColor: lightMode ? 'rgba(255, 255, 255, 0.72)' : 'rgba(255, 255, 255, 0.055)',
+          borderWidth: 1,
+          borderColor: lightMode ? shellColors.glassBorder : withAlpha(shellColors.primary, 0.18),
                     }}
                   >
                     {PRIMARY_LINKS.map((item) => {
@@ -264,11 +268,11 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                                 paddingVertical: 8,
                                 borderRadius: BorderRadius.full,
                                 backgroundColor: highlighted
-                                  ? (lightMode ? '#FFFFFF' : 'rgba(248, 248, 245, 0.11)')
+                                  ? (lightMode ? '#FFFFFF' : withAlpha(shellColors.primary, 0.16))
                                   : 'transparent',
                                 borderWidth: 1,
                                 borderColor: highlighted
-                                  ? (lightMode ? 'rgba(9, 9, 9, 0.16)' : 'rgba(248, 248, 245, 0.18)')
+                                  ? (lightMode ? shellColors.glassBorder : withAlpha(shellColors.primaryLight, 0.24))
                                   : 'transparent',
                                 transform: pressed ? [{ scale: 0.98 }] : hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
                               };
@@ -372,12 +376,12 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                       paddingHorizontal: Spacing.md,
                       paddingVertical: 8,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: shellColors.surface,
+                      backgroundColor: shellColors.glassBg,
                       borderWidth: 1,
-                      borderColor: shellColors.borderLight,
+                      borderColor: shellColors.glassBorder,
                     }}
                   >
-                    <View style={{ width: 7, height: 7, borderRadius: 999, backgroundColor: shellColors.primary }} />
+                    <View style={{ width: 7, height: 7, borderRadius: 999, backgroundColor: shellColors.accent }} />
                     <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: shellColors.textSecondary }}>
                       {eyebrow}
                     </Text>
@@ -497,6 +501,7 @@ export function SectionCard({
           backgroundColor: variant === 'elevated' ? colors.surfaceElevated : colors.card,
           borderRadius: BorderRadius[borderRadius],
           padding: Spacing.lg,
+          overflow: 'hidden',
           ...(variant === 'outlined'
             ? { borderWidth: 1, borderColor: colors.borderLight }
             : {

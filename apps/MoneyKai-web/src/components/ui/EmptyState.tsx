@@ -3,6 +3,7 @@ import { View, Text, type ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, Shadows, Typography, Spacing } from '../../constants/theme';
+import { withAlpha } from '@/utils/glassStyle';
 
 interface EmptyStateProps {
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;
@@ -19,7 +20,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   action,
   style,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <View
@@ -27,29 +28,41 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         {
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: colors.card,
-          borderColor: colors.borderLight,
-          borderRadius: BorderRadius.sm,
+          backgroundColor: colors.glassBg,
+          borderColor: colors.glassBorder,
+          borderRadius: BorderRadius.xl,
           borderWidth: 1,
           paddingVertical: Spacing['2xl'],
           paddingHorizontal: Spacing.xl,
-          ...Shadows.sm,
+          overflow: 'hidden',
+          ...Shadows.lg,
           shadowColor: colors.shadowColor,
         },
         style,
       ]}
     >
       <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: -74,
+          width: 170,
+          height: 170,
+          borderRadius: 999,
+          backgroundColor: withAlpha(colors.accent, isDark ? 0.16 : 0.1),
+        }}
+      />
+      <View
         style={{
           width: 64,
           height: 64,
           borderRadius: BorderRadius.full,
-          backgroundColor: colors.primaryBg,
+          backgroundColor: withAlpha(colors.primary, isDark ? 0.18 : 0.14),
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: Spacing.md,
           borderWidth: 1,
-          borderColor: `${colors.primary}22`,
+          borderColor: withAlpha(colors.primary, 0.34),
         }}
       >
         <MaterialCommunityIcons name={icon} size={28} color={colors.primary} />

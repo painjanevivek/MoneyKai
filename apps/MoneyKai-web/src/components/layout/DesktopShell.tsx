@@ -11,7 +11,7 @@ import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Button } from '@/components/ui/Button';
 import { endOfMonth, formatDate, startOfMonth } from '@/utils/dateUtils';
-import { glassBackdropStyle } from '@/utils/glassStyle';
+import { glassBackdropStyle, withAlpha } from '@/utils/glassStyle';
 
 type NavItem = {
   href: string;
@@ -103,12 +103,6 @@ export function DesktopShell({ children }: PropsWithChildren) {
   const isCompact = width < 900;
 
   useEffect(() => {
-    if (showMonthMenu) {
-      setVisibleYear(selectedMonthDate.getFullYear());
-    }
-  }, [selectedMonthDate, showMonthMenu]);
-
-  useEffect(() => {
     setTransactionFilter({
       dateRange: 'custom',
       startDate: formatDate(startOfMonth(selectedMonthDate), 'yyyy-MM-dd'),
@@ -130,6 +124,13 @@ export function DesktopShell({ children }: PropsWithChildren) {
     setSelectedMonthKey(currentMonthKey);
     setVisibleYear(parseMonthKey(currentMonthKey).getFullYear());
     setShowMonthMenu(false);
+  };
+
+  const handleToggleMonthMenu = () => {
+    if (!showMonthMenu) {
+      setVisibleYear(selectedMonthDate.getFullYear());
+    }
+    setShowMonthMenu((current) => !current);
   };
 
   if (isCompact) {
@@ -161,7 +162,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               gap: Spacing.md,
               position: 'relative',
               zIndex: 40,
-              ...Shadows.md,
+              ...Shadows.lg,
               shadowColor: colors.shadowColor,
               ...(glassBackdropStyle ?? {}),
             }}
@@ -263,7 +264,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 accessibilityRole="button"
                 accessibilityLabel="Choose reporting month"
                 accessibilityState={{ expanded: showMonthMenu }}
-                onPress={() => setShowMonthMenu((current) => !current)}
+                onPress={handleToggleMonthMenu}
                 style={({ hovered, pressed }: any) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -325,9 +326,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                       paddingHorizontal: Spacing.md,
                       paddingVertical: 10,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: active ? colors.primaryBg : hovered ? `${colors.primary}12` : colors.glassBg,
+                    backgroundColor: active ? colors.primaryBg : hovered ? withAlpha(colors.primary, 0.08) : colors.glassBg,
                       borderWidth: 1,
-                      borderColor: active ? `${colors.primary}45` : hovered ? `${colors.primary}24` : colors.glassBorder,
+                      borderColor: active ? withAlpha(colors.primary, 0.18) : hovered ? withAlpha(colors.primary, 0.18) : colors.glassBorder,
                       transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                     })}
                   >
@@ -341,7 +342,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                         fontSize: Typography.fontSize.sm,
                         lineHeight: 20,
                         fontFamily: Typography.fontFamily.medium,
-                        color: active ? colors.textPrimary : colors.textSecondary,
+                        color: active ? colors.primary : colors.textSecondary,
                       }}
                     >
                       {item.label}
@@ -383,13 +384,13 @@ export function DesktopShell({ children }: PropsWithChildren) {
             margin: Spacing.base,
             marginRight: 0,
             borderWidth: 1,
-            borderColor: colors.glassBorder,
+            borderColor: colors.borderLight,
             borderRadius: BorderRadius['2xl'],
-            backgroundColor: colors.glassBg,
+            backgroundColor: colors.surface,
             paddingVertical: Spacing.base,
             paddingHorizontal: Spacing.base,
             overflow: 'hidden',
-            ...Shadows.lg,
+            ...Shadows.md,
             shadowColor: colors.shadowColor,
             ...(glassBackdropStyle ?? {}),
           }}
@@ -455,9 +456,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                       paddingHorizontal: 14,
                       paddingVertical: 12,
                       borderRadius: BorderRadius.md,
-                      backgroundColor: active ? (hovered ? `${colors.primary}28` : colors.primaryBg) : hovered ? `${colors.primary}12` : 'transparent',
+                      backgroundColor: active ? colors.primaryBg : hovered ? withAlpha(colors.primary, 0.08) : 'transparent',
                       borderWidth: 1,
-                      borderColor: active ? `${colors.primary}35` : hovered ? `${colors.primary}24` : 'transparent',
+                      borderColor: active ? withAlpha(colors.primary, 0.18) : hovered ? withAlpha(colors.primary, 0.18) : 'transparent',
                       transform: hovered && !pressed ? [{ translateX: 2 }] : [{ translateX: 0 }],
                     })}
                   >
@@ -470,7 +471,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                       style={{
                         fontSize: Typography.fontSize.sm,
                         fontFamily: Typography.fontFamily.medium,
-                        color: active ? colors.textPrimary : colors.textSecondary,
+                        color: active ? colors.primary : colors.textSecondary,
                       }}
                     >
                       {item.label}
@@ -482,11 +483,11 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
             <View
               style={{
-                backgroundColor: colors.glassBg,
+                backgroundColor: colors.surfaceElevated,
                 borderRadius: BorderRadius.lg,
                 padding: Spacing.md,
                 borderWidth: 1,
-                borderColor: colors.glassBorder,
+                borderColor: colors.borderLight,
                 ...Shadows.md,
                 shadowColor: colors.shadowColor,
                 ...(glassBackdropStyle ?? {}),
@@ -533,21 +534,21 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   marginTop: Spacing.md,
                   paddingHorizontal: Spacing.md,
                   borderRadius: BorderRadius.md,
-                  backgroundColor: hovered ? 'rgba(245, 197, 90, 0.22)' : 'rgba(245, 197, 90, 0.14)',
+                  backgroundColor: hovered ? withAlpha(colors.warning, 0.24) : withAlpha(colors.warning, 0.14),
                   borderWidth: 1,
-                  borderColor: hovered ? 'rgba(245, 197, 90, 0.62)' : 'rgba(245, 197, 90, 0.42)',
+                  borderColor: hovered ? withAlpha(colors.warning, 0.62) : withAlpha(colors.warning, 0.42),
                   transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                 })}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                  <MaterialCommunityIcons name="crown-outline" size={17} color="#F5C55A" />
+                  <MaterialCommunityIcons name="crown-outline" size={17} color={colors.warning} />
                   <Text
                     numberOfLines={1}
                     style={{
                       fontSize: Typography.fontSize.sm,
                       lineHeight: 20,
                       fontFamily: Typography.fontFamily.bold,
-                      color: '#F5C55A',
+                      color: colors.warning,
                     }}
                   >
                     MoneyKai+
@@ -559,7 +560,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     fontSize: Typography.fontSize.xs,
                     lineHeight: 16,
                     fontFamily: Typography.fontFamily.medium,
-                    color: '#FFE6A6',
+                    color: colors.warning,
                   }}
                 >
                   Premium
@@ -658,9 +659,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
               marginRight: Spacing.base,
               marginLeft: Spacing.base,
               borderWidth: 1,
-              borderColor: colors.glassBorder,
+              borderColor: colors.borderLight,
               borderRadius: BorderRadius['2xl'],
-              backgroundColor: colors.glassBg,
+              backgroundColor: colors.surface,
               position: 'relative',
               zIndex: 40,
               overflow: 'visible',
@@ -670,7 +671,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: Spacing.lg,
-              ...Shadows.sm,
+              ...Shadows.lg,
               shadowColor: colors.shadowColor,
               ...(glassBackdropStyle ?? {}),
             }}
@@ -691,7 +692,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 accessibilityRole="button"
                 accessibilityLabel="Choose reporting month"
                 accessibilityState={{ expanded: showMonthMenu }}
-                onPress={() => setShowMonthMenu((current) => !current)}
+                onPress={handleToggleMonthMenu}
                 style={({ hovered, pressed }: any) => ({
                   flexDirection: 'row',
                   alignItems: 'center',

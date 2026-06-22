@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { strongGlassBackdropStyle, withAlpha } from '@/utils/glassStyle';
 
 type AuthShellProps = {
   children: ReactNode;
@@ -20,13 +21,37 @@ const TRUST_POINTS = [
 ] as const;
 
 export function AuthShell({ children, eyebrow, title, subtitle, showHero = true }: AuthShellProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 980;
   const formOnly = !showHero;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: -180,
+          right: -120,
+          width: 360,
+          height: 360,
+          borderRadius: 999,
+          backgroundColor: withAlpha(colors.primary, isDark ? 0.14 : 0.1),
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          bottom: -180,
+          left: -120,
+          width: 340,
+          height: 340,
+          borderRadius: 999,
+          backgroundColor: withAlpha(colors.accent, isDark ? 0.16 : 0.1),
+        }}
+      />
       <ScrollView
         showsVerticalScrollIndicator={true}
         keyboardShouldPersistTaps="handled"
@@ -53,15 +78,40 @@ export function AuthShell({ children, eyebrow, title, subtitle, showHero = true 
                 minHeight: isWide ? 560 : 260,
                 borderRadius: BorderRadius.xl,
                 padding: isWide ? Spacing['2xl'] : Spacing.xl,
-                backgroundColor: colors.primaryDark,
+                backgroundColor: isDark ? withAlpha(colors.surfaceElevated, 0.9) : colors.primaryDark,
                 borderWidth: 1,
-                borderColor: 'rgba(234, 246, 240, 0.16)',
+                borderColor: withAlpha(colors.primaryLight, 0.26),
                 justifyContent: 'space-between',
                 overflow: 'hidden',
-                ...Shadows.lg,
+                ...Shadows.xl,
                 shadowColor: colors.shadowColor,
+                ...(strongGlassBackdropStyle ?? {}),
               }}
             >
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: -120,
+                  right: -90,
+                  width: 260,
+                  height: 260,
+                  borderRadius: 999,
+                  backgroundColor: withAlpha(colors.primary, 0.18),
+                }}
+              />
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  bottom: -120,
+                  left: -70,
+                  width: 230,
+                  height: 230,
+                  borderRadius: 999,
+                  backgroundColor: withAlpha(colors.accent, 0.18),
+                }}
+              />
               <View
                 pointerEvents="none"
                 style={{
@@ -126,9 +176,9 @@ export function AuthShell({ children, eyebrow, title, subtitle, showHero = true 
                       paddingHorizontal: Spacing.md,
                       paddingVertical: 10,
                       borderRadius: BorderRadius.full,
-                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      backgroundColor: 'rgba(255,255,255,0.12)',
                       borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.12)',
+                      borderColor: withAlpha(colors.primaryLight, 0.2),
                     }}
                   >
                     <MaterialCommunityIcons name={point.icon} size={15} color="rgba(255,255,255,0.84)" />

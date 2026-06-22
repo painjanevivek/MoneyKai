@@ -39,7 +39,7 @@ export function WorkspaceHeader({
   const { width } = useWindowDimensions();
   const isCompact = width < 760;
   const isConstrainedDesktop = width < 1180;
-  const headerBg = withAlpha(isDark ? colors.primaryBg : colors.primaryDark, isDark ? 0.78 : 0.88);
+  const headerBg = isDark ? withAlpha(colors.primaryDark, 0.9) : colors.primary;
 
   const resolveMetricColor = (tone: WorkspaceMetric['tone']) => {
     if (tone === 'positive') return '#D9FFF2';
@@ -58,11 +58,11 @@ export function WorkspaceHeader({
         padding: isCompact ? Spacing.base : Spacing.xl,
         backgroundColor: headerBg,
         borderWidth: 1,
-        borderColor: withAlpha(colors.primaryLight, isDark ? 0.3 : 0.24),
+        borderColor: withAlpha(colors.primaryLight, isDark ? 0.34 : 0.28),
         gap: isCompact ? Spacing.md : Spacing.lg,
         minWidth: 0,
         overflow: 'hidden',
-        ...Shadows.lg,
+        ...Shadows.xl,
         shadowColor: colors.shadowColor,
         ...(strongGlassBackdropStyle ?? {}),
       }}
@@ -106,9 +106,9 @@ export function WorkspaceHeader({
               borderRadius: BorderRadius.md,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'rgba(255, 255, 255, 0.13)',
+              backgroundColor: withAlpha(colors.primary, 0.2),
               borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.18)',
+              borderColor: withAlpha(colors.primaryLight, 0.34),
             }}
           >
             <MaterialCommunityIcons name={icon} size={isCompact ? 22 : 24} color="#FFFFFF" />
@@ -156,9 +156,9 @@ export function WorkspaceHeader({
                 minWidth: isCompact ? 136 : 160,
                 padding: Spacing.md,
                 borderRadius: BorderRadius.md,
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'rgba(255, 255, 255, 0.11)',
                 borderWidth: 1,
-                borderColor: 'rgba(255, 255, 255, 0.13)',
+                borderColor: withAlpha(metric.tone === 'warning' ? colors.warning : metric.tone === 'danger' ? colors.error : colors.primaryLight, 0.18),
               }}
             >
               <Text style={{ fontSize: Typography.fontSize.xs, color: 'rgba(255, 255, 255, 0.64)' }}>{metric.label}</Text>
@@ -182,9 +182,9 @@ export function WorkspaceHeader({
                 paddingHorizontal: Spacing.sm,
                 paddingVertical: 7,
                 borderRadius: BorderRadius.full,
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                backgroundColor: 'rgba(255, 255, 255, 0.12)',
                 borderWidth: 1,
-                borderColor: 'rgba(255, 255, 255, 0.12)',
+                borderColor: withAlpha(colors.primaryLight, 0.18),
               }}
             >
               <MaterialCommunityIcons name={chip.icon} size={14} color="rgba(255, 255, 255, 0.82)" />
