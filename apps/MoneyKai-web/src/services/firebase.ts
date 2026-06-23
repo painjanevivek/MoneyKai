@@ -5,6 +5,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getWebAuthDomain } from '@/config/firebaseAuthWeb';
 
 const PLACEHOLDER_PATTERNS = [
   'placeholder',
@@ -34,19 +35,12 @@ const fallbackConfig = {
   appId: '1:000000000000:web:placeholder',
 };
 
-const AUTH_PROXY_HOSTS = new Set(['moneykai.com', 'www.moneykai.com']);
-
 const getRuntimeAuthDomain = (configuredAuthDomain: string): string => {
   if (typeof window === 'undefined') {
     return configuredAuthDomain;
   }
 
-  const runtimeHost = window.location.hostname;
-  if (!AUTH_PROXY_HOSTS.has(runtimeHost)) {
-    return configuredAuthDomain;
-  }
-
-  return runtimeHost;
+  return getWebAuthDomain(configuredAuthDomain, window.location.hostname);
 };
 
 const normalizedConfig = {
