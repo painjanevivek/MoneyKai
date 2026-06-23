@@ -2,7 +2,7 @@ import React, { type PropsWithChildren, useEffect, useMemo, useState } from 'rea
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, usePathname } from 'expo-router';
-import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -30,6 +30,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/reports', label: 'Reports', icon: 'chart-bar' },
   { href: '/accounts', label: 'Accounts', icon: 'credit-card-outline' },
 ] as const;
+
+const MOBILE_APK_DOWNLOAD_URL: string | null = null;
 
 const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
   { href: '/dashboard', title: 'Dashboard', subtitle: 'A clear overview of your money' },
@@ -113,6 +115,20 @@ export function DesktopShell({ children }: PropsWithChildren) {
   const handleSignOut = async () => {
     await signOut();
     router.replace('/login');
+  };
+
+  const handleDownloadMobileApp = () => {
+    if (!MOBILE_APK_DOWNLOAD_URL) {
+      Alert.alert(
+        'Mobile app coming soon',
+        'The MoneyKai Android APK is still under development. This option will start the APK download once the file is ready.'
+      );
+      return;
+    }
+
+    Linking.openURL(MOBILE_APK_DOWNLOAD_URL).catch(() => {
+      Alert.alert('Download unavailable', 'Could not start the MoneyKai APK download right now.');
+    });
   };
 
   const handleSelectMonth = (monthKey: string) => {
@@ -565,6 +581,77 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 >
                   Premium
                 </Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Download MoneyKai mobile app APK"
+                accessibilityHint="The Android APK download is currently under development"
+                onPress={handleDownloadMobileApp}
+                style={({ hovered, pressed }: any) => ({
+                  minHeight: 54,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: Spacing.sm,
+                  marginTop: Spacing.sm,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: 9,
+                  borderRadius: BorderRadius.md,
+                  backgroundColor: hovered ? withAlpha(colors.primary, 0.18) : withAlpha(colors.primary, 0.1),
+                  borderWidth: 1,
+                  borderColor: hovered ? withAlpha(colors.primary, 0.42) : withAlpha(colors.primary, 0.24),
+                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                })}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, flex: 1, minWidth: 0 }}>
+                  <MaterialCommunityIcons name="cellphone" size={18} color={colors.primary} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontSize: Typography.fontSize.xs,
+                        lineHeight: 18,
+                        fontFamily: Typography.fontFamily.semiBold,
+                        color: colors.textPrimary,
+                      }}
+                    >
+                      Mobile app
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontSize: 11,
+                        lineHeight: 15,
+                        color: colors.textSecondary,
+                      }}
+                    >
+                      Download APK
+                    </Text>
+                  </View>
+                </View>
+                <View
+                  style={{
+                    borderRadius: BorderRadius.full,
+                    backgroundColor: withAlpha(colors.primary, 0.14),
+                    borderWidth: 1,
+                    borderColor: withAlpha(colors.primary, 0.28),
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                  }}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontSize: 10,
+                      lineHeight: 13,
+                      fontFamily: Typography.fontFamily.semiBold,
+                      color: colors.primary,
+                    }}
+                  >
+                    Soon
+                  </Text>
+                </View>
               </Pressable>
 
               <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>

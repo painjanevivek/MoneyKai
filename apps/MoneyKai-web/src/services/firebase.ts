@@ -34,9 +34,24 @@ const fallbackConfig = {
   appId: '1:000000000000:web:placeholder',
 };
 
+const AUTH_PROXY_HOSTS = new Set(['moneykai.com', 'www.moneykai.com']);
+
+const getRuntimeAuthDomain = (configuredAuthDomain: string): string => {
+  if (typeof window === 'undefined') {
+    return configuredAuthDomain;
+  }
+
+  const runtimeHost = window.location.hostname;
+  if (!AUTH_PROXY_HOSTS.has(runtimeHost)) {
+    return configuredAuthDomain;
+  }
+
+  return runtimeHost;
+};
+
 const normalizedConfig = {
   apiKey: isRealValue(firebaseConfig.apiKey) ? firebaseConfig.apiKey : fallbackConfig.apiKey,
-  authDomain: isRealValue(firebaseConfig.authDomain) ? firebaseConfig.authDomain : fallbackConfig.authDomain,
+  authDomain: isRealValue(firebaseConfig.authDomain) ? getRuntimeAuthDomain(firebaseConfig.authDomain) : fallbackConfig.authDomain,
   projectId: isRealValue(firebaseConfig.projectId) ? firebaseConfig.projectId : fallbackConfig.projectId,
   storageBucket: isRealValue(firebaseConfig.storageBucket) ? firebaseConfig.storageBucket : fallbackConfig.storageBucket,
   messagingSenderId: isRealValue(firebaseConfig.messagingSenderId) ? firebaseConfig.messagingSenderId : fallbackConfig.messagingSenderId,
