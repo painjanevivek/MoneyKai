@@ -1,10 +1,12 @@
 export const SITE = {
   name: 'MoneyKai',
   url: 'https://moneykai.com',
+  logoPath: '/brand/moneykai-mark.jpeg',
   supportEmail: 'support@moneykai.app',
-  title: 'MoneyKai | Personal finance, budgeting, shared expenses, and financial first aid',
+  sameAs: [] as string[],
+  title: 'MoneyKai | Official Website',
   description:
-    'MoneyKai is a personal finance and budget management app for tracking spending, savings, groups, backups, notes, and financial first-aid moments in one calm workspace.',
+    'Official website of MoneyKai, a personal finance and budget management app for tracking spending, savings, groups, backups, notes, and financial first-aid moments in one calm workspace.',
 };
 
 export const PUBLIC_ROUTES = [
@@ -22,6 +24,7 @@ export const PUBLIC_ROUTES = [
   '/features/savings',
   '/features/analytics',
   '/features/backup-restore',
+  '/services',
   '/how-it-works',
   '/pricing',
   '/news',

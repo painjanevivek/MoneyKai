@@ -18,6 +18,7 @@ type ShellProps = PropsWithChildren<{
 
 const PRIMARY_LINKS = [
   { href: '/', label: 'Home' },
+  { href: '/services', label: 'Services' },
   { href: '/features/analytics', label: 'Reports' },
   { href: '/features/analytics', label: 'AI Insights' },
   { href: '/features/expense-tracking', label: 'Imports' },
@@ -446,6 +447,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
                 {[
                   { href: '/about', label: 'About' },
+                  { href: '/services', label: 'Services' },
                   { href: '/faq', label: 'FAQ' },
                   { href: '/contact', label: 'Contact' },
                   { href: '/compare', label: 'Compare' },

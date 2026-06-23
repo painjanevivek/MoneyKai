@@ -10,6 +10,7 @@ Support: support@moneykai.app
 
 - Home: https://moneykai.com/
 - Pricing: https://moneykai.com/pricing
+- Services: https://moneykai.com/services
 - FAQ: https://moneykai.com/faq
 - Security: https://moneykai.com/security
 - How it works: https://moneykai.com/how-it-works

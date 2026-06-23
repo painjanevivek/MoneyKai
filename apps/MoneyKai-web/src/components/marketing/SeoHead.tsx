@@ -33,16 +33,36 @@ export function SeoHead({
 }: SeoHeadProps) {
   const canonical = `${SITE.url}${path}`;
   const imageUrl = imagePath ? `${SITE.url}${imagePath}` : undefined;
+  const organizationId = `${SITE.url}/#organization`;
+  const organizationSchema: JsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': organizationId,
+    name: SITE.name,
+    alternateName: 'MoneyKai app',
+    url: SITE.url,
+    logo: `${SITE.url}${SITE.logoPath}`,
+    email: SITE.supportEmail,
+    description: SITE.description,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: SITE.supportEmail,
+      url: `${SITE.url}/contact`,
+    },
+  };
+  if (SITE.sameAs.length > 0) {
+    organizationSchema.sameAs = SITE.sameAs;
+  }
   const siteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${SITE.url}/#website`,
     name: SITE.name,
     url: SITE.url,
-    description,
+    description: SITE.description,
     publisher: {
-      '@type': 'Organization',
-      name: SITE.name,
-      url: SITE.url,
+      '@id': organizationId,
     },
   };
   const pageSchemas = Array.isArray(structuredData)
@@ -52,7 +72,7 @@ export function SeoHead({
       : [];
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@graph': [withoutContext(siteSchema), ...pageSchemas.map(withoutContext)],
+    '@graph': [withoutContext(organizationSchema), withoutContext(siteSchema), ...pageSchemas.map(withoutContext)],
   };
 
   return (

@@ -30,6 +30,7 @@ const palette = {
 const navLinks = [
   { href: '#how-it-works', label: 'How it works' },
   { href: '#features', label: 'Features' },
+  { href: '/services', label: 'Services' },
   { href: '#privacy', label: 'Privacy' },
   { href: '/pricing', label: 'Pricing' },
   { href: '#faq', label: 'FAQ' },
@@ -459,7 +460,7 @@ export default function LandingScreen() {
   const isCompact = width < 760;
   const isWide = width >= 980;
   const description =
-    'MoneyKai is a calm personal finance workspace for India-first expense tracking, budgets, shared spending, reviewable drafts, and private money reports.';
+    'Official website of MoneyKai, a calm personal finance workspace for India-first expense tracking, budgets, shared spending, reviewable drafts, and private money reports.';
   const structuredData = [
     {
       '@context': 'https://schema.org',
@@ -473,18 +474,6 @@ export default function LandingScreen() {
         '@type': 'Offer',
         price: '0',
         priceCurrency: 'USD',
-      },
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: SITE.name,
-      url: SITE.url,
-      logo: `${SITE.url}/brand/moneykai-mark.jpeg`,
-      contactPoint: {
-        '@type': 'ContactPoint',
-        contactType: 'customer support',
-        email: SITE.supportEmail,
       },
     },
     {
@@ -508,7 +497,7 @@ export default function LandingScreen() {
   return (
     <>
       <SeoHead
-        title="MoneyKai | Calm private finance reports"
+        title={SITE.title}
         description={description}
         path="/"
         keywords={['personal finance India', 'expense tracker', 'budget app', 'private finance reports', 'shared expenses']}
@@ -553,10 +542,10 @@ export default function LandingScreen() {
               <div>
                 <span style={badgeStyle}>Private finance reports for money you actually review</span>
                 <h1 id="hero-title" style={{ ...headlineStyle(isCompact), marginTop: 22 }}>
-                  Calm money clarity from records you control.
+                  MoneyKai official website for calmer money clarity.
                 </h1>
                 <p style={{ ...paragraphStyle, fontSize: isCompact ? 17 : 19, lineHeight: isCompact ? '29px' : '32px', marginTop: 22, maxWidth: 650 }}>
-                  MoneyKai helps you review expenses, budgets, shared spending, notes, and portfolio context before turning them into plain private reports.
+                  This is the official MoneyKai website. MoneyKai helps you review expenses, budgets, shared spending, notes, and portfolio context before turning them into plain private reports.
                 </p>
                 <div style={{ display: 'flex', flexDirection: isCompact ? 'column' : 'row', gap: 12, marginTop: 30, maxWidth: isCompact ? '100%' : 430 }}>
                   <LinkButton href="/signup" primary fullWidth={isCompact}>
