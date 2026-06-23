@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import type { LearnArticle, LearnCategory } from '@/data/learnArticles';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { useTheme } from '@/hooks/useTheme';
 
 export function LearnCategoryTemplate({
@@ -16,7 +17,7 @@ export function LearnCategoryTemplate({
   articles: LearnArticle[];
 }) {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
+  const width = useHydratedViewportWidth();
   const isWide = width >= 900;
 
   return (

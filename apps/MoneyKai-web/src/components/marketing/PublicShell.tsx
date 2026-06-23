@@ -1,9 +1,10 @@
 import React, { type PropsWithChildren } from 'react';
 import { Image } from 'expo-image';
 import { Link, router, usePathname } from 'expo-router';
-import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
+import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { BorderRadius, Colors, Shadows, Spacing, Typography, type ColorScheme } from '@/constants/theme';
 import { SITE } from '@/constants/site';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -46,7 +47,7 @@ function BrandMark({ colors, lightMode }: { colors: ColorScheme; lightMode: bool
       }}
     >
       <Image
-        source={{ uri: '/brand/moneykai-mark.jpeg' }}
+        source={{ uri: '/brand/moneykai-mark-96.png' }}
         contentFit="contain"
         accessibilityIgnoresInvertColors
         style={{
@@ -111,7 +112,7 @@ function ShellAction({
 
 export function PublicShell({ eyebrow, title, description, children, tone = 'default' }: ShellProps) {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
+  const width = useHydratedViewportWidth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const isWide = width >= 960;

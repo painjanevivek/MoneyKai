@@ -2,15 +2,6 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import {
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  updateProfile as updateFirebaseProfile,
-} from 'firebase/auth';
-import { firebaseAuth, isFirebaseConfigured, waitForAuthState } from '../services/firebase';
 import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 
 export interface User {
@@ -60,6 +51,18 @@ const getAuthErrorCode = (error: unknown): string => {
   return '';
 };
 
+const getFirebaseRuntime = async () => {
+  const [authModule, firebaseModule] = await Promise.all([
+    import('firebase/auth'),
+    import('../services/firebase'),
+  ]);
+
+  return {
+    ...authModule,
+    ...firebaseModule,
+  };
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -73,6 +76,8 @@ export const useAuthStore = create<AuthState>()(
 
       hydrateSession: async () => {
         set({ isHydratingSession: true });
+
+        const { isFirebaseConfigured, waitForAuthState } = await getFirebaseRuntime();
 
         if (!isFirebaseConfigured()) {
           set({ isHydratingSession: false });
@@ -96,6 +101,7 @@ export const useAuthStore = create<AuthState>()(
       signIn: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
+          const { firebaseAuth, isFirebaseConfigured, signInWithEmailAndPassword } = await getFirebaseRuntime();
           if (!isFirebaseConfigured()) {
             throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
           }
@@ -118,6 +124,12 @@ export const useAuthStore = create<AuthState>()(
       signUp: async (email: string, password: string, fullName: string) => {
         set({ isLoading: true });
         try {
+          const {
+            createUserWithEmailAndPassword,
+            firebaseAuth,
+            isFirebaseConfigured,
+            updateProfile: updateFirebaseProfile,
+          } = await getFirebaseRuntime();
           if (!isFirebaseConfigured()) {
             throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
           }
@@ -148,6 +160,7 @@ export const useAuthStore = create<AuthState>()(
       signInWithGoogle: async () => {
         set({ isLoading: true });
         try {
+          const { firebaseAuth, GoogleAuthProvider, isFirebaseConfigured, signInWithPopup } = await getFirebaseRuntime();
           if (!isFirebaseConfigured()) {
             throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
           }
@@ -192,6 +205,8 @@ export const useAuthStore = create<AuthState>()(
 
       signOut: async (options) => {
         const cleanup = async () => {
+          const { firebaseAuth, isFirebaseConfigured, signOut: firebaseSignOut } = await getFirebaseRuntime();
+
           if (isFirebaseConfigured()) {
             await firebaseSignOut(firebaseAuth).catch(() => {
               // Local sign-out already happened; ignore network cleanup failures.

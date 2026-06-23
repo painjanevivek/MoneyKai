@@ -9,7 +9,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
-import { isFirebaseConfigured } from '@/services/firebase';
 import { captureSentryException, identifySentryUser } from '@/services/sentry';
 
 const AutoBackupCoordinator = lazy(() =>
@@ -111,10 +110,14 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (__DEV__ && !isFirebaseConfigured()) {
-      console.warn(
-        '[MoneyKai] Firebase is not configured. Configure the EXPO_PUBLIC_FIREBASE_* keys to enable cloud auth and backup.'
-      );
+    if (__DEV__) {
+      void import('@/services/firebase').then(({ isFirebaseConfigured }) => {
+        if (!isFirebaseConfigured()) {
+          console.warn(
+            '[MoneyKai] Firebase is not configured. Configure the EXPO_PUBLIC_FIREBASE_* keys to enable cloud auth and backup.'
+          );
+        }
+      });
     }
 
     hydrateSession().catch((e) => {
@@ -133,8 +136,12 @@ export default function RootLayout() {
   }, [user]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
     void refreshExchangeRates();
-  }, [currencyRenderToken, refreshExchangeRates]);
+  }, [currencyRenderToken, isAuthenticated, refreshExchangeRates]);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

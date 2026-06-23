@@ -11,7 +11,6 @@ import {
   type ThemePaletteId,
 } from '../constants/theme';
 import { useAuthStore } from './useAuthStore';
-import { saveUserAppSettings } from '@/services/firestoreData';
 import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 import {
   FALLBACK_INR_EXCHANGE_RATES,
@@ -43,11 +42,13 @@ export type DashboardTrendChartType = 'line' | 'bar' | 'donut';
 const persistAppSettings = (settings: PersistedAppSettings) => {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
-  void saveUserAppSettings(userId, settings).catch((error) => {
-    if (__DEV__) {
-      console.warn('[MoneyKai] failed to sync app settings:', error);
-    }
-  });
+  void import('@/services/firestoreData')
+    .then(({ saveUserAppSettings }) => saveUserAppSettings(userId, settings))
+    .catch((error) => {
+      if (__DEV__) {
+        console.warn('[MoneyKai] failed to sync app settings:', error);
+      }
+    });
 };
 
 interface SettingsState {

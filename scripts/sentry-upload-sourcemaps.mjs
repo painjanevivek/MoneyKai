@@ -63,7 +63,7 @@ run(['sourcemaps', 'inject', distDir]);
 run(['sourcemaps', 'upload', '--release', release, '--dist', 'web', '--url-prefix', '~/', distDir]);
 run(['releases', 'finalize', release]);
 
-if (process.env.SENTRY_DELETE_SOURCE_MAPS_AFTER_UPLOAD !== 'false') {
+if (process.env.SENTRY_DELETE_SOURCE_MAPS_AFTER_UPLOAD === 'true') {
   for (const mapFile of mapFiles) {
     fs.rmSync(mapFile, { force: true });
   }
@@ -77,4 +77,6 @@ if (process.env.SENTRY_DELETE_SOURCE_MAPS_AFTER_UPLOAD !== 'false') {
   }
 
   log('Deleted public source maps after upload.');
+} else {
+  log('Kept public source maps so production diagnostics can resolve bundled code.');
 }

@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import type { LearnArticle, LearnFaq, LearnSection } from '@/data/learnArticles';
 import { SITE } from '@/constants/site';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { useTheme } from '@/hooks/useTheme';
 
 const formatDate = (value: string) =>
@@ -128,7 +129,7 @@ export function LearnArticleTemplate({
   relatedArticles: LearnArticle[];
 }) {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
+  const width = useHydratedViewportWidth();
   const isWide = width >= 960;
   const articlePath = `/learn/${article.slug}`;
   const structuredData = [

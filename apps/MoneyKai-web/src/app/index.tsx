@@ -1,8 +1,8 @@
 import React, { type CSSProperties, type ReactNode } from 'react';
 import { Redirect } from 'expo-router';
-import { useWindowDimensions } from 'react-native';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
+import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 const palette = {
@@ -22,7 +22,7 @@ const palette = {
   greenSoft: 'rgba(22, 163, 74, 0.1)',
   violet: '#7C3AED',
   violetSoft: 'rgba(124, 58, 237, 0.1)',
-  gold: '#F59E0B',
+  gold: '#92400E',
   goldSoft: 'rgba(245, 158, 11, 0.1)',
   redSoft: 'rgba(251, 113, 133, 0.14)',
 };
@@ -267,7 +267,6 @@ function LandingHeader({ compact }: { compact: boolean }) {
         <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', gap: 14 }}>
           <a
             href="/"
-            aria-label="MoneyKai home"
             style={{ alignItems: 'center', color: palette.text, display: 'inline-flex', gap: 12, textDecoration: 'none' }}
           >
             <span
@@ -285,7 +284,7 @@ function LandingHeader({ compact }: { compact: boolean }) {
             >
               <img
                 alt=""
-                src="/brand/moneykai-mark.jpeg"
+                src="/brand/moneykai-mark-96.png"
                 style={{ display: 'block', height: 32, objectFit: 'contain', width: 32 }}
               />
             </span>
@@ -456,7 +455,7 @@ function ProductPreview({ compact }: { compact: boolean }) {
 
 export default function LandingScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { width } = useWindowDimensions();
+  const width = useHydratedViewportWidth();
   const isCompact = width < 760;
   const isWide = width >= 980;
   const description =

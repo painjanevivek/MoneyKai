@@ -1,17 +1,18 @@
 import React from 'react';
 import { Link, router } from 'expo-router';
-import { Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import type { ComparisonPage as ComparisonPageData } from '@/content/comparisons';
+import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { useTheme } from '@/hooks/useTheme';
 
 export function ComparisonPage({ page }: { page: ComparisonPageData }) {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
+  const width = useHydratedViewportWidth();
   const isWide = width >= 900;
   const path = `/compare/${page.slug}`;
   const structuredData = [
