@@ -127,6 +127,26 @@ export interface MoneyKaiBackupSnapshot {
   };
 }
 
+export interface MoneyKaiBackupMetadata {
+  capturedAt: string;
+  version: number;
+  accountName: string;
+  accountEmail: string;
+  currency: string;
+  currencySymbol: string;
+  monthlyAllowance: number;
+  totalIncome: number;
+  totalExpense: number;
+  transactionCount: number;
+  linkedAccountCount: number;
+  noteCount: number;
+  groupCount: number;
+  groupExpenseCount: number;
+  challengeCount: number;
+  badgeCount: number;
+  notificationCount: number;
+}
+
 const normalizeUser = () => {
   const user = useAuthStore.getState().user;
   if (!user) {
@@ -316,6 +336,34 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
   };
 };
 
+export const summarizeBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot): MoneyKaiBackupMetadata => {
+  const transactions = snapshot.data.transactions ?? [];
+
+  return {
+    capturedAt: snapshot.capturedAt,
+    version: snapshot.version,
+    accountName: snapshot.profile.full_name,
+    accountEmail: snapshot.profile.email,
+    currency: snapshot.settings.app.currency,
+    currencySymbol: snapshot.settings.app.currencySymbol,
+    monthlyAllowance: snapshot.settings.budget.settings.monthly_allowance,
+    totalIncome: transactions
+      .filter((transaction) => transaction.type === 'income')
+      .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0),
+    totalExpense: transactions
+      .filter((transaction) => transaction.type === 'expense')
+      .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0),
+    transactionCount: transactions.length,
+    linkedAccountCount: snapshot.data.linkedAccounts?.length ?? 0,
+    noteCount: snapshot.data.notes?.length ?? 0,
+    groupCount: snapshot.data.groups?.length ?? 0,
+    groupExpenseCount: snapshot.data.groupExpenses?.length ?? 0,
+    challengeCount: snapshot.data.challenges?.length ?? 0,
+    badgeCount: snapshot.data.badges?.length ?? 0,
+    notificationCount: snapshot.data.notifications?.length ?? 0,
+  };
+};
+
 export const saveCloudBackup = async (options: { silent?: boolean; preserveAutomaticBackupState?: boolean } = {}) => {
   const sequenceAtStart = (await loadAutomaticBackupState()).sequence;
 
@@ -411,6 +459,8 @@ export const getLatestCloudBackup = async () => {
 
   return latestBackup;
 };
+
+export const getLatestCloudBackupMetadata = async () => summarizeBackupSnapshot(await getLatestCloudBackup());
 
 export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
   const user = normalizeUser();

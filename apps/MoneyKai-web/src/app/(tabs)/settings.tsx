@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Switch, Alert, Linking, Platform, Share } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +16,13 @@ import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
 import { THEME_OPTIONS, Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { firebaseAuth, isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
-import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
+import {
+  getLatestCloudBackupMetadata,
+  saveCloudBackup,
+  restoreLatestCloudBackup,
+  summarizeBackupSnapshot,
+  type MoneyKaiBackupMetadata,
+} from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
 import { resetLocalAppState } from '@/services/remoteSync';
 import { getStoreReviewUrl } from '@/config/environment';
@@ -77,6 +83,28 @@ const escapeHtml = (value: string): string =>
 
 const getExportFilename = (extension: string): string =>
   `moneykai_transactions_${new Date().toISOString().split('T')[0]}.${extension}`;
+
+const formatBackupDateTime = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown time';
+  }
+  return date.toLocaleString();
+};
+
+const formatBackupCount = (count: number, singular: string, plural = `${singular}s`): string =>
+  `${count} ${count === 1 ? singular : plural}`;
+
+const buildBackupConfirmationMessage = (metadata: MoneyKaiBackupMetadata): string =>
+  [
+    `Created: ${formatBackupDateTime(metadata.capturedAt)}`,
+    `Account: ${metadata.accountName || metadata.accountEmail}`,
+    `Records: ${formatBackupCount(metadata.transactionCount, 'transaction')}, ${formatBackupCount(metadata.linkedAccountCount, 'linked account')}, ${formatBackupCount(metadata.noteCount, 'note')}`,
+    `Groups and goals: ${formatBackupCount(metadata.groupCount, 'group')}, ${formatBackupCount(metadata.challengeCount, 'savings goal')}`,
+    `Totals: ${formatCurrency(metadata.totalIncome, metadata.currency, true)} income, ${formatCurrency(metadata.totalExpense, metadata.currency, true)} expenses`,
+    '',
+    'Restoring replaces the MoneyKai data on this device with the latest cloud backup.',
+  ].join('\n');
 
 const downloadBlob = (content: string, mimeType: string, filename: string) => {
   const blob = new Blob([content], { type: mimeType });
@@ -408,6 +436,9 @@ export default function SettingsScreen() {
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
   const [showDeleteAccountSheet, setShowDeleteAccountSheet] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMetadata, setBackupMetadata] = useState<MoneyKaiBackupMetadata | null>(null);
+  const [backupMetadataError, setBackupMetadataError] = useState<string | null>(null);
+  const [backupMetadataLoading, setBackupMetadataLoading] = useState(false);
   const [currencyBusy, setCurrencyBusy] = useState(false);
   const [changePasswordBusy, setChangePasswordBusy] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
@@ -419,6 +450,40 @@ export default function SettingsScreen() {
   } as const;
   const switchThumb = colors.textInverse;
   const selectedTheme = THEME_OPTIONS.find((option) => option.id === themePalette) ?? THEME_OPTIONS[0];
+  const backupConfigured = isFirebaseConfigured() || isBackendConfigured();
+
+  const loadBackupMetadata = useCallback(async () => {
+    if (!backupConfigured) {
+      setBackupMetadata(null);
+      setBackupMetadataError(null);
+      return null;
+    }
+
+    setBackupMetadataLoading(true);
+    setBackupMetadataError(null);
+    try {
+      const metadata = await getLatestCloudBackupMetadata();
+      setBackupMetadata(metadata);
+      return metadata;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not load the latest backup details.';
+      setBackupMetadata(null);
+      setBackupMetadataError(message);
+      return null;
+    } finally {
+      setBackupMetadataLoading(false);
+    }
+  }, [backupConfigured]);
+
+  useEffect(() => {
+    if (showBackupSheet) {
+      const timeout = setTimeout(() => {
+        void loadBackupMetadata();
+      }, 0);
+      return () => clearTimeout(timeout);
+    }
+    return undefined;
+  }, [loadBackupMetadata, showBackupSheet]);
 
   const handleCurrencySelect = async (option: (typeof CURRENCY_OPTIONS)[number]) => {
     if (currencyBusy) {
@@ -549,8 +614,9 @@ export default function SettingsScreen() {
     setBackupBusy(true);
     try {
       const snapshot = await saveCloudBackup();
+      setBackupMetadata(summarizeBackupSnapshot(snapshot));
+      setBackupMetadataError(null);
       Alert.alert('Backup saved', `Cloud backup created at ${new Date(snapshot.capturedAt).toLocaleString()}.`);
-      setShowBackupSheet(false);
     } catch (err) {
       Alert.alert('Backup failed', err instanceof Error ? err.message : 'Could not create a cloud backup.');
     } finally {
@@ -558,7 +624,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleCloudRestore = async () => {
+  const restoreAfterConfirmation = async () => {
     setBackupBusy(true);
     try {
       await restoreLatestCloudBackup();
@@ -569,6 +635,26 @@ export default function SettingsScreen() {
     } finally {
       setBackupBusy(false);
     }
+  };
+
+  const handleCloudRestore = async () => {
+    if (backupBusy) {
+      return;
+    }
+
+    setBackupBusy(true);
+    const metadata = await loadBackupMetadata();
+    setBackupBusy(false);
+
+    if (!metadata) {
+      Alert.alert('Latest backup unavailable', backupMetadataError ?? 'Could not load the latest backup details.');
+      return;
+    }
+
+    Alert.alert('Restore this backup?', buildBackupConfirmationMessage(metadata), [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Restore', style: 'destructive', onPress: () => void restoreAfterConfirmation() },
+    ]);
   };
 
   const handleDeleteAccount = async () => {
@@ -863,8 +949,8 @@ export default function SettingsScreen() {
         onClose={() => setShowBackupSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
-            <Button title="Back Up Now" onPress={handleCloudBackup} loading={backupBusy} disabled={!isFirebaseConfigured() && !isBackendConfigured()} />
-            <Button title="Restore Latest Backup" onPress={handleCloudRestore} variant="outline" loading={backupBusy} disabled={!isFirebaseConfigured() && !isBackendConfigured()} />
+            <Button title="Back Up Now" onPress={handleCloudBackup} loading={backupBusy} disabled={!backupConfigured} />
+            <Button title="Restore Latest Backup" onPress={handleCloudRestore} variant="outline" loading={backupBusy} disabled={!backupConfigured} />
           </View>
         }
       >
@@ -872,6 +958,43 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
             Cloud backups store your current transactions, linked accounts, notes, groups, challenges, badges, budget, and settings in Firebase so you can restore them on another device.
           </Text>
+          <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.borderLight, gap: Spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <MaterialCommunityIcons name="cloud-search-outline" size={18} color={colors.primary} />
+              <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Latest available backup
+              </Text>
+            </View>
+            {backupMetadataLoading ? (
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                Checking the latest cloud backup...
+              </Text>
+            ) : backupMetadata ? (
+              <View style={{ gap: Spacing.xs }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                  Created {formatBackupDateTime(backupMetadata.capturedAt)} for {backupMetadata.accountName || backupMetadata.accountEmail}
+                </Text>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                  {formatBackupCount(backupMetadata.transactionCount, 'transaction')}, {formatBackupCount(backupMetadata.linkedAccountCount, 'linked account')}, {formatBackupCount(backupMetadata.noteCount, 'note')}, {formatBackupCount(backupMetadata.groupCount, 'group')}, and {formatBackupCount(backupMetadata.challengeCount, 'savings goal')}
+                </Text>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                  Budget {formatCurrency(backupMetadata.monthlyAllowance, backupMetadata.currency, true)} | Income {formatCurrency(backupMetadata.totalIncome, backupMetadata.currency, true)} | Expenses {formatCurrency(backupMetadata.totalExpense, backupMetadata.currency, true)} | v{backupMetadata.version}
+                </Text>
+              </View>
+            ) : (
+              <Text style={{ fontSize: Typography.fontSize.xs, color: backupMetadataError ? colors.emergency : colors.textSecondary, lineHeight: 18 }}>
+                {backupMetadataError ?? 'No cloud backup details loaded yet.'}
+              </Text>
+            )}
+            <Button
+              title="Refresh Details"
+              onPress={() => void loadBackupMetadata()}
+              variant="ghost"
+              size="sm"
+              loading={backupMetadataLoading}
+              disabled={!backupConfigured}
+            />
+          </View>
           <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: `${colors.primary}22` }}>
             <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary, marginBottom: 4 }}>
               First backup checklist

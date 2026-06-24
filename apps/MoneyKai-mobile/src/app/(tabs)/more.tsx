@@ -19,7 +19,13 @@ import { ReconciliationReviewCard } from '@/components/reconciliation/Reconcilia
 import { SecurityHardeningCard } from '@/components/security/SecurityHardeningCard';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { isBackendConfigured } from '@/services/backendApi';
-import { saveCloudBackup, restoreLatestCloudBackup } from '@/services/backupService';
+import {
+  getLatestCloudBackupMetadata,
+  saveCloudBackup,
+  restoreLatestCloudBackup,
+  summarizeBackupSnapshot,
+  type MoneyKaiBackupMetadata,
+} from '@/services/backupService';
 import { isFirebaseConfigured } from '@/services/firebase';
 import {
   clearNativeCaptureQueue,
@@ -32,6 +38,7 @@ import {
 } from '@/services/nativeCaptureBridge';
 import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
 import type { CaptureSourceStatus } from '@/types/capture';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 interface SettingItemProps {
   icon: string;
@@ -102,6 +109,28 @@ const MoreSection = ({ title, children }: { title: string; children: React.React
   );
 };
 
+const formatBackupDateTime = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown time';
+  }
+  return date.toLocaleString();
+};
+
+const formatBackupCount = (count: number, singular: string, plural = `${singular}s`): string =>
+  `${count} ${count === 1 ? singular : plural}`;
+
+const buildBackupConfirmationMessage = (metadata: MoneyKaiBackupMetadata): string =>
+  [
+    `Created: ${formatBackupDateTime(metadata.capturedAt)}`,
+    `Account: ${metadata.accountName || metadata.accountEmail}`,
+    `Records: ${formatBackupCount(metadata.transactionCount, 'transaction')}, ${formatBackupCount(metadata.linkedAccountCount, 'linked account')}, ${formatBackupCount(metadata.noteCount, 'note')}`,
+    `Groups and goals: ${formatBackupCount(metadata.groupCount, 'group')}, ${formatBackupCount(metadata.challengeCount, 'savings goal')}`,
+    `Totals: ${formatCurrency(metadata.totalIncome, metadata.currency, true)} income, ${formatCurrency(metadata.totalExpense, metadata.currency, true)} expenses`,
+    '',
+    'Restoring replaces the MoneyKai data on this device with the latest cloud backup.',
+  ].join('\n');
+
 export default function MoreScreen() {
   const { colors } = useTheme();
   const { user, signOut } = useAuthStore();
@@ -133,6 +162,9 @@ export default function MoreScreen() {
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
   const [nativeCaptureStatus, setNativeCaptureStatus] = useState<NativeCaptureStatus | null>(null);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMetadata, setBackupMetadata] = useState<MoneyKaiBackupMetadata | null>(null);
+  const [backupMetadataError, setBackupMetadataError] = useState<string | null>(null);
+  const [backupMetadataLoading, setBackupMetadataLoading] = useState(false);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [nativeStatusBusy, setNativeStatusBusy] = useState(false);
 
@@ -140,6 +172,30 @@ export default function MoreScreen() {
   const nativeSmsResearchBuildEnabled = isNativeSmsResearchBuildEnabled();
   const switchTrack = { false: colors.border, true: colors.primary } as const;
   const switchThumb = colors.textInverse;
+  const backupConfigured = isFirebaseConfigured() || isBackendConfigured();
+
+  const loadBackupMetadata = useCallback(async () => {
+    if (!backupConfigured) {
+      setBackupMetadata(null);
+      setBackupMetadataError(null);
+      return null;
+    }
+
+    setBackupMetadataLoading(true);
+    setBackupMetadataError(null);
+    try {
+      const metadata = await getLatestCloudBackupMetadata();
+      setBackupMetadata(metadata);
+      return metadata;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not load the latest backup details.';
+      setBackupMetadata(null);
+      setBackupMetadataError(message);
+      return null;
+    } finally {
+      setBackupMetadataLoading(false);
+    }
+  }, [backupConfigured]);
 
   const notificationSourceStatus = useMemo<CaptureSourceStatus>(() => {
     if (Platform.OS !== 'android') return 'unsupported';
@@ -207,6 +263,16 @@ export default function MoreScreen() {
       subscription.remove();
     };
   }, [refreshNativeCaptureStatus]);
+
+  useEffect(() => {
+    if (showBackupSheet) {
+      const timeout = setTimeout(() => {
+        void loadBackupMetadata();
+      }, 0);
+      return () => clearTimeout(timeout);
+    }
+    return undefined;
+  }, [loadBackupMetadata, showBackupSheet]);
 
   const requestSmsAccess = async () => {
     const status = await requestNativeSmsPermission();
@@ -414,8 +480,9 @@ export default function MoreScreen() {
     setBackupBusy(true);
     try {
       const snapshot = await saveCloudBackup();
+      setBackupMetadata(summarizeBackupSnapshot(snapshot));
+      setBackupMetadataError(null);
       Alert.alert('Backup saved', `Cloud backup created at ${new Date(snapshot.capturedAt).toLocaleString()}.`);
-      setShowBackupSheet(false);
     } catch (err) {
       Alert.alert('Backup failed', err instanceof Error ? err.message : 'Could not create a cloud backup.');
     } finally {
@@ -423,7 +490,7 @@ export default function MoreScreen() {
     }
   };
 
-  const handleCloudRestore = async () => {
+  const restoreAfterConfirmation = async () => {
     setBackupBusy(true);
     try {
       await restoreLatestCloudBackup();
@@ -434,6 +501,26 @@ export default function MoreScreen() {
     } finally {
       setBackupBusy(false);
     }
+  };
+
+  const handleCloudRestore = async () => {
+    if (backupBusy) {
+      return;
+    }
+
+    setBackupBusy(true);
+    const metadata = await loadBackupMetadata();
+    setBackupBusy(false);
+
+    if (!metadata) {
+      Alert.alert('Latest backup unavailable', backupMetadataError ?? 'Could not load the latest backup details.');
+      return;
+    }
+
+    Alert.alert('Restore this backup?', buildBackupConfirmationMessage(metadata), [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Restore', style: 'destructive', onPress: () => void restoreAfterConfirmation() },
+    ]);
   };
 
   const handleSignOut = async () => {
@@ -702,14 +789,53 @@ export default function MoreScreen() {
         onClose={() => setShowBackupSheet(false)}
         footer={
           <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
-            <Button title="Back Up Now" onPress={handleCloudBackup} loading={backupBusy} disabled={!isFirebaseConfigured() && !isBackendConfigured()} />
-            <Button title="Restore Latest Backup" onPress={handleCloudRestore} variant="outline" loading={backupBusy} disabled={!isFirebaseConfigured() && !isBackendConfigured()} />
+            <Button title="Back Up Now" onPress={handleCloudBackup} loading={backupBusy} disabled={!backupConfigured} />
+            <Button title="Restore Latest Backup" onPress={handleCloudRestore} variant="outline" loading={backupBusy} disabled={!backupConfigured} />
           </View>
         }
       >
-        <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-          Cloud backups store your current transactions, linked accounts, notes, groups, challenges, badges, budget, and settings in Firebase. Capture inbox data, raw notifications, and raw SMS bodies are excluded by default.
-        </Text>
+        <View style={{ gap: Spacing.sm }}>
+          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+            Cloud backups store your current transactions, linked accounts, notes, groups, challenges, badges, budget, and settings in Firebase. Capture inbox data, raw notifications, and raw SMS bodies are excluded by default.
+          </Text>
+          <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.borderLight, gap: Spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <MaterialCommunityIcons name="cloud-search-outline" size={18} color={colors.primary} />
+              <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Latest available backup
+              </Text>
+            </View>
+            {backupMetadataLoading ? (
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                Checking the latest cloud backup...
+              </Text>
+            ) : backupMetadata ? (
+              <View style={{ gap: Spacing.xs }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                  Created {formatBackupDateTime(backupMetadata.capturedAt)} for {backupMetadata.accountName || backupMetadata.accountEmail}
+                </Text>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                  {formatBackupCount(backupMetadata.transactionCount, 'transaction')}, {formatBackupCount(backupMetadata.linkedAccountCount, 'linked account')}, {formatBackupCount(backupMetadata.noteCount, 'note')}, {formatBackupCount(backupMetadata.groupCount, 'group')}, and {formatBackupCount(backupMetadata.challengeCount, 'savings goal')}
+                </Text>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+                  Budget {formatCurrency(backupMetadata.monthlyAllowance, backupMetadata.currency, true)} | Income {formatCurrency(backupMetadata.totalIncome, backupMetadata.currency, true)} | Expenses {formatCurrency(backupMetadata.totalExpense, backupMetadata.currency, true)} | v{backupMetadata.version}
+                </Text>
+              </View>
+            ) : (
+              <Text style={{ fontSize: Typography.fontSize.xs, color: backupMetadataError ? colors.emergency : colors.textSecondary, lineHeight: 18 }}>
+                {backupMetadataError ?? 'No cloud backup details loaded yet.'}
+              </Text>
+            )}
+            <Button
+              title="Refresh Details"
+              onPress={() => void loadBackupMetadata()}
+              variant="ghost"
+              size="sm"
+              loading={backupMetadataLoading}
+              disabled={!backupConfigured}
+            />
+          </View>
+        </View>
       </ModalSheet>
 
       <ModalSheet
