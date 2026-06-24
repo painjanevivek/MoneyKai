@@ -1,10 +1,13 @@
 const { verifyFirebaseIdToken } = require('../_lib/firebase-auth');
 const { findCustomerByFirebaseUid, isStripeHostedUrl, stripeRequest } = require('../_lib/stripe-rest');
-const { getAppUrl, getBearerToken, requireMethod, sendJson } = require('../_lib/http');
+const { applyRateLimit, getAppUrl, getBearerToken, requireMethod, sendJson } = require('../_lib/http');
 const { captureServerException } = require('../_lib/sentry');
 
 module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'POST')) {
+    return;
+  }
+  if (!applyRateLimit(req, res, { keyPrefix: 'billing:portal', max: 15, windowMs: 60 * 1000 })) {
     return;
   }
 

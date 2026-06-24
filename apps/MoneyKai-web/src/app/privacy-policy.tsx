@@ -37,6 +37,34 @@ export default function PrivacyPolicyScreen() {
               body: 'MoneyKai uses this information to power budgeting, analytics, shared expense coordination, notes, reminders, and backup and restore experiences.',
             },
             {
+              title: 'Auto Capture',
+              body: 'Auto Capture is optional. When enabled with Android notification access, MoneyKai uses supported bank and payment notifications to create reviewable transaction drafts on your device. Drafts do not affect budgets or transaction history until you confirm them.',
+            },
+            {
+              title: 'Capture data minimization',
+              body: 'MoneyKai stores parsed capture details such as source, amount, merchant, confidence, safe explanation metadata, and review status. Full raw notification payloads and unrelated notification content are not shown by default and should not be kept in normal capture history.',
+            },
+            {
+              title: 'Capture controls',
+              body: 'You can disable Auto Capture, turn notification capture off, revoke Android notification access in system settings, ignore drafts, or clear pending capture history without deleting confirmed transactions.',
+            },
+            {
+              title: 'SMS Capture',
+              body: 'SMS Capture is optional, disabled by default, and creates reviewable drafts from SMS text you paste or permit MoneyKai to read on your device. Android asks before SMS access is granted, drafts stay review-only, and raw SMS bodies are not included in cloud backups.',
+            },
+            {
+              title: 'Gmail and statements',
+              body: 'Gmail sync, attachment import, PDF parsing, and wealth monitoring are optional feature-gated flows. MoneyKai stores metadata and extracted financial rows only after user consent, and parsed rows remain reviewable before they become transactions or holdings.',
+            },
+            {
+              title: 'Financial AI',
+              body: 'Financial AI features are off by default and use redacted, bounded inputs where enabled. AI-generated classifications or wealth insights are review-required and should not be treated as financial, investment, tax, or legal advice.',
+            },
+            {
+              title: 'Deletion and audits',
+              body: 'MoneyKai provides backend controls for deleting imported financial data such as Gmail metadata, parsed documents, portfolio records, reconciliation reviews, and related financial imports. Security-sensitive actions may be logged in an audit trail.',
+            },
+            {
               title: 'Sharing and selling',
               body: 'MoneyKai does not sell your personal finance data. Backup data is intended to remain accessible only to the authenticated account connected to that environment.',
             },

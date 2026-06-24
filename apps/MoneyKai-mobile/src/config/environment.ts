@@ -32,10 +32,6 @@ const publicEnv: Record<string, string | undefined> = {
   EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE,
   EXPO_PUBLIC_DEBUG: process.env.EXPO_PUBLIC_DEBUG,
   EXPO_PUBLIC_DEMO_MODE: process.env.EXPO_PUBLIC_DEMO_MODE,
-  SENTRY_DSN: process.env.SENTRY_DSN,
-  SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT,
-  SENTRY_RELEASE: process.env.SENTRY_RELEASE,
-  SENTRY_DIST: process.env.SENTRY_DIST,
 };
 
 const readPublicEnv = (key: keyof typeof publicEnv): string => publicEnv[key]?.trim() ?? '';
@@ -114,10 +110,10 @@ const financialAiEnabledValue = readPublicEnv('EXPO_PUBLIC_FINANCIAL_AI_ENABLED'
 const DEFAULT_PRODUCTION_BACKEND_BASE_URL = 'https://money-kai-backend.vercel.app';
 
 const sentryEnv = {
-  dsn: readPublicEnv('EXPO_PUBLIC_SENTRY_DSN') || readPublicEnv('SENTRY_DSN'),
-  environment: readPublicEnv('EXPO_PUBLIC_SENTRY_ENVIRONMENT') || readPublicEnv('SENTRY_ENVIRONMENT'),
-  release: readPublicEnv('EXPO_PUBLIC_SENTRY_RELEASE') || readPublicEnv('SENTRY_RELEASE'),
-  dist: readPublicEnv('EXPO_PUBLIC_SENTRY_DIST') || readPublicEnv('SENTRY_DIST'),
+  dsn: readPublicEnv('EXPO_PUBLIC_SENTRY_DSN'),
+  environment: readPublicEnv('EXPO_PUBLIC_SENTRY_ENVIRONMENT'),
+  release: readPublicEnv('EXPO_PUBLIC_SENTRY_RELEASE'),
+  dist: readPublicEnv('EXPO_PUBLIC_SENTRY_DIST'),
   enabled: readPublicEnv('EXPO_PUBLIC_SENTRY_ENABLED'),
   tracesSampleRate: readPublicEnv('EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE'),
   profilesSampleRate: readPublicEnv('EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE'),

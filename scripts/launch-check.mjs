@@ -106,6 +106,13 @@ const webFirebaseServicePath = path.join(root, 'apps', 'MoneyKai-web', 'src', 's
 const webAuthStorePath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'stores', 'useAuthStore.ts');
 const webTabsLayoutPath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'app', '(tabs)', '_layout.tsx');
 const webFirebaseAuthConfigPath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'config', 'firebaseAuthWeb.ts');
+const webPrivacyPolicyPath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'app', 'privacy-policy.tsx');
+const mobilePrivacyPolicyPath = path.join(root, 'apps', 'MoneyKai-mobile', 'src', 'app', 'privacy-policy.tsx');
+const mobileEnvironmentConfigPath = path.join(root, 'apps', 'MoneyKai-mobile', 'src', 'config', 'environment.ts');
+const apiHttpHelperPath = path.join(root, 'api', '_lib', 'http.js');
+const billingCheckoutPath = path.join(root, 'api', 'billing', 'checkout.js');
+const aiAttachmentAnalyzePath = path.join(root, 'api', 'v1', 'ai', 'attachments', 'analyze.js');
+const persistenceBoundaryDocPath = path.join(root, 'docs', 'backend-first-persistence.md');
 const vercelConfigPath = path.join(root, 'vercel.json');
 const backendDir = resolveBackendDir();
 const backendEnvPath = backendDir ? path.join(backendDir, '.env') : null;
@@ -117,6 +124,13 @@ const webFirebaseServiceSource = readTextFile(webFirebaseServicePath);
 const webAuthStoreSource = readTextFile(webAuthStorePath);
 const webTabsLayoutSource = readTextFile(webTabsLayoutPath);
 const webFirebaseAuthConfigSource = readTextFile(webFirebaseAuthConfigPath);
+const webPrivacyPolicySource = readTextFile(webPrivacyPolicyPath);
+const mobilePrivacyPolicySource = readTextFile(mobilePrivacyPolicyPath);
+const mobileEnvironmentConfigSource = readTextFile(mobileEnvironmentConfigPath);
+const apiHttpHelperSource = readTextFile(apiHttpHelperPath);
+const billingCheckoutSource = readTextFile(billingCheckoutPath);
+const aiAttachmentAnalyzeSource = readTextFile(aiAttachmentAnalyzePath);
+const persistenceBoundaryDocSource = readTextFile(persistenceBoundaryDocPath);
 const vercelConfig = readJsonFile(vercelConfigPath);
 
 printSection('MoneyKai Launch Audit');
@@ -243,6 +257,117 @@ printStatus(
   'Protected-route hydration gate',
   protectedRoutesWaitForHydration,
   protectedRoutesWaitForHydration ? 'Signed-out redirects wait for hydration' : 'Protected routes may redirect before auth hydration completes'
+);
+
+printSection('Pre-launch Security Checklist');
+
+const webPrivacyCoversSensitiveFeatures =
+  Boolean(webPrivacyPolicySource) &&
+  ['Gmail and statements', 'Financial AI', 'Deletion and audits', 'Capture data minimization'].every((phrase) =>
+    webPrivacyPolicySource.includes(phrase)
+  );
+const mobilePrivacyCoversSensitiveFeatures =
+  Boolean(mobilePrivacyPolicySource) &&
+  ['Gmail and statements', 'Financial AI', 'Deletion and audits', 'Capture data minimization'].every((phrase) =>
+    mobilePrivacyPolicySource.includes(phrase)
+  );
+
+printStatus(
+  'Privacy policy coverage',
+  webPrivacyCoversSensitiveFeatures && mobilePrivacyCoversSensitiveFeatures,
+  webPrivacyCoversSensitiveFeatures && mobilePrivacyCoversSensitiveFeatures
+    ? 'Web and mobile privacy pages cover capture, Gmail/statements, AI, deletion, and audits'
+    : 'Privacy pages should cover capture, Gmail/statements, AI, deletion, and audits'
+);
+
+const knowsDataStorageBoundary =
+  Boolean(persistenceBoundaryDocSource) &&
+  persistenceBoundaryDocSource.includes('Backend-owned collections') &&
+  persistenceBoundaryDocSource.includes('Transitional client-owned collections');
+
+printStatus(
+  'User data storage boundary',
+  knowsDataStorageBoundary,
+  knowsDataStorageBoundary
+    ? `Documented in ${relativePath(persistenceBoundaryDocPath)}`
+    : 'Missing backend/client data ownership documentation'
+);
+
+const flattenedHeaders = (vercelConfig?.headers ?? []).flatMap((entry) => entry.headers ?? []);
+const headerValues = new Map(flattenedHeaders.map((header) => [header.key, header.value]));
+const requiredSecurityHeaders = [
+  'Strict-Transport-Security',
+  'Content-Security-Policy',
+  'X-Content-Type-Options',
+  'X-Frame-Options',
+  'Referrer-Policy',
+  'Permissions-Policy',
+  'Cross-Origin-Opener-Policy',
+  'Cross-Origin-Resource-Policy',
+  'Origin-Agent-Cluster',
+  'X-DNS-Prefetch-Control',
+  'X-Permitted-Cross-Domain-Policies',
+];
+const hasRequiredSecurityHeaders = requiredSecurityHeaders.every((header) => headerValues.has(header));
+
+const cspValue = headerValues.get('Content-Security-Policy') ?? '';
+const cspHasOwaspBaseline =
+  [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    'upgrade-insecure-requests',
+  ].every((directive) => cspValue.includes(directive));
+
+printStatus(
+  'Web security headers',
+  hasRequiredSecurityHeaders && cspHasOwaspBaseline,
+  hasRequiredSecurityHeaders && cspHasOwaspBaseline
+    ? requiredSecurityHeaders.join(', ')
+    : `Missing one of: ${requiredSecurityHeaders.join(', ')} or required CSP baseline directives`
+);
+
+const apiResponsesHardened =
+  Boolean(apiHttpHelperSource) &&
+  apiHttpHelperSource.includes("res.setHeader('Cache-Control', 'no-store')") &&
+  apiHttpHelperSource.includes("res.setHeader('X-Content-Type-Options', 'nosniff')") &&
+  apiHttpHelperSource.includes("res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')");
+
+printStatus(
+  'API response hardening',
+  apiResponsesHardened,
+  apiResponsesHardened ? 'JSON helper adds no-store and baseline security headers' : 'API JSON helper is missing no-store/security headers'
+);
+
+const apiRateLimitsReady =
+  Boolean(apiHttpHelperSource) &&
+  apiHttpHelperSource.includes('applyRateLimit') &&
+  Boolean(billingCheckoutSource?.includes('applyRateLimit')) &&
+  Boolean(aiAttachmentAnalyzeSource?.includes('applyRateLimit'));
+
+printStatus(
+  'Billable API rate limits',
+  apiRateLimitsReady,
+  apiRateLimitsReady ? 'Stripe checkout and AI attachment analysis are rate-limited' : 'Billable API routes should call applyRateLimit'
+);
+
+const mobileRuntimeAvoidsServerSentryNames =
+  Boolean(mobileEnvironmentConfigSource) &&
+  ![
+    'process.env.SENTRY_DSN',
+    'process.env.SENTRY_AUTH_TOKEN',
+    'process.env.SENTRY_ORG',
+    'process.env.SENTRY_PROJECT',
+  ].some((snippet) => mobileEnvironmentConfigSource.includes(snippet));
+
+printStatus(
+  'Server-only env separation',
+  mobileRuntimeAvoidsServerSentryNames,
+  mobileRuntimeAvoidsServerSentryNames
+    ? 'Mobile runtime config reads only EXPO_PUBLIC_* values'
+    : 'Mobile runtime config should not read server-only Sentry/build secrets'
 );
 
 const googleKeys = [

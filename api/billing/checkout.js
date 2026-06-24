@@ -1,10 +1,13 @@
 const { verifyFirebaseIdToken } = require('../_lib/firebase-auth');
-const { getAppUrl, getBearerToken, readJsonBody, requireMethod, sendJson } = require('../_lib/http');
+const { applyRateLimit, getAppUrl, getBearerToken, readJsonBody, requireMethod, sendJson } = require('../_lib/http');
 const { captureServerException } = require('../_lib/sentry');
 const { findOrCreateCustomer, getPremiumPriceId, isStripeHostedUrl, isValidPremiumPlan, stripeRequest } = require('../_lib/stripe-rest');
 
 module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'POST')) {
+    return;
+  }
+  if (!applyRateLimit(req, res, { keyPrefix: 'billing:checkout', max: 10, windowMs: 60 * 1000 })) {
     return;
   }
 

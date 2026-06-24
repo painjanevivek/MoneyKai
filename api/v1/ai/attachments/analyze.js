@@ -1,8 +1,11 @@
-const { readJsonBody, requireMethod, sendJson } = require('../../../_lib/http');
+const { applyRateLimit, readJsonBody, requireMethod, sendJson } = require('../../../_lib/http');
 const { analyzeInlineImages } = require('../../../_lib/ai-runtime');
 
 module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'POST')) {
+    return;
+  }
+  if (!applyRateLimit(req, res, { keyPrefix: 'ai:attachments:analyze', max: 12, windowMs: 60 * 1000 })) {
     return;
   }
 

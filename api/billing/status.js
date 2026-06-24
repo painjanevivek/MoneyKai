@@ -4,7 +4,7 @@ const {
   listSubscriptionsForCustomer,
   selectPrimarySubscription,
 } = require('../_lib/stripe-rest');
-const { getBearerToken, requireMethod, sendJson } = require('../_lib/http');
+const { applyRateLimit, getBearerToken, requireMethod, sendJson } = require('../_lib/http');
 const { captureServerException } = require('../_lib/sentry');
 
 const normalizeSubscription = (subscription) => {
@@ -29,6 +29,9 @@ const normalizeSubscription = (subscription) => {
 
 module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'GET')) {
+    return;
+  }
+  if (!applyRateLimit(req, res, { keyPrefix: 'billing:status', max: 60, windowMs: 60 * 1000 })) {
     return;
   }
 
