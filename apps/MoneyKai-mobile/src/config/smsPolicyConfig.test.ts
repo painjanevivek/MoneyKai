@@ -42,10 +42,27 @@ describe('SMS research build policy config', () => {
 
     expect(packageJson.scripts?.start).toBe('react-native start');
     expect(packageJson.scripts?.android).toBe('react-native run-android');
-    expect(packageJson.scripts?.['android:bundle:release']).toBe('cd android && gradlew.bat :app:bundleRelease');
+    expect(packageJson.scripts?.['android:bundle:release']).toContain('android:verify:production-signing');
     expect(dependencies).not.toHaveProperty('expo');
     expect(dependencies).not.toHaveProperty('expo-router');
     expect(dependencies).not.toHaveProperty('eas-cli');
+  });
+
+  it('fails production Android signing before release-like builds can use debug signing', () => {
+    const packageJson = readJson<{ scripts?: Record<string, string> }>('package.json');
+    const buildGradle = readText('android/app/build.gradle');
+    const signingVerifier = readText('scripts/verify-android-production-signing.mjs');
+
+    expect(packageJson.scripts?.['android:verify:production-signing']).toBe(
+      'node ./scripts/verify-android-production-signing.mjs',
+    );
+    expect(packageJson.scripts?.['android:assemble:release']).toContain('--mode local-release');
+    expect(packageJson.scripts?.['android:bundle:release']).toContain('--mode local-release');
+    expect(buildGradle).toContain('needsUploadSigning && !hasMoneyKaiUploadSigning');
+    expect(buildGradle).not.toContain('signingConfigs.release : signingConfigs.debug');
+    expect(signingVerifier).toContain('debug.keystore');
+    expect(signingVerifier).toContain('androiddebugkey');
+    expect(signingVerifier).toContain('build.production.android.buildType must be app-bundle');
   });
 
   it('keeps capture inbox and raw SMS bodies out of the cloud backup snapshot contract', () => {

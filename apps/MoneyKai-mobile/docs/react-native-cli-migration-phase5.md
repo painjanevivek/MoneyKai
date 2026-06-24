@@ -196,6 +196,10 @@ Release APK:
 
 ```powershell
 cd D:\Work\Project\MoneyKai\apps\MoneyKai-mobile
+$env:MONEYKAI_UPLOAD_STORE_FILE="C:\path\to\upload-keystore.jks"
+$env:MONEYKAI_UPLOAD_STORE_PASSWORD="<store-password>"
+$env:MONEYKAI_UPLOAD_KEY_ALIAS="<key-alias>"
+$env:MONEYKAI_UPLOAD_KEY_PASSWORD="<key-password>"
 npm run android:assemble:release
 ```
 
@@ -209,6 +213,10 @@ Release AAB:
 
 ```powershell
 cd D:\Work\Project\MoneyKai\apps\MoneyKai-mobile
+$env:MONEYKAI_UPLOAD_STORE_FILE="C:\path\to\upload-keystore.jks"
+$env:MONEYKAI_UPLOAD_STORE_PASSWORD="<store-password>"
+$env:MONEYKAI_UPLOAD_KEY_ALIAS="<key-alias>"
+$env:MONEYKAI_UPLOAD_KEY_PASSWORD="<key-password>"
 npm run android:bundle:release
 ```
 
@@ -228,7 +236,7 @@ $env:MONEYKAI_UPLOAD_KEY_PASSWORD="<key-password>"
 npm run android:bundle:release
 ```
 
-Without those `MONEYKAI_UPLOAD_*` values, release builds fall back to the debug keystore and are not Play-upload-ready.
+Without those `MONEYKAI_UPLOAD_*` values, current release scripts and Gradle release/original tasks fail before producing a supposed production artifact.
 
 ## Verification
 
@@ -251,7 +259,7 @@ Artifacts created:
 
 ## Remaining Issues
 
-- Release APK/AAB builds are technically successful, but Play upload requires a real upload keystore configured through `MONEYKAI_UPLOAD_*`.
+- Release APK/AAB builds require a real upload keystore configured through `MONEYKAI_UPLOAD_*`; debug-keystore fallback is now blocked for release-like tasks.
 - Metro still logs a non-fatal `.pytest_cache` EPERM skip in some bundle commands because the monorepo root is watched. The bundle and Gradle builds still succeed.
 - Google Sign-In needs Firebase Console SHA-1/SHA-256 fingerprints for the actual debug and upload/release keys.
 - Contacts picker was not replaced with a new native contacts dependency; split bill recipient entry remains manual email entry in the CLI build.

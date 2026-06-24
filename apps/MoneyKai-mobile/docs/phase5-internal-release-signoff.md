@@ -45,13 +45,13 @@ This signoff package is refreshed against the current repo baseline after the Ju
 | Field | Current handoff value |
 | --- | --- |
 | Play-safe internal APK/AAB | Pending fresh rebuild from `b9687f8` or later |
-| Required signing | Release/original Gradle tasks require `MONEYKAI_UPLOAD_STORE_FILE`, `MONEYKAI_UPLOAD_STORE_PASSWORD`, `MONEYKAI_UPLOAD_KEY_ALIAS`, and `MONEYKAI_UPLOAD_KEY_PASSWORD` |
+| Required signing | EAS production AAB uses EAS-managed Android credentials; local Gradle release/original tasks require non-debug `MONEYKAI_UPLOAD_STORE_FILE`, `MONEYKAI_UPLOAD_STORE_PASSWORD`, `MONEYKAI_UPLOAD_KEY_ALIAS`, and `MONEYKAI_UPLOAD_KEY_PASSWORD` |
 | Permission gate | Run `npm.cmd --prefix apps\MoneyKai-mobile run android:verify:release-permissions -- --aab <handoff-aab>` against the exact AAB before Play upload |
 | Last documented Phase 5A APK | `artifacts/phase5a/moneykai-phase5-release-no-devclient-arm64.apk` |
 | Last documented Phase 5A AAB | `artifacts/phase5a/moneykai-phase5-release-no-devclient-arm64.aab` |
 | Last documented Original MoneyKai APK | `artifacts/phase5a/moneykai-phase5-sms-research-local-arm64.apk` |
 
-The Phase 5A artifacts listed in the readiness doc are historical local validation artifacts. Do not use them for the next June 24 handoff unless they are rebuilt from the current baseline, signed with the intended upload credentials, re-hashed, and re-verified.
+The Phase 5A artifacts listed in the readiness doc are historical local validation artifacts. Do not use them for the next June 24 handoff. The next Play-internal artifact should be a fresh EAS production AAB from `b9687f8` or later, signed by EAS-managed Android credentials, downloaded from the EAS build, re-hashed, and re-verified.
 
 ## Signoff checklist
 
@@ -80,17 +80,18 @@ Run or record these before sending the next build to internal testers:
 - `npm run mobile:typecheck`
 - `npm run mobile:lint`
 - `npm run mobile:test:capture`
+- `npm --prefix apps/MoneyKai-mobile run android:verify:production-signing`
 - `npm run web:typecheck`
 - `npm run web:lint`
 - `npm run web:build`
-- Rebuild the Play-safe APK/AAB from `b9687f8` or later with upload signing configured.
+- Rebuild the Play-safe AAB from `b9687f8` or later with `npx eas build --platform android --profile production`.
 - Verify the exact Play-safe AAB has no restricted SMS permissions.
 - Record artifact paths, SHA-256 hashes, device smoke result, and Sentry/backend diagnostics visibility.
 
 ## Known issues for internal testers
 
 - A current Play-ready upload artifact is pending rebuild and hash capture after the June 23-24 changes.
-- Release/original builds now require upload signing credentials; do not hand off unsigned or debug-signed release artifacts as Play candidates.
+- Local release/original builds now fail without non-debug upload signing credentials; do not hand off unsigned, debug-signed, preview, or SMS Research APK artifacts as Play candidates.
 - Multi-device/OEM validation is incomplete.
 - Notification capture behavior with real bank/payment apps needs more live-source evidence.
 - Original MoneyKai SMS validation needs real incoming carrier/bank SMS and remains local/internal only.
