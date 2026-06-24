@@ -15,6 +15,7 @@ This checklist tracks the launch-readiness items from the security pass. It focu
 - Billable or provider-touching API routes have a shared rate-limit guard for Stripe checkout, Stripe portal/status, and AI attachment analysis.
 - OpenRouter, Stripe, Gmail OAuth, Sentry auth, Firebase Admin, and broker/provider keys are server-side environment variables only.
 - Expo client runtime config reads public `EXPO_PUBLIC_*` values only. Build-time Sentry upload secrets stay in EAS/CI or local shell environment.
+- Web source maps are removed from production exports by default after optional Sentry upload. Only set `MONEYKAI_KEEP_PUBLIC_SOURCE_MAPS=true` for a temporary private diagnostic build.
 - Request body limits are enforced for JSON and inline AI image payloads.
 - Firebase ID tokens are verified server-side before billing routes access Stripe customer data.
 - Disabled provider routes return bounded static payloads until the backend secrets and storage are configured.
@@ -31,6 +32,7 @@ This checklist tracks the launch-readiness items from the security pass. It focu
 - Run one AI attachment analysis with the production backend key and inspect logs for redacted, non-sensitive errors only.
 - Run one mobile release build and confirm no restricted SMS permissions are present unless using an approved non-production research profile.
 - Review Sentry events for accidental tokens, raw notification bodies, statement rows, or PDF passwords before enabling broad sampling.
+- Confirm `npm run web:build` does not leave `.map` files or `sourceMappingURL` comments in `apps/MoneyKai-web/dist`.
 
 ## Repeatable commands
 

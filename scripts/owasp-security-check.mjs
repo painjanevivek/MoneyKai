@@ -6,6 +6,26 @@ const root = process.cwd();
 
 const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const readJson = (relativePath) => JSON.parse(readText(relativePath));
+const listFiles = (directory) => {
+  if (!fs.existsSync(directory)) {
+    return [];
+  }
+
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else {
+        files.push(fullPath);
+      }
+    }
+  };
+
+  walk(directory);
+  return files;
+};
 
 const results = [];
 
@@ -142,6 +162,22 @@ check(
   'No real env files tracked',
   trackedEnvFiles.length === 0,
   trackedEnvFiles.join(', ') || 'Only env templates are tracked'
+);
+
+const webDistDir = path.join(root, 'apps', 'MoneyKai-web', 'dist');
+const webDistFiles = listFiles(webDistDir);
+const publicSourceMaps = webDistFiles.filter((file) => file.endsWith('.map'));
+const jsFilesWithSourceMapRefs = webDistFiles.filter(
+  (file) => file.endsWith('.js') && fs.readFileSync(file, 'utf8').includes('sourceMappingURL=')
+);
+
+check(
+  'No public web source maps',
+  publicSourceMaps.length === 0 && jsFilesWithSourceMapRefs.length === 0,
+  webDistFiles.length === 0
+    ? 'No local web export found to inspect'
+    : publicSourceMaps.concat(jsFilesWithSourceMapRefs).map((file) => path.relative(root, file)).slice(0, 10).join(', ') ||
+        'No .map files or sourceMappingURL comments found in web export'
 );
 
 for (const result of results) {
