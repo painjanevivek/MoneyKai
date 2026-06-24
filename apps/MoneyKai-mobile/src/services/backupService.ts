@@ -23,6 +23,7 @@ import { getLatestUserBackup, isFirebaseConfigured, saveUserBackup } from './fir
 import { backendApi, isBackendConfigured } from './backendApi';
 import { getNetworkStatus } from './networkClient';
 import { useSyncStore } from '@/stores/useSyncStore';
+import { getCurrentFirebaseUser } from './authService';
 
 const AUTO_BACKUP_STATE_KEY = 'moneykai-auto-backup-state';
 const AUTO_BACKUP_DEBOUNCE_MS = 10_000;
@@ -45,6 +46,8 @@ interface AutomaticBackupState {
   lastBackupAt: number | null;
   reason: string | null;
 }
+
+type ProfileGender = 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'self_describe';
 
 const DEFAULT_AUTOMATIC_BACKUP_STATE: AutomaticBackupState = {
   pending: false,
@@ -104,6 +107,8 @@ export interface MoneyKaiBackupSnapshot {
     full_name: string;
     avatar_url?: string;
     auth_provider?: 'email' | 'google';
+    dob?: string;
+    gender?: ProfileGender;
   };
   settings: {
     app: BackupAppSettings;
@@ -152,6 +157,18 @@ const normalizeUser = () => {
   if (!user) {
     throw new Error('You need to be signed in to back up or restore data.');
   }
+
+  if (isFirebaseConfigured()) {
+    const firebaseUser = getCurrentFirebaseUser();
+    if (!firebaseUser) {
+      throw new Error('Firebase has not finished restoring your signed-in session. Wait a moment, then try backup or restore again.');
+    }
+
+    if (firebaseUser.uid !== user.id) {
+      throw new Error('The signed-in Firebase account does not match the local MoneyKai profile. Sign out, sign back in, then try again.');
+    }
+  }
+
   return user;
 };
 
@@ -304,6 +321,8 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
       full_name: user.full_name,
       avatar_url: user.avatar_url,
       auth_provider: user.auth_provider,
+      dob: user.dob,
+      gender: user.gender,
     },
     settings: {
       app: {
@@ -366,6 +385,7 @@ export const summarizeBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot): Money
 
 export const saveCloudBackup = async (options: { silent?: boolean; preserveAutomaticBackupState?: boolean } = {}) => {
   const sequenceAtStart = (await loadAutomaticBackupState()).sequence;
+  normalizeUser();
 
   if (isBackendConfigured()) {
     const response = await backendApi.createBackup();
@@ -469,6 +489,17 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
   }
 
   void clearAutomaticBackupQueue().catch(() => undefined);
+  useAuthStore.setState((state) => ({
+    user: state.user
+      ? {
+          ...state.user,
+          full_name: snapshot.profile.full_name,
+          avatar_url: snapshot.profile.avatar_url,
+          dob: snapshot.profile.dob,
+          gender: snapshot.profile.gender,
+        }
+      : state.user,
+  }));
 
   const restoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
   const restoredDarkMode = snapshot.settings.app.darkModeEnabled ?? isThemeModeDark(snapshot.settings.app.theme);

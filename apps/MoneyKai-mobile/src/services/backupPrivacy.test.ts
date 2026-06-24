@@ -6,6 +6,10 @@ const mocks = vi.hoisted(() => ({
     id: 'user-123',
     email: 'user@example.com',
     full_name: 'Money User',
+    avatar_url: 'moneykai://avatar/user-123',
+    auth_provider: 'email' as const,
+    dob: '1990-04-18',
+    gender: 'prefer_not_to_say' as const,
   },
   settingsState: {
     theme: 'light',
@@ -111,6 +115,20 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   },
 }));
 
+vi.mock('react-native', () => ({
+  Dimensions: {
+    get: vi.fn(() => ({ width: 390, height: 844 })),
+  },
+  NativeModules: {},
+  Platform: {
+    OS: 'android',
+    select: vi.fn((options: Record<string, unknown>) => options.android ?? options.default),
+  },
+  StyleSheet: {
+    create: vi.fn((styles) => styles),
+  },
+}));
+
 vi.mock('@/services/firebase', () => ({
   firebaseDb: {},
   isFirebaseConfigured: () => false,
@@ -120,6 +138,10 @@ vi.mock('@/services/firestoreService', () => ({
   getLatestUserBackup: vi.fn(),
   isFirebaseConfigured: () => false,
   saveUserBackup: vi.fn(),
+}));
+
+vi.mock('@/services/authService', () => ({
+  getCurrentFirebaseUser: vi.fn(() => null),
 }));
 
 vi.mock('@/services/backendApi', () => ({
@@ -140,6 +162,20 @@ vi.mock('@/services/notificationService', () => ({
 }));
 
 describe('backup privacy', () => {
+  it('preserves signed-in profile fields needed for restore validation', () => {
+    const snapshot = buildBackupSnapshot();
+
+    expect(snapshot.profile).toMatchObject({
+      id: 'user-123',
+      email: 'user@example.com',
+      full_name: 'Money User',
+      avatar_url: 'moneykai://avatar/user-123',
+      auth_provider: 'email',
+      dob: '1990-04-18',
+      gender: 'prefer_not_to_say',
+    });
+  });
+
   it('does not include capture inbox, raw SMS settings, signals, drafts, or monitored account samples', () => {
     const snapshot = buildBackupSnapshot();
     const serialized = JSON.stringify(snapshot);

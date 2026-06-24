@@ -34,7 +34,7 @@ import {
   type ThemePaletteId,
 } from '@/constants/theme';
 import type { LinkedAccount } from '@moneykai/domain';
-import { firebaseDb, isFirebaseConfigured } from './firebase';
+import { firebaseAuth, firebaseDb, isFirebaseConfigured } from './firebase';
 import { backendApi, isBackendConfigured } from './backendApi';
 import {
   AUTO_BACKUP_MIN_INTERVAL_MS,
@@ -55,6 +55,8 @@ interface BackupAppSettings {
   hapticEnabled: boolean;
 }
 
+type ProfileGender = 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'self_describe';
+
 let automaticBackupInFlight = false;
 
 export interface MoneyKaiBackupSnapshot {
@@ -66,6 +68,8 @@ export interface MoneyKaiBackupSnapshot {
     full_name: string;
     avatar_url?: string;
     auth_provider?: 'email' | 'google';
+    dob?: string;
+    gender?: ProfileGender;
   };
   settings: {
     app: BackupAppSettings;
@@ -114,6 +118,18 @@ const normalizeUser = () => {
   if (!user) {
     throw new Error('You need to be signed in to back up or restore data.');
   }
+
+  if (isFirebaseConfigured()) {
+    const firebaseUser = firebaseAuth.currentUser;
+    if (!firebaseUser) {
+      throw new Error('Firebase has not finished restoring your signed-in session. Wait a moment, then try backup or restore again.');
+    }
+
+    if (firebaseUser.uid !== user.id) {
+      throw new Error('The signed-in Firebase account does not match the local MoneyKai profile. Sign out, sign back in, then try again.');
+    }
+  }
+
   return user;
 };
 
@@ -243,6 +259,8 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
       full_name: user.full_name,
       avatar_url: user.avatar_url,
       auth_provider: user.auth_provider,
+      dob: user.dob,
+      gender: user.gender,
     },
     settings: {
       app: {
@@ -305,6 +323,7 @@ export const summarizeBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot): Money
 
 export const saveCloudBackup = async (options: { silent?: boolean; preserveAutomaticBackupState?: boolean } = {}) => {
   const sequenceAtStart = (await loadAutomaticBackupState()).sequence;
+  normalizeUser();
 
   if (isBackendConfigured()) {
     const response = await backendApi.createBackup();
@@ -396,6 +415,17 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
   }
 
   void clearAutomaticBackupQueue().catch(() => undefined);
+  useAuthStore.setState((state) => ({
+    user: state.user
+      ? {
+          ...state.user,
+          full_name: snapshot.profile.full_name,
+          avatar_url: snapshot.profile.avatar_url,
+          dob: snapshot.profile.dob,
+          gender: snapshot.profile.gender,
+        }
+      : state.user,
+  }));
 
   const rawRestoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
   const restoredPalette = getDefaultedThemePalette(rawRestoredPalette, snapshot.settings.app.theme);

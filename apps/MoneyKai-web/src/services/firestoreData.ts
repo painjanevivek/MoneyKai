@@ -45,7 +45,15 @@ type BudgetSettingsDoc = {
 };
 
 export type FirestoreUserSnapshot = {
-  profile: { id: string; email: string; full_name: string; avatar_url?: string; auth_provider?: string };
+  profile: {
+    id: string;
+    email: string;
+    full_name: string;
+    avatar_url?: string;
+    auth_provider?: string;
+    dob?: string;
+    gender?: 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'self_describe';
+  };
   settings: {
     app: AppSettingsDoc;
     budget: BudgetSettingsDoc;

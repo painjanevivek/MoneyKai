@@ -28,6 +28,8 @@ export interface BackendSnapshot {
     full_name: string;
     avatar_url?: string;
     auth_provider?: 'email' | 'google';
+    dob?: string;
+    gender?: 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'self_describe';
   };
   settings: {
     app: BackendAppSettings;

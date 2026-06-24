@@ -106,6 +106,14 @@ const webFirebaseServicePath = path.join(root, 'apps', 'MoneyKai-web', 'src', 's
 const webAuthStorePath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'stores', 'useAuthStore.ts');
 const webTabsLayoutPath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'app', '(tabs)', '_layout.tsx');
 const webFirebaseAuthConfigPath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'config', 'firebaseAuthWeb.ts');
+const webBackupServicePath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'services', 'backupService.ts');
+const mobileBackupServicePath = path.join(root, 'apps', 'MoneyKai-mobile', 'src', 'services', 'backupService.ts');
+const webProfileEditPath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'app', 'profile-edit.tsx');
+const mobileProfileEditPath = path.join(root, 'apps', 'MoneyKai-mobile', 'src', 'screens', 'app', 'ProfileEditScreen.tsx');
+const mobileAuthStorePath = path.join(root, 'apps', 'MoneyKai-mobile', 'src', 'stores', 'useAuthStore.ts');
+const webBackendApiPath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'services', 'backendApi.ts');
+const mobileBackendApiPath = path.join(root, 'apps', 'MoneyKai-mobile', 'src', 'services', 'backendApi.ts');
+const firestoreRulesPath = path.join(root, 'firestore.rules');
 const webPrivacyPolicyPath = path.join(root, 'apps', 'MoneyKai-web', 'src', 'app', 'privacy-policy.tsx');
 const mobilePrivacyPolicyPath = path.join(root, 'apps', 'MoneyKai-mobile', 'src', 'app', 'privacy-policy.tsx');
 const mobileEnvironmentConfigPath = path.join(root, 'apps', 'MoneyKai-mobile', 'src', 'config', 'environment.ts');
@@ -124,6 +132,14 @@ const webFirebaseServiceSource = readTextFile(webFirebaseServicePath);
 const webAuthStoreSource = readTextFile(webAuthStorePath);
 const webTabsLayoutSource = readTextFile(webTabsLayoutPath);
 const webFirebaseAuthConfigSource = readTextFile(webFirebaseAuthConfigPath);
+const webBackupServiceSource = readTextFile(webBackupServicePath);
+const mobileBackupServiceSource = readTextFile(mobileBackupServicePath);
+const webProfileEditSource = readTextFile(webProfileEditPath);
+const mobileProfileEditSource = readTextFile(mobileProfileEditPath);
+const mobileAuthStoreSource = readTextFile(mobileAuthStorePath);
+const webBackendApiSource = readTextFile(webBackendApiPath);
+const mobileBackendApiSource = readTextFile(mobileBackendApiPath);
+const firestoreRulesSource = readTextFile(firestoreRulesPath);
 const webPrivacyPolicySource = readTextFile(webPrivacyPolicyPath);
 const mobilePrivacyPolicySource = readTextFile(mobilePrivacyPolicyPath);
 const mobileEnvironmentConfigSource = readTextFile(mobileEnvironmentConfigPath);
@@ -257,6 +273,104 @@ printStatus(
   'Protected-route hydration gate',
   protectedRoutesWaitForHydration,
   protectedRoutesWaitForHydration ? 'Signed-out redirects wait for hydration' : 'Protected routes may redirect before auth hydration completes'
+);
+
+printSection('Signed-In Backup/Restore Path');
+
+const appProfilesUseFirebaseUid =
+  Boolean(webAuthStoreSource?.includes('id: user.uid')) &&
+  Boolean(mobileAuthStoreSource?.includes('id: user.uid'));
+printStatus(
+  'App profile id source',
+  appProfilesUseFirebaseUid,
+  appProfilesUseFirebaseUid
+    ? 'Web and mobile app profiles use the Firebase UID'
+    : 'Signed-in app profiles must use the Firebase UID so Firestore user paths match request.auth.uid'
+);
+
+const backupSnapshotsCarryProfile =
+  [webBackupServiceSource, mobileBackupServiceSource].every((source) =>
+    ['id: user.id', 'email: user.email', 'full_name: user.full_name', 'avatar_url: user.avatar_url', 'auth_provider: user.auth_provider'].every(
+      (snippet) => source?.includes(snippet)
+    )
+  ) &&
+  [webBackupServiceSource, mobileBackupServiceSource].every((source) =>
+    ['dob: user.dob', 'gender: user.gender'].every((snippet) => source?.includes(snippet))
+  );
+printStatus(
+  'Backup profile payload',
+  backupSnapshotsCarryProfile,
+  backupSnapshotsCarryProfile
+    ? 'Backup snapshots include account identity, avatar, provider, DOB, and gender profile fields'
+    : 'Backup snapshots should carry the signed-in profile fields restored by profile edit'
+);
+
+const backupIdentityGuard =
+  [webBackupServiceSource, mobileBackupServiceSource].every((source) =>
+    Boolean(source?.includes('firebaseUser.uid !== user.id')) &&
+    Boolean(source?.includes('The signed-in Firebase account does not match the local MoneyKai profile'))
+  );
+printStatus(
+  'Firebase UID backup guard',
+  backupIdentityGuard,
+  backupIdentityGuard
+    ? 'Manual and automatic backup paths fail early when Firebase UID and local profile id diverge'
+    : 'Backup paths should reject mismatched Firebase UID/local profile ids before Firestore writes'
+);
+
+const restoresProfileFromBackup =
+  [webBackupServiceSource, mobileBackupServiceSource].every((source) =>
+    Boolean(source?.includes('useAuthStore.setState((state)')) &&
+    ['full_name: snapshot.profile.full_name', 'avatar_url: snapshot.profile.avatar_url', 'dob: snapshot.profile.dob', 'gender: snapshot.profile.gender'].every(
+      (snippet) => source?.includes(snippet)
+    )
+  );
+printStatus(
+  'Restore profile hydration',
+  restoresProfileFromBackup,
+  restoresProfileFromBackup
+    ? 'Restore refreshes the local signed-in profile from the backup snapshot'
+    : 'Restore should refresh local profile metadata as well as finance data'
+);
+
+const webFirebaseProfileWriteIndex = webProfileEditSource?.indexOf('await updateFirebaseProfile(firebaseAuth.currentUser') ?? -1;
+const webLocalProfileWriteIndex = webProfileEditSource?.indexOf('updateProfile({') ?? -1;
+const mobileFirebaseProfileWriteIndex = mobileProfileEditSource?.indexOf('await updateFirebaseUserProfile(firebaseUser') ?? -1;
+const mobileLocalProfileWriteIndex = mobileProfileEditSource?.indexOf('updateProfile({') ?? -1;
+const profileEditWritesFirebaseFirst =
+  webFirebaseProfileWriteIndex >= 0 &&
+  webLocalProfileWriteIndex > webFirebaseProfileWriteIndex &&
+  mobileFirebaseProfileWriteIndex >= 0 &&
+  mobileLocalProfileWriteIndex > mobileFirebaseProfileWriteIndex;
+printStatus(
+  'Profile edit persistence order',
+  profileEditWritesFirebaseFirst,
+  profileEditWritesFirebaseFirst
+    ? 'Profile edit updates Firebase Auth before queuing the local backup-backed profile update'
+    : 'Profile edit should update Firebase Auth before local profile state changes are queued for backup'
+);
+
+const firestoreBackupRulesReady =
+  Boolean(firestoreRulesSource?.includes('match /backups/{document}')) &&
+  Boolean(firestoreRulesSource?.includes('allow read, write: if isOwner(userId);'));
+printStatus(
+  'Firestore backup owner rule',
+  firestoreBackupRulesReady,
+  firestoreBackupRulesReady
+    ? 'users/{uid}/backups is owner-scoped for signed-in Firebase users'
+    : 'Firestore rules must allow only the signed-in owner to read/write users/{uid}/backups'
+);
+
+const backendBackupClientRoutesReady =
+  [webBackendApiSource, mobileBackendApiSource].every((source) =>
+    ['/v1/backups', '/v1/backups/latest', '/v1/backups/restore-latest'].every((route) => source?.includes(route))
+  );
+printStatus(
+  'Backend backup client routes',
+  backendBackupClientRoutesReady,
+  backendBackupClientRoutesReady
+    ? 'Web and mobile clients point at create/latest/restore backup routes when backend mode is enabled'
+    : 'Backend-enabled backup mode needs create, latest, and restore-latest client routes'
 );
 
 printSection('Pre-launch Security Checklist');
