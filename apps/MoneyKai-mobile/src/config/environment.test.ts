@@ -14,6 +14,8 @@ const trackedEnvKeys = [
   'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
   'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
   'EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID',
+  'EXPO_PUBLIC_APP_STORE_URL',
+  'EXPO_PUBLIC_PLAY_STORE_URL',
 ] as const;
 
 const loadEnvironment = async (env: Partial<Record<(typeof trackedEnvKeys)[number], string>>): Promise<EnvironmentModule> => {
@@ -127,5 +129,33 @@ describe('app environment', () => {
 
     expect(environment.hasGoogleClientIds('android')).toBe(true);
     expect(environment.hasGoogleClientIds('ios')).toBe(false);
+  });
+
+  it('does not fall back to generic store search URLs when review links are missing', async () => {
+    const environment = await loadEnvironment({
+      EXPO_PUBLIC_APP_STORE_URL: '',
+      EXPO_PUBLIC_PLAY_STORE_URL: '',
+    });
+
+    expect(environment.getStoreReviewUrl('ios')).toBeNull();
+    expect(environment.getStoreReviewUrl('android')).toBeNull();
+    expect(environment.getStoreReviewUrl('web')).toBeNull();
+  });
+
+  it('returns configured store review links when they exist', async () => {
+    const environment = await loadEnvironment({
+      EXPO_PUBLIC_APP_STORE_URL: 'https://apps.apple.com/app/moneykai/id123456789?action=write-review',
+      EXPO_PUBLIC_PLAY_STORE_URL: 'https://play.google.com/store/apps/details?id=com.moneykai.app&showAllReviews=true',
+    });
+
+    expect(environment.getStoreReviewUrl('ios')).toBe(
+      'https://apps.apple.com/app/moneykai/id123456789?action=write-review'
+    );
+    expect(environment.getStoreReviewUrl('android')).toBe(
+      'https://play.google.com/store/apps/details?id=com.moneykai.app&showAllReviews=true'
+    );
+    expect(environment.getStoreReviewUrl('web')).toBe(
+      'https://play.google.com/store/apps/details?id=com.moneykai.app&showAllReviews=true'
+    );
   });
 });

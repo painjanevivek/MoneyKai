@@ -490,9 +490,17 @@ export default function SettingsScreen() {
   };
 
   const handleRate = () => {
-    const url = getStoreReviewUrl(Platform.OS === 'ios' ? 'ios' : 'android');
+    const url = getStoreReviewUrl(Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web');
+    if (!url) {
+      Alert.alert(
+        'Reviews coming soon',
+        'Thanks for wanting to rate MoneyKai. Store reviews will open here as soon as the live listing URL is configured. For launch feedback, use Help & Support from Settings.'
+      );
+      return;
+    }
+
     Linking.openURL(url).catch(() => {
-      Alert.alert('Rate the App', 'Open the store listing for MoneyKai to leave a review.');
+      Alert.alert('Review unavailable', 'MoneyKai could not open the store listing right now. Please try again later.');
     });
   };
 

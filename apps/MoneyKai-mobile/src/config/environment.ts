@@ -204,13 +204,15 @@ export const hasGoogleClientIds = (platform: string = 'web'): boolean => {
   return true;
 };
 
-export const getStoreReviewUrl = (platform: 'ios' | 'android'): string => {
-  const configuredUrl = platform === 'ios' ? storeReviewEnv.iosUrl : storeReviewEnv.androidUrl;
-  if (isRealValue(configuredUrl)) {
-    return configuredUrl;
+export const getStoreReviewUrl = (platform: 'ios' | 'android' | 'web'): string | null => {
+  if (platform === 'web') {
+    return isRealValue(storeReviewEnv.androidUrl)
+      ? storeReviewEnv.androidUrl
+      : isRealValue(storeReviewEnv.iosUrl)
+        ? storeReviewEnv.iosUrl
+        : null;
   }
 
-  return platform === 'ios'
-    ? 'https://apps.apple.com/search?term=MoneyKai'
-    : 'https://play.google.com/store/search?q=MoneyKai&c=apps';
+  const configuredUrl = platform === 'ios' ? storeReviewEnv.iosUrl : storeReviewEnv.androidUrl;
+  return isRealValue(configuredUrl) ? configuredUrl : null;
 };
