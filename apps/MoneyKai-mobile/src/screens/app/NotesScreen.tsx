@@ -20,6 +20,10 @@ export function NotesScreen() {
   const addNote = useNotesStore((state) => state.addNote);
   const deleteNote = useNotesStore((state) => state.deleteNote);
   const togglePin = useNotesStore((state) => state.togglePin);
+  const pendingNoteIds = useNotesStore((state) => state.pendingOptimisticNoteIds);
+  const optimisticError = useNotesStore((state) => state.optimisticError);
+  const retryLastOptimisticNoteAction = useNotesStore((state) => state.retryLastOptimisticNoteAction);
+  const clearOptimisticError = useNotesStore((state) => state.clearOptimisticError);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
@@ -43,28 +47,32 @@ export function NotesScreen() {
   };
 
   const renderNote = React.useCallback(
-    ({ item: note }: { item: Note }) => (
-      <View style={styles.panel}>
+    ({ item: note }: { item: Note }) => {
+      const isPending = pendingNoteIds.includes(note.id);
+
+      return (
+      <View style={[styles.panel, isPending ? { opacity: 0.74, borderColor: colors.primary } : null]}>
         <View style={styles.row}>
           <View style={{ flex: 1, paddingRight: Spacing.md }}>
             <Text style={styles.value} numberOfLines={1}>{note.title}</Text>
-            <Text style={styles.muted}>{formatDate(note.updated_at)}</Text>
+            <Text style={styles.muted}>{isPending ? 'Saving...' : formatDate(note.updated_at)}</Text>
           </View>
-          <TouchableOpacity onPress={() => togglePin(note.id)} style={{ padding: Spacing.sm }}>
+          <TouchableOpacity disabled={isPending} onPress={() => togglePin(note.id)} style={{ padding: Spacing.sm }}>
             <MaterialCommunityIcons
               name={note.is_pinned ? 'pin' : 'pin-outline'}
               size={22}
               color={note.is_pinned ? colors.primary : colors.textSecondary}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => deleteNote(note.id)} style={{ padding: Spacing.sm }}>
+          <TouchableOpacity disabled={isPending} onPress={() => deleteNote(note.id)} style={{ padding: Spacing.sm }}>
             <MaterialCommunityIcons name="trash-can-outline" size={22} color={colors.error} />
           </TouchableOpacity>
         </View>
         <Text style={{ ...styles.muted, marginTop: Spacing.sm }}>{note.content}</Text>
       </View>
-    ),
-    [colors.error, colors.primary, colors.textSecondary, deleteNote, styles, togglePin]
+    );
+    },
+    [colors.error, colors.primary, colors.textSecondary, deleteNote, pendingNoteIds, styles, togglePin]
   );
 
   return (
@@ -101,6 +109,28 @@ export function NotesScreen() {
               />
               <Button title="Save note" onPress={saveNote} />
             </View>
+            {optimisticError ? (
+              <View style={[styles.panel, { borderColor: colors.error }]}>
+                <Text style={styles.value}>Cloud save needs attention</Text>
+                <Text style={{ ...styles.muted, marginTop: Spacing.xs }}>{optimisticError}</Text>
+                <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
+                  {retryLastOptimisticNoteAction ? (
+                    <Button
+                      title="Retry"
+                      icon="refresh"
+                      onPress={retryLastOptimisticNoteAction}
+                      style={{ flex: 1 }}
+                    />
+                  ) : null}
+                  <Button
+                    title="Dismiss"
+                    variant="outline"
+                    onPress={clearOptimisticError}
+                    style={{ flex: 1 }}
+                  />
+                </View>
+              </View>
+            ) : null}
           </>
         }
         ListEmptyComponent={

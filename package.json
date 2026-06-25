@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "moneykai-monorepo",
   "private": true,
   "workspaces": [
@@ -16,6 +16,7 @@
     "mobile:typecheck": "npm --prefix apps/MoneyKai-mobile run typecheck",
     "mobile:test:capture": "npm --prefix apps/MoneyKai-mobile run test:capture",
     "mobile:build": "npm --prefix apps/MoneyKai-mobile run build",
+    "mobile:release:android:capture": "npm --prefix apps/MoneyKai-mobile run android:capture:handoff --",
     "mobile:release:android:verify": "npm --prefix apps/MoneyKai-mobile run android:verify:release-permissions --",
     "web:start": "npm --prefix apps/MoneyKai-web run start",
     "web:lint": "npm --prefix apps/MoneyKai-web run lint",

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { ProgressFlow } from '@/components/ui/ProgressFlow';
 import { AiModelConsole } from '@/components/ai/AiModelConsole';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
@@ -22,6 +23,7 @@ import {
 } from '@/features/ai/hooks';
 import { formatAiResponseText, withPlainTextAiStyle } from '@/features/ai/responseText';
 import type { AiAttachmentAnalyzeTask } from '@/features/ai/types';
+import { useStagedProgress, type ProgressFlowStep } from '@/hooks/useStagedProgress';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
@@ -52,6 +54,33 @@ const TASK_OPTIONS: { id: AiAttachmentAnalyzeTask; title: string; subtitle: stri
   },
 ];
 
+const AI_REVIEW_PROGRESS_STEPS: ProgressFlowStep[] = [
+  {
+    id: 'prepare',
+    label: 'Preparing image safely',
+    detail: 'Checking file type, size, and review mode before upload.',
+    targetProgress: 24,
+  },
+  {
+    id: 'upload',
+    label: 'Uploading for analysis',
+    detail: 'Sending the selected file to the backend AI route.',
+    targetProgress: 48,
+  },
+  {
+    id: 'analyse',
+    label: 'Reading visual details',
+    detail: 'Waiting for the configured vision model to return structured findings.',
+    targetProgress: 76,
+  },
+  {
+    id: 'review',
+    label: 'Preparing review result',
+    detail: 'Holding final completion until the server response is confirmed.',
+    targetProgress: 88,
+  },
+];
+
 export default function AiReviewScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -70,6 +99,7 @@ export default function AiReviewScreen() {
   const canLoadAiStatus = !isHydratingSession && isAuthenticated;
   const { data: providerStatus, error: providerError, loading: loadingProviderStatus } = useAiProviderStatus(canLoadAiStatus);
   const analyzeState = useAiAttachmentFileAnalysis();
+  const analysisProgress = useStagedProgress({ steps: AI_REVIEW_PROGRESS_STEPS });
 
   const attachmentsReady = Boolean(
     providerStatus?.enabled &&
@@ -95,10 +125,11 @@ export default function AiReviewScreen() {
     setSaveMessage(null);
     setPickerError(null);
     analyzeState.reset();
+    analysisProgress.reset();
     if (nextTask) {
       setPrompt(buildDefaultAttachmentPrompt(nextTask));
     }
-  }, [analyzeState]);
+  }, [analysisProgress, analyzeState]);
 
   const handleSelectTask = (nextTask: AiAttachmentAnalyzeTask) => {
     setTask(nextTask);
@@ -158,6 +189,7 @@ export default function AiReviewScreen() {
       return;
     }
 
+    analysisProgress.start();
     try {
       const response = await analyzeState.analyzeFile({
         file: selectedAsset.file,
@@ -175,8 +207,10 @@ export default function AiReviewScreen() {
 
       setSaveMessage(null);
       setReceiptDraft(task === 'receipt_extract' ? createReceiptReviewDraft(response) : null);
+      analysisProgress.succeed();
     } catch {
       setReceiptDraft(null);
+      analysisProgress.fail();
     }
   };
 
@@ -387,6 +421,17 @@ export default function AiReviewScreen() {
             loading={analysisPending}
             disabled={!canAnalyze}
             onPress={analyzeSelectedAsset}
+          />
+          <ProgressFlow
+            activeStepIndex={analysisProgress.activeStepIndex}
+            errorMessage={analysisError}
+            onRetry={selectedAsset && attachmentsReady && !requiresSignIn ? analyzeSelectedAsset : undefined}
+            progress={analysisProgress.progress}
+            retryLabel="Try analysis again"
+            status={analysisProgress.status}
+            steps={analysisProgress.steps}
+            successMessage="Analysis is ready for human review."
+            title="Analysing attachment"
           />
           {!attachmentsReady ? (
             <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>

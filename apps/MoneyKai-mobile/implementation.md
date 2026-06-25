@@ -580,7 +580,7 @@ Goal: decide whether the APK is ready for internal testers.
 
 Completion criteria: MoneyKai has a controlled internal APK release with documented scope, risks, known issues, and feedback loop.
 
-Status: signoff package prepared for internal testing in `docs/phase5-internal-release-signoff.md`. Phase 1 through Phase 4 are confirmed at the documentation level, Phase 4 keeps SMS Play-safe/manual-only while preserving Original MoneyKai as local-only native SMS, backend diagnostics are active for app-emitted errors, and privacy/disclosure copy is present. Shipping and feedback collection remain operational steps after tester distribution.
+Status: signoff package prepared for internal testing in `docs/phase5-internal-release-signoff.md`. Phase 1 through Phase 4 are confirmed at the documentation level, Phase 4 keeps SMS Play-safe/manual-only while preserving Original MoneyKai as local-only native SMS, backend diagnostics are active for app-emitted errors, and privacy/disclosure copy is present. The feedback loop now points testers to Settings > Help & Support, `support@moneykai.app`, and a dedicated Bug report email path with the sanitized testing report bundle requested for defects. Shipping remains an operational step after tester distribution.
 
 ## Phase 6: Account Aggregator Feasibility And Bank Sync
 

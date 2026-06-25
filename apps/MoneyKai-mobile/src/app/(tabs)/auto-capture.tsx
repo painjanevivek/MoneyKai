@@ -230,6 +230,7 @@ export default function AutoCaptureScreen() {
   const [isSmsInboxImporting, setIsSmsInboxImporting] = useState(false);
   const [showSmsImportProgress, setShowSmsImportProgress] = useState(false);
   const [smsImportProgress, setSmsImportProgress] = useState<SmsImportProgress | undefined>();
+  const [smsImportFailure, setSmsImportFailure] = useState<string | undefined>();
   const pendingDrafts = useMemo(() => drafts.filter((draft) => draft.status === 'pending'), [drafts]);
   const visiblePendingDrafts = useMemo(() => pendingDrafts.slice(0, MAX_VISIBLE_DRAFT_CARDS), [pendingDrafts]);
   const recentSignals = useMemo(() => signals.slice(0, 5), [signals]);
@@ -344,27 +345,36 @@ export default function AutoCaptureScreen() {
     setIsSmsInboxImporting(true);
     setShowSmsImportProgress(true);
     setSmsImportProgress(undefined);
+    setSmsImportFailure(undefined);
     try {
       const permissionStatus = await requestNativeSmsPermission();
       if (permissionStatus !== 'granted') {
-        Alert.alert('SMS permission needed', 'Grant Android SMS access to import recent bank and payment transaction messages.');
+        const message = 'Grant Android SMS access to import recent bank and payment transaction messages.';
+        setSmsImportFailure(message);
+        Alert.alert('SMS permission needed', message);
         return;
       }
 
       const summary = await importRecentSmsTransactionsFromInbox(smsImportRangeId, setSmsImportProgress);
 
       if (summary.status === 'permission_denied') {
-        Alert.alert('SMS permission needed', summary.message ?? 'Android denied SMS inbox access.');
+        const message = summary.message ?? 'Android denied SMS inbox access.';
+        setSmsImportFailure(message);
+        Alert.alert('SMS permission needed', message);
         return;
       }
 
       if (summary.status === 'unsupported') {
-        Alert.alert('Android build required', summary.message ?? 'Install a MoneyKai Android development build to import SMS history.');
+        const message = summary.message ?? 'Install a MoneyKai Android development build to import SMS history.';
+        setSmsImportFailure(message);
+        Alert.alert('Android build required', message);
         return;
       }
 
       if (summary.status === 'error') {
-        Alert.alert('Import failed', summary.message ?? 'MoneyKai could not import SMS messages right now.');
+        const message = summary.message ?? 'MoneyKai could not import SMS messages right now.';
+        setSmsImportFailure(message);
+        Alert.alert('Import failed', message);
         return;
       }
 
@@ -394,6 +404,10 @@ export default function AutoCaptureScreen() {
         summary.draftedCount > 0 ? 'SMS drafts imported' : 'No new drafts',
         details || 'No official bank or payment transaction SMS were found for the selected range.'
       );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'MoneyKai could not import SMS messages right now.';
+      setSmsImportFailure(message);
+      Alert.alert('Import failed', message);
     } finally {
       setIsSmsInboxImporting(false);
     }
@@ -711,7 +725,9 @@ export default function AutoCaptureScreen() {
       <SmsImportProgressSheet
         visible={showSmsImportProgress}
         progress={smsImportProgress}
+        failureMessage={smsImportFailure}
         onClose={() => setShowSmsImportProgress(false)}
+        onRetry={() => void handleImportRecentSmsInbox()}
       />
     </SafeAreaView>
   );

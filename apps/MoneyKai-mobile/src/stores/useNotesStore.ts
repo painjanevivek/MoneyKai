@@ -7,40 +7,36 @@ import { useAuthStore } from './useAuthStore';
 import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { runOptimisticMutation } from '@/services/optimisticMutation';
 
-const syncNoteCreate = (note: Note) => {
+const syncNoteCreate = async (note: Note) => {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
-  void upsertUserDoc('notes', userId, note).catch((error) => {
-    if (__DEV__) {
-      console.warn('[MoneyKai] failed to sync note create:', error);
-    }
-  });
+  await upsertUserDoc('notes', userId, note);
 };
 
-const syncNoteUpdate = (id: string, updates: Partial<Note>) => {
+const syncNoteUpdate = async (id: string, updates: Partial<Note>) => {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
-  void upsertUserDoc('notes', userId, { id, ...updates } as Note).catch((error) => {
-    if (__DEV__) {
-      console.warn('[MoneyKai] failed to sync note update:', error);
-    }
-  });
+  await upsertUserDoc('notes', userId, { id, ...updates } as Note);
 };
 
-const syncNoteDelete = (id: string) => {
+const syncNoteDelete = async (id: string) => {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
-  void deleteUserDoc('notes', userId, id).catch((error) => {
-    if (__DEV__) {
-      console.warn('[MoneyKai] failed to sync note delete:', error);
-    }
-  });
+  await deleteUserDoc('notes', userId, id);
+};
+
+const formatOptimisticNoteError = (action: string, error: unknown) => {
+  const message = error instanceof Error ? error.message : 'The cloud save did not finish.';
+  return `${action} was rolled back. ${message}`;
 };
 
 interface NotesState {
   notes: Note[];
   isSeeded: boolean;
+  pendingOptimisticNoteIds: string[];
+  optimisticError: string | null;
 
   // Getters
   getPinnedNotes: () => Note[];
@@ -53,6 +49,8 @@ interface NotesState {
   togglePin: (id: string) => void;
   toggleChecklistItem: (noteId: string, itemId: string) => void;
   addChecklistItem: (noteId: string, text: string) => void;
+  retryLastOptimisticNoteAction: (() => void) | null;
+  clearOptimisticError: () => void;
   /** Removes seeded sample notes and resets isSeeded. Call on sign-out. */
   clearSeedData: () => void;
 }
@@ -100,6 +98,9 @@ export const useNotesStore = create<NotesState>()(
       return {
         notes: isFirebaseConfigured() ? [] : SAMPLE_NOTES,
         isSeeded: false,
+        pendingOptimisticNoteIds: [],
+        optimisticError: null,
+        retryLastOptimisticNoteAction: null,
 
         getPinnedNotes: () => {
           const notes = get().notes;
@@ -132,8 +133,45 @@ export const useNotesStore = create<NotesState>()(
             created_at: now,
             updated_at: now,
           };
-          set((state) => ({ notes: [newNote, ...state.notes] }));
-          syncNoteCreate(newNote);
+          void runOptimisticMutation<Note[]>({
+            mutationId: `note:create:${newNote.id}`,
+            snapshot: () => get().notes,
+            apply: () =>
+              set((state) => ({
+                notes: [newNote, ...state.notes],
+                pendingOptimisticNoteIds: [...new Set([...state.pendingOptimisticNoteIds, newNote.id])],
+                optimisticError: null,
+                retryLastOptimisticNoteAction: null,
+              })),
+            commit: () => syncNoteCreate(newNote),
+            rollback: (previousNotes) =>
+              set((state) => ({
+                notes: previousNotes,
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== newNote.id),
+              })),
+            reconcile: () =>
+              set((state) => ({
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== newNote.id),
+              })),
+            onError: ({ error, retry }) => {
+              if (__DEV__) {
+                console.warn('[MoneyKai] failed to sync note create:', error);
+              }
+              set({
+                optimisticError: formatOptimisticNoteError('Note save', error),
+                retryLastOptimisticNoteAction: () => {
+                  void retry();
+                },
+              });
+              void recordAppNotification({
+                title: 'Note save rolled back',
+                body: 'MoneyKai could not confirm the note in the cloud. Review and retry when connected.',
+                type: 'system',
+                actionRoute: '/Notes',
+                schedule: false,
+              });
+            },
+          });
           void recordAppNotification({
             title: 'Note saved',
             body: newNote.title,
@@ -145,20 +183,76 @@ export const useNotesStore = create<NotesState>()(
 
         updateNote: (id, updates) => {
           const next = { ...updates, updated_at: new Date().toISOString() };
-          set((state) => ({
-            notes: state.notes.map(n =>
-              n.id === id ? { ...n, ...next } : n
-            ),
-          }));
-          syncNoteUpdate(id, next);
+          void runOptimisticMutation<Note[]>({
+            mutationId: `note:update:${id}`,
+            snapshot: () => get().notes,
+            apply: () =>
+              set((state) => ({
+                notes: state.notes.map(n =>
+                  n.id === id ? { ...n, ...next } : n
+                ),
+                pendingOptimisticNoteIds: [...new Set([...state.pendingOptimisticNoteIds, id])],
+                optimisticError: null,
+                retryLastOptimisticNoteAction: null,
+              })),
+            commit: () => syncNoteUpdate(id, next),
+            rollback: (previousNotes) =>
+              set((state) => ({
+                notes: previousNotes,
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
+              })),
+            reconcile: () =>
+              set((state) => ({
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
+              })),
+            onError: ({ error, retry }) => {
+              if (__DEV__) {
+                console.warn('[MoneyKai] failed to sync note update:', error);
+              }
+              set({
+                optimisticError: formatOptimisticNoteError('Note update', error),
+                retryLastOptimisticNoteAction: () => {
+                  void retry();
+                },
+              });
+            },
+          });
           void requestAutomaticBackup('note updated');
         },
 
         deleteNote: (id) => {
-          set((state) => ({
-            notes: state.notes.filter(n => n.id !== id),
-          }));
-          syncNoteDelete(id);
+          void runOptimisticMutation<Note[]>({
+            mutationId: `note:delete:${id}`,
+            snapshot: () => get().notes,
+            apply: () =>
+              set((state) => ({
+                notes: state.notes.filter(n => n.id !== id),
+                pendingOptimisticNoteIds: [...new Set([...state.pendingOptimisticNoteIds, id])],
+                optimisticError: null,
+                retryLastOptimisticNoteAction: null,
+              })),
+            commit: () => syncNoteDelete(id),
+            rollback: (previousNotes) =>
+              set((state) => ({
+                notes: previousNotes,
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
+              })),
+            reconcile: () =>
+              set((state) => ({
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
+              })),
+            onError: ({ error, retry }) => {
+              if (__DEV__) {
+                console.warn('[MoneyKai] failed to sync note delete:', error);
+              }
+              set({
+                optimisticError: formatOptimisticNoteError('Note delete', error),
+                retryLastOptimisticNoteAction: () => {
+                  void retry();
+                },
+              });
+            },
+          });
           void requestAutomaticBackup('note deleted');
         },
 
@@ -166,12 +260,40 @@ export const useNotesStore = create<NotesState>()(
           const note = get().notes.find((item) => item.id === id);
           if (!note) return;
           const next = { is_pinned: !note.is_pinned, updated_at: new Date().toISOString() };
-          set((state) => ({
-            notes: state.notes.map(n =>
-              n.id === id ? { ...n, ...next } : n
-            ),
-          }));
-          syncNoteUpdate(id, next);
+          void runOptimisticMutation<Note[]>({
+            mutationId: `note:update:${id}`,
+            snapshot: () => get().notes,
+            apply: () =>
+              set((state) => ({
+                notes: state.notes.map(n =>
+                  n.id === id ? { ...n, ...next } : n
+                ),
+                pendingOptimisticNoteIds: [...new Set([...state.pendingOptimisticNoteIds, id])],
+                optimisticError: null,
+                retryLastOptimisticNoteAction: null,
+              })),
+            commit: () => syncNoteUpdate(id, next),
+            rollback: (previousNotes) =>
+              set((state) => ({
+                notes: previousNotes,
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
+              })),
+            reconcile: () =>
+              set((state) => ({
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
+              })),
+            onError: ({ error, retry }) => {
+              if (__DEV__) {
+                console.warn('[MoneyKai] failed to sync note pin:', error);
+              }
+              set({
+                optimisticError: formatOptimisticNoteError('Pin change', error),
+                retryLastOptimisticNoteAction: () => {
+                  void retry();
+                },
+              });
+            },
+          });
           void requestAutomaticBackup('note updated');
         },
 
@@ -182,12 +304,40 @@ export const useNotesStore = create<NotesState>()(
             item.id === itemId ? { ...item, completed: !item.completed } : item
           );
           const next = { checklist_items: nextChecklistItems, updated_at: new Date().toISOString() };
-          set((state) => ({
-            notes: state.notes.map(n =>
-              n.id === noteId ? { ...n, ...next } : n
-            ),
-          }));
-          syncNoteUpdate(noteId, next);
+          void runOptimisticMutation<Note[]>({
+            mutationId: `note:update:${noteId}`,
+            snapshot: () => get().notes,
+            apply: () =>
+              set((state) => ({
+                notes: state.notes.map(n =>
+                  n.id === noteId ? { ...n, ...next } : n
+                ),
+                pendingOptimisticNoteIds: [...new Set([...state.pendingOptimisticNoteIds, noteId])],
+                optimisticError: null,
+                retryLastOptimisticNoteAction: null,
+              })),
+            commit: () => syncNoteUpdate(noteId, next),
+            rollback: (previousNotes) =>
+              set((state) => ({
+                notes: previousNotes,
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== noteId),
+              })),
+            reconcile: () =>
+              set((state) => ({
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== noteId),
+              })),
+            onError: ({ error, retry }) => {
+              if (__DEV__) {
+                console.warn('[MoneyKai] failed to sync checklist item:', error);
+              }
+              set({
+                optimisticError: formatOptimisticNoteError('Checklist change', error),
+                retryLastOptimisticNoteAction: () => {
+                  void retry();
+                },
+              });
+            },
+          });
           void requestAutomaticBackup('note updated');
         },
 
@@ -199,24 +349,65 @@ export const useNotesStore = create<NotesState>()(
             { id: `cl_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, text, completed: false },
           ];
           const next = { checklist_items: nextChecklistItems, updated_at: new Date().toISOString() };
-          set((state) => ({
-            notes: state.notes.map(n =>
-              n.id === noteId ? { ...n, ...next } : n
-            ),
-          }));
-          syncNoteUpdate(noteId, next);
+          void runOptimisticMutation<Note[]>({
+            mutationId: `note:update:${noteId}`,
+            snapshot: () => get().notes,
+            apply: () =>
+              set((state) => ({
+                notes: state.notes.map(n =>
+                  n.id === noteId ? { ...n, ...next } : n
+                ),
+                pendingOptimisticNoteIds: [...new Set([...state.pendingOptimisticNoteIds, noteId])],
+                optimisticError: null,
+                retryLastOptimisticNoteAction: null,
+              })),
+            commit: () => syncNoteUpdate(noteId, next),
+            rollback: (previousNotes) =>
+              set((state) => ({
+                notes: previousNotes,
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== noteId),
+              })),
+            reconcile: () =>
+              set((state) => ({
+                pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== noteId),
+              })),
+            onError: ({ error, retry }) => {
+              if (__DEV__) {
+                console.warn('[MoneyKai] failed to sync checklist add:', error);
+              }
+              set({
+                optimisticError: formatOptimisticNoteError('Checklist item', error),
+                retryLastOptimisticNoteAction: () => {
+                  void retry();
+                },
+              });
+            },
+          });
         },
+
+        clearOptimisticError: () =>
+          set({
+            optimisticError: null,
+            retryLastOptimisticNoteAction: null,
+          }),
 
         clearSeedData: () =>
           set((state) => ({
             notes: state.notes.filter((n) => n.user_id !== 'sample'),
             isSeeded: false,
+            pendingOptimisticNoteIds: [],
+            optimisticError: null,
+            retryLastOptimisticNoteAction: null,
           })),
       };
     },
     {
       name: 'moneykai-notes',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        notes: state.notes,
+        isSeeded: state.isSeeded,
+      }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         if (isFirebaseConfigured()) {

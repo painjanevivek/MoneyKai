@@ -2,31 +2,40 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ModalSheet } from '@/components/ui/ModalSheet';
-import { ProgressBar } from '@/components/ui/ProgressBar';
+import { ProgressFlowCard } from '@/components/ui/ProgressFlowCard';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { buildSmsImportProgressFlow } from '@/services/progressIllusion';
 import type { SmsImportProgress } from '@/types/smsImport';
 
 interface SmsImportProgressSheetProps {
   visible: boolean;
   progress?: SmsImportProgress;
+  failureMessage?: string;
   onClose: () => void;
+  onRetry?: () => void;
 }
 
-export const SmsImportProgressSheet = ({ visible, progress, onClose }: SmsImportProgressSheetProps) => {
+export const SmsImportProgressSheet = ({ visible, progress, failureMessage, onClose, onRetry }: SmsImportProgressSheetProps) => {
   const { colors } = useTheme();
-  const isComplete = progress?.phase === 'complete';
+  const flow = buildSmsImportProgressFlow(progress, failureMessage);
+  const isComplete = flow.status === 'success';
+  const isFailed = flow.status === 'failed';
 
   return (
     <ModalSheet
       visible={visible}
-      title={isComplete ? 'SMS import complete' : 'Importing SMS'}
-      subtitle={progress?.message ?? 'Scanning your approved bank SMS in small batches.'}
+      title={flow.title}
+      subtitle={isComplete ? 'Review drafts before they affect your budget.' : isFailed ? 'Nothing is added until the import succeeds.' : 'MoneyKai is working in safe review-only stages.'}
       onClose={onClose}
-      maxHeight={420}
+      maxHeight={620}
     >
       <View style={{ gap: Spacing.md }}>
-        <ProgressBar progress={isComplete ? 100 : 42} color={colors.primary} />
+        <ProgressFlowCard
+          flow={flow}
+          onRetry={isFailed ? onRetry : undefined}
+          onBackground={!isComplete && !isFailed ? onClose : undefined}
+        />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
           {[
             ['Scanned', progress?.scannedCount ?? 0, 'message-search-outline'],
