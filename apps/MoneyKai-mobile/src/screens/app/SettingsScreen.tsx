@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, Share, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
-import { sendFirebasePasswordResetEmail } from '@/services/authService';
+import { requestPasswordResetEmail } from '@/services/authService';
 import {
   collectInternalTestingReport,
   copyInternalTestingReportToClipboard,
@@ -15,8 +15,16 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useSyncStore } from '@/stores/useSyncStore';
 import { getFirebaseConfigStatus, isFirebaseConfigured } from '@/firebase/firebaseConfig';
+import { isBackendConfigured } from '@/services/backendApi';
+import {
+  getLatestCloudBackupMetadata,
+  restoreLatestCloudBackup,
+  saveCloudBackup,
+  type MoneyKaiBackupMetadata,
+} from '@/services/backupService';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, THEME_OPTIONS, Typography } from '@/constants/theme';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { createAppScreenStyles } from './screenStyles';
 
 const formatDateTime = (value: string | null) => {
@@ -34,6 +42,28 @@ const formatDateTime = (value: string | null) => {
     minute: '2-digit',
   }).format(date);
 };
+
+const formatBackupDateTime = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown time';
+  }
+  return date.toLocaleString();
+};
+
+const formatBackupCount = (count: number, singular: string, plural = `${singular}s`): string =>
+  `${count} ${count === 1 ? singular : plural}`;
+
+const buildBackupConfirmationMessage = (metadata: MoneyKaiBackupMetadata): string =>
+  [
+    `Created: ${formatBackupDateTime(metadata.capturedAt)}`,
+    `Account: ${metadata.accountName || metadata.accountEmail}`,
+    `Records: ${formatBackupCount(metadata.transactionCount, 'transaction')}, ${formatBackupCount(metadata.linkedAccountCount, 'linked account')}, ${formatBackupCount(metadata.noteCount, 'note')}`,
+    `Groups and goals: ${formatBackupCount(metadata.groupCount, 'group')}, ${formatBackupCount(metadata.challengeCount, 'savings goal')}`,
+    `Totals: ${formatCurrency(metadata.totalIncome, metadata.currency, true)} income, ${formatCurrency(metadata.totalExpense, metadata.currency, true)} expenses`,
+    '',
+    'Restoring replaces the MoneyKai data on this device with the latest cloud backup.',
+  ].join('\n');
 
 export function SettingsScreen() {
   const { colors, darkModeEnabled, setDarkModeEnabled, setThemePalette, themePalette } = useTheme();
@@ -53,6 +83,9 @@ export function SettingsScreen() {
   const pendingCount = useSyncStore((state) => state.pendingCount);
   const isOnline = useSyncStore((state) => state.isOnline);
   const [backupLoading, setBackupLoading] = useState(false);
+  const [backupMetadata, setBackupMetadata] = useState<MoneyKaiBackupMetadata | null>(null);
+  const [backupMetadataError, setBackupMetadataError] = useState<string | null>(null);
+  const [backupMetadataLoading, setBackupMetadataLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [showPasswordSheet, setShowPasswordSheet] = useState(false);
@@ -62,6 +95,7 @@ export function SettingsScreen() {
   const firebaseReady = isFirebaseConfigured();
   const firebaseConfigStatus = getFirebaseConfigStatus();
   const nativeFirebaseReady = firebaseConfigStatus === 'native-ready';
+  const backupConfigured = firebaseReady || isBackendConfigured();
   const firebaseStatusLabel =
     nativeFirebaseReady
       ? 'Ready'
@@ -75,14 +109,9 @@ export function SettingsScreen() {
       return;
     }
 
-    if (!firebaseReady) {
-      Alert.alert('Password reset unavailable', 'Firebase Authentication is not configured for this build.');
-      return;
-    }
-
     setPasswordLoading(true);
     try {
-      await sendFirebasePasswordResetEmail(user.email);
+      await requestPasswordResetEmail(user.email);
       setShowPasswordSheet(false);
       Alert.alert('Reset link sent', `We sent a password reset link to ${user.email}.`);
     } catch (error) {
@@ -92,17 +121,85 @@ export function SettingsScreen() {
     }
   };
 
+  const loadBackupMetadata = useCallback(async () => {
+    if (!backupConfigured) {
+      setBackupMetadata(null);
+      setBackupMetadataError(null);
+      return null;
+    }
+
+    setBackupMetadataLoading(true);
+    setBackupMetadataError(null);
+    try {
+      const metadata = await getLatestCloudBackupMetadata();
+      setBackupMetadata(metadata);
+      return metadata;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not load the latest backup details.';
+      setBackupMetadata(null);
+      setBackupMetadataError(message);
+      return null;
+    } finally {
+      setBackupMetadataLoading(false);
+    }
+  }, [backupConfigured]);
+
+  useEffect(() => {
+    if (backupConfigured) {
+      const timeout = setTimeout(() => {
+        void loadBackupMetadata();
+      }, 0);
+      return () => clearTimeout(timeout);
+    }
+    return undefined;
+  }, [backupConfigured, loadBackupMetadata]);
+
   const runBackup = async () => {
     setBackupLoading(true);
     try {
-      const { saveCloudBackup } = await import('@/services/backupService');
-      await saveCloudBackup();
+      const snapshot = await saveCloudBackup();
+      setBackupMetadata(null);
+      void loadBackupMetadata();
       Alert.alert('Backup saved', 'Your account data was backed up.');
+      if (__DEV__) {
+        console.info(`[MoneyKai] Cloud backup created at ${snapshot.capturedAt}`);
+      }
     } catch (error) {
       Alert.alert('Backup failed', error instanceof Error ? error.message : 'Could not save a backup.');
     } finally {
       setBackupLoading(false);
     }
+  };
+
+  const restoreAfterConfirmation = async () => {
+    setBackupLoading(true);
+    try {
+      await restoreLatestCloudBackup();
+      setBackupMetadata(null);
+      void loadBackupMetadata();
+      Alert.alert('Backup restored', 'Your latest cloud backup is now on this device.');
+    } catch (error) {
+      Alert.alert('Restore failed', error instanceof Error ? error.message : 'Could not restore a cloud backup.');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const runRestore = async () => {
+    if (backupLoading) {
+      return;
+    }
+
+    const metadata = backupMetadata ?? await loadBackupMetadata();
+    if (!metadata) {
+      Alert.alert('Latest backup unavailable', backupMetadataError ?? 'Could not load the latest backup details.');
+      return;
+    }
+
+    Alert.alert('Restore this backup?', buildBackupConfirmationMessage(metadata), [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Restore', style: 'destructive', onPress: () => void restoreAfterConfirmation() },
+    ]);
   };
 
   const runSync = async () => {
@@ -366,7 +463,66 @@ export function SettingsScreen() {
             variant="secondary"
             style={{ marginBottom: Spacing.sm }}
           />
-          <Button title="Save cloud backup" onPress={runBackup} loading={backupLoading} icon="cloud-upload-outline" />
+          <View
+            style={{
+              backgroundColor: colors.surfaceElevated,
+              borderColor: backupMetadataError ? colors.error : colors.borderLight,
+              borderRadius: 12,
+              borderWidth: 1,
+              marginBottom: Spacing.md,
+              padding: Spacing.md,
+            }}
+          >
+            <View style={[styles.row, { alignItems: 'flex-start', marginBottom: Spacing.sm }]}>
+              <View style={{ flex: 1, paddingRight: Spacing.md }}>
+                <Text style={styles.value}>Latest available backup</Text>
+                {backupMetadataLoading ? (
+                  <Text style={styles.muted}>Checking the latest cloud backup...</Text>
+                ) : backupMetadata ? (
+                  <>
+                    <Text style={styles.muted}>
+                      Created {formatBackupDateTime(backupMetadata.capturedAt)} for {backupMetadata.accountName || backupMetadata.accountEmail}
+                    </Text>
+                    <Text style={styles.muted}>
+                      {formatBackupCount(backupMetadata.transactionCount, 'transaction')}, {formatBackupCount(backupMetadata.linkedAccountCount, 'linked account')}, {formatBackupCount(backupMetadata.noteCount, 'note')}, {formatBackupCount(backupMetadata.groupCount, 'group')}, and {formatBackupCount(backupMetadata.challengeCount, 'savings goal')}
+                    </Text>
+                    <Text style={styles.muted}>
+                      Budget {formatCurrency(backupMetadata.monthlyAllowance, backupMetadata.currency, true)} | Income {formatCurrency(backupMetadata.totalIncome, backupMetadata.currency, true)} | Expenses {formatCurrency(backupMetadata.totalExpense, backupMetadata.currency, true)} | v{backupMetadata.version}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={{ ...styles.muted, color: backupMetadataError ? colors.error : colors.textSecondary }}>
+                    {backupMetadataError ?? 'No cloud backup details loaded yet.'}
+                  </Text>
+                )}
+              </View>
+              <MaterialCommunityIcons name="cloud-search-outline" size={24} color={colors.primary} />
+            </View>
+            <Button
+              title="Refresh details"
+              onPress={() => void loadBackupMetadata()}
+              loading={backupMetadataLoading}
+              icon="refresh"
+              variant="secondary"
+              disabled={!backupConfigured}
+            />
+          </View>
+          <Button
+            title="Save cloud backup"
+            onPress={runBackup}
+            loading={backupLoading}
+            icon="cloud-upload-outline"
+            disabled={!backupConfigured}
+            style={{ marginBottom: Spacing.sm }}
+          />
+          <Button
+            title="Restore Latest Backup"
+            onPress={runRestore}
+            loading={backupLoading}
+            icon="cloud-download-outline"
+            variant="outline"
+            disabled={!backupConfigured}
+          />
         </View>
 
         <View style={styles.panel}>
@@ -419,7 +575,7 @@ export function SettingsScreen() {
               onPress={sendPasswordLink}
               loading={passwordLoading}
               style={{ flex: 1 }}
-              disabled={!user?.email || !firebaseReady}
+              disabled={!user?.email}
             />
           </View>
         }
@@ -433,7 +589,7 @@ export function SettingsScreen() {
               Secure reset
             </Text>
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-              MoneyKai does not ask for or store your current password here. Firebase handles the reset link and verification.
+              MoneyKai does not ask for or store your current password here. A protected MoneyKai auth endpoint rate-limits the request, then Firebase handles the reset link and verification.
             </Text>
           </View>
         </View>

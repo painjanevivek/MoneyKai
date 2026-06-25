@@ -24,6 +24,8 @@ test.describe('MoneyKai settings', () => {
 
     await page.getByText('Cloud backups').click();
     await expect(page.getByText('Cloud backups').first()).toBeVisible();
+    await expect(page.getByText('Latest available backup')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Restore Latest Backup' })).toBeVisible();
     await expect(page.getByText('First backup checklist')).toBeVisible();
 
     await page.keyboard.press('Escape');

@@ -7,10 +7,12 @@ This file tracks the remaining setup and verification work after the cleanup pas
 - [ ] Enable Email/Password auth in Firebase Authentication.
 - [ ] Enable Google auth in Firebase if browser-based Google sign-in should be available.
 - [ ] Create a Firestore database and verify backup/restore works end to end.
+- [ ] Before the next handoff, run `npm run backup-restore:gate` and attach the output to the Phase 5 notes.
 - [ ] Run the app once with a real Firebase project and confirm auth hydration, sign out, profile edits, and backups work end to end.
 
 ## Phase 2: Data Verification
 - [ ] Back up a real signed-in account and restore it on another device or a fresh app install.
+- [ ] Record the latest-backup preview values before restoring: account label, created-at timestamp, transactions, linked accounts, notes, groups, savings goals, budget, income, and expense.
 - [ ] Verify notification toggles, local alerts, and notification tap routing on a physical device.
 - [ ] Confirm transactions, notes, groups, savings, and challenges all persist under the signed-in user instead of the demo account.
 

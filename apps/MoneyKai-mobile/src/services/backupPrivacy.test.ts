@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
-import { buildBackupSnapshot } from '@/services/backupService';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildBackupSnapshot, restoreBackupSnapshot, summarizeBackupSnapshot } from '@/services/backupService';
 
 const mocks = vi.hoisted(() => ({
+  authSetState: vi.fn(),
   user: {
     id: 'user-123',
     email: 'user@example.com',
@@ -38,6 +39,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/stores/useAuthStore', () => ({
   useAuthStore: {
     getState: () => ({ user: mocks.user }),
+    setState: mocks.authSetState,
   },
 }));
 
@@ -162,6 +164,18 @@ vi.mock('@/services/notificationService', () => ({
 }));
 
 describe('backup privacy', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.transactions.length = 0;
+    mocks.notes.length = 0;
+    mocks.groups.length = 0;
+    mocks.groupExpenses.length = 0;
+    mocks.challenges.length = 0;
+    mocks.badges.length = 0;
+    mocks.notifications.length = 0;
+    mocks.linkedAccounts.length = 0;
+  });
+
   it('preserves signed-in profile fields needed for restore validation', () => {
     const snapshot = buildBackupSnapshot();
 
@@ -185,5 +199,57 @@ describe('backup privacy', () => {
     expect(serialized).not.toContain('monitoredAccounts');
     expect(serialized).not.toContain('rawPayload');
     expect(serialized).not.toContain('smsResearchModeEnabled');
+  });
+
+  it('summarizes latest-backup preview metadata without backup contents', () => {
+    mocks.transactions.push(
+      {
+        id: 'income-1',
+        amount: 5000,
+        type: 'income',
+        category: 'Salary',
+        description: 'June salary',
+        transaction_date: '2026-06-25',
+      } as never,
+      {
+        id: 'expense-1',
+        amount: 1250,
+        type: 'expense',
+        category: 'Food',
+        description: 'Groceries',
+        transaction_date: '2026-06-25',
+      } as never,
+    );
+    mocks.notes.push({ id: 'note-1', title: 'Handoff note', body: 'Restore check' } as never);
+
+    const metadata = summarizeBackupSnapshot(buildBackupSnapshot());
+
+    expect(metadata).toMatchObject({
+      accountName: 'Money User',
+      accountEmail: 'user@example.com',
+      transactionCount: 2,
+      noteCount: 1,
+      totalIncome: 5000,
+      totalExpense: 1250,
+      monthlyAllowance: 10000,
+      version: 1,
+    });
+    expect(JSON.stringify(metadata)).not.toContain('Groceries');
+    expect(JSON.stringify(metadata)).not.toContain('Restore check');
+  });
+
+  it('blocks restore when the latest backup belongs to another signed-in account', () => {
+    const snapshot = buildBackupSnapshot();
+    const otherAccountSnapshot = {
+      ...snapshot,
+      profile: {
+        ...snapshot.profile,
+        id: 'other-user',
+        email: 'other@example.com',
+      },
+    };
+
+    expect(() => restoreBackupSnapshot(otherAccountSnapshot)).toThrow('This backup belongs to a different account.');
+    expect(mocks.authSetState).not.toHaveBeenCalled();
   });
 });
