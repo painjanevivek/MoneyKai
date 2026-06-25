@@ -1,3 +1,6 @@
+import { COMPARISON_PAGES } from '@/content/comparisons';
+import { LEARN_ARTICLES, LEARN_CATEGORIES } from '@/data/learnArticles';
+
 export const SITE = {
   name: 'MoneyKai',
   url: 'https://moneykai.com',
@@ -9,13 +12,13 @@ export const SITE = {
     'Official website of MoneyKai, a personal finance and budget management app for tracking spending, savings, groups, backups, notes, and financial first-aid moments in one calm workspace.',
 };
 
-export const PUBLIC_ROUTES = [
+const CORE_PUBLIC_ROUTES_BEFORE_COMPARE = [
   '',
   '/about',
   '/contact',
-  '/compare',
-  '/compare/moneykai-vs-spreadsheets',
-  '/compare/moneykai-vs-expense-trackers',
+] as const;
+
+const CORE_PUBLIC_ROUTES_AFTER_COMPARE = [
   '/faq',
   '/features',
   '/features/expense-tracking',
@@ -33,18 +36,14 @@ export const PUBLIC_ROUTES = [
   '/financial-first-aid',
   '/privacy-policy',
   '/terms',
+] as const;
+
+export const PUBLIC_ROUTES = [
+  ...CORE_PUBLIC_ROUTES_BEFORE_COMPARE,
+  '/compare',
+  ...COMPARISON_PAGES.map((page) => `/compare/${page.slug}` as const),
+  ...CORE_PUBLIC_ROUTES_AFTER_COMPARE,
   '/learn',
-  '/learn/budgeting',
-  '/learn/saving-money',
-  '/learn/expense-tracking',
-  '/learn/personal-finance',
-  '/learn/how-to-track-daily-expenses',
-  '/learn/monthly-budget-planner',
-  '/learn/50-30-20-budget-rule',
-  '/learn/how-students-can-save-money',
-  '/learn/how-to-stop-overspending',
-  '/learn/emergency-fund-guide',
-  '/learn/budget-tracker-vs-expense-tracker',
-  '/learn/personal-finance-for-beginners',
-  '/learn/how-to-manage-shared-expenses',
-];
+  ...LEARN_CATEGORIES.map((category) => `/learn/${category.slug}` as const),
+  ...LEARN_ARTICLES.map((article) => `/learn/${article.slug}` as const),
+] as const;

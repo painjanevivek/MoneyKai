@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "moneykai-monorepo",
   "private": true,
   "workspaces": [
@@ -26,6 +26,8 @@
     "build": "npm run web:build",
     "bootstrap": "npm install --workspaces --include-workspace-root",
     "launch:check": "node ./scripts/launch-check.mjs",
+    "seo:generate": "node ./scripts/public-seo.mjs --write",
+    "seo:audit": "node ./scripts/public-seo.mjs --audit-dist",
     "security:check": "node ./scripts/owasp-security-check.mjs",
     "indexnow:dry-run": "node ./scripts/indexnow-submit.mjs --dry-run",
     "indexnow:submit": "node ./scripts/indexnow-submit.mjs",
