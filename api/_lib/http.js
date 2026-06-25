@@ -137,6 +137,12 @@ const applyRateLimit = (req, res, options = {}) => {
   const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
   const keyPrefix = options.keyPrefix ?? req.url ?? 'default';
   const clientKey = `${keyPrefix}:${getClientAddress(req)}`;
+  return applyRateLimitForKey(res, clientKey, { ...options, windowMs, max });
+};
+
+const applyRateLimitForKey = (res, clientKey, options = {}) => {
+  const windowMs = options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS;
+  const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
   const now = Date.now();
   const existing = rateLimitBuckets.get(clientKey);
 
@@ -226,6 +232,7 @@ const getAppUrl = () => {
 };
 
 module.exports = {
+  applyRateLimitForKey,
   applyRateLimit,
   applySecurityHeaders,
   getAppUrl,

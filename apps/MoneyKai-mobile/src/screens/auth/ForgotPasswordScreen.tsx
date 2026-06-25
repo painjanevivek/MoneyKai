@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/firebase/firebaseConfig';
-import { sendFirebasePasswordResetEmail } from '@/services/authService';
+import { requestPasswordResetEmail } from '@/services/authService';
 import type { AuthStackParamList } from '@/navigation/types';
 
 type ForgotPasswordScreenProps = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
@@ -16,11 +16,13 @@ type ForgotPasswordScreenProps = NativeStackScreenProps<AuthStackParamList, 'For
 export function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) {
   const { colors } = useTheme();
   const [email, setEmail] = useState('');
+  const [sentEmail, setSentEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleReset = async () => {
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !/\S+@\S+\.\S+/.test(normalizedEmail)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
       return;
     }
@@ -35,10 +37,17 @@ export function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) 
 
     setIsLoading(true);
     try {
-      await sendFirebasePasswordResetEmail(email.trim());
+      await requestPasswordResetEmail(normalizedEmail);
+      setSentEmail(normalizedEmail);
       setSent(true);
     } catch (err) {
-      Alert.alert('Reset Failed', err instanceof Error ? err.message : 'Could not send the reset link. Please try again.');
+      if (isPasswordResetEnumerationError(err)) {
+        setSentEmail(normalizedEmail);
+        setSent(true);
+        return;
+      }
+
+      Alert.alert('Reset Failed', getPasswordResetErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +165,7 @@ export function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) 
                     lineHeight: 22,
                   }}
                 >
-                  We've sent a password reset link to {email.trim()}
+                  If a MoneyKai account can receive resets, a link will be sent to {sentEmail}
                 </Text>
                 <Button
                   title="Back to Login"
@@ -172,3 +181,26 @@ export function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) 
     </SafeAreaView>
   );
 }
+
+const getFirebaseAuthErrorCode = (error: unknown): string => {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    return String((error as { code?: unknown }).code ?? '');
+  }
+
+  return '';
+};
+
+const isPasswordResetEnumerationError = (error: unknown) => {
+  const code = getFirebaseAuthErrorCode(error);
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  return code.includes('user-not-found') || message.includes('user-not-found');
+};
+
+const getPasswordResetErrorMessage = (error: unknown) => {
+  const message = error instanceof Error ? error.message : '';
+  if (message.toLowerCase().includes('too many password reset attempts')) {
+    return message;
+  }
+
+  return 'Could not send the reset link right now. Please wait a moment and try again.';
+};

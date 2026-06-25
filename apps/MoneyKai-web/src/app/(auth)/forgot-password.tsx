@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Typography, Spacing } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { firebaseAuth, isFirebaseConfigured } from '@/services/firebase';
+import { consumeAuthAttempt } from '@/services/authRateLimit';
+import { trackUserEvent } from '@/services/analytics';
+import { requestPasswordResetGateway } from '@/services/authGateway';
 import { withAlpha } from '@/utils/glassStyle';
 
 export default function ForgotPasswordScreen() {
   const { colors, isDark } = useTheme();
   const [email, setEmail] = useState('');
+  const [sentEmail, setSentEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,28 +33,33 @@ export default function ForgotPasswordScreen() {
   };
 
   const handleReset = async () => {
-    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !/\S+@\S+\.\S+/.test(normalizedEmail)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
-      return;
-    }
-
-    if (!isFirebaseConfigured()) {
-      Alert.alert(
-        'Demo Mode',
-        'Password reset emails require Firebase to be configured.\n\nFill in the EXPO_PUBLIC_FIREBASE_* values in your .env file.'
-      );
       return;
     }
 
     setIsLoading(true);
     try {
-      await sendPasswordResetEmail(firebaseAuth, email);
+      trackUserEvent('auth_password_reset_submitted', { surface: 'forgot_password' });
+      await consumeAuthAttempt('password-reset', normalizedEmail);
+      await requestPasswordResetGateway(normalizedEmail);
+      setSentEmail(normalizedEmail);
       setSent(true);
+      trackUserEvent('auth_password_reset_succeeded', { surface: 'forgot_password' });
     } catch (err) {
-      Alert.alert(
-        'Reset Failed',
-        err instanceof Error ? err.message : 'Could not send the reset link. Please try again.'
-      );
+      if (isPasswordResetEnumerationError(err)) {
+        setSentEmail(normalizedEmail);
+        setSent(true);
+        trackUserEvent('auth_password_reset_succeeded', {
+          surface: 'forgot_password',
+          enumeration_safe: true,
+        });
+        return;
+      }
+
+      trackUserEvent('auth_password_reset_failed', { surface: 'forgot_password' });
+      Alert.alert('Reset Failed', getPasswordResetErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +171,7 @@ export default function ForgotPasswordScreen() {
                     color: colors.textSecondary,
                     textAlign: 'center',
                     lineHeight: 22,
-                  }}>We&apos;ve sent a password reset link to {email}</Text>
+                  }}>If a MoneyKai account can receive resets, a link will be sent to {sentEmail}</Text>
                   <Button
                     title="Back to Login"
                     onPress={handleBackToLogin}
@@ -180,4 +187,27 @@ export default function ForgotPasswordScreen() {
     </SafeAreaView>
   );
 }
+
+const getFirebaseAuthErrorCode = (error: unknown): string => {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    return String((error as { code?: unknown }).code ?? '');
+  }
+
+  return '';
+};
+
+const isPasswordResetEnumerationError = (error: unknown) => {
+  const code = getFirebaseAuthErrorCode(error);
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  return code.includes('user-not-found') || message.includes('user-not-found');
+};
+
+const getPasswordResetErrorMessage = (error: unknown) => {
+  const message = error instanceof Error ? error.message : '';
+  if (message.toLowerCase().includes('too many password reset attempts')) {
+    return message;
+  }
+
+  return 'Could not send the reset link right now. Please wait a moment and try again.';
+};
 

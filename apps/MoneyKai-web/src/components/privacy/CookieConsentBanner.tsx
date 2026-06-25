@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'expo-router';
+import { Link, usePathname } from 'expo-router';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
@@ -8,10 +8,12 @@ import {
   getCookieConsentChoice,
   setCookieConsentChoice,
 } from '@/services/cookieConsent';
+import { trackPageView, trackUserEvent } from '@/services/analytics';
 import { initSentry } from '@/services/sentry';
 
 export function CookieConsentBanner() {
   const { colors } = useTheme();
+  const pathname = usePathname();
   const [choice, setChoice] = useState<CookieConsentChoice | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -34,6 +36,8 @@ export function CookieConsentBanner() {
 
     if (nextChoice === 'accepted') {
       void initSentry();
+      trackUserEvent('cookie_consent_accepted', { surface: 'banner' });
+      trackPageView(pathname, { source: 'cookie_consent' });
     }
   };
 

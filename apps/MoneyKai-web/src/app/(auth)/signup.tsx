@@ -18,6 +18,7 @@ import { AuthShell } from '@/components/auth/AuthShell';
 import { AuthFooter } from '@/components/auth/AuthFooter';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { trackUserEvent } from '@/services/analytics';
 
 const getFriendlySignupMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : '';
@@ -74,8 +75,11 @@ export default function SignupScreen() {
 
     submitting.current = true;
     try {
+      trackUserEvent('auth_signup_submitted', { method: 'email' });
       await signUp(email, password, fullName);
+      trackUserEvent('auth_signup_succeeded', { method: 'email' });
     } catch (err) {
+      trackUserEvent('auth_signup_failed', { method: 'email' });
       Alert.alert('Sign Up Failed', getFriendlySignupMessage(err));
     } finally {
       submitting.current = false;

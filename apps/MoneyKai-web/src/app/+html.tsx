@@ -110,6 +110,42 @@ export default function RootHtml({ children }: PropsWithChildren) {
             outline-offset: 3px;
           }
 
+          .moneykai-boneyard-shell {
+            display: flex;
+            flex: 1 1 auto;
+            min-height: 100vh;
+            width: 100%;
+            background: #F4F7F5;
+          }
+
+          .moneykai-boneyard-shell > [data-boneyard-content] {
+            display: flex;
+            flex: 1 1 auto;
+            min-height: 100vh;
+            width: 100%;
+          }
+
+          .moneykai-boneyard-shell > [data-boneyard-content] > * {
+            flex: 1 1 auto;
+            min-width: 0;
+            width: 100%;
+          }
+
+          .moneykai-boneyard-fallback {
+            min-height: 100vh;
+            width: 100%;
+            background:
+              linear-gradient(100deg, rgba(232, 238, 242, 0.92) 8%, rgba(247, 250, 252, 0.96) 18%, rgba(232, 238, 242, 0.92) 33%),
+              #F4F7F5;
+            background-size: 200% 100%;
+            animation: moneykai-boneyard-fallback 1.6s linear infinite;
+          }
+
+          @keyframes moneykai-boneyard-fallback {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+          }
+
           .skip-link {
             position: absolute;
             left: 16px;

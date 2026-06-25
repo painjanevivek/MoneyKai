@@ -1,5 +1,17 @@
 import auth, { type FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { ensureFirebaseApp, isFirebaseConfigured, requireFirebaseConfigured } from '@/firebase/firebaseConfig';
+import {
+  assertAuthAttemptAllowed,
+  clearAuthRateLimit,
+  consumeAuthAttempt,
+  recordFailedAuthAttempt,
+} from '@/services/authRateLimit';
+import {
+  createUserWithEmailGateway,
+  exchangeGoogleOAuthCodeGateway,
+  requestPasswordResetGateway,
+  signInWithEmailGateway,
+} from '@/services/authGateway';
 
 export type NativeFirebaseUser = FirebaseAuthTypes.User;
 export { isFirebaseConfigured };
@@ -53,19 +65,43 @@ export const waitForAuthState = (): Promise<NativeFirebaseUser | null> => {
   });
 };
 
-export const signInWithEmail = async (email: string, password: string) =>
-  (await getAuth()).signInWithEmailAndPassword(email, password);
+export const signInWithEmail = async (email: string, password: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  await assertAuthAttemptAllowed('sign-in', normalizedEmail);
 
-export const createUserWithEmail = async (email: string, password: string) =>
-  (await getAuth()).createUserWithEmailAndPassword(email, password);
+  try {
+    const gatewayResponse = await signInWithEmailGateway(normalizedEmail, password);
+    const credentials = await (await getAuth()).signInWithCustomToken(gatewayResponse.customToken);
+    await clearAuthRateLimit('sign-in', normalizedEmail);
+    return credentials;
+  } catch (error) {
+    await recordFailedAuthAttempt('sign-in', normalizedEmail);
+    throw error;
+  }
+};
+
+export const createUserWithEmail = async (email: string, password: string, displayName: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  await consumeAuthAttempt('sign-up', normalizedEmail);
+  const gatewayResponse = await createUserWithEmailGateway(normalizedEmail, password, displayName);
+  return (await getAuth()).signInWithCustomToken(gatewayResponse.customToken);
+};
 
 export const updateFirebaseUserProfile = async (
   user: NativeFirebaseUser,
   updates: FirebaseAuthTypes.UpdateProfile
 ) => user.updateProfile(updates);
 
-export const sendFirebasePasswordResetEmail = async (email: string) =>
-  (await getAuth()).sendPasswordResetEmail(email);
+export const requestPasswordResetEmail = async (email: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  await consumeAuthAttempt('password-reset', normalizedEmail);
+  return requestPasswordResetGateway(normalizedEmail);
+};
+
+export const signInWithGoogleOAuthCode = async (code: string) => {
+  const gatewayResponse = await exchangeGoogleOAuthCodeGateway(code);
+  return (await getAuth()).signInWithCustomToken(gatewayResponse.customToken);
+};
 
 export const signOutFromFirebase = async () => {
   if (!isFirebaseConfigured()) {

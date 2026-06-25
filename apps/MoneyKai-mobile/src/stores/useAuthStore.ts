@@ -155,7 +155,7 @@ export const useAuthStore = create<AuthState>()(
             throw new Error('Firebase is not configured. Add Firebase auth keys to enable sign up.');
           }
 
-          const credentials = await createUserWithEmail(email, password);
+          const credentials = await createUserWithEmail(email, password, fullName);
           await updateFirebaseUserProfile(credentials.user, {
             displayName: fullName.trim(),
           });

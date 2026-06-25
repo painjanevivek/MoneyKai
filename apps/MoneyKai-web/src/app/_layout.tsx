@@ -9,7 +9,9 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
+import { AnalyticsRouteTracker } from '@/components/analytics/AnalyticsRouteTracker';
 import { CookieConsentBanner } from '@/components/privacy/CookieConsentBanner';
+import { WebsiteSkeleton } from '@/components/skeletons/WebsiteSkeleton';
 import { captureSentryException, identifySentryUser } from '@/services/sentry';
 
 const AutoBackupCoordinator = lazy(() =>
@@ -101,6 +103,7 @@ export default function RootLayout() {
   const isDark = darkModeEnabled || isThemeModeDark(theme);
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
   const user = useAuthStore((s) => s.user);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -195,6 +198,7 @@ export default function RootLayout() {
       <Stack.Screen name="contact" options={{ animation: 'slide_from_right', presentation: 'card' }} />
     </Stack>
   );
+  const showWebsiteSkeleton = (!fontsLoaded && !fontError) || isHydratingSession;
 
   return (
     <AppErrorBoundary colors={colors}>
@@ -205,7 +209,10 @@ export default function RootLayout() {
           <BudgetResetCoordinator />
         </Suspense>
       ) : null}
-      <View key={currencyRenderToken} style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
+      <AnalyticsRouteTracker />
+      <View key={currencyRenderToken} style={{ flex: 1, backgroundColor: colors.background }}>
+        <WebsiteSkeleton loading={showWebsiteSkeleton}>{content}</WebsiteSkeleton>
+      </View>
       <CookieConsentBanner />
     </AppErrorBoundary>
   );

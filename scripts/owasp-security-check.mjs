@@ -145,6 +145,34 @@ const webRootLayout = readText('apps/MoneyKai-web/src/app/_layout.tsx');
 const webSentry = readText('apps/MoneyKai-web/src/services/sentry.ts');
 const webCookieConsent = readText('apps/MoneyKai-web/src/services/cookieConsent.ts');
 const webPrivacyPolicy = readText('apps/MoneyKai-web/src/app/privacy-policy.tsx');
+const webContact = readText('apps/MoneyKai-web/src/app/contact.tsx');
+const webAnalytics = readText('apps/MoneyKai-web/src/services/analytics.ts');
+const webAnalyticsRouteTracker = readText('apps/MoneyKai-web/src/components/analytics/AnalyticsRouteTracker.tsx');
+const analyticsEventsRoute = readText('api/analytics/events.js');
+const firebaseIdentity = readText('api/_lib/firebase-identity.js');
+const googleOAuth = readText('api/_lib/google-oauth.js');
+const authEmailSignInRoute = readText('api/v1/auth/email/sign-in.js');
+const authEmailSignUpRoute = readText('api/v1/auth/email/sign-up.js');
+const authPasswordResetRoute = readText('api/v1/auth/email/password-reset.js');
+const authGoogleStartRoute = readText('api/v1/auth/google/start.js');
+const authGoogleCallbackRoute = readText('api/v1/auth/google/callback.js');
+const authGoogleExchangeRoute = readText('api/v1/auth/google/exchange.js');
+const webAuthStore = readText('apps/MoneyKai-web/src/stores/useAuthStore.ts');
+const webAuthGateway = readText('apps/MoneyKai-web/src/services/authGateway.ts');
+const webGoogleCallback = readText('apps/MoneyKai-web/src/app/auth/google/callback.tsx');
+const webLogin = readText('apps/MoneyKai-web/src/app/(auth)/login.tsx');
+const webSignup = readText('apps/MoneyKai-web/src/app/(auth)/signup.tsx');
+const webForgotPassword = readText('apps/MoneyKai-web/src/app/(auth)/forgot-password.tsx');
+const webSettings = readText('apps/MoneyKai-web/src/app/(tabs)/settings.tsx');
+const webAuthRateLimit = readText('apps/MoneyKai-web/src/services/authRateLimit.ts');
+const mobileContact = readText('apps/MoneyKai-mobile/src/app/contact.tsx');
+const mobileSettings = readText('apps/MoneyKai-mobile/src/app/(tabs)/settings.tsx');
+const mobileForgotPassword = readText('apps/MoneyKai-mobile/src/screens/auth/ForgotPasswordScreen.tsx');
+const mobileAuthService = readText('apps/MoneyKai-mobile/src/services/authService.ts');
+const mobileAuthGateway = readText('apps/MoneyKai-mobile/src/services/authGateway.ts');
+const mobileGoogleAuth = readText('apps/MoneyKai-mobile/src/services/googleAuth.ts');
+const mobileAuthRateLimit = readText('apps/MoneyKai-mobile/src/services/authRateLimit.ts');
+const vercelConfigSource = readText('vercel.json');
 
 check(
   'Web cookie consent banner is mounted globally',
@@ -163,6 +191,227 @@ check(
   'Privacy policy documents browser storage',
   containsAll(webPrivacyPolicy, ['Cookies and local storage', 'Optional diagnostics and performance telemetry']),
   'The public privacy policy should explain required browser storage and optional telemetry consent'
+);
+
+check(
+  'Feedback loop exposes support email and bug report path',
+  containsAll(webContact, ['SITE.supportEmail', 'Bug report', 'MoneyKai Bug Report', 'mailto:${SITE.supportEmail}']) &&
+    containsAll(mobileContact, ['SITE.supportEmail', 'Bug report', 'MoneyKai Bug Report', 'mailto:${SITE.supportEmail}']) &&
+    containsAll(webSettings, ['Help & Support', 'Email support or report a bug']) &&
+    containsAll(mobileSettings, ['Help & Support', 'Email support or report a bug']),
+  'Contact/support surfaces should clearly expose the support email and a dedicated bug report option'
+);
+
+check(
+  'Web analytics page and event tracking are consent-gated',
+  containsAll(webAnalytics, [
+    'hasAnalyticsConsent',
+    'sanitizeAnalyticsPath',
+    'SENSITIVE_KEY_PATTERN',
+    'navigator.sendBeacon',
+    'keepalive: true',
+    'trackPageView',
+    'trackUserEvent',
+  ]) &&
+    containsAll(webAnalyticsRouteTracker, ['usePathname', 'trackPageView(pathname)']) &&
+    containsAll(webRootLayout, ['AnalyticsRouteTracker', '<AnalyticsRouteTracker />']) &&
+    containsAll(analyticsEventsRoute, [
+      'applyRateLimit',
+      'readJsonBody(req, { limitBytes: 16 * 1024 })',
+      'SENSITIVE_KEY_PATTERN',
+      'MAX_EVENTS_PER_REQUEST',
+      'sendJson(res, 202',
+    ]),
+  'Analytics should only run after consent, strip sensitive fields, batch efficiently, and post to a rate-limited endpoint'
+);
+
+check(
+  'Email/password auth attempts are server-gated and client-throttled',
+  containsAll(webAuthRateLimit, ['maxAttempts', 'lockedUntil', 'moneykai:auth-rate-limit:v1']) &&
+    containsAll(mobileAuthRateLimit, ['maxAttempts', 'lockedUntil', 'moneykai:auth-rate-limit:v1']) &&
+    containsAll(firebaseIdentity, [
+      'signInWithPassword',
+      'sendOobCode',
+      'createCustomToken',
+      'FIREBASE_SERVICE_ACCOUNT_JSON',
+      'getPublicFirebaseAuthError',
+    ]) &&
+    containsAll(authEmailSignInRoute, [
+      'applyRateLimit(req, res',
+      'applyRateLimitForKey',
+      'signInWithEmailPassword',
+      'sendJson(res, 200',
+    ]) &&
+    containsAll(authEmailSignUpRoute, [
+      'applyRateLimit(req, res',
+      'applyRateLimitForKey',
+      'createEmailPasswordUser',
+      'sendJson(res, 201',
+    ]) &&
+    containsAll(authPasswordResetRoute, [
+      'applyRateLimit(req, res',
+      'applyRateLimitForKey',
+      'sendPasswordResetEmail',
+      'sendJson(res, 202',
+    ]) &&
+    containsAll(webAuthGateway, [
+      '/v1/auth/email/sign-in',
+      '/v1/auth/email/sign-up',
+      '/v1/auth/email/password-reset',
+      'signInWithCustomToken(firebaseAuth, response.customToken)',
+    ]) &&
+    containsAll(mobileAuthGateway, [
+      '/v1/auth/email/sign-in',
+      '/v1/auth/email/sign-up',
+      '/v1/auth/email/password-reset',
+    ]) &&
+    containsAll(webAuthStore, [
+      "assertAuthAttemptAllowed('sign-in'",
+      "recordFailedAuthAttempt('sign-in'",
+      "consumeAuthAttempt('sign-up'",
+      'signInWithEmailGateway',
+      'createUserWithEmailGateway',
+      "consumeAuthAttempt('google-sign-in'",
+    ]) &&
+    containsAll(webForgotPassword, ["consumeAuthAttempt('password-reset'"]) &&
+    containsAll(webSettings, ["consumeAuthAttempt('password-reset'"]) &&
+    containsAll(mobileAuthService, [
+      "assertAuthAttemptAllowed('sign-in'",
+      "recordFailedAuthAttempt('sign-in'",
+      "consumeAuthAttempt('sign-up'",
+      "consumeAuthAttempt('password-reset'",
+      'signInWithCustomToken(gatewayResponse.customToken)',
+      'requestPasswordResetGateway',
+    ]) &&
+    containsAll(mobileGoogleAuth, ["consumeAuthAttempt('google-sign-in'"]) &&
+    !webAuthStore.includes('signInWithEmailAndPassword') &&
+    !webAuthStore.includes('createUserWithEmailAndPassword') &&
+    !mobileAuthService.includes('signInWithEmailAndPassword') &&
+    !mobileAuthService.includes('createUserWithEmailAndPassword'),
+  'Email/password and reset attempts should pass through rate-limited backend auth routes before Firebase session creation'
+);
+
+check(
+  'Google OAuth is backend-owned and custom-token based',
+  containsAll(googleOAuth, [
+    'GOOGLE_AUTH_URL',
+    'GOOGLE_TOKEN_URL',
+    'GOOGLE_JWKS_URL',
+    'GOOGLE_OAUTH_CLIENT_SECRET',
+    'GOOGLE_OAUTH_STATE_SECRET',
+    'code_challenge',
+    'verifyGoogleIdToken',
+    'email_verified',
+    'signInWithGoogleIdToken',
+    'consumeExchangeCode',
+    'moneykai-mobile://auth/google',
+  ]) &&
+    containsAll(firebaseIdentity, [
+      'signInWithIdp',
+      'providerId: \'google.com\'',
+      'mintFirebaseCustomToken',
+    ]) &&
+    containsAll(authGoogleStartRoute, [
+      'applyRateLimit(req, res',
+      'buildGoogleAuthorizationUrl',
+      'sendJson(res, 200',
+    ]) &&
+    containsAll(authGoogleCallbackRoute, [
+      'requireMethod(req, res, \'GET\')',
+      'completeGoogleOAuthCallback',
+      'Location',
+      'Cache-Control',
+    ]) &&
+    containsAll(authGoogleExchangeRoute, [
+      'applyRateLimit(req, res',
+      'applyRateLimitForKey',
+      'consumeExchangeCode',
+      'mintFirebaseCustomToken',
+      'sendJson(res, 200',
+    ]) &&
+    containsAll(webAuthGateway, [
+      '/v1/auth/google/start',
+      '/v1/auth/google/exchange',
+      'startGoogleOAuthGateway',
+      'exchangeGoogleOAuthCodeGateway',
+      'signInWithCustomToken(firebaseAuth, response.customToken)',
+    ]) &&
+    containsAll(webAuthStore, [
+      'startGoogleOAuthGateway',
+      'window.location.assign(authorizationUrl)',
+    ]) &&
+    containsAll(webGoogleCallback, [
+      'exchangeGoogleOAuthCodeGateway',
+      "trackUserEvent('auth_login_succeeded'",
+      "auth_provider: 'google'",
+    ]) &&
+    containsAll(mobileAuthGateway, [
+      '/v1/auth/google/start',
+      '/v1/auth/google/exchange',
+      'startGoogleOAuthGateway',
+      'exchangeGoogleOAuthCodeGateway',
+    ]) &&
+    containsAll(mobileGoogleAuth, [
+      'startGoogleOAuthGateway',
+      'moneykai-mobile://auth/google',
+      'signInWithGoogleOAuthCode',
+      "consumeAuthAttempt('google-sign-in'",
+    ]) &&
+    !webAuthStore.includes('signInWithPopup') &&
+    !webAuthStore.includes('GoogleAuthProvider') &&
+    !mobileGoogleAuth.includes('GoogleAuthProvider.credential') &&
+    !mobileGoogleAuth.includes('signInWithCredential'),
+  'Google sign-in should start on the backend, verify Google identity server-side, and complete through Firebase custom tokens'
+);
+
+check(
+  'Password reset flow is wired and enumeration-safe',
+  containsAll(vercelConfigSource, [
+    '"source": "/__/auth"',
+    '"source": "/__/auth/:path*"',
+    '"source": "/__/firebase/init.json"',
+    'firebaseapp.com/__/auth',
+  ]) &&
+    containsAll(webForgotPassword, [
+      'requestPasswordResetGateway(normalizedEmail)',
+      'setSentEmail(normalizedEmail)',
+      'isPasswordResetEnumerationError',
+      'If a MoneyKai account can receive resets',
+    ]) &&
+    containsAll(mobileForgotPassword, [
+      'requestPasswordResetEmail(normalizedEmail)',
+      'setSentEmail(normalizedEmail)',
+      'isPasswordResetEnumerationError',
+      'If a MoneyKai account can receive resets',
+    ]) &&
+    containsAll(webSettings, ['requestPasswordResetGateway(normalizedEmail)']) &&
+    containsAll(mobileAuthService, ['requestPasswordResetGateway(normalizedEmail)']),
+  'Reset links should route through the backend auth gateway, normalize email input, throttle attempts, and avoid account enumeration'
+);
+
+check(
+  'Core web auth user events are tracked',
+  containsAll(webLogin, [
+    "trackUserEvent('auth_login_submitted'",
+    "trackUserEvent('auth_login_succeeded'",
+    "trackUserEvent('auth_login_failed'",
+  ]) &&
+    containsAll(webSignup, [
+      "trackUserEvent('auth_signup_submitted'",
+      "trackUserEvent('auth_signup_succeeded'",
+      "trackUserEvent('auth_signup_failed'",
+    ]) &&
+    containsAll(webForgotPassword, [
+      "trackUserEvent('auth_password_reset_submitted'",
+      "trackUserEvent('auth_password_reset_succeeded'",
+      "trackUserEvent('auth_password_reset_failed'",
+    ]) &&
+    containsAll(webSettings, [
+      "trackUserEvent('auth_password_reset_submitted'",
+      "trackUserEvent('auth_password_reset_succeeded'",
+      "trackUserEvent('auth_password_reset_failed'",
+    ]),
+  'High-signal auth events should emit through the sanitized analytics helper'
 );
 
 const clientRuntimeFiles = [

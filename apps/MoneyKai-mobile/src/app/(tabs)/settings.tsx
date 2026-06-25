@@ -295,7 +295,7 @@ export default function SettingsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="MoneyKai v1.0.0" />
           <SettingItem icon="star-outline" iconColor="#5A5A5A" iconBg="#EFEFEF" title="Rate the App" onPress={handleRate} />
-          <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" subtitle="Open contact and support options" onPress={() => router.push('/contact' as any)} />
+          <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" subtitle="Email support or report a bug" onPress={() => router.push('/contact' as any)} />
         </Card>
 
         <TouchableOpacity

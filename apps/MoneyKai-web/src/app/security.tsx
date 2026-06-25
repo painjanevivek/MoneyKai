@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/useTheme';
 const SECURITY_SECTIONS = [
   {
     title: 'Authentication',
-    body: 'MoneyKai uses Firebase authentication for account access. Signed-in experiences are separated from the public website layer so people can understand the product before sharing any account information.',
+    body: 'MoneyKai routes email/password sign-in, sign-up, and reset requests through a rate-limited auth gateway before Firebase creates the signed-in session. OAuth sign-in is handled by Firebase and provider protections.',
   },
   {
     title: 'Data continuity',

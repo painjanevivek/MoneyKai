@@ -3,7 +3,6 @@ import { View, Text, ScrollView, Pressable, Switch, Alert, Linking, Platform, Sh
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -14,8 +13,11 @@ import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
 import { THEME_OPTIONS, Typography, Spacing, BorderRadius } from '@/constants/theme';
-import { firebaseAuth, isFirebaseConfigured } from '@/services/firebase';
+import { isFirebaseConfigured } from '@/services/firebase';
+import { consumeAuthAttempt } from '@/services/authRateLimit';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { trackUserEvent } from '@/services/analytics';
+import { requestPasswordResetGateway } from '@/services/authGateway';
 import {
   getLatestCloudBackupMetadata,
   saveCloudBackup,
@@ -583,20 +585,17 @@ export default function SettingsScreen() {
       return;
     }
 
-    if (!isFirebaseConfigured()) {
-      Alert.alert(
-        'Password reset unavailable',
-        'Password reset emails require Firebase Authentication to be configured for this deployment.'
-      );
-      return;
-    }
-
     setChangePasswordBusy(true);
     try {
-      await sendPasswordResetEmail(firebaseAuth, user.email);
+      const normalizedEmail = user.email.trim().toLowerCase();
+      trackUserEvent('auth_password_reset_submitted', { surface: 'settings' });
+      await consumeAuthAttempt('password-reset', normalizedEmail);
+      await requestPasswordResetGateway(normalizedEmail);
       setShowChangePasswordSheet(false);
+      trackUserEvent('auth_password_reset_succeeded', { surface: 'settings' });
       Alert.alert('Reset link sent', `We sent a password reset link to ${user.email}.`);
     } catch (err) {
+      trackUserEvent('auth_password_reset_failed', { surface: 'settings' });
       Alert.alert('Reset failed', err instanceof Error ? err.message : 'Could not send the reset link. Please try again.');
     } finally {
       setChangePasswordBusy(false);
@@ -856,7 +855,7 @@ export default function SettingsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="MoneyKai v1.0.0" />
           <SettingItem icon="star-outline" iconColor="#5A5A5A" iconBg="#EFEFEF" title="Rate the App" onPress={handleRate} />
-          <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" subtitle="Open contact and support options" onPress={handleSupport} />
+          <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" subtitle="Email support or report a bug" onPress={handleSupport} />
         </Card>
 
         <Pressable
@@ -1017,7 +1016,7 @@ export default function SettingsScreen() {
         footer={
           <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
             <Button title="Cancel" onPress={() => setShowChangePasswordSheet(false)} variant="outline" style={{ flex: 1 }} disabled={changePasswordBusy} />
-            <Button title="Send Link" onPress={handleChangePassword} loading={changePasswordBusy} style={{ flex: 1 }} disabled={!user?.email || !isFirebaseConfigured()} />
+            <Button title="Send Link" onPress={handleChangePassword} loading={changePasswordBusy} style={{ flex: 1 }} disabled={!user?.email} />
           </View>
         }
       >
@@ -1030,7 +1029,7 @@ export default function SettingsScreen() {
               Secure reset
             </Text>
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-              MoneyKai does not ask for or store your current password here. Firebase handles the reset link and verification.
+              MoneyKai does not ask for or store your current password here. A protected MoneyKai auth endpoint rate-limits the request, then Firebase handles the reset link and verification.
             </Text>
           </View>
         </View>

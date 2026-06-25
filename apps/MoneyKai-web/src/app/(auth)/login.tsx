@@ -19,6 +19,7 @@ import { AuthShell } from '@/components/auth/AuthShell';
 import { AuthFooter } from '@/components/auth/AuthFooter';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { trackUserEvent } from '@/services/analytics';
 
 const getFriendlyAuthMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : '';
@@ -33,11 +34,11 @@ const getFriendlyAuthMessage = (error: unknown) => {
   if (lower.includes('too-many-requests')) {
     return 'Too many attempts. Please wait a moment before trying again.';
   }
-  if (lower.includes('popup') || lower.includes('blocked') || lower.includes('cancelled')) {
-    return 'Google sign-in needs a popup in this browser. Allow popups for MoneyKai and try again, or use email login.';
+  if (lower.includes('cancelled') || lower.includes('rejected')) {
+    return 'Google sign-in was cancelled. Try again, or use email login.';
   }
-  if (lower.includes('unauthorized-domain')) {
-    return 'Add moneykai.com and www.moneykai.com to Firebase Authentication authorized domains, then retry Google sign-in.';
+  if (lower.includes('google sign-in is not configured') || lower.includes('oauth')) {
+    return 'Google sign-in is not configured for this deployment yet. Check the backend OAuth settings, then try again.';
   }
   if (lower.includes('content security policy') || lower.includes('script-src')) {
     return 'Google sign-in is blocked by the website security policy. Redeploy MoneyKai with the updated CSP and try again.';
@@ -74,8 +75,11 @@ export default function LoginScreen() {
 
     submitting.current = true;
     try {
+      trackUserEvent('auth_login_submitted', { method: 'email' });
       await signIn(email, password);
+      trackUserEvent('auth_login_succeeded', { method: 'email' });
     } catch (err) {
+      trackUserEvent('auth_login_failed', { method: 'email' });
       Alert.alert('Login Failed', getFriendlyAuthMessage(err));
     } finally {
       submitting.current = false;
@@ -87,8 +91,11 @@ export default function LoginScreen() {
     submitting.current = true;
     setGoogleLoading(true);
     try {
+      trackUserEvent('auth_login_submitted', { method: 'google' });
       await signInWithGoogle();
+      trackUserEvent('auth_login_succeeded', { method: 'google' });
     } catch (err) {
+      trackUserEvent('auth_login_failed', { method: 'google' });
       Alert.alert('Google Sign-In Failed', getFriendlyAuthMessage(err));
     } finally {
       setGoogleLoading(false);

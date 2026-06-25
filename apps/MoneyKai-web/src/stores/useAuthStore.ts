@@ -1,8 +1,13 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import { queueAutomaticBackup } from '@/services/automaticBackupClient';
+import {
+  assertAuthAttemptAllowed,
+  clearAuthRateLimit,
+  consumeAuthAttempt,
+  recordFailedAuthAttempt,
+} from '@/services/authRateLimit';
 
 export interface User {
   id: string;
@@ -43,14 +48,6 @@ const toAppUser = (user: import('firebase/auth').User): User => {
     avatar_url: user.photoURL ?? undefined,
     auth_provider: providerId,
   };
-};
-
-const getAuthErrorCode = (error: unknown): string => {
-  if (typeof error === 'object' && error && 'code' in error) {
-    return String((error as { code?: string }).code ?? '');
-  }
-
-  return '';
 };
 
 const getFirebaseRuntime = async () => {
@@ -101,14 +98,25 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signIn: async (email: string, password: string) => {
+        const normalizedEmail = email.trim().toLowerCase();
         set({ isLoading: true });
         try {
-          const { firebaseAuth, isFirebaseConfigured, signInWithEmailAndPassword } = await getFirebaseRuntime();
+          await assertAuthAttemptAllowed('sign-in', normalizedEmail);
+          const { isFirebaseConfigured } = await getFirebaseRuntime();
           if (!isFirebaseConfigured()) {
             throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
           }
 
-          const credentials = await signInWithEmailAndPassword(firebaseAuth, email, password);
+          let credentials: import('firebase/auth').UserCredential;
+          try {
+            const { signInWithEmailGateway } = await import('@/services/authGateway');
+            credentials = await signInWithEmailGateway(normalizedEmail, password);
+          } catch (authError) {
+            await recordFailedAuthAttempt('sign-in', normalizedEmail);
+            throw authError;
+          }
+
+          await clearAuthRateLimit('sign-in', normalizedEmail);
           set({
             user: toAppUser(credentials.user),
             isAuthenticated: true,
@@ -124,22 +132,17 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signUp: async (email: string, password: string, fullName: string) => {
+        const normalizedEmail = email.trim().toLowerCase();
         set({ isLoading: true });
         try {
-          const {
-            createUserWithEmailAndPassword,
-            firebaseAuth,
-            isFirebaseConfigured,
-            updateProfile: updateFirebaseProfile,
-          } = await getFirebaseRuntime();
+          const { isFirebaseConfigured } = await getFirebaseRuntime();
           if (!isFirebaseConfigured()) {
             throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
           }
 
-          const credentials = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-          await updateFirebaseProfile(credentials.user, {
-            displayName: fullName.trim(),
-          });
+          await consumeAuthAttempt('sign-up', normalizedEmail);
+          const { createUserWithEmailGateway } = await import('@/services/authGateway');
+          const credentials = await createUserWithEmailGateway(normalizedEmail, password, fullName);
 
           set({
             user: {
@@ -162,43 +165,21 @@ export const useAuthStore = create<AuthState>()(
       signInWithGoogle: async () => {
         set({ isLoading: true });
         try {
-          const { firebaseAuth, GoogleAuthProvider, isFirebaseConfigured, signInWithPopup } = await getFirebaseRuntime();
+          const { isFirebaseConfigured } = await getFirebaseRuntime();
           if (!isFirebaseConfigured()) {
             throw new Error('Firebase Authentication is not configured for this MoneyKai deployment.');
           }
 
-          if (Platform.OS !== 'web') {
-            throw new Error('Google sign-in is only enabled on web right now. Use email login on mobile until native Google auth is configured.');
+          await consumeAuthAttempt('google-sign-in', 'google');
+          const { startGoogleOAuthGateway } = await import('@/services/authGateway');
+          const authorizationUrl = await startGoogleOAuthGateway('/dashboard');
+          set({ isLoading: false });
+
+          if (typeof window === 'undefined') {
+            throw new Error('Google sign-in requires a browser window.');
           }
 
-          const provider = new GoogleAuthProvider();
-          provider.setCustomParameters({ prompt: 'select_account' });
-
-          try {
-            const credentials = await signInWithPopup(firebaseAuth, provider);
-
-            set({
-              user: toAppUser(credentials.user),
-              isAuthenticated: true,
-              isLoading: false,
-            });
-
-            const { syncRemoteState } = await import('@/services/remoteSync');
-            await syncRemoteState();
-          } catch (error) {
-            const code = getAuthErrorCode(error);
-            if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-              throw new Error(
-                'Google sign-in was blocked or cancelled. Allow popups for MoneyKai, then try again, or use email login.'
-              );
-            }
-
-            if (code === 'auth/unauthorized-domain') {
-              throw new Error('Add moneykai.com and www.moneykai.com to Firebase Authentication > Authorized domains in Firebase Console, then retry Google sign-in.');
-            }
-
-            throw error;
-          }
+          window.location.assign(authorizationUrl);
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Google sign-in failed');
