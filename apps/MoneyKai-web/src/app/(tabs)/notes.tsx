@@ -70,82 +70,83 @@ export default function NotesScreen() {
         </TouchableOpacity>
       </View>
 
+      {syncErrorEntries.length > 0 ? (
+        <View style={{ gap: Spacing.sm, marginHorizontal: Spacing.base, marginBottom: Spacing.md }}>
+          {syncErrorEntries.map(([noteId, error]) => (
+            <View
+              key={noteId}
+              accessibilityRole="alert"
+              style={{
+                borderRadius: BorderRadius.md,
+                borderWidth: 1,
+                borderColor: colors.error,
+                backgroundColor: colors.emergencyBg,
+                padding: Spacing.md,
+                gap: Spacing.sm,
+              }}
+            >
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+                <MaterialCommunityIcons name="cloud-alert-outline" size={18} color={colors.error} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    Sync failed for {error.title}
+                  </Text>
+                  <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                    {error.message}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+                <TouchableOpacity
+                  onPress={() => void retryNoteSync(noteId)}
+                  disabled={pendingNoteIds.includes(noteId)}
+                  accessibilityRole="button"
+                  accessibilityState={{ busy: pendingNoteIds.includes(noteId), disabled: pendingNoteIds.includes(noteId) }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    borderRadius: BorderRadius.sm,
+                    backgroundColor: colors.primary,
+                    paddingHorizontal: Spacing.md,
+                    paddingVertical: Spacing.sm,
+                    opacity: pendingNoteIds.includes(noteId) ? 0.6 : 1,
+                  }}
+                >
+                  {pendingNoteIds.includes(noteId) ? (
+                    <ActivityIndicator size="small" color={colors.textInverse} />
+                  ) : (
+                    <MaterialCommunityIcons name="refresh" size={15} color={colors.textInverse} />
+                  )}
+                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
+                    Retry
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => dismissNoteSyncError(noteId)}
+                  accessibilityRole="button"
+                  style={{
+                    borderRadius: BorderRadius.sm,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    paddingHorizontal: Spacing.md,
+                    paddingVertical: Spacing.sm,
+                  }}
+                >
+                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
+                    Dismiss
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       {sorted.length === 0 ? (
         <EmptyState icon="note-text-outline" title="No notes yet" message="Tap + New Note to jot something down." />
       ) : (
         <ScrollView contentContainerStyle={{ padding: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={true}>
-          {syncErrorEntries.length > 0 ? (
-            <View style={{ gap: Spacing.sm, marginBottom: Spacing.md }}>
-              {syncErrorEntries.map(([noteId, error]) => (
-                <View
-                  key={noteId}
-                  accessibilityRole="alert"
-                  style={{
-                    borderRadius: BorderRadius.md,
-                    borderWidth: 1,
-                    borderColor: colors.error,
-                    backgroundColor: colors.emergencyBg,
-                    padding: Spacing.md,
-                    gap: Spacing.sm,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
-                    <MaterialCommunityIcons name="cloud-alert-outline" size={18} color={colors.error} />
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                        Sync failed for {error.title}
-                      </Text>
-                      <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-                        {error.message}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-                    <TouchableOpacity
-                      onPress={() => void retryNoteSync(noteId)}
-                      disabled={pendingNoteIds.includes(noteId)}
-                      accessibilityRole="button"
-                      accessibilityState={{ busy: pendingNoteIds.includes(noteId), disabled: pendingNoteIds.includes(noteId) }}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 6,
-                        borderRadius: BorderRadius.sm,
-                        backgroundColor: colors.primary,
-                        paddingHorizontal: Spacing.md,
-                        paddingVertical: Spacing.sm,
-                        opacity: pendingNoteIds.includes(noteId) ? 0.6 : 1,
-                      }}
-                    >
-                      {pendingNoteIds.includes(noteId) ? (
-                        <ActivityIndicator size="small" color={colors.textInverse} />
-                      ) : (
-                        <MaterialCommunityIcons name="refresh" size={15} color={colors.textInverse} />
-                      )}
-                      <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
-                        Retry
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => dismissNoteSyncError(noteId)}
-                      accessibilityRole="button"
-                      style={{
-                        borderRadius: BorderRadius.sm,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        paddingHorizontal: Spacing.md,
-                        paddingVertical: Spacing.sm,
-                      }}
-                    >
-                      <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                        Dismiss
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
           {sorted.map((note) => (
             <View
               key={note.id}
