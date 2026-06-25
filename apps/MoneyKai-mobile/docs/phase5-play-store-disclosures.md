@@ -1,6 +1,6 @@
 # Phase 5E Play Store-Safe Disclosure Package
 
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-26
 
 ## Release scope
 
@@ -28,9 +28,10 @@ Before uploading a production AAB to Play Console, run the release permission ve
 
 ```powershell
 npm.cmd --prefix apps\MoneyKai-mobile run android:verify:release-permissions -- --aab path\to\production.aab
+npm.cmd --prefix apps\MoneyKai-mobile run android:capture:handoff -- --aab path\to\production.aab --build-id <eas-build-id> --eas-url <eas-build-url>
 ```
 
-The upload must be blocked if the verifier reports `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS`.
+The upload must be blocked if the verifier reports `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS`. The handoff capture must also block Android debug signing. Paste the capture output into `docs/phase5-internal-release-signoff.md` so the final artifact hash, signer certificate, commit, build ID, signing expectation, and permission result are recorded before submit.
 
 ## Data Safety notes
 
@@ -57,4 +58,4 @@ Do not use screenshots from Original MoneyKai or any screen showing native SMS p
 
 ## Current status
 
-Phase 5E is ready for internal testing materials. Final Play Console Data Safety answers still need to be entered and reviewed in Play Console before a closed or production release. The current Play-safe AAB has passed the repository release permission verifier with no restricted SMS permissions detected.
+Phase 5E is ready for internal testing materials. Final Play Console Data Safety answers still need to be entered and reviewed in Play Console before a closed or production release. The next Play-safe production AAB must pass the repository release permission verifier and handoff capture before upload; the historical Phase 5A AAB is SMS-permission clean but debug-signed and must not be uploaded to Play.

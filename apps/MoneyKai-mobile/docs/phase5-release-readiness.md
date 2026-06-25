@@ -1,199 +1,99 @@
 # Phase 5 Release Readiness
 
-Last reviewed: 2026-06-25
+Last reviewed: 2026-06-26
 
-## Current artifact status
+## Current baseline
 
-- June 25 handoff baseline is `main` / `origin/main` at `2238e81` (`2238e81446b319949c44dc745af43344301500a6`). The user-supplied `da75e57` reference is present in history and is an ancestor of the current baseline.
-- Expo v56 docs were checked before mobile build work: `https://docs.expo.dev/versions/v56.0.0/`. SDK 56 lines up with React Native `0.85`, React `19.2.3`, minimum Node `22.13.x`, Android compile SDK `36`, and Android target SDK `36`; the current mobile package/build config matches those release expectations.
-- No fresh Play Console upload AAB was produced on June 25. EAS CLI is not logged in in this shell (`npx.cmd eas-cli@latest whoami` -> `Not logged in`; `build:list` requires an Expo account or `EXPO_TOKEN`).
-- Local upload signing credentials exist under `credentials/play-upload`, and `npm.cmd run android:verify:production-signing -- --mode local-release` passes when that local env file is loaded. A direct `:app:bundleRelease` retry then hung in React Native release bundling (`node node_modules\react-native\cli.js bundle ... --minify false --verbose`) after `:app:createBundleReleaseJsAndAssets`; no `android/app/build/outputs/bundle/release/app-release.aab` was emitted.
-- The June 25 exact Play upload artifact is therefore **pending**. Do not upload historical Phase 5A artifacts.
-- Debug APK built locally from the current workspace and copied to `artifacts/phase5a/moneykai-phase5-debug.apk`.
-- Release APK built locally in production mode, without dev-client autolinking, copied to `artifacts/phase5a/moneykai-phase5-release-no-devclient-arm64.apk`.
-- Release AAB built locally in production mode, without dev-client autolinking, copied to `artifacts/phase5a/moneykai-phase5-release-no-devclient-arm64.aab`.
-- Local SMS Research APK profile added as `sms-research-local`; this build is for direct/local testing only and includes restricted SMS permissions/receiver.
-- Release APK SHA-256: `42158627EE2918DF3FC5BC419F5ECFF13ABBB56DFA8220A177692A9FFD022AE3`.
-- Historical release AAB SHA-256 rechecked on June 25: `928EF76BF3829288C3BCFAAB4A19A94FB347709E8A8BAD0907DD64024D0387EC`.
-- Historical release AAB signer rechecked on June 25: `CN=Android Debug, OU=Android, O=Unknown, L=Unknown, ST=Unknown, C=US`; certificate SHA-256 `FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C`. This confirms it is not a Play upload candidate.
-- Local SMS Research APK: `artifacts/phase5a/moneykai-phase5-sms-research-local-arm64.apk`.
-- Local SMS Research APK SHA-256: `50522083D712E91C4067A7D7701E611AFC5B63221726480CBC5C85D70FEB1804`.
-- The local release APK installed successfully over ADB and launched `com.moneykai.mobile/.MainActivity`.
-- Current `eas.json` profiles cover:
-  development -> internal debug/dev-client validation
-  preview -> internal APK
-  production -> Android App Bundle for store submission
-- App display name is `MoneyKai`.
-- Android launcher/adaptive icon assets are generated from `assets/images/moneykai-app-logo-source.jpeg`.
-- Preview and production enable no-permission manual SMS research through `EXPO_PUBLIC_SMS_RESEARCH_BUILD=true`.
-- Preview and production keep native SMS permissions/receiver disabled through `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=false`.
-- Preview and production disable the dev-client launch metadata path through `EXPO_PUBLIC_DEV_CLIENT_BUILD=false`.
-- Historical Phase 5A local release artifacts were signed by the generated debug keystore. They prove the old build path only and must not be used as Play upload artifacts.
-- Current repo guard: `npm run android:verify:production-signing` checks the production EAS profile and Gradle release signing policy.
-- Current local release guard: `npm run android:assemble:release` and `npm run android:bundle:release` fail before Gradle unless `MONEYKAI_UPLOAD_STORE_FILE`, `MONEYKAI_UPLOAD_STORE_PASSWORD`, `MONEYKAI_UPLOAD_KEY_ALIAS`, and `MONEYKAI_UPLOAD_KEY_PASSWORD` are set to a non-debug upload keystore.
+- Current handoff baseline is `main` / `origin/main` at `6b58289` (`6b582894599a513ca83101948c58466c771ffe42`).
+- The stale `b9687f8` reference is no longer the handoff baseline. It remains an ancestor of `main` and contributed the latest-backup preview before restore; the current release package must be built from `6b58289` or later.
+- Expo v56 docs were checked before mobile release updates: `https://docs.expo.dev/versions/v56.0.0/`. The current mobile baseline matches the expected Expo/RN generation used by this repo: React Native `0.85.3`, React `19.2.3`, Node `>=22.13.0`, Android compile SDK `36`, target SDK `36`.
+- App display name: `MoneyKai`.
+- Android package: `com.moneykai.mobile`.
+- App version: `1.0.1`.
+- Android version code: `2` in the local Gradle project; EAS production builds also use remote `autoIncrement`.
 
-## Build commands
+## Artifact status
 
-Run these from `apps/MoneyKai-mobile`.
+- No fresh Play Console upload AAB is approved in the repo as of this review.
+- Historical Phase 5A artifacts under `artifacts/phase5a/` are validation evidence only. Do not upload them to Play.
+- Historical local release AAB: `artifacts/phase5a/moneykai-phase5-release-no-devclient-arm64.aab`.
+- Historical local release AAB SHA-256: `928EF76BF3829288C3BCFAAB4A19A94FB347709E8A8BAD0907DD64024D0387EC`.
+- Historical local release AAB signer: `CN=Android Debug`, certificate SHA-256 `FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C`.
+- That historical AAB passed the restricted-SMS permission verifier, but it is debug-signed and is not a Play upload candidate.
+- EAS authentication must be verified before the next production build/submit. A local `npx.cmd eas-cli@latest whoami` probe on 2026-06-26 did not return before it was stopped.
 
-### Local validation
+## Build profiles
+
+- `development`: internal debug/dev-client validation.
+- `preview`: internal APK, Play-unsafe for store upload because it is a direct-install artifact.
+- `sms-research-local`: local/internal APK with native SMS research enabled. Never upload this profile to Play unless SMS policy approval and release signoff are completed.
+- `production`: Play-internal AAB candidate. Builds `android.buildType=app-bundle`, uses `autoIncrement`, disables dev-client metadata, disables native SMS research, and is intended for EAS-managed Android credentials unless intentionally changed.
+
+## Required handoff commands
+
+Run from repo root unless noted.
 
 ```powershell
-npm.cmd run typecheck
-npm.cmd run lint
-npm.cmd run test:capture
-npx.cmd expo-modules-autolinking verify --platform android
-npm.cmd run android:verify:production-signing
-npm.cmd run android:verify:release-permissions -- --aab artifacts\phase5a\moneykai-phase5-release-no-devclient-arm64.aab
+npm run launch:check
+npm run security:check
+npm run mobile:typecheck
+npm run mobile:lint
+npm run mobile:test:capture
+npm --prefix apps\MoneyKai-mobile run android:verify:production-signing
 ```
 
-### Local debug APK
+Build the Play candidate with authenticated EAS:
 
 ```powershell
-$env:EXPO_PUBLIC_SMS_RESEARCH_BUILD='false'
-$env:EXPO_PUBLIC_DEV_CLIENT_BUILD='false'
-npx.cmd expo prebuild --platform android --clean --no-install
-Set-Location android
-.\gradlew.bat :app:assembleDebug --console=plain --no-daemon --stacktrace --max-workers=2
-```
-
-Output:
-`android/app/build/outputs/apk/debug/app-debug.apk`
-
-### Local release APK
-
-```powershell
-$env:NODE_ENV='production'
-$env:MONEYKAI_UPLOAD_STORE_FILE='C:\path\to\upload-keystore.jks'
-$env:MONEYKAI_UPLOAD_STORE_PASSWORD='<store-password>'
-$env:MONEYKAI_UPLOAD_KEY_ALIAS='<upload-key-alias>'
-$env:MONEYKAI_UPLOAD_KEY_PASSWORD='<key-password>'
-npm.cmd run android:assemble:release -- --console=plain --no-daemon --stacktrace --max-workers=2 -PreactNativeArchitectures=arm64-v8a
-```
-
-Expected output:
-`android/app/build/outputs/apk/release/app-release.apk`
-
-### Local release AAB
-
-```powershell
-$env:NODE_ENV='production'
-$env:MONEYKAI_UPLOAD_STORE_FILE='C:\path\to\upload-keystore.jks'
-$env:MONEYKAI_UPLOAD_STORE_PASSWORD='<store-password>'
-$env:MONEYKAI_UPLOAD_KEY_ALIAS='<upload-key-alias>'
-$env:MONEYKAI_UPLOAD_KEY_PASSWORD='<key-password>'
-npm.cmd run android:bundle:release -- --console=plain --no-daemon --stacktrace --max-workers=2 -PreactNativeArchitectures=arm64-v8a
-npm.cmd run android:verify:release-permissions -- --aab android\app\build\outputs\bundle\release\app-release.aab
-```
-
-Expected output:
-`android/app/build/outputs/bundle/release/app-release.aab`
-
-The release permission verifier inspects the compiled `base/manifest/AndroidManifest.xml` inside the AAB and fails the release if any restricted SMS permissions are present: `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS`.
-
-### EAS preview APK
-
-```powershell
-npx eas build --platform android --profile preview
-```
-
-### EAS/local SMS Research APK
-
-This APK is not Play Store-safe. Use it only for direct local/internal SMS research validation.
-
-```powershell
-npx eas build --platform android --profile sms-research-local
-```
-
-For a local Gradle build:
-
-```powershell
-$env:EXPO_PUBLIC_SMS_RESEARCH_BUILD='true'
-$env:EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD='true'
-$env:EXPO_PUBLIC_DEV_CLIENT_BUILD='false'
-$env:EAS_BUILD_PROFILE='sms-research-local'
-npx.cmd expo prebuild --platform android --clean --no-install
-Set-Location android
-$env:NODE_ENV='production'
-.\gradlew.bat :app:assembleRelease --console=plain --no-daemon --stacktrace --max-workers=2 -PreactNativeArchitectures=arm64-v8a
-```
-
-### EAS production AAB
-
-Use this path for the next Play Console internal testing AAB. The production EAS profile builds an Android App Bundle and relies on EAS-managed Android credentials unless the profile is intentionally changed to local credentials.
-
-```powershell
-npm.cmd run android:verify:production-signing
+cd apps\MoneyKai-mobile
 npx eas build --platform android --profile production
-npm.cmd run android:verify:release-permissions -- --aab path\to\downloaded-production.aab
-Get-FileHash path\to\downloaded-production.aab -Algorithm SHA256
 ```
 
-Record the EAS build URL/build ID, commit, artifact path, SHA-256, and permission verifier result in the internal signoff doc before submitting.
-
-### EAS submit to Play internal track
+After downloading the exact AAB that will be uploaded to Play internal testing:
 
 ```powershell
+npm run mobile:release:android:verify -- --aab apps\MoneyKai-mobile\path\to\production.aab
+npm run mobile:release:android:capture -- --aab apps\MoneyKai-mobile\path\to\production.aab --build-id <eas-build-id> --eas-url <eas-build-url>
+```
+
+Paste the capture output into `docs/phase5-internal-release-signoff.md` before submit. The capture command computes SHA-256, records the current commit, captures the artifact signer certificate, rejects Android debug signing by default, runs the restricted-SMS permission verifier against the exact artifact, and prints the handoff table.
+
+Submit only after the signoff table is complete:
+
+```powershell
+cd apps\MoneyKai-mobile
 npx eas submit --platform android --profile production
 ```
 
-## Release checks already confirmed
+## Signing expectations
 
-- App id: `com.moneykai.mobile`
-- Version: `1.0.1`
-- App name: `MoneyKai`
-- App icon: `assets/images/icon.png`
-- Adaptive icon foreground/background/monochrome configured in `app.json`
-- Splash image configured in `app.json`
-- Manual SMS Research Mode is available in preview and production without SMS permissions
-- Native SMS research permissions/receiver are excluded from preview and production app config
-- Native SMS research permissions/receiver are available only in the separate `sms-research-local` internal APK profile
-- Dev-client launch metadata moved behind the development-only config flag
-- Release autolinking excludes `expo-dev-client`, `expo-dev-launcher`, and `expo-dev-menu` outside development builds
-- Production-safe Android prebuild no longer includes the SMS receiver in the generated manifest
-- Installed release package has no dev-client/dev-menu components, no SMS receiver, and no restricted SMS permissions
-- `npm.cmd run android:verify:release-permissions -- --aab artifacts\phase5a\moneykai-phase5-release-no-devclient-arm64.aab` passed on June 25 against the historical local AAB and reported no restricted SMS permissions. Detected permissions were `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `BIND_JOB_SERVICE`, `BIND_NOTIFICATION_LISTENER_SERVICE`, `CAMERA`, `DUMP`, `INTERNET`, `POST_NOTIFICATIONS`, `READ_APP_BADGE`, `READ_CONTACTS`, `READ_EXTERNAL_STORAGE`, `RECEIVE_BOOT_COMPLETED`, `USE_BIOMETRIC`, `USE_FINGERPRINT`, `VIBRATE`, `WAKE_LOCK`, and `WRITE_EXTERNAL_STORAGE`.
-- `npm.cmd run android:verify:production-signing` passes against the current production EAS config and Gradle signing policy
-- `npm.cmd run android:verify:production-signing -- --mode local-release` passes when `credentials/play-upload/.env.play-upload.local` is loaded
-- Local release APK/AAB package scripts now fail before Gradle if upload signing env vars are absent or point to debug signing defaults
-- June 25 automated checks passed: `npm run security:check`, `npm run mobile:typecheck`, `npm run mobile:lint`, `npm run mobile:test:capture` (12 files / 131 tests), `npm run web:typecheck`, `npm run web:lint`, `npm run web:build`, and `npx.cmd expo-modules-autolinking verify --platform android`.
-- `npm run launch:check` exited successfully on June 25, with optional launch gaps still printed for `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `EXPO_PUBLIC_APP_STORE_URL`, and `EXPO_PUBLIC_PLAY_STORE_URL`.
-- Release APK installed and launched on the connected Android device via ADB
-- Local SMS Research APK installed and launched on the connected Android device via ADB
-- Local SMS Research package inspection confirms `MoneyKaiSmsReceiver`, `READ_SMS`, and `RECEIVE_SMS`
-- Local SMS Research package accepted Android SMS permission grants for `READ_SMS` and `RECEIVE_SMS`
-- Phase 5B one-device validation is documented in `docs/phase5-device-validation.md`
-- Phase 5C Auto Capture onboarding is completed in the first-login tour, Settings explainer, and Auto Capture setup card
-- Phase 5D diagnostics hooks are implemented and documented in `docs/phase5-diagnostics.md`
-- Phase 5E disclosure package is documented in `docs/phase5-play-store-disclosures.md`
-- Phase 5F mobile regression checklist is documented in `docs/phase5-mobile-regression.md`
-- Phase 5G web regression checklist is documented in `docs/phase5-web-regression.md`
-- Phase 5H internal signoff checklist is documented in `docs/phase5-internal-release-signoff.md`
-- JS render failures and native capture failures are recorded through `diagnosticsService` with SMS/notification content redaction
-- Warning/error/fatal diagnostics upload to the authenticated backend endpoint `POST /v1/diagnostics/events` when backend auth is available
-- `npm.cmd run mobile:typecheck`, `npm.cmd run mobile:lint`, `npm.cmd run mobile:test:capture`, and `npx.cmd expo-modules-autolinking verify --platform android` pass
+- Production EAS AABs should use EAS-managed Android credentials for Play upload signing.
+- Local Gradle release/original builds must use a verified non-debug upload key through `MONEYKAI_UPLOAD_STORE_FILE`, `MONEYKAI_UPLOAD_STORE_PASSWORD`, `MONEYKAI_UPLOAD_KEY_ALIAS`, and `MONEYKAI_UPLOAD_KEY_PASSWORD`.
+- `npm --prefix apps\MoneyKai-mobile run android:verify:production-signing` rejects production profile settings that would create a direct-install/internal artifact, debug Gradle command, missing credentials, or Gradle release signing fallback to debug.
+- `npm --prefix apps\MoneyKai-mobile run android:verify:production-signing -- --mode local-release` additionally rejects missing local upload signing env vars, debug keystore paths, `androiddebugkey`, and default debug passwords.
+- `npm run mobile:release:android:capture` rejects artifacts signed by `CN=Android Debug` unless `--allow-debug-signing` is supplied for historical/testing-only inspection.
 
-## Remaining release blockers
+## Permission expectations
 
-- A Play-ready June 25 production upload AAB is still missing. Complete either an authenticated EAS production build (`EXPO_TOKEN`/`eas login`) or a local upload-signed Gradle bundle run that completes past the React Native release bundle hang.
-- The local direct `:app:bundleRelease` attempt with play-upload credentials hung in the React Native `createBundleReleaseJsAndAssets` bundle step and left orphaned `jest-worker` child processes that this shell could not terminate (`Access denied`). Restarting the shell or machine may be needed before retrying a local release bundle.
-- Multi-device Android validation is still incomplete and accepted only as a documented risk for internal testing.
-- Backend diagnostics are configured for app-emitted events. A native crash SDK such as Sentry/Bugsnag/Crashlytics is still recommended later for process-level native crash stack traces.
-- Store screenshots, reviewer notes, and final Data Safety copy still need to be assembled.
+- Play-safe production builds must not include `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS`.
+- The release permission verifier inspects the compiled manifest inside the exact AAB/APK, not source config alone.
+- Production and preview keep native SMS research disabled with `EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD=false`.
+- Manual SMS Research Mode in Play-safe builds is user-paste only and does not request SMS inbox access.
+- Notification listener access remains optional and is used only to create reviewable transaction drafts.
 
-## Internal release checklist
+## Remaining blockers before Play internal handoff
 
-- Build ID:
-- Commit hash:
-- App version:
-- Android package:
-- Build profile:
-- Tester group:
-- Known issues:
-- Devices validated:
-- Notification access tested:
-- Auto Capture draft review tested:
-- Backup and restore tested:
-- Privacy copy reviewed:
-- Local diagnostics active:
-- Remote crash reporting active:
+- Produce a fresh production AAB from `6b58289` or later.
+- Verify EAS login/token access and Play Console submit credentials before build/submit.
+- Run permission verification and handoff capture against the exact downloaded AAB.
+- Record artifact path, SHA-256, EAS build URL/build ID, signing expectation, device smoke result, tester group, and Sentry/backend diagnostics visibility.
+- Smoke the signed artifact on a physical Android device, including launch, notification-access controls, Auto Capture draft review, backup preview/restore copy, and the in-app testing report bundle.
+- Complete final Play Console Data Safety/reviewer-note review before moving beyond internal testing.
+
+## Feedback loop
+
+- Support/contact email: `support@moneykai.app`.
+- In-app path: **Settings > Help & Support**.
+- Bug reports: use the **Bug report** option on the contact page or email `support@moneykai.app` with subject `MoneyKai Bug Report`.
+- Tester defects should include the sanitized testing report bundle from the signed app, device/OS details, build ID, artifact SHA-256, and clear reproduction steps.
+- Product feedback, launch questions, privacy/security questions, and support requests should use the matching contact page option so triage is unambiguous.

@@ -29,6 +29,7 @@
     "seo:generate": "node ./scripts/public-seo.mjs --write",
     "seo:audit": "node ./scripts/public-seo.mjs --audit-dist",
     "security:check": "node ./scripts/owasp-security-check.mjs",
+    "backup-restore:gate": "node ./scripts/backup-restore-release-gate.mjs",
     "indexnow:dry-run": "node ./scripts/indexnow-submit.mjs --dry-run",
     "indexnow:submit": "node ./scripts/indexnow-submit.mjs",
     "backend:dev": "node ./scripts/backend-runner.mjs dev",
