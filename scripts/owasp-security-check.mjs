@@ -128,6 +128,19 @@ for (const route of highCostRoutes) {
   );
 }
 
+const aiAttachmentAnalysisRoute = readText('api/v1/ai/attachments/analyze.js');
+check(
+  'AI attachment analysis requires Firebase auth',
+  containsAll(aiAttachmentAnalysisRoute, [
+    'verifyFirebaseIdToken',
+    'getBearerToken',
+    'await verifyFirebaseIdToken(token)',
+  ]) &&
+    aiAttachmentAnalysisRoute.indexOf('await verifyFirebaseIdToken(token)') <
+      aiAttachmentAnalysisRoute.indexOf('const payload = await readJsonBody'),
+  'AI attachment analysis must verify the signed-in Firebase user before parsing uploads or calling the AI provider'
+);
+
 const clientRuntimeFiles = [
   'apps/MoneyKai-web/src/config/environment.ts',
   'apps/MoneyKai-mobile/src/config/environment.ts',

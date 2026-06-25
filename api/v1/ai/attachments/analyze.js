@@ -1,4 +1,5 @@
-const { applyRateLimit, readJsonBody, requireMethod, sendJson } = require('../../../_lib/http');
+const { verifyFirebaseIdToken } = require('../../../_lib/firebase-auth');
+const { applyRateLimit, getBearerToken, readJsonBody, requireMethod, sendJson } = require('../../../_lib/http');
 const { analyzeInlineImages } = require('../../../_lib/ai-runtime');
 
 module.exports = async (req, res) => {
@@ -10,6 +11,9 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const token = getBearerToken(req);
+    await verifyFirebaseIdToken(token);
+
     const payload = await readJsonBody(req, { limitBytes: 6 * 1024 * 1024 });
     if (!Array.isArray(payload.inlineAttachments) || payload.inlineAttachments.length === 0) {
       return sendJson(res, 400, {
@@ -27,10 +31,16 @@ module.exports = async (req, res) => {
     });
     return sendJson(res, 200, result);
   } catch (error) {
-    return sendJson(res, error.statusCode || 500, {
+    const status = [400, 413, 503].includes(error.statusCode) ? error.statusCode : 401;
+    const message =
+      status === 401
+        ? 'Sign in again before requesting attachment analysis.'
+        : error.message || 'Unable to analyse this attachment.';
+
+    return sendJson(res, status, {
       error: {
         code: error.code || 'AI_ATTACHMENT_ANALYSIS_FAILED',
-        message: error.message || 'Unable to analyse this attachment.',
+        message,
       },
     });
   }
