@@ -149,10 +149,18 @@ export const useNotesStore = create<NotesState>()(
                 notes: previousNotes,
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== newNote.id),
               })),
-            reconcile: () =>
+            reconcile: () => {
               set((state) => ({
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== newNote.id),
-              })),
+              }));
+              void recordAppNotification({
+                title: 'Note saved',
+                body: newNote.title,
+                type: 'system',
+                actionRoute: '/(tabs)/notes',
+              });
+              void requestAutomaticBackup('note added');
+            },
             onError: ({ error, retry }) => {
               if (__DEV__) {
                 console.warn('[MoneyKai] failed to sync note create:', error);
@@ -172,13 +180,6 @@ export const useNotesStore = create<NotesState>()(
               });
             },
           });
-          void recordAppNotification({
-            title: 'Note saved',
-            body: newNote.title,
-            type: 'system',
-            actionRoute: '/(tabs)/notes',
-          });
-          void requestAutomaticBackup('note added');
         },
 
         updateNote: (id, updates) => {
@@ -201,10 +202,12 @@ export const useNotesStore = create<NotesState>()(
                 notes: previousNotes,
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
               })),
-            reconcile: () =>
+            reconcile: () => {
               set((state) => ({
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
-              })),
+              }));
+              void requestAutomaticBackup('note updated');
+            },
             onError: ({ error, retry }) => {
               if (__DEV__) {
                 console.warn('[MoneyKai] failed to sync note update:', error);
@@ -217,7 +220,6 @@ export const useNotesStore = create<NotesState>()(
               });
             },
           });
-          void requestAutomaticBackup('note updated');
         },
 
         deleteNote: (id) => {
@@ -237,10 +239,12 @@ export const useNotesStore = create<NotesState>()(
                 notes: previousNotes,
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
               })),
-            reconcile: () =>
+            reconcile: () => {
               set((state) => ({
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
-              })),
+              }));
+              void requestAutomaticBackup('note deleted');
+            },
             onError: ({ error, retry }) => {
               if (__DEV__) {
                 console.warn('[MoneyKai] failed to sync note delete:', error);
@@ -253,7 +257,6 @@ export const useNotesStore = create<NotesState>()(
               });
             },
           });
-          void requestAutomaticBackup('note deleted');
         },
 
         togglePin: (id) => {
@@ -278,10 +281,12 @@ export const useNotesStore = create<NotesState>()(
                 notes: previousNotes,
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
               })),
-            reconcile: () =>
+            reconcile: () => {
               set((state) => ({
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== id),
-              })),
+              }));
+              void requestAutomaticBackup('note updated');
+            },
             onError: ({ error, retry }) => {
               if (__DEV__) {
                 console.warn('[MoneyKai] failed to sync note pin:', error);
@@ -294,7 +299,6 @@ export const useNotesStore = create<NotesState>()(
               });
             },
           });
-          void requestAutomaticBackup('note updated');
         },
 
         toggleChecklistItem: (noteId, itemId) => {
@@ -322,10 +326,12 @@ export const useNotesStore = create<NotesState>()(
                 notes: previousNotes,
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== noteId),
               })),
-            reconcile: () =>
+            reconcile: () => {
               set((state) => ({
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== noteId),
-              })),
+              }));
+              void requestAutomaticBackup('note updated');
+            },
             onError: ({ error, retry }) => {
               if (__DEV__) {
                 console.warn('[MoneyKai] failed to sync checklist item:', error);
@@ -338,7 +344,6 @@ export const useNotesStore = create<NotesState>()(
               });
             },
           });
-          void requestAutomaticBackup('note updated');
         },
 
         addChecklistItem: (noteId, text) => {
@@ -367,10 +372,12 @@ export const useNotesStore = create<NotesState>()(
                 notes: previousNotes,
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== noteId),
               })),
-            reconcile: () =>
+            reconcile: () => {
               set((state) => ({
                 pendingOptimisticNoteIds: state.pendingOptimisticNoteIds.filter((item) => item !== noteId),
-              })),
+              }));
+              void requestAutomaticBackup('note updated');
+            },
             onError: ({ error, retry }) => {
               if (__DEV__) {
                 console.warn('[MoneyKai] failed to sync checklist add:', error);
