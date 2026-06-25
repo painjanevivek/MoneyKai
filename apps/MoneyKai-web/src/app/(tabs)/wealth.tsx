@@ -43,9 +43,6 @@ export default function WealthScreen() {
         contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.base, paddingBottom: Spacing['2xl'], gap: Spacing.base }}
       >
         <View style={{ gap: Spacing.xs }}>
-          <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
-            Wealth
-          </Text>
           <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
             {lastUpdatedAt ? `Last updated ${new Date(lastUpdatedAt).toLocaleString()}` : 'No wealth data synced yet'}
           </Text>

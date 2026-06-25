@@ -2,7 +2,8 @@ import React, { type PropsWithChildren, useEffect, useMemo, useState } from 'rea
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, usePathname } from 'expo-router';
-import { Alert, Linking, Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle, useWindowDimensions } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -17,6 +18,13 @@ type NavItem = {
   href: string;
   label: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
+};
+
+type NavLayout = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -68,6 +76,143 @@ const isRouteActive = (pathname: string, href: string) => {
   return normalized === href || normalized.startsWith(`${href}/`);
 };
 
+function SlidingNavItems({ pathname, orientation }: { pathname: string; orientation: 'horizontal' | 'vertical' }) {
+  const { colors } = useTheme();
+  const [navLayouts, setNavLayouts] = useState<Record<string, NavLayout>>({});
+  const activeItem = NAV_ITEMS.find((item) => isRouteActive(pathname, item.href)) ?? NAV_ITEMS[0];
+  const isHorizontal = orientation === 'horizontal';
+  const indicatorX = useSharedValue(0);
+  const indicatorY = useSharedValue(0);
+  const indicatorWidth = useSharedValue(0);
+  const indicatorHeight = useSharedValue(0);
+  const indicatorOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    const layout = navLayouts[activeItem.href];
+    if (!layout) return;
+
+    const config = {
+      duration: 240,
+      easing: Easing.out(Easing.cubic),
+    };
+
+    indicatorX.value = withTiming(layout.x, config);
+    indicatorY.value = withTiming(layout.y, config);
+    indicatorWidth.value = withTiming(layout.width, config);
+    indicatorHeight.value = withTiming(layout.height, config);
+    indicatorOpacity.value = withTiming(1, { duration: 120 });
+  }, [activeItem.href, indicatorHeight, indicatorOpacity, indicatorWidth, indicatorX, indicatorY, navLayouts]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    opacity: indicatorOpacity.value,
+    width: indicatorWidth.value,
+    height: indicatorHeight.value,
+    transform: [{ translateX: indicatorX.value }, { translateY: indicatorY.value }],
+  }));
+
+  const handleNavItemLayout = (href: string) => (event: LayoutChangeEvent) => {
+    const { x, y, width: itemWidth, height: itemHeight } = event.nativeEvent.layout;
+    const next = {
+      x: Math.round(x),
+      y: Math.round(y),
+      width: Math.round(itemWidth),
+      height: Math.round(itemHeight),
+    };
+
+    setNavLayouts((current) => {
+      const previous = current[href];
+      if (
+        previous &&
+        previous.x === next.x &&
+        previous.y === next.y &&
+        previous.width === next.width &&
+        previous.height === next.height
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [href]: next,
+      };
+    });
+  };
+
+  return (
+    <View
+      style={{
+        flexDirection: isHorizontal ? 'row' : 'column',
+        gap: isHorizontal ? Spacing.xs : 4,
+        paddingRight: isHorizontal ? Spacing.base : 0,
+        marginBottom: isHorizontal ? 0 : Spacing.lg,
+        position: 'relative',
+      }}
+    >
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            pointerEvents: 'none',
+            borderRadius: isHorizontal ? BorderRadius.full : BorderRadius.md,
+            backgroundColor: colors.primaryBg,
+            borderWidth: 1,
+            borderColor: withAlpha(colors.primary, 0.18),
+          },
+          indicatorStyle,
+        ]}
+      />
+
+      {NAV_ITEMS.map((item) => {
+        const active = item.href === activeItem.href;
+        return (
+          <Pressable
+            key={`${item.href}-${item.label}`}
+            accessibilityRole="link"
+            accessibilityLabel={`Open ${item.label}`}
+            accessibilityState={{ selected: active }}
+            onLayout={handleNavItemLayout(item.href)}
+            onPress={() => router.push(item.href as any)}
+            style={({ hovered, pressed }: any) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: isHorizontal ? 8 : 12,
+              paddingHorizontal: isHorizontal ? Spacing.md : 14,
+              paddingVertical: isHorizontal ? 10 : 10,
+              borderRadius: isHorizontal ? BorderRadius.full : BorderRadius.md,
+              backgroundColor: !active && hovered ? withAlpha(colors.primary, 0.08) : 'transparent',
+              borderWidth: 1,
+              borderColor: !active && hovered ? withAlpha(colors.primary, 0.18) : 'transparent',
+              transform: hovered && !pressed
+                ? [{ translateX: isHorizontal ? 0 : 2 }, { translateY: isHorizontal ? -1 : 0 }]
+                : [{ translateX: 0 }, { translateY: 0 }],
+              position: 'relative',
+              zIndex: 1,
+            })}
+          >
+            <MaterialCommunityIcons
+              name={item.icon}
+              size={isHorizontal ? 18 : 20}
+              color={active ? colors.primary : colors.textSecondary}
+            />
+            <Text
+              style={{
+                fontSize: Typography.fontSize.sm,
+                lineHeight: isHorizontal ? 20 : undefined,
+                fontFamily: Typography.fontFamily.medium,
+                color: active ? colors.primary : colors.textSecondary,
+              }}
+            >
+              {item.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
   index,
   label: formatDate(new Date(2026, index, 1), 'MMM'),
@@ -87,7 +232,7 @@ const parseMonthKey = (monthKey: string) => {
 
 export function DesktopShell({ children }: PropsWithChildren) {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
@@ -103,6 +248,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
   const selectedMonthDate = useMemo(() => parseMonthKey(selectedMonthKey), [selectedMonthKey]);
   const monthRangeLabel = `${formatDate(startOfMonth(selectedMonthDate), 'MMM d')} - ${formatDate(endOfMonth(selectedMonthDate), 'MMM d, yyyy')}`;
   const isCompact = width < 900;
+  const sidebarHeight = Math.max(0, height - Spacing.base * 2);
 
   useEffect(() => {
     setTransactionFilter({
@@ -324,48 +470,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: Spacing.xs, paddingRight: Spacing.base }}
+              contentContainerStyle={{ paddingRight: Spacing.base }}
             >
-              {NAV_ITEMS.map((item) => {
-                const active = isRouteActive(pathname, item.href);
-                return (
-                  <Pressable
-                    key={`${item.href}-${item.label}`}
-                    accessibilityRole="link"
-                    accessibilityLabel={`Open ${item.label}`}
-                    accessibilityState={{ selected: active }}
-                    onPress={() => router.push(item.href as any)}
-                    style={({ hovered, pressed }: any) => ({
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      paddingHorizontal: Spacing.md,
-                      paddingVertical: 10,
-                      borderRadius: BorderRadius.full,
-                    backgroundColor: active ? colors.primaryBg : hovered ? withAlpha(colors.primary, 0.08) : colors.glassBg,
-                      borderWidth: 1,
-                      borderColor: active ? withAlpha(colors.primary, 0.18) : hovered ? withAlpha(colors.primary, 0.18) : colors.glassBorder,
-                      transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-                    })}
-                  >
-                    <MaterialCommunityIcons
-                      name={item.icon}
-                      size={18}
-                      color={active ? colors.primary : colors.textSecondary}
-                    />
-                    <Text
-                      style={{
-                        fontSize: Typography.fontSize.sm,
-                        lineHeight: 20,
-                        fontFamily: Typography.fontFamily.medium,
-                        color: active ? colors.primary : colors.textSecondary,
-                      }}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              <SlidingNavItems pathname={pathname} orientation="horizontal" />
             </ScrollView>
           </View>
 
@@ -403,6 +510,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
             borderColor: colors.borderLight,
             borderRadius: BorderRadius['2xl'],
             backgroundColor: colors.surface,
+            height: sidebarHeight,
+            maxHeight: sidebarHeight,
             paddingVertical: Spacing.base,
             paddingHorizontal: Spacing.base,
             overflow: 'hidden',
@@ -411,7 +520,11 @@ export function DesktopShell({ children }: PropsWithChildren) {
             ...(glassBackdropStyle ?? {}),
           }}
         >
-          <View style={{ flex: 1, paddingBottom: insets.bottom + 20 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+            showsVerticalScrollIndicator
+          >
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="Go to MoneyKai dashboard"
@@ -420,7 +533,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
-                marginBottom: Spacing['2xl'],
+                marginBottom: Spacing.lg,
                 padding: 6,
                 marginHorizontal: -6,
                 borderRadius: BorderRadius.lg,
@@ -455,47 +568,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </View>
             </Pressable>
 
-            <View style={{ gap: 6, marginBottom: Spacing['2xl'] }}>
-              {NAV_ITEMS.map((item) => {
-                const active = isRouteActive(pathname, item.href);
-                return (
-                  <Pressable
-                    key={`${item.href}-${item.label}`}
-                    accessibilityRole="link"
-                    accessibilityLabel={`Open ${item.label}`}
-                    accessibilityState={{ selected: active }}
-                    onPress={() => router.push(item.href as any)}
-                    style={({ hovered, pressed }: any) => ({
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 12,
-                      paddingHorizontal: 14,
-                      paddingVertical: 12,
-                      borderRadius: BorderRadius.md,
-                      backgroundColor: active ? colors.primaryBg : hovered ? withAlpha(colors.primary, 0.08) : 'transparent',
-                      borderWidth: 1,
-                      borderColor: active ? withAlpha(colors.primary, 0.18) : hovered ? withAlpha(colors.primary, 0.18) : 'transparent',
-                      transform: hovered && !pressed ? [{ translateX: 2 }] : [{ translateX: 0 }],
-                    })}
-                  >
-                    <MaterialCommunityIcons
-                      name={item.icon}
-                      size={20}
-                      color={active ? colors.primary : colors.textSecondary}
-                    />
-                    <Text
-                      style={{
-                        fontSize: Typography.fontSize.sm,
-                        fontFamily: Typography.fontFamily.medium,
-                        color: active ? colors.primary : colors.textSecondary,
-                      }}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <SlidingNavItems pathname={pathname} orientation="vertical" />
 
             <View
               style={{
@@ -722,7 +795,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 </Pressable>
               </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
 
         <View style={{ flex: 1, minWidth: 0, position: 'relative' }}>

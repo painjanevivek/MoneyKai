@@ -35,15 +35,6 @@ export default function GoalsScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['4xl'] }}
       >
         <View style={{ gap: Spacing.xl }}>
-          <Card>
-            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Goals
-            </Text>
-            <Text style={{ marginTop: 6, fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22, maxWidth: 760 }}>
-              MoneyKai uses the existing challenge system as a practical goal tracker so users can stay motivated without needing a fake goals engine.
-            </Text>
-          </Card>
-
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
             <Card style={{ flex: 1, minWidth: 220 }}>
               <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Active goals</Text>
