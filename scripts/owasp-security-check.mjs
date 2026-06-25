@@ -141,6 +141,30 @@ check(
   'AI attachment analysis must verify the signed-in Firebase user before parsing uploads or calling the AI provider'
 );
 
+const webRootLayout = readText('apps/MoneyKai-web/src/app/_layout.tsx');
+const webSentry = readText('apps/MoneyKai-web/src/services/sentry.ts');
+const webCookieConsent = readText('apps/MoneyKai-web/src/services/cookieConsent.ts');
+const webPrivacyPolicy = readText('apps/MoneyKai-web/src/app/privacy-policy.tsx');
+
+check(
+  'Web cookie consent banner is mounted globally',
+  containsAll(webRootLayout, ['CookieConsentBanner', '<CookieConsentBanner />']),
+  'The root web layout should render the cookie consent prompt on every route'
+);
+
+check(
+  'Web telemetry requires cookie consent',
+  containsAll(webSentry, ['hasAnalyticsConsent', '!hasAnalyticsConsent()']) &&
+    containsAll(webCookieConsent, ['COOKIE_CONSENT_STORAGE_KEY', "choice: CookieConsentChoice", "value === 'accepted'"]),
+  'Sentry telemetry should not initialize or capture events until the visitor accepts optional analytics'
+);
+
+check(
+  'Privacy policy documents browser storage',
+  containsAll(webPrivacyPolicy, ['Cookies and local storage', 'Optional diagnostics and performance telemetry']),
+  'The public privacy policy should explain required browser storage and optional telemetry consent'
+);
+
 const clientRuntimeFiles = [
   'apps/MoneyKai-web/src/config/environment.ts',
   'apps/MoneyKai-mobile/src/config/environment.ts',

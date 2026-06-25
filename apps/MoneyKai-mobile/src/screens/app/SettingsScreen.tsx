@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Share, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
 import { sendFirebasePasswordResetEmail } from '@/services/authService';
+import {
+  collectInternalTestingReport,
+  copyInternalTestingReportToClipboard,
+  formatInternalTestingReport,
+} from '@/services/internalTestingReportService';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useSyncStore } from '@/stores/useSyncStore';
@@ -51,6 +56,9 @@ export function SettingsScreen() {
   const [syncLoading, setSyncLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [showPasswordSheet, setShowPasswordSheet] = useState(false);
+  const [showTestingReportSheet, setShowTestingReportSheet] = useState(false);
+  const [testingReportLoading, setTestingReportLoading] = useState(false);
+  const [testingReportText, setTestingReportText] = useState('');
   const firebaseReady = isFirebaseConfigured();
   const firebaseConfigStatus = getFirebaseConfigStatus();
   const nativeFirebaseReady = firebaseConfigStatus === 'native-ready';
@@ -120,6 +128,45 @@ export function SettingsScreen() {
     } finally {
       setSyncLoading(false);
     }
+  };
+
+  const refreshTestingReport = async () => {
+    setTestingReportLoading(true);
+    try {
+      const report = await collectInternalTestingReport();
+      setTestingReportText(formatInternalTestingReport(report));
+    } catch (error) {
+      Alert.alert('Report unavailable', error instanceof Error ? error.message : 'Could not build the internal testing report.');
+    } finally {
+      setTestingReportLoading(false);
+    }
+  };
+
+  const openTestingReport = () => {
+    setShowTestingReportSheet(true);
+    void refreshTestingReport();
+  };
+
+  const copyTestingReport = () => {
+    if (!testingReportText) {
+      Alert.alert('Report not ready', 'Refresh the internal testing report before copying it.');
+      return;
+    }
+
+    copyInternalTestingReportToClipboard(testingReportText);
+    Alert.alert('Report copied', 'The sanitized internal testing report is on your clipboard.');
+  };
+
+  const shareTestingReport = async () => {
+    if (!testingReportText) {
+      Alert.alert('Report not ready', 'Refresh the internal testing report before sharing it.');
+      return;
+    }
+
+    await Share.share({
+      title: 'MoneyKai internal testing report',
+      message: testingReportText,
+    });
   };
 
   const confirmLogout = () => {
@@ -322,6 +369,20 @@ export function SettingsScreen() {
           <Button title="Save cloud backup" onPress={runBackup} loading={backupLoading} icon="cloud-upload-outline" />
         </View>
 
+        <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Internal testing</Text>
+          <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>
+            Copy or share sanitized release metadata, device context, capture access state, backup status, and recent diagnostics.
+          </Text>
+          <Button
+            title="Testing report bundle"
+            onPress={openTestingReport}
+            loading={testingReportLoading && !showTestingReportSheet}
+            icon="clipboard-text-outline"
+            variant="secondary"
+          />
+        </View>
+
         <TouchableOpacity
           onPress={confirmLogout}
           style={{
@@ -375,6 +436,70 @@ export function SettingsScreen() {
               MoneyKai does not ask for or store your current password here. Firebase handles the reset link and verification.
             </Text>
           </View>
+        </View>
+      </ModalSheet>
+
+      <ModalSheet
+        visible={showTestingReportSheet}
+        title="Testing report bundle"
+        subtitle="Sanitized metadata and recent diagnostics for internal handoff reports."
+        onClose={() => setShowTestingReportSheet(false)}
+        maxHeight={760}
+        footer={
+          <View style={{ gap: Spacing.sm, marginTop: Spacing.sm }}>
+            <View style={{ flexDirection: 'row', gap: Spacing.md }}>
+              <Button
+                title="Copy"
+                onPress={copyTestingReport}
+                icon="content-copy"
+                variant="secondary"
+                style={{ flex: 1 }}
+                disabled={!testingReportText || testingReportLoading}
+              />
+              <Button
+                title="Share"
+                onPress={() => void shareTestingReport()}
+                icon="share-variant"
+                style={{ flex: 1 }}
+                disabled={!testingReportText || testingReportLoading}
+              />
+            </View>
+            <Button
+              title="Refresh"
+              onPress={() => void refreshTestingReport()}
+              loading={testingReportLoading}
+              icon="refresh"
+              variant="outline"
+            />
+          </View>
+        }
+      >
+        <View style={{ gap: Spacing.md }}>
+          <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: `${colors.primary}22` }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary, marginBottom: 4 }}>
+              Redacted by default
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+              The bundle excludes account identity, raw SMS bodies, raw notification payloads, diagnostic stacks, and backup contents.
+            </Text>
+          </View>
+          <Text
+            selectable
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.borderLight,
+              borderRadius: BorderRadius.md,
+              borderWidth: 1,
+              color: colors.textPrimary,
+              fontFamily: Typography.fontFamily.regular,
+              fontSize: Typography.fontSize.xs,
+              lineHeight: 18,
+              minHeight: 220,
+              padding: Spacing.md,
+            }}
+          >
+            {testingReportLoading && !testingReportText ? 'Building report...' : testingReportText || 'No report generated yet.'}
+          </Text>
         </View>
       </ModalSheet>
     </SafeAreaView>

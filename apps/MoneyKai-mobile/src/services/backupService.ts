@@ -47,6 +47,13 @@ interface AutomaticBackupState {
   reason: string | null;
 }
 
+export interface AutomaticBackupStatusContext {
+  pending: boolean;
+  queuedAt: string | null;
+  lastBackupAt: string | null;
+  reason: string | null;
+}
+
 type ProfileGender = 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'self_describe';
 
 const DEFAULT_AUTOMATIC_BACKUP_STATE: AutomaticBackupState = {
@@ -231,6 +238,18 @@ export const requestAutomaticBackup = async (reason: string) => {
   };
   await persistAutomaticBackupState();
   scheduleAutomaticBackup();
+};
+
+const formatBackupStateTimestamp = (value: number | null) => value ? new Date(value).toISOString() : null;
+
+export const getAutomaticBackupStatusContext = async (): Promise<AutomaticBackupStatusContext> => {
+  const state = await loadAutomaticBackupState();
+  return {
+    pending: state.pending,
+    queuedAt: formatBackupStateTimestamp(state.queuedAt),
+    lastBackupAt: formatBackupStateTimestamp(state.lastBackupAt),
+    reason: state.reason,
+  };
 };
 
 export const flushAutomaticBackup = async ({ force = false }: { force?: boolean } = {}) => {

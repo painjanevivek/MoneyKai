@@ -1,6 +1,6 @@
 # Phase 5D Diagnostics
 
-Last reviewed: 2026-06-11
+Last reviewed: 2026-06-25
 
 ## Current status
 
@@ -54,6 +54,14 @@ const events = getRecentDiagnosticEvents();
 ```
 
 The in-memory buffer keeps the latest 50 events for the current process only. It is useful for local testing and debugging, but it does not survive process death.
+
+## Internal testing report bundle
+
+Signed mobile builds now expose a sanitized report from **More > Settings and sync > Internal testing > Testing report bundle**. Testers can refresh, copy, or share the text bundle when filing internal feedback.
+
+The bundle includes app version, build profile or release tag, Sentry release/dist when configured, device/OS details, notification and SMS access state, backup/sync context, automatic backup queue context, and the latest redacted in-memory diagnostics.
+
+The bundle intentionally excludes account name, email, raw SMS bodies, raw notification payloads, backup contents, and diagnostic stacks.
 
 ## Backend reporting
 

@@ -9,6 +9,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_DEV_CLIENT_BUILD": "true",
+        "EXPO_PUBLIC_BUILD_PROFILE": "development",
         "EXPO_PUBLIC_GMAIL_SYNC_ENABLED": "true",
         "EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED": "true",
         "EXPO_PUBLIC_WEALTH_TAB_ENABLED": "true",
@@ -23,6 +24,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
+        "EXPO_PUBLIC_BUILD_PROFILE": "preview",
         "EXPO_PUBLIC_GMAIL_SYNC_ENABLED": "true",
         "EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED": "true",
         "EXPO_PUBLIC_WEALTH_TAB_ENABLED": "true",
@@ -37,6 +39,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
+        "EXPO_PUBLIC_BUILD_PROFILE": "sms-research-local",
         "EXPO_PUBLIC_GMAIL_SYNC_ENABLED": "true",
         "EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED": "true",
         "EXPO_PUBLIC_WEALTH_TAB_ENABLED": "true",
@@ -51,6 +54,7 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
+        "EXPO_PUBLIC_BUILD_PROFILE": "production",
         "EXPO_PUBLIC_GMAIL_SYNC_ENABLED": "false",
         "EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED": "false",
         "EXPO_PUBLIC_WEALTH_TAB_ENABLED": "false",

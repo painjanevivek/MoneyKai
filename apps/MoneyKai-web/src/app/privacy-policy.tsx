@@ -37,6 +37,10 @@ export default function PrivacyPolicyScreen() {
               body: 'MoneyKai uses this information to power budgeting, analytics, shared expense coordination, notes, reminders, and backup and restore experiences.',
             },
             {
+              title: 'Cookies and local storage',
+              body: 'MoneyKai uses necessary browser storage to remember sign-in state, preferences, language, backups, and cookie choices. Optional diagnostics and performance telemetry on the web, including Sentry, run only after you accept analytics cookies and telemetry.',
+            },
+            {
               title: 'Auto Capture',
               body: 'Auto Capture is optional. When enabled with Android notification access, MoneyKai uses supported bank and payment notifications to create reviewable transaction drafts on your device. Drafts do not affect budgets or transaction history until you confirm them.',
             },

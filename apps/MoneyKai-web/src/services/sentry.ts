@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { appEnvironment } from '@/config/environment';
+import { hasAnalyticsConsent } from '@/services/cookieConsent';
 import type { User } from '@/stores/useAuthStore';
 
 let sentryModulePromise: Promise<typeof import('@sentry/react')> | null = null;
@@ -15,7 +16,7 @@ const getSentry = () => {
 const stripQuery = (value: string | undefined) => value?.split('?')[0].split('#')[0] ?? value;
 
 export const initSentry = async () => {
-  if (sentryReady || Platform.OS !== 'web' || !appEnvironment.sentryDsn) {
+  if (sentryReady || Platform.OS !== 'web' || !appEnvironment.sentryDsn || !hasAnalyticsConsent()) {
     return;
   }
 
@@ -130,7 +131,7 @@ export const initSentry = async () => {
 void initSentry();
 
 export const identifySentryUser = async (user: User | null) => {
-  if (!appEnvironment.sentryDsn || Platform.OS !== 'web') {
+  if (!appEnvironment.sentryDsn || Platform.OS !== 'web' || !hasAnalyticsConsent()) {
     return;
   }
 
@@ -152,7 +153,7 @@ export const captureSentryException = async (
   error: unknown,
   context?: Parameters<typeof import('@sentry/react')['captureException']>[1],
 ) => {
-  if (!appEnvironment.sentryDsn || Platform.OS !== 'web') {
+  if (!appEnvironment.sentryDsn || Platform.OS !== 'web' || !hasAnalyticsConsent()) {
     return undefined;
   }
 
@@ -163,7 +164,7 @@ export const captureSentryException = async (
 export const addSentryBreadcrumb = async (
   breadcrumb: Parameters<typeof import('@sentry/react')['addBreadcrumb']>[0],
 ) => {
-  if (!appEnvironment.sentryDsn || Platform.OS !== 'web') {
+  if (!appEnvironment.sentryDsn || Platform.OS !== 'web' || !hasAnalyticsConsent()) {
     return;
   }
 
@@ -175,7 +176,7 @@ export const startSentrySpan = async <T>(
   options: Parameters<typeof import('@sentry/react')['startSpan']>[0],
   callback: () => T | Promise<T>,
 ): Promise<T> => {
-  if (!appEnvironment.sentryDsn || Platform.OS !== 'web') {
+  if (!appEnvironment.sentryDsn || Platform.OS !== 'web' || !hasAnalyticsConsent()) {
     return callback();
   }
 

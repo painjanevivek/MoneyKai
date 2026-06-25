@@ -9,6 +9,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
+import { CookieConsentBanner } from '@/components/privacy/CookieConsentBanner';
 import { captureSentryException, identifySentryUser } from '@/services/sentry';
 
 const AutoBackupCoordinator = lazy(() =>
@@ -205,6 +206,7 @@ export default function RootLayout() {
         </Suspense>
       ) : null}
       <View key={currencyRenderToken} style={{ flex: 1, backgroundColor: colors.background }}>{content}</View>
+      <CookieConsentBanner />
     </AppErrorBoundary>
   );
 }
