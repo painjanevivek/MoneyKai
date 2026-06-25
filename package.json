@@ -27,6 +27,8 @@
     "bootstrap": "npm install --workspaces --include-workspace-root",
     "launch:check": "node ./scripts/launch-check.mjs",
     "security:check": "node ./scripts/owasp-security-check.mjs",
+    "indexnow:dry-run": "node ./scripts/indexnow-submit.mjs --dry-run",
+    "indexnow:submit": "node ./scripts/indexnow-submit.mjs",
     "backend:dev": "node ./scripts/backend-runner.mjs dev",
     "backend:test": "node ./scripts/backend-runner.mjs test",
     "backend:compile": "node ./scripts/backend-runner.mjs compile",
