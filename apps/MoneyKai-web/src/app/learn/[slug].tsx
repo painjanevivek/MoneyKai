@@ -3,10 +3,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Text, TouchableOpacity } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
-import { getLearnArticleBySlug, getRelatedLearnArticles } from '@/data/learnArticles';
+import { LEARN_ARTICLE_SLUGS, getLearnArticleBySlug, getRelatedLearnArticles } from '@/data/learnArticles';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { LearnArticleTemplate } from '@/components/marketing/LearnArticleTemplate';
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  return LEARN_ARTICLE_SLUGS.map((slug) => ({ slug }));
+}
 
 export default function LearnArticlePage() {
   const { colors } = useTheme();

@@ -4,9 +4,13 @@ import { Text, TouchableOpacity } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { ComparisonPage } from '@/components/marketing/ComparisonPage';
 import { SeoHead } from '@/components/marketing/SeoHead';
-import { getComparisonBySlug } from '@/content/comparisons';
+import { COMPARISON_PAGES, getComparisonBySlug } from '@/content/comparisons';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  return COMPARISON_PAGES.map((page) => ({ slug: page.slug }));
+}
 
 export default function ComparisonRoute() {
   const { colors } = useTheme();
