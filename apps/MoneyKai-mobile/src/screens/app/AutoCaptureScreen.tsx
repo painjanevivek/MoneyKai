@@ -5,6 +5,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { SmsImportProgressSheet } from '@/components/capture/SmsImportProgressSheet';
 import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -26,7 +27,7 @@ import { formatMonitoredAccountLabel } from '@/services/captureAccountIdentifier
 import { getDraftCategoryOptions } from '@/services/captureCategoryRules';
 import { Spacing } from '@/constants/theme';
 import { titleCase } from '@/utils/labels';
-import type { SmsImportRangeId } from '@/types/smsImport';
+import type { SmsImportProgress, SmsImportRangeId } from '@/types/smsImport';
 import { createAppScreenStyles } from './screenStyles';
 
 const buildImportSummary = (summary: Awaited<ReturnType<typeof importRecentSmsTransactionsFromInbox>>) => {
@@ -68,6 +69,9 @@ export function AutoCaptureScreen() {
   const [smsText, setSmsText] = useState('');
   const [isImportingSms, setIsImportingSms] = useState(false);
   const [smsImportRange, setSmsImportRange] = useState<SmsImportRangeId>('1_month');
+  const [showSmsImportProgress, setShowSmsImportProgress] = useState(false);
+  const [smsImportProgress, setSmsImportProgress] = useState<SmsImportProgress | undefined>();
+  const [smsImportFailure, setSmsImportFailure] = useState<string | undefined>();
   const [showRangeMenu, setShowRangeMenu] = useState(false);
   const [draftCategorySelections, setDraftCategorySelections] = useState<Record<string, string>>({});
 
@@ -158,12 +162,19 @@ export function AutoCaptureScreen() {
   };
 
   const importSmsInbox = async (rangeId: SmsImportRangeId = smsImportRange) => {
+    if (isImportingSms) return;
+
     setIsImportingSms(true);
+    setShowSmsImportProgress(true);
+    setSmsImportProgress(undefined);
+    setSmsImportFailure(undefined);
     try {
       const permission = await requestNativeSmsPermission();
       setSmsAccessStatus(permission);
       if (permission !== 'granted') {
-        Alert.alert('SMS access needed', 'Allow SMS inbox access, then try importing again.');
+        const message = 'Allow SMS inbox access, then try importing again.';
+        setSmsImportFailure(message);
+        Alert.alert('SMS access needed', message);
         return;
       }
 
@@ -171,8 +182,18 @@ export function AutoCaptureScreen() {
       setSmsResearchModeEnabled(true);
       await syncNativeSources(true, settings.notificationCaptureEnabled, true);
       await syncApprovedSmsAccounts();
-      const summary = await importRecentSmsTransactionsFromInbox(rangeId);
+      const summary = await importRecentSmsTransactionsFromInbox(rangeId, setSmsImportProgress);
+      if (summary.status === 'permission_denied' || summary.status === 'unsupported' || summary.status === 'error') {
+        const message = summary.message ?? 'MoneyKai could not import SMS messages right now.';
+        setSmsImportFailure(message);
+        Alert.alert('Import failed', message);
+        return;
+      }
       Alert.alert('SMS import complete', buildImportSummary(summary));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'MoneyKai could not import SMS messages right now.';
+      setSmsImportFailure(message);
+      Alert.alert('Import failed', message);
     } finally {
       setIsImportingSms(false);
     }
@@ -468,6 +489,13 @@ export function AutoCaptureScreen() {
           ))
         )}
       </ScrollView>
+      <SmsImportProgressSheet
+        visible={showSmsImportProgress}
+        progress={smsImportProgress}
+        failureMessage={smsImportFailure}
+        onClose={() => setShowSmsImportProgress(false)}
+        onRetry={smsImportFailure ? () => void importSmsInbox(smsImportRange) : undefined}
+      />
     </SafeAreaView>
   );
 }

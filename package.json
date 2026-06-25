@@ -15,6 +15,7 @@
     "mobile:lint": "npm --prefix apps/MoneyKai-mobile run lint",
     "mobile:typecheck": "npm --prefix apps/MoneyKai-mobile run typecheck",
     "mobile:test:capture": "npm --prefix apps/MoneyKai-mobile run test:capture",
+    "mobile:test:interaction": "npm --prefix apps/MoneyKai-mobile run test:interaction",
     "mobile:build": "npm --prefix apps/MoneyKai-mobile run build",
     "mobile:release:android:capture": "npm --prefix apps/MoneyKai-mobile run android:capture:handoff --",
     "mobile:release:android:verify": "npm --prefix apps/MoneyKai-mobile run android:verify:release-permissions --",

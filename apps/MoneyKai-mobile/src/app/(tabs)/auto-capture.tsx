@@ -327,6 +327,8 @@ export default function AutoCaptureScreen() {
   };
 
   const handleImportRecentSmsInbox = async () => {
+    if (isSmsInboxImporting) return;
+
     if (!hasMonthlyBudget) {
       showBudgetRequired();
       return;
