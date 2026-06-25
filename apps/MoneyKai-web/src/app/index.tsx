@@ -711,7 +711,22 @@ export default function LandingScreen() {
                     ['Starter', 'For personal tracking and light monthly review.', 'Create account'],
                     ['Kai Plus', 'For deeper reports, shared spends, and advanced review habits.', 'View pricing'],
                   ].map(([plan, body, cta], index) => (
-                    <article key={plan} style={{ ...cardStyle, background: index === 1 ? `linear-gradient(180deg, rgba(37, 244, 208, 0.18), rgba(11, 16, 36, 0.98))` : cardStyle.background, padding: 22 }}>
+                    <article
+                      key={plan}
+                      style={{
+                        ...cardStyle,
+                        background:
+                          index === 1
+                            ? 'linear-gradient(145deg, #F8FFFC 0%, #ECFDF7 43%, #EEF2FF 100%)'
+                            : cardStyle.background,
+                        border: index === 1 ? '1px solid rgba(124, 58, 237, 0.18)' : cardStyle.border,
+                        boxShadow:
+                          index === 1
+                            ? '0 20px 52px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.92)'
+                            : cardStyle.boxShadow,
+                        padding: 22,
+                      }}
+                    >
                       <h3 style={{ color: palette.text, fontSize: 24, lineHeight: '30px', margin: 0 }}>{plan}</h3>
                       <p style={{ ...paragraphStyle, marginTop: 10 }}>{body}</p>
                       <div style={{ marginTop: 22 }}>

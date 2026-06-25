@@ -37,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/portfolio', label: 'Portfolio', icon: 'briefcase-outline' },
   { href: '/reports', label: 'Reports', icon: 'chart-bar' },
   { href: '/accounts', label: 'Accounts', icon: 'credit-card-outline' },
+  { href: '/settings', label: 'Settings', icon: 'cog-outline' },
 ] as const;
 
 const MOBILE_APK_DOWNLOAD_URL: string | null = null;
