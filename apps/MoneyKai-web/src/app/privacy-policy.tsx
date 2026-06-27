@@ -38,7 +38,7 @@ export default function PrivacyPolicyScreen() {
             },
             {
               title: 'Cookies and local storage',
-              body: 'MoneyKai uses necessary browser storage to remember sign-in state, preferences, language, backups, and cookie choices. Optional diagnostics and performance telemetry on the web, including Sentry, run only after you accept analytics cookies and telemetry.',
+              body: 'MoneyKai uses necessary browser storage to remember sign-in state, preferences, language, backups, and cookie choices. Optional diagnostics and performance telemetry on the web, including Sentry and Vercel Speed Insights, run only after you accept analytics cookies and telemetry.',
             },
             {
               title: 'Auto Capture',

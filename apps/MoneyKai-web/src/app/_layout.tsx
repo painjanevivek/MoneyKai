@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
 import { AnalyticsRouteTracker } from '@/components/analytics/AnalyticsRouteTracker';
+import { VercelSpeedInsights } from '@/components/analytics/VercelSpeedInsights';
 import { CookieConsentBanner } from '@/components/privacy/CookieConsentBanner';
 import { WebsiteSkeleton } from '@/components/skeletons/WebsiteSkeleton';
 import { captureSentryException, identifySentryUser } from '@/services/sentry';
@@ -210,6 +211,7 @@ export default function RootLayout() {
         </Suspense>
       ) : null}
       <AnalyticsRouteTracker />
+      <VercelSpeedInsights />
       <View key={currencyRenderToken} style={{ flex: 1, backgroundColor: colors.background }}>
         <WebsiteSkeleton loading={showWebsiteSkeleton}>{content}</WebsiteSkeleton>
       </View>

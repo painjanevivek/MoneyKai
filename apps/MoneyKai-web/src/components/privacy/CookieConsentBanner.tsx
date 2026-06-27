@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { Link, usePathname } from 'expo-router';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import {
   type CookieConsentChoice,
-  getCookieConsentChoice,
+  getCookieConsentServerSnapshot,
+  getCookieConsentSnapshot,
   setCookieConsentChoice,
+  subscribeCookieConsent,
 } from '@/services/cookieConsent';
 import { trackPageView, trackUserEvent } from '@/services/analytics';
 import { initSentry } from '@/services/sentry';
@@ -14,25 +16,18 @@ import { initSentry } from '@/services/sentry';
 export function CookieConsentBanner() {
   const { colors } = useTheme();
   const pathname = usePathname();
-  const [choice, setChoice] = useState<CookieConsentChoice | null>(null);
-  const [ready, setReady] = useState(false);
+  const choice = useSyncExternalStore(
+    subscribeCookieConsent,
+    getCookieConsentSnapshot,
+    getCookieConsentServerSnapshot
+  );
 
-  useEffect(() => {
-    if (Platform.OS !== 'web') {
-      return;
-    }
-
-    setChoice(getCookieConsentChoice());
-    setReady(true);
-  }, []);
-
-  if (Platform.OS !== 'web' || !ready || choice) {
+  if (Platform.OS !== 'web' || choice === 'pending' || choice) {
     return null;
   }
 
   const handleChoice = (nextChoice: CookieConsentChoice) => {
     setCookieConsentChoice(nextChoice);
-    setChoice(nextChoice);
 
     if (nextChoice === 'accepted') {
       void initSentry();
