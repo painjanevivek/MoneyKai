@@ -19,6 +19,7 @@ type ShellProps = PropsWithChildren<{
 
 const PRIMARY_LINKS = [
   { href: '/', label: 'Home' },
+  { href: '/docs', label: 'Docs' },
   { href: '/services', label: 'Services' },
   { href: '/features/analytics', label: 'Reports' },
   { href: '/features/analytics', label: 'AI Insights' },

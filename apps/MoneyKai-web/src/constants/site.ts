@@ -27,6 +27,7 @@ const CORE_PUBLIC_ROUTES_AFTER_COMPARE = [
   '/features/savings',
   '/features/analytics',
   '/features/backup-restore',
+  '/docs',
   '/services',
   '/how-it-works',
   '/pricing',
