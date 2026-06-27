@@ -1,6 +1,6 @@
 # Phase 5H Internal Release Signoff
 
-Last reviewed: 2026-06-26
+Last reviewed: 2026-06-28
 
 ## Release decision
 
@@ -12,16 +12,16 @@ This signoff has been rebuilt around the current `main` baseline. The repo is re
 
 | Field | Value |
 | --- | --- |
-| Current commit | `6b58289` (`6b582894599a513ca83101948c58466c771ffe42`) |
+| Current commit | `1bae4b5` (`1bae4b5e9b2caec9d3abf0d0993dc8af20021721`) |
 | Branch | `main` / `origin/main` |
-| Stale reference reconciliation | `b9687f8` is an ancestor of `main`, not the handoff baseline. It added latest-backup preview before restore and is included in `6b58289`. |
+| Stale reference reconciliation | `6b58289` and `b9687f8` are ancestors of `main`, not the handoff baseline. `b9687f8` added latest-backup preview before restore and is included in the current baseline. |
 | Mobile app package version | `1.0.1` |
 | Android version name | `1.0.1` |
 | Android version code | `2` locally; production EAS profile uses remote auto-increment |
 | App display name | `MoneyKai` |
 | Android package | `com.moneykai.mobile` |
 | Target SDK | `36` |
-| Expo v56 docs check | Read `https://docs.expo.dev/versions/v56.0.0/` before release updates |
+| Expo v56 docs check | Read `https://docs.expo.dev/versions/v56.0.0/` before release updates on 2026-06-28 |
 | Tester group | Internal testers |
 | Readiness source | `apps/MoneyKai-mobile/docs/phase5-release-readiness.md` |
 | Security source | `docs/prelaunch-security-checklist.md` |
@@ -36,7 +36,9 @@ This signoff has been rebuilt around the current `main` baseline. The repo is re
 | `da75e57` | Added Android production signing guardrails for release builds. |
 | `2238e81` | Statically exported dynamic marketing routes for SEO/web handoff. |
 | `df150ff` | Required auth for AI attachment analysis. |
-| `6b58289` | Added the current internal-testing handoff bundle, tester report bundle, cookie/privacy updates, and release doc updates. |
+| `6b58289` | Added the previous internal-testing handoff bundle, tester report bundle, cookie/privacy updates, and release doc updates. |
+| `c49c449` | Added the Vercel Speed Insights package to the web workspace. |
+| `1bae4b5` | Current handoff baseline; wired consent-gated Vercel Speed Insights into the web root and updated optional telemetry privacy copy. |
 
 ## Build split
 
@@ -47,7 +49,7 @@ This signoff has been rebuilt around the current `main` baseline. The repo is re
 
 | Field | Current handoff value |
 | --- | --- |
-| Play-safe internal AAB | Pending fresh production AAB from `6b58289` or later |
+| Play-safe internal AAB | Pending fresh production AAB from `1bae4b5` or later |
 | Required signing | EAS-managed Android credentials for production AAB, or a verified non-debug local upload key if intentionally using local Gradle bundle |
 | Permission gate | Run `npm run mobile:release:android:verify -- --aab <handoff-aab>` against the exact AAB before Play upload |
 | Handoff capture gate | Run `npm run mobile:release:android:capture -- --aab <handoff-aab> --build-id <id> --eas-url <url>` and paste output into this doc. The command records SHA-256, signer certificate details, and permission-verifier output, and rejects Android debug signing by default. |
@@ -62,6 +64,7 @@ The Phase 5A artifacts are historical local validation artifacts. The historical
 Run or record these before sending the next build to internal testers:
 
 - `npm run launch:check`
+- `npm run release:handoff-baseline`
 - `npm run security:check`
 - `npm run mobile:typecheck`
 - `npm run mobile:lint`
@@ -117,7 +120,7 @@ Replace this table with the output from `npm run mobile:release:android:capture 
 | --- | --- |
 | Build ID | Pending authenticated EAS/local successful bundle |
 | EAS build URL | Pending |
-| Commit hash | `6b58289` / `6b582894599a513ca83101948c58466c771ffe42` |
+| Commit hash | `1bae4b5` / `1bae4b5e9b2caec9d3abf0d0993dc8af20021721` |
 | Branch | `main` |
 | App version | `1.0.1` |
 | Android package | `com.moneykai.mobile` |
@@ -140,4 +143,4 @@ Replace this table with the output from `npm run mobile:release:android:capture 
 
 ## Final signoff state
 
-Internal release signoff is current for 2026-06-26 repo state. Automated repo/mobile checks, artifact hash capture, permission verification, and signing expectations are documented, but Play Console handoff remains blocked until a fresh signed production AAB from `6b58289` or later is produced, hashed, permission-verified, and smoke-checked on device.
+Internal release signoff is current for 2026-06-28 repo state. Automated repo/mobile checks, artifact hash capture, permission verification, handoff-baseline drift detection, and signing expectations are documented, but Play Console handoff remains blocked until a fresh signed production AAB from `1bae4b5` or later is produced, hashed, permission-verified, and smoke-checked on device.

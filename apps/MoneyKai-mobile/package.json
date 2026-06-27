@@ -65,7 +65,7 @@
     "android:bundle:release": "npm run android:verify:production-signing -- --mode local-release && cd android && gradlew.bat :app:bundleRelease",
     "android:bundle:release:verify": "npm run android:bundle:release && npm run android:verify:release-permissions -- --aab android/app/build/outputs/bundle/release/app-release.aab",
     "android:capture:handoff": "node ./scripts/capture-android-handoff.mjs",
-    "android:verify:production-signing": "node ./scripts/verify-android-production-signing.mjs",
+    "android:verify:production-signing": "node ../../scripts/verify-handoff-baseline.mjs && node ./scripts/verify-android-production-signing.mjs",
     "android:verify:release-permissions": "node ./scripts/verify-android-release-permissions.mjs",
     "eas-build-on-complete": "sentry-eas-build-on-complete",
     "generate:icons": "node ./scripts/generate-app-icons.mjs",

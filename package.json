@@ -28,6 +28,7 @@
     "build": "npm run web:build",
     "bootstrap": "npm install --workspaces --include-workspace-root",
     "launch:check": "node ./scripts/launch-check.mjs",
+    "release:handoff-baseline": "node ./scripts/verify-handoff-baseline.mjs",
     "seo:generate": "node ./scripts/public-seo.mjs --write",
     "seo:audit": "node ./scripts/public-seo.mjs --audit-dist",
     "security:check": "node ./scripts/owasp-security-check.mjs",

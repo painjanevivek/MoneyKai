@@ -1,12 +1,12 @@
 # Phase 5 Release Readiness
 
-Last reviewed: 2026-06-26
+Last reviewed: 2026-06-28
 
 ## Current baseline
 
-- Current handoff baseline is `main` / `origin/main` at `6b58289` (`6b582894599a513ca83101948c58466c771ffe42`).
-- The stale `b9687f8` reference is no longer the handoff baseline. It remains an ancestor of `main` and contributed the latest-backup preview before restore; the current release package must be built from `6b58289` or later.
-- Expo v56 docs were checked before mobile release updates: `https://docs.expo.dev/versions/v56.0.0/`. The current mobile baseline matches the expected Expo/RN generation used by this repo: React Native `0.85.3`, React `19.2.3`, Node `>=22.13.0`, Android compile SDK `36`, target SDK `36`.
+- Current handoff baseline is `main` / `origin/main` at `1bae4b5` (`1bae4b5e9b2caec9d3abf0d0993dc8af20021721`).
+- The stale `6b58289` and older `b9687f8` references are no longer the handoff baseline. They remain ancestors of `main`; the current release package must be built from `1bae4b5` or later.
+- Expo v56 docs were checked before mobile release updates on 2026-06-28: `https://docs.expo.dev/versions/v56.0.0/`. The current mobile baseline matches the expected Expo/RN generation used by this repo: React Native `0.85.3`, React `19.2.3`, Node `>=22.13.0`, Android compile SDK `36`, target SDK `36`.
 - App display name: `MoneyKai`.
 - Android package: `com.moneykai.mobile`.
 - App version: `1.0.1`.
@@ -35,6 +35,7 @@ Run from repo root unless noted.
 
 ```powershell
 npm run launch:check
+npm run release:handoff-baseline
 npm run security:check
 npm run mobile:typecheck
 npm run mobile:lint
@@ -57,6 +58,8 @@ npm run mobile:release:android:capture -- --aab apps\MoneyKai-mobile\path\to\pro
 ```
 
 Paste the capture output into `docs/phase5-internal-release-signoff.md` before submit. The capture command computes SHA-256, records the current commit, captures the artifact signer certificate, rejects Android debug signing by default, runs the restricted-SMS permission verifier against the exact artifact, and prints the handoff table.
+
+`npm run release:handoff-baseline` fails if this document or the signoff document still points at an older handoff commit than the checked-out `HEAD`. Keep it green before starting the next Play-internal production AAB build.
 
 Submit only after the signoff table is complete:
 
@@ -83,7 +86,7 @@ npx eas submit --platform android --profile production
 
 ## Remaining blockers before Play internal handoff
 
-- Produce a fresh production AAB from `6b58289` or later.
+- Produce a fresh production AAB from `1bae4b5` or later.
 - Verify EAS login/token access and Play Console submit credentials before build/submit.
 - Run permission verification and handoff capture against the exact downloaded AAB.
 - Record artifact path, SHA-256, EAS build URL/build ID, signing expectation, device smoke result, tester group, and Sentry/backend diagnostics visibility.
