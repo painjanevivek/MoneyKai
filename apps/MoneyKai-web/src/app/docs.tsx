@@ -65,9 +65,7 @@ const SidebarLink = ({ section, wide }: { section: MoneyKaiDocSection; wide: boo
       style={({ hovered, pressed }: any) => ({
         minHeight: 46,
         width: wide ? '100%' : 150,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
+        display: 'flex',
         paddingHorizontal: Spacing.sm,
         paddingVertical: 9,
         borderRadius: BorderRadius.sm,
@@ -75,20 +73,22 @@ const SidebarLink = ({ section, wide }: { section: MoneyKaiDocSection; wide: boo
         transform: pressed ? [{ scale: 0.99 }] : [{ scale: 1 }],
       })}
     >
-      <MaterialCommunityIcons name={section.icon} size={21} color="#64645F" />
-      <Text
-        numberOfLines={1}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          fontSize: Typography.fontSize.base,
-          lineHeight: 22,
-          fontFamily: Typography.fontFamily.medium,
-          color: docsColors.textSecondary,
-        }}
-      >
-        {section.navLabel}
-      </Text>
+      <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'nowrap' }}>
+        <MaterialCommunityIcons name={section.icon} size={21} color="#64645F" style={{ width: 24, flexShrink: 0 }} />
+        <Text
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: Typography.fontSize.base,
+            lineHeight: 22,
+            fontFamily: Typography.fontFamily.medium,
+            color: docsColors.textSecondary,
+          }}
+        >
+          {section.navLabel}
+        </Text>
+      </View>
     </Pressable>
   </Link>
 );
