@@ -143,6 +143,32 @@ void main() {
     );
   });
 
+  test(
+    'rejects encrypted backup with invalid encryption field lengths',
+    () async {
+      final exportService = await _seedExportService();
+      final backupService = EncryptedBackupService(
+        exportService: exportService,
+        now: () => DateTime.utc(2026, 6, 29, 10, 15),
+        randomBytes: (length) => List<int>.filled(length, 10),
+      );
+      final backup = await backupService.buildEncryptedBackup(
+        password: 'correct horse battery staple',
+      );
+      final decoded = jsonDecode(backup.content) as Map<String, Object?>;
+      final encryption = decoded['encryption'] as Map<String, Object?>;
+      encryption['nonce'] = base64Encode([1, 2, 3]);
+
+      expect(
+        backupService.decryptBackup(
+          backupJson: jsonEncode(decoded),
+          password: 'correct horse battery staple',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    },
+  );
+
   test('fails to decrypt with the wrong password', () async {
     final exportService = await _seedExportService();
     final backupService = EncryptedBackupService(

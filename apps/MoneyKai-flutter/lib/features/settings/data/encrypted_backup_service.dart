@@ -32,6 +32,9 @@ class EncryptedBackupService {
   static const backupFormatVersion = 1;
   static const minimumPasswordLength = 8;
   static const kdfIterations = 210000;
+  static const saltLength = 16;
+  static const nonceLength = 12;
+  static const macLength = 16;
 
   static final _cipher = AesGcm.with256bits();
   static final _kdf = Pbkdf2(
@@ -100,9 +103,9 @@ class EncryptedBackupService {
 
     _validateBackupMetadata(decoded, encryption);
 
-    final salt = _readBase64Field(encryption, 'salt');
-    final nonce = _readBase64Field(encryption, 'nonce');
-    final mac = _readBase64Field(encryption, 'mac');
+    final salt = _readBase64Field(encryption, 'salt', length: saltLength);
+    final nonce = _readBase64Field(encryption, 'nonce', length: nonceLength);
+    final mac = _readBase64Field(encryption, 'mac', length: macLength);
     final cipherText = _decodeBase64(payload);
     final secretKey = await _deriveKey(password.trim(), salt);
     final clearBytes = await _cipher.decrypt(
@@ -132,13 +135,22 @@ class EncryptedBackupService {
     );
   }
 
-  static List<int> _readBase64Field(Map<String, Object?> json, String key) {
+  static List<int> _readBase64Field(
+    Map<String, Object?> json,
+    String key, {
+    required int length,
+  }) {
     final value = json[key];
     if (value is! String) {
       throw const FormatException('Malformed MoneyKai backup payload.');
     }
 
-    return _decodeBase64(value);
+    final decoded = _decodeBase64(value);
+    if (decoded.length != length) {
+      throw const FormatException('Malformed MoneyKai backup payload.');
+    }
+
+    return decoded;
   }
 
   static List<int> _decodeBase64(String value) {
