@@ -109,6 +109,36 @@ void main() {
     expect(repository.readReports(), isEmpty);
   });
 
+  test('skips stored reports with blank required fields', () async {
+    SharedPreferences.setMockInitialValues({
+      LocalErrorReportRepository.reportsKey: jsonEncode([
+        {
+          'id': '',
+          'source': 'test',
+          'errorType': 'StateError',
+          'message': 'blank id',
+          'stackTrace': 'stack',
+          'occurredAt': DateTime.utc(2026, 6, 29, 10).toIso8601String(),
+        },
+        {
+          'id': 'valid',
+          'source': 'test',
+          'errorType': 'StateError',
+          'message': 'valid report',
+          'stackTrace': 'stack',
+          'occurredAt': DateTime.utc(2026, 6, 29, 11).toIso8601String(),
+        },
+      ]),
+    });
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final repository = LocalErrorReportRepository(storage);
+
+    final reports = repository.readReports();
+
+    expect(reports, hasLength(1));
+    expect(reports.single.id, 'valid');
+  });
+
   test('clears recorded local errors', () async {
     SharedPreferences.setMockInitialValues({});
     final storage = LocalStorageService(await SharedPreferences.getInstance());

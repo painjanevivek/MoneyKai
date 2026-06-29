@@ -33,10 +33,13 @@ class LocalErrorReport {
     final message = json['message'];
     final stackTrace = json['stackTrace'];
     final occurredAt = DateTime.tryParse('${json['occurredAt']}');
+    final trimmedId = _trimmedText(id);
+    final trimmedSource = _trimmedText(source);
+    final trimmedErrorType = _trimmedText(errorType);
 
-    if (id is! String ||
-        source is! String ||
-        errorType is! String ||
+    if (trimmedId == null ||
+        trimmedSource == null ||
+        trimmedErrorType == null ||
         message is! String ||
         stackTrace is! String ||
         occurredAt == null) {
@@ -44,12 +47,21 @@ class LocalErrorReport {
     }
 
     return LocalErrorReport(
-      id: id,
-      source: source,
-      errorType: errorType,
+      id: trimmedId,
+      source: trimmedSource,
+      errorType: trimmedErrorType,
       message: message,
       stackTrace: stackTrace,
       occurredAt: occurredAt,
     );
   }
+}
+
+String? _trimmedText(Object? value) {
+  if (value is! String) {
+    return null;
+  }
+
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }
