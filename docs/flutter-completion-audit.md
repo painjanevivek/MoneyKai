@@ -93,7 +93,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | Play Store-ready artifact | Not complete | No upload keystore was provided; current release APK/AAB are unsigned inspection artifacts. |
 | Android emulator manual QA | Mostly complete | Fresh install, auth, transactions, budget, insights, export, encrypted backup export/restore, reset, sign out, visual, and hierarchy QA are documented. |
 | TalkBack spoken-output QA | Not complete | Accessibility hierarchy exists, but real spoken-output QA is still pending. |
-| Physical Android device QA | Not complete | No physical Android device is connected; `apps\MoneyKai-flutter\tool\collect_android_runtime_qa.ps1 -RequirePhysical` is ready to fail on `adb` command errors, validate launch success/timing, require MoneyKai hierarchy package evidence, and collect binary PNG screenshot plus device evidence with size/SHA-256 summary metadata once hardware is available. |
+| Physical Android device QA | Not complete | No physical Android device is connected; `apps\MoneyKai-flutter\tool\collect_android_runtime_qa.ps1 -RequirePhysical` is ready to fail on `adb` command errors, validate launch success/timing with default `TotalTime <= 5000 ms` and `WaitTime <= 6000 ms` cold-start limits, require MoneyKai hierarchy package evidence, and collect binary PNG screenshot plus device evidence with size/SHA-256 summary metadata once hardware is available. |
 | iOS simulator/device/archive/TestFlight | Not complete | Current machine is Windows; macOS/Xcode and Apple Developer signing are required. |
 | Security/privacy self-review | Partially complete | Permissions, cleartext-denying Android network config, exported-component exposure, Android backup/data-extraction opt-out, local-only boundaries, enforced storage namespace, reset namespace, plaintext export contents, encrypted backups, local diagnostics clearing, and privacy copy are documented; local storage is not encrypted and real auth/backend sync remain future work. |
 | Backend sync | Future work | Repository boundaries are ready; no backend sync implementation exists. |
@@ -124,6 +124,12 @@ Required before Play Store internal testing:
 ```powershell
 cd apps\MoneyKai-flutter
 .\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical
+```
+
+Use the default cold-start thresholds for release evidence unless the test-device class is explicitly documented:
+
+```powershell
+.\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical -MaxLaunchTotalMs 5000 -MaxLaunchWaitMs 6000
 ```
 
 Required before TestFlight:

@@ -128,6 +128,7 @@ For the required physical-device release gate, use:
 ```
 
 The script writes evidence files under the repository root `.codex-artifacts` folder, records size and SHA-256 metadata in the summary, and fails if an `adb` command fails, Android launch status/timing is incomplete, the hierarchy does not include `com.moneykai.mobile`, or the device/PNG screenshot evidence is missing or empty.
+It also enforces cold-start launch timing by default: `TotalTime` must be at most 5000 ms and `WaitTime` must be at most 6000 ms. Override those limits with `-MaxLaunchTotalMs` and `-MaxLaunchWaitMs` only when documenting a deliberately slower test device.
 
 ## Documentation
 

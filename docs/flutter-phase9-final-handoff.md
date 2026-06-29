@@ -221,6 +221,8 @@ cd apps\MoneyKai-flutter
 .\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical
 ```
 
+By default this physical-device command fails if cold-start `TotalTime` exceeds 5000 ms or `WaitTime` exceeds 6000 ms. Use custom `-MaxLaunchTotalMs` / `-MaxLaunchWaitMs` values only when the slower test-device class is documented in the QA evidence.
+
 Required before TestFlight:
 
 - Move to macOS with Xcode installed.

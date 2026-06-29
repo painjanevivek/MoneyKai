@@ -283,7 +283,7 @@ cd apps\MoneyKai-flutter
 ```
 
 The `-RequirePhysical` variant intentionally fails on emulators and should be used for the remaining physical-device release gate.
-The collector writes Android screenshots through binary stdout redirection so captured PNG evidence is not re-encoded by Windows PowerShell, records size and SHA-256 metadata for captured evidence in the summary, and fails if an `adb` command fails, Android launch status/timing is incomplete, the hierarchy does not include the MoneyKai package, or device/PNG screenshot evidence is missing or invalid.
+The collector writes Android screenshots through binary stdout redirection so captured PNG evidence is not re-encoded by Windows PowerShell, records size and SHA-256 metadata for captured evidence in the summary, and fails if an `adb` command fails, Android launch status/timing is incomplete, default cold-start limits are exceeded (`TotalTime <= 5000 ms`, `WaitTime <= 6000 ms`), the hierarchy does not include the MoneyKai package, or device/PNG screenshot evidence is missing or invalid.
 
 On macOS/Xcode later:
 

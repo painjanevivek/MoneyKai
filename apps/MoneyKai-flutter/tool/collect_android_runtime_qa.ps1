@@ -4,7 +4,9 @@ param(
     [string]$OutputDir = "../../.codex-artifacts",
     [switch]$Install,
     [switch]$ClearAppData,
-    [switch]$RequirePhysical
+    [switch]$RequirePhysical,
+    [int]$MaxLaunchTotalMs = 5000,
+    [int]$MaxLaunchWaitMs = 6000
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,6 +17,14 @@ $mainActivity = "com.moneykai.mobile/.MainActivity"
 $appRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $resolvedApkPath = [System.IO.Path]::GetFullPath((Join-Path $appRoot $ApkPath))
 $resolvedOutputDir = [System.IO.Path]::GetFullPath((Join-Path $appRoot $OutputDir))
+
+if ($MaxLaunchTotalMs -le 0) {
+    throw "MaxLaunchTotalMs must be greater than zero."
+}
+
+if ($MaxLaunchWaitMs -le 0) {
+    throw "MaxLaunchWaitMs must be greater than zero."
+}
 
 function Resolve-Adb {
     $candidates = @(
@@ -149,17 +159,35 @@ function Assert-PngFile {
 }
 
 function Assert-LaunchOutput {
-    param([Parameter(Mandatory = $true)][string[]]$Output)
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Output,
+        [Parameter(Mandatory = $true)][int]$MaxTotalMs,
+        [Parameter(Mandatory = $true)][int]$MaxWaitMs
+    )
 
     $joinedOutput = $Output -join "`n"
     if ($joinedOutput -notmatch "(?m)^Status:\s*ok\s*$") {
         throw "Android launch did not report Status: ok."
     }
 
-    if ($joinedOutput -notmatch "(?m)^(ThisTime|TotalTime):\s*\d+\s*$" -or
-        $joinedOutput -notmatch "(?m)^WaitTime:\s*\d+\s*$") {
-        throw "Android launch timing output is incomplete."
+    $metrics = [ordered]@{}
+    foreach ($metricName in @("ThisTime", "TotalTime", "WaitTime")) {
+        if ($joinedOutput -notmatch "(?m)^${metricName}:\s*(\d+)\s*$") {
+            throw "Android launch timing output is incomplete; missing $metricName."
+        }
+
+        $metrics[$metricName] = [int]$matches[1]
     }
+
+    if ($metrics["TotalTime"] -gt $MaxTotalMs) {
+        throw "Android launch TotalTime $($metrics["TotalTime"]) ms exceeds limit $MaxTotalMs ms."
+    }
+
+    if ($metrics["WaitTime"] -gt $MaxWaitMs) {
+        throw "Android launch WaitTime $($metrics["WaitTime"]) ms exceeds limit $MaxWaitMs ms."
+    }
+
+    return [pscustomobject]$metrics
 }
 
 function Assert-WindowHierarchy {
@@ -256,7 +284,10 @@ $deviceProps.GetEnumerator() | ForEach-Object { "$($_.Key): $($_.Value)" } |
 
 Invoke-Adb shell am force-stop $packageName | Out-Null
 $launchOutput = Invoke-Adb shell am start -W -n $mainActivity
-Assert-LaunchOutput -Output $launchOutput
+$launchMetrics = Assert-LaunchOutput `
+    -Output $launchOutput `
+    -MaxTotalMs $MaxLaunchTotalMs `
+    -MaxWaitMs $MaxLaunchWaitMs
 $launchOutput | Set-Content -LiteralPath $launchPath -Encoding UTF8
 
 Start-Sleep -Seconds 3
@@ -282,6 +313,10 @@ $summary = @(
     "- Android: $($deviceProps.AndroidRelease) / SDK $($deviceProps.AndroidSdk)",
     "",
     "## Launch Timing",
+    "",
+    "- ThisTime: $($launchMetrics.ThisTime) ms",
+    "- TotalTime: $($launchMetrics.TotalTime) ms (limit: $MaxLaunchTotalMs ms)",
+    "- WaitTime: $($launchMetrics.WaitTime) ms (limit: $MaxLaunchWaitMs ms)",
     "",
     '```text',
     ($launchOutput -join "`n"),

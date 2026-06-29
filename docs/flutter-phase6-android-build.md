@@ -230,7 +230,7 @@ It checks artifact existence, SHA-256 metadata, compiled debug/release APK ident
 
 ## Remaining Android release work
 
-- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: real TalkBack spoken-output pass and physical-device performance/cold-start checks.
+- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: real TalkBack spoken-output pass and physical-device performance/cold-start checks. The runtime QA collector enforces default cold-start limits of `TotalTime <= 5000 ms` and `WaitTime <= 6000 ms`; override them only when the slower physical test-device class is documented.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with upload-key signing.
 - Capture SHA-256 and signer certificate for the exact release artifacts.
