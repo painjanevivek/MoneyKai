@@ -101,7 +101,7 @@ The Windows/Linux-compatible iOS audit checks the shared iOS project identity an
 .\tool\audit_ios_project.ps1
 ```
 
-It verifies the bundle id, display name, Flutter version placeholders, required storyboards/runtime Info.plist keys, minimum iOS deployment target, app icon set, launch images, absence of sensitive iOS permission declarations or App Transport Security overrides, and absence of known Android-only dependencies. It does not replace simulator, real-device, archive, or TestFlight QA on macOS.
+It verifies the bundle id, display name, Flutter version placeholders, required storyboards/runtime Info.plist keys, scene manifest/delegate launch wiring, minimum iOS deployment target, app icon set, launch images, absence of sensitive iOS permission declarations or App Transport Security overrides, and absence of known Android-only dependencies. It does not replace simulator, real-device, archive, or TestFlight QA on macOS.
 
 ## CI
 

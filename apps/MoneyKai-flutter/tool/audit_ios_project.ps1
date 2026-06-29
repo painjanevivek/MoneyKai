@@ -94,6 +94,70 @@ function Get-PlistNode {
     return $null
 }
 
+function Get-PlistDictNode {
+    param(
+        [Parameter(Mandatory = $true)][System.Xml.XmlNode]$DictNode,
+        [Parameter(Mandatory = $true)][string]$Key
+    )
+
+    if ($DictNode.Name -ne "dict") {
+        throw "Expected plist dict while reading key $Key."
+    }
+
+    $dictChildren = @($DictNode.ChildNodes)
+    for ($index = 0; $index -lt $dictChildren.Count; $index++) {
+        if ($dictChildren[$index].Name -eq "key" -and $dictChildren[$index].InnerText -eq $Key) {
+            if ($index + 1 -ge $dictChildren.Count) {
+                return $null
+            }
+
+            return $dictChildren[$index + 1]
+        }
+    }
+
+    return $null
+}
+
+function Assert-PlistNodeText {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [AllowNull()][System.Xml.XmlNode]$Node,
+        [Parameter(Mandatory = $true)][string]$Expected
+    )
+
+    if ($null -eq $Node) {
+        throw "Missing required Info.plist key: $Label"
+    }
+
+    if ($Node.InnerText -ne $Expected) {
+        throw "$Label expected '$Expected' but found '$($Node.InnerText)'."
+    }
+}
+
+function Assert-PlistBooleanNode {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [AllowNull()][System.Xml.XmlNode]$Node,
+        [Parameter(Mandatory = $true)][bool]$Expected
+    )
+
+    if ($null -eq $Node) {
+        throw "Missing required Info.plist boolean key: $Label"
+    }
+
+    $actual = if ($Node.Name -eq "true") {
+        $true
+    } elseif ($Node.Name -eq "false") {
+        $false
+    } else {
+        throw "Info.plist key $Label must be a boolean."
+    }
+
+    if ($actual -ne $Expected) {
+        throw "Info.plist key $Label expected '$Expected' but found '$actual'."
+    }
+}
+
 function Assert-PlistBoolean {
     param(
         [Parameter(Mandatory = $true)][xml]$Plist,
@@ -101,22 +165,7 @@ function Assert-PlistBoolean {
         [Parameter(Mandatory = $true)][bool]$Expected
     )
 
-    $node = Get-PlistNode -Plist $Plist -Key $Key
-    if ($null -eq $node) {
-        throw "Missing required Info.plist boolean key: $Key"
-    }
-
-    $actual = if ($node.Name -eq "true") {
-        $true
-    } elseif ($node.Name -eq "false") {
-        $false
-    } else {
-        throw "Info.plist key $Key must be a boolean."
-    }
-
-    if ($actual -ne $Expected) {
-        throw "Info.plist key $Key expected '$Expected' but found '$actual'."
-    }
+    Assert-PlistBooleanNode -Label $Key -Node (Get-PlistNode -Plist $Plist -Key $Key) -Expected $Expected
 }
 
 function Assert-AssetFile {
@@ -161,6 +210,37 @@ Assert-Equal "UIMainStoryboardFile" (Get-PlistValue -Plist $plist -Key "UIMainSt
 Assert-PlistBoolean -Plist $plist -Key "LSRequiresIPhoneOS" -Expected $true
 Assert-PlistBoolean -Plist $plist -Key "UIApplicationSupportsIndirectInputEvents" -Expected $true
 
+$sceneManifestNode = Get-PlistNode -Plist $plist -Key "UIApplicationSceneManifest"
+if ($null -eq $sceneManifestNode -or $sceneManifestNode.Name -ne "dict") {
+    throw "UIApplicationSceneManifest must be a dict."
+}
+
+Assert-PlistBooleanNode `
+    -Label "UIApplicationSupportsMultipleScenes" `
+    -Node (Get-PlistDictNode -DictNode $sceneManifestNode -Key "UIApplicationSupportsMultipleScenes") `
+    -Expected $false
+
+$sceneConfigurationsNode = Get-PlistDictNode -DictNode $sceneManifestNode -Key "UISceneConfigurations"
+if ($null -eq $sceneConfigurationsNode -or $sceneConfigurationsNode.Name -ne "dict") {
+    throw "UISceneConfigurations must be a dict."
+}
+
+$windowSceneConfigsNode = Get-PlistDictNode -DictNode $sceneConfigurationsNode -Key "UIWindowSceneSessionRoleApplication"
+if ($null -eq $windowSceneConfigsNode -or $windowSceneConfigsNode.Name -ne "array") {
+    throw "UIWindowSceneSessionRoleApplication must be an array."
+}
+
+$windowSceneConfigs = @($windowSceneConfigsNode.ChildNodes | Where-Object { $_.Name -eq "dict" })
+if ($windowSceneConfigs.Count -ne 1) {
+    throw "UIWindowSceneSessionRoleApplication must define exactly one scene configuration."
+}
+
+$windowSceneConfigNode = $windowSceneConfigs[0]
+Assert-PlistNodeText "UISceneClassName" (Get-PlistDictNode -DictNode $windowSceneConfigNode -Key "UISceneClassName") "UIWindowScene"
+Assert-PlistNodeText "UISceneConfigurationName" (Get-PlistDictNode -DictNode $windowSceneConfigNode -Key "UISceneConfigurationName") "flutter"
+Assert-PlistNodeText "UISceneDelegateClassName" (Get-PlistDictNode -DictNode $windowSceneConfigNode -Key "UISceneDelegateClassName") '$(PRODUCT_MODULE_NAME).SceneDelegate'
+Assert-PlistNodeText "UISceneStoryboardFile" (Get-PlistDictNode -DictNode $windowSceneConfigNode -Key "UISceneStoryboardFile") "Main"
+
 $sensitivePermissionKeys = @(
     "NSCameraUsageDescription",
     "NSMicrophoneUsageDescription",
@@ -198,6 +278,16 @@ $runnerBundleIds = @(@(
 
 if ($runnerBundleIds.Count -ne 1 -or $runnerBundleIds[0] -ne $ExpectedBundleId) {
     throw "Runner PRODUCT_BUNDLE_IDENTIFIER must be '$ExpectedBundleId'; found: $($runnerBundleIds -join ', ')"
+}
+
+$appDelegateText = Get-Content -LiteralPath $appDelegatePath -Raw
+if ($appDelegateText -notmatch "@main" -or $appDelegateText -notmatch "FlutterImplicitEngineDelegate" -or $appDelegateText -notmatch "GeneratedPluginRegistrant\.register") {
+    throw "AppDelegate.swift must remain wired to Flutter's implicit engine plugin registration."
+}
+
+$sceneDelegateText = Get-Content -LiteralPath $sceneDelegatePath -Raw
+if ($sceneDelegateText -notmatch "class\s+SceneDelegate\s*:\s*FlutterSceneDelegate") {
+    throw "SceneDelegate.swift must extend FlutterSceneDelegate."
 }
 
 $deploymentMatches = [regex]::Matches($projectText, "IPHONEOS_DEPLOYMENT_TARGET\s*=\s*([^;]+);")

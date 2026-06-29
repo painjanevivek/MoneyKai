@@ -62,7 +62,7 @@ Sensitive iOS permissions: none declared
 Android-only dependency audit: passed
 ```
 
-This audit checks the Runner bundle id, display name, Flutter version placeholders, launch/main storyboard wiring, required runtime Info.plist booleans, minimum deployment target, app icon set, launch image set, absence of sensitive iOS permission declarations or App Transport Security overrides, and absence of known Android-only package dependencies. It is also wired into `.github\workflows\moneykai-flutter-android.yml` so iOS project drift is checked on Flutter app changes even before macOS/Xcode validation is available.
+This audit checks the Runner bundle id, display name, Flutter version placeholders, launch/main storyboard wiring, required runtime Info.plist booleans, scene manifest/delegate launch wiring, minimum deployment target, app icon set, launch image set, absence of sensitive iOS permission declarations or App Transport Security overrides, and absence of known Android-only package dependencies. It is also wired into `.github\workflows\moneykai-flutter-android.yml` so iOS project drift is checked on Flutter app changes even before macOS/Xcode validation is available.
 
 ## Platform behavior
 
