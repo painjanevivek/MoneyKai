@@ -77,4 +77,17 @@ void main() {
     final settings = decoded['settings'] as Map<String, Object?>;
     expect(settings['themeMode'], 'dark');
   });
+
+  test('rejects export without a local profile', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final exportService = LocalDataExportService(
+      authRepository: LocalAuthRepository(storage),
+      transactionRepository: LocalTransactionRepository(storage),
+      budgetRepository: LocalBudgetRepository(storage),
+      themeRepository: ThemePreferenceRepository(storage),
+    );
+
+    expect(exportService.buildExportJson, throwsA(isA<FormatException>()));
+  });
 }

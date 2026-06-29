@@ -24,6 +24,13 @@ class LocalDataExportService {
 
   String buildExportJson() {
     final session = authRepository.readSession();
+    final user = session.user;
+    if (user == null) {
+      throw const FormatException(
+        'Create a local profile before exporting data.',
+      );
+    }
+
     final transactions = transactionRepository.readTransactions();
     final budget = budgetRepository.readBudget();
     final themeMode = themeRepository.readThemeMode();
@@ -32,7 +39,7 @@ class LocalDataExportService {
       'formatVersion': exportFormatVersion,
       'exportedAt': _now().toUtc().toIso8601String(),
       'source': 'moneykai-local-device',
-      'user': session.user?.toJson(),
+      'user': user.toJson(),
       'transactions': [
         for (final transaction in transactions) transaction.toJson(),
       ],

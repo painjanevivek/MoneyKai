@@ -62,6 +62,25 @@ void main() {
     );
   });
 
+  test('rejects encrypted backup without a local profile', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final exportService = LocalDataExportService(
+      authRepository: LocalAuthRepository(storage),
+      transactionRepository: LocalTransactionRepository(storage),
+      budgetRepository: LocalBudgetRepository(storage),
+      themeRepository: ThemePreferenceRepository(storage),
+    );
+    final backupService = EncryptedBackupService(exportService: exportService);
+
+    expect(
+      backupService.buildEncryptedBackup(
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('fails to decrypt with the wrong password', () async {
     final exportService = await _seedExportService();
     final backupService = EncryptedBackupService(

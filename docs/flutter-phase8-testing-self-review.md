@@ -41,8 +41,8 @@ Unit/repository tests:
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, newest-first order, bounded history, and clear action.
-- Local data export JSON includes user, transactions, budget, theme settings, source, format version, and timestamp.
-- Encrypted backup export produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords and fails decryption with the wrong password.
+- Local data export JSON requires a local profile and includes user, transactions, budget, theme settings, source, format version, and timestamp.
+- Encrypted backup export requires a local profile and produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords and fails decryption with the wrong password.
 - Encrypted backup restore validates decrypted contents before reset, rejects wrong passwords/malformed payloads/invalid users/invalid money values, preserves existing local data on invalid-user restore failure, resets only the MoneyKai namespace for valid restores, restores user, transactions, and budget, and restores theme settings when present.
 
 Widget tests:
@@ -74,7 +74,7 @@ Implemented:
 - Transactions list with search, income/expense filter, category filter, month grouping, edit, and delete.
 - Budget monthly/category limits with persisted local settings, over-budget states, and tap-to-replace editing.
 - Insights from local transaction data, including income, expense, savings rate, monthly trend, and top spending categories.
-- Settings profile display, theme preference, privacy link, local diagnostics, local JSON export to clipboard, encrypted backup export/restore through platform file flows, namespace reset, and sign out.
+- Settings profile display, theme preference, privacy link, local diagnostics, local-profile-gated JSON export to clipboard, encrypted backup export/restore through platform file flows, namespace reset, and sign out.
 - Privacy/security screen explaining local export, encrypted backup, diagnostics, and future sync/auth boundaries.
 - Local uncaught-error capture for Flutter, platform dispatcher, and root-zone failures, with in-app review and clear controls.
 
@@ -146,6 +146,7 @@ Remaining:
 - The MVP does not request SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
 - Local export copies a plaintext JSON snapshot to the clipboard without adding storage or sharing permissions.
 - Encrypted backup export creates a password-protected JSON file with AES-256-GCM and PBKDF2-HMAC-SHA256 through the platform share sheet.
+- Local export and encrypted backup creation require a valid local profile, preventing unusable signed-out backup payloads.
 - Encrypted backup restore decrypts a selected backup file and restores the local profile, transactions, budget, and saved theme setting after confirmation through the password prompt.
 - Privacy screen states the current local-only data boundary, including plaintext export contents, encrypted backup flow, and local diagnostics.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.

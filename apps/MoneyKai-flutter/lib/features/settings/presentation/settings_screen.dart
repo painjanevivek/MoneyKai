@@ -150,6 +150,12 @@ class SettingsScreen extends ConsumerWidget {
           const SnackBar(content: Text('Local data copied to clipboard.')),
         );
       }
+    } on FormatException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
