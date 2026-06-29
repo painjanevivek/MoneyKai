@@ -107,6 +107,47 @@ void main() {
     expect(find.text('No local transactions yet'), findsOneWidget);
   });
 
+  testWidgets('transaction form rejects non-finite numeric input', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await _setViewport(tester, const Size(420, 900));
+    await _enterDashboard(tester);
+
+    await tester.tap(find.text('Transactions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add transaction'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.bySemanticsLabel('Amount'), 'Infinity');
+    await tester.enterText(find.bySemanticsLabel('Description'), 'Bad amount');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Save transaction'));
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a valid amount'), findsOneWidget);
+  });
+
+  testWidgets('budget form rejects non-finite numeric input', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await _setViewport(tester, const Size(420, 900));
+    await _enterDashboard(tester);
+
+    await tester.tap(find.text('Budget'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Monthly limit'),
+      'Infinity',
+    );
+    await tester.tap(find.byTooltip('Save Monthly limit'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a budget greater than zero.'), findsOneWidget);
+  });
+
   testWidgets('groups transactions by month and filters by category', (
     tester,
   ) async {

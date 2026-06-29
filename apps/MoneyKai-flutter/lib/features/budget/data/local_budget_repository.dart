@@ -29,6 +29,20 @@ class LocalBudgetRepository {
   }
 
   Future<void> saveBudget(BudgetState budget) {
+    if (!budget.monthlyLimit.isFinite || budget.monthlyLimit <= 0) {
+      throw const FormatException(
+        'Monthly budget limit must be finite and greater than zero.',
+      );
+    }
+
+    for (final limit in budget.categoryLimits.values) {
+      if (!limit.isFinite || limit <= 0) {
+        throw const FormatException(
+          'Category budget limits must be finite and greater than zero.',
+        );
+      }
+    }
+
     return _storage.writeString(_budgetKey, jsonEncode(budget.toJson()));
   }
 

@@ -63,4 +63,28 @@ void main() {
     expect(restored, hasLength(1));
     expect(restored.single.id, 'good');
   });
+
+  test('rejects non-finite transaction amounts before saving', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalTransactionRepository(
+      LocalStorageService(preferences),
+    );
+
+    final transaction = MoneyTransaction(
+      id: 'bad',
+      type: TransactionType.expense,
+      amount: double.infinity,
+      date: DateTime(2026, 6, 1),
+      category: 'Food',
+      paymentMethod: 'UPI',
+      description: 'Invalid amount',
+    );
+
+    expect(
+      () => repository.saveTransactions([transaction]),
+      throwsA(isA<FormatException>()),
+    );
+    expect(preferences.getString('moneykai.transactions'), isNull);
+  });
 }

@@ -49,4 +49,27 @@ void main() {
     expect(budget.monthlyLimit, BudgetState.initial().monthlyLimit);
     expect(budget.categoryLimits, BudgetState.defaultCategoryLimits);
   });
+
+  test('rejects non-finite budget values before saving', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalBudgetRepository(LocalStorageService(preferences));
+
+    expect(
+      () => repository.saveBudget(
+        const BudgetState(monthlyLimit: double.infinity, categoryLimits: {}),
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(
+      () => repository.saveBudget(
+        const BudgetState(
+          monthlyLimit: 25000,
+          categoryLimits: {'Food': double.nan},
+        ),
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(preferences.getString('moneykai.budget'), isNull);
+  });
 }

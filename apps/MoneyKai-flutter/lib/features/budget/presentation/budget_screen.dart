@@ -220,7 +220,7 @@ class _BudgetLimitTileState extends State<_BudgetLimitTile> {
 
   void _save() {
     final value = double.tryParse(_controller.text);
-    if (value == null || value <= 0) {
+    if (value == null || !value.isFinite || value <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a budget greater than zero.')),
       );

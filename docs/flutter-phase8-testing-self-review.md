@@ -36,8 +36,8 @@ Current result:
 Unit/repository tests:
 
 - Local auth session save, restore, clear, profile field trimming, invalid-field rejection, and malformed-session fallback.
-- Local transaction persistence in newest-first order, malformed-payload fallback, and malformed-entry skipping.
-- Local budget persistence, reset, and malformed-payload fallback.
+- Local transaction persistence in newest-first order, malformed-payload fallback, malformed-entry skipping, and non-finite amount rejection.
+- Local budget persistence, reset, malformed-payload fallback, and non-finite limit rejection.
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, newest-first order, bounded history, and clear action.
@@ -54,6 +54,7 @@ Widget tests:
 - Dashboard category breakdown preview opens Insights.
 - Insights render savings rate and monthly trend from local data.
 - Budget screen shows category over-budget states.
+- Add transaction and budget forms reject non-finite numeric input.
 - Settings persists System/Light/Dark theme preference.
 - Settings local diagnostics review and clear action.
 - Add/edit/delete transaction flow works.
@@ -84,6 +85,7 @@ Implemented:
 - Local persistence is simple and deterministic through `shared_preferences`.
 - Local storage initializes `moneykai.storageSchemaVersion` and has a `moneykai.*` namespace reset boundary for device data.
 - JSON parsing falls back to signed-out auth, default budget, and valid transaction entries when stored local payloads are malformed.
+- Transaction and budget repositories reject non-finite money values before local JSON persistence.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
 - Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a bounded local `moneykai.errorReports` history.
 - Users can review and clear bounded local diagnostics from Settings without adding a remote crash SDK.

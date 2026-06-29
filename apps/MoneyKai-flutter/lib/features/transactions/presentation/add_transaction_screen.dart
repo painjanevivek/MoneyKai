@@ -232,7 +232,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
   String? _amountValidator(String? value) {
     final amount = double.tryParse(value ?? '');
-    if (amount == null) {
+    if (amount == null || !amount.isFinite) {
       return 'Enter a valid amount';
     }
     return amount > 0 ? null : 'Amount must be greater than zero';

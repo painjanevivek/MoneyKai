@@ -43,6 +43,14 @@ class LocalTransactionRepository {
   }
 
   Future<void> saveTransactions(List<MoneyTransaction> transactions) {
+    for (final transaction in transactions) {
+      if (!transaction.amount.isFinite || transaction.amount <= 0) {
+        throw const FormatException(
+          'Transaction amount must be finite and greater than zero.',
+        );
+      }
+    }
+
     final encoded = jsonEncode([
       for (final transaction in transactions) transaction.toJson(),
     ]);
