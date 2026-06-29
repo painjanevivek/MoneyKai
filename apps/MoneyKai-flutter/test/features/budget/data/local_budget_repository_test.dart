@@ -26,4 +26,27 @@ void main() {
     await repository.resetBudget();
     expect(repository.readBudget().monthlyLimit, 25000);
   });
+
+  test('returns default budget for malformed stored budget', () async {
+    SharedPreferences.setMockInitialValues({'moneykai.budget': '{bad'});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalBudgetRepository(LocalStorageService(preferences));
+
+    final budget = repository.readBudget();
+    expect(budget.monthlyLimit, BudgetState.initial().monthlyLimit);
+    expect(budget.categoryLimits, BudgetState.defaultCategoryLimits);
+  });
+
+  test('returns default budget for invalid category limits', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.budget':
+          '{"monthlyLimit":42000,"categoryLimits":{"Food":"bad"}}',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalBudgetRepository(LocalStorageService(preferences));
+
+    final budget = repository.readBudget();
+    expect(budget.monthlyLimit, BudgetState.initial().monthlyLimit);
+    expect(budget.categoryLimits, BudgetState.defaultCategoryLimits);
+  });
 }

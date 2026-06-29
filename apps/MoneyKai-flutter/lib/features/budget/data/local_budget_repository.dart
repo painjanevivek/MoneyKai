@@ -16,12 +16,16 @@ class LocalBudgetRepository {
       return BudgetState.initial();
     }
 
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, Object?>) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, Object?>) {
+        return BudgetState.initial();
+      }
+
+      return BudgetState.fromJson(decoded);
+    } catch (_) {
       return BudgetState.initial();
     }
-
-    return BudgetState.fromJson(decoded);
   }
 
   Future<void> saveBudget(BudgetState budget) {

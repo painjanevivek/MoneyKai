@@ -17,12 +17,16 @@ class LocalAuthRepository {
       return const AuthSessionState();
     }
 
-    final decoded = jsonDecode(rawSession);
-    if (decoded is! Map<String, Object?>) {
+    try {
+      final decoded = jsonDecode(rawSession);
+      if (decoded is! Map<String, Object?>) {
+        return const AuthSessionState();
+      }
+
+      return AuthSessionState(user: LocalUser.fromJson(decoded));
+    } catch (_) {
       return const AuthSessionState();
     }
-
-    return AuthSessionState(user: LocalUser.fromJson(decoded));
   }
 
   Future<AuthSessionState> saveSession({

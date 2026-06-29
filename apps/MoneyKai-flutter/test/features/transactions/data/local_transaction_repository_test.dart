@@ -38,4 +38,29 @@ void main() {
     expect(restored.map((transaction) => transaction.id), ['newer', 'older']);
     expect(restored.first.amount, 24000);
   });
+
+  test('returns empty list for malformed stored transactions', () async {
+    SharedPreferences.setMockInitialValues({'moneykai.transactions': '{bad'});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalTransactionRepository(
+      LocalStorageService(preferences),
+    );
+
+    expect(repository.readTransactions(), isEmpty);
+  });
+
+  test('skips malformed transaction entries', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.transactions':
+          '[{"id":"bad"},{"id":"good","type":"expense","amount":250,"date":"2026-06-01T00:00:00.000","category":"Food","paymentMethod":"UPI","description":"Lunch"}]',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalTransactionRepository(
+      LocalStorageService(preferences),
+    );
+
+    final restored = repository.readTransactions();
+    expect(restored, hasLength(1));
+    expect(restored.single.id, 'good');
+  });
 }

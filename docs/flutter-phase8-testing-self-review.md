@@ -35,9 +35,9 @@ Current result:
 
 Unit/repository tests:
 
-- Local auth session save, restore, and clear.
-- Local transaction persistence in newest-first order.
-- Local budget persistence and reset.
+- Local auth session save, restore, clear, and malformed-session fallback.
+- Local transaction persistence in newest-first order, malformed-payload fallback, and malformed-entry skipping.
+- Local budget persistence, reset, and malformed-payload fallback.
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, newest-first order, bounded history, and clear action.
@@ -82,7 +82,7 @@ Implemented:
 
 - Local persistence is simple and deterministic through `shared_preferences`.
 - Local storage initializes `moneykai.storageSchemaVersion` and has a `moneykai.*` namespace reset boundary for device data.
-- JSON parsing currently falls back to defaults/empty lists when stored payload shape is invalid.
+- JSON parsing falls back to signed-out auth, default budget, and valid transaction entries when stored local payloads are malformed.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
 - Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a bounded local `moneykai.errorReports` history.
 - Users can review and clear bounded local diagnostics from Settings without adding a remote crash SDK.

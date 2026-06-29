@@ -16,18 +16,30 @@ class LocalTransactionRepository {
       return const [];
     }
 
-    final decoded = jsonDecode(raw);
-    if (decoded is! List) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        return const [];
+      }
+
+      final transactions = <MoneyTransaction>[];
+      for (final item in decoded) {
+        if (item is! Map<String, Object?>) {
+          continue;
+        }
+
+        try {
+          transactions.add(MoneyTransaction.fromJson(item));
+        } catch (_) {
+          continue;
+        }
+      }
+
+      transactions.sort((a, b) => b.date.compareTo(a.date));
+      return transactions;
+    } catch (_) {
       return const [];
     }
-
-    final transactions = decoded
-        .whereType<Map<String, Object?>>()
-        .map(MoneyTransaction.fromJson)
-        .toList();
-
-    transactions.sort((a, b) => b.date.compareTo(a.date));
-    return transactions;
   }
 
   Future<void> saveTransactions(List<MoneyTransaction> transactions) {

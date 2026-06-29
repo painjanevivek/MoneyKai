@@ -26,4 +26,24 @@ void main() {
     expect(cleared.isAuthenticated, isFalse);
     expect(repository.readSession().isAuthenticated, isFalse);
   });
+
+  test('returns signed-out state for malformed stored sessions', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': '{not-json',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalAuthRepository(LocalStorageService(preferences));
+
+    expect(repository.readSession().isAuthenticated, isFalse);
+  });
+
+  test('returns signed-out state for incomplete stored sessions', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': '{"email":"akshay@example.com"}',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalAuthRepository(LocalStorageService(preferences));
+
+    expect(repository.readSession().isAuthenticated, isFalse);
+  });
 }
