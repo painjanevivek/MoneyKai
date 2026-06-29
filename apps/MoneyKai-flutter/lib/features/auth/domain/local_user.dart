@@ -19,7 +19,7 @@ class LocalUser {
     if (trimmedEmail == null ||
         trimmedDisplayName == null ||
         trimmedDisplayName.isEmpty ||
-        !_hasValidEmailShape(trimmedEmail)) {
+        !hasValidLocalEmailShape(trimmedEmail)) {
       throw const FormatException('Local user has invalid fields.');
     }
 
@@ -27,7 +27,7 @@ class LocalUser {
   }
 }
 
-bool _hasValidEmailShape(String email) {
+bool hasValidLocalEmailShape(String email) {
   final parts = email.split('@');
   return parts.length == 2 &&
       parts.first.isNotEmpty &&

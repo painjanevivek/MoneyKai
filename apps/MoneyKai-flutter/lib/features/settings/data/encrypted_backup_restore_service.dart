@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/storage/local_storage_service.dart';
 import '../../auth/data/local_auth_repository.dart';
+import '../../auth/domain/local_user.dart';
 import '../../budget/data/local_budget_repository.dart';
 import '../../budget/domain/budget_state.dart';
 import '../../transactions/data/local_transaction_repository.dart';
@@ -93,7 +94,7 @@ class EncryptedBackupRestoreService {
         trimmedEmail == null ||
         trimmedDisplayName == null ||
         trimmedDisplayName.isEmpty ||
-        !_hasValidEmailShape(trimmedEmail)) {
+        !hasValidLocalEmailShape(trimmedEmail)) {
       throw const FormatException('Backup has an invalid local user.');
     }
 
@@ -149,14 +150,6 @@ class EncryptedBackupRestoreService {
       'dark' => ThemeMode.dark,
       _ => throw const FormatException('Backup has invalid settings.'),
     };
-  }
-
-  bool _hasValidEmailShape(String email) {
-    final parts = email.split('@');
-    return parts.length == 2 &&
-        parts.first.isNotEmpty &&
-        parts.last.isNotEmpty &&
-        !email.contains(RegExp(r'\s'));
   }
 }
 

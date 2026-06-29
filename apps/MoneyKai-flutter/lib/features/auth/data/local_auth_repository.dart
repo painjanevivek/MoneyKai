@@ -35,7 +35,7 @@ class LocalAuthRepository {
   }) async {
     final trimmedEmail = email.trim();
     final trimmedDisplayName = displayName.trim();
-    if (trimmedDisplayName.isEmpty || !_hasValidEmailShape(trimmedEmail)) {
+    if (trimmedDisplayName.isEmpty || !hasValidLocalEmailShape(trimmedEmail)) {
       throw const FormatException('Local profile has invalid fields.');
     }
 
@@ -50,13 +50,5 @@ class LocalAuthRepository {
   Future<AuthSessionState> clearSession() async {
     await _storage.remove(_sessionKey);
     return const AuthSessionState();
-  }
-
-  bool _hasValidEmailShape(String email) {
-    final parts = email.split('@');
-    return parts.length == 2 &&
-        parts.first.isNotEmpty &&
-        parts.last.isNotEmpty &&
-        !email.contains(RegExp(r'\s'));
   }
 }
