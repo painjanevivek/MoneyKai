@@ -171,7 +171,13 @@ function Assert-LaunchOutput {
     }
 
     $metrics = [ordered]@{}
-    foreach ($metricName in @("ThisTime", "TotalTime", "WaitTime")) {
+    if ($joinedOutput -match "(?m)^ThisTime:\s*(\d+)\s*$") {
+        $metrics["ThisTime"] = [int]$matches[1]
+    } else {
+        $metrics["ThisTime"] = $null
+    }
+
+    foreach ($metricName in @("TotalTime", "WaitTime")) {
         if ($joinedOutput -notmatch "(?m)^${metricName}:\s*(\d+)\s*$") {
             throw "Android launch timing output is incomplete; missing $metricName."
         }
@@ -283,7 +289,7 @@ $deviceProps.GetEnumerator() | ForEach-Object { "$($_.Key): $($_.Value)" } |
     Set-Content -LiteralPath $propsPath -Encoding UTF8
 
 Invoke-Adb shell am force-stop $packageName | Out-Null
-$launchOutput = Invoke-Adb shell am start -W -n $mainActivity
+$launchOutput = Invoke-Adb shell am start "-W" "-n" $mainActivity
 $launchMetrics = Assert-LaunchOutput `
     -Output $launchOutput `
     -MaxTotalMs $MaxLaunchTotalMs `
@@ -293,7 +299,7 @@ $launchOutput | Set-Content -LiteralPath $launchPath -Encoding UTF8
 Start-Sleep -Seconds 3
 Invoke-Adb shell uiautomator dump /sdcard/moneykai-runtime-window.xml | Out-Null
 Invoke-Adb pull /sdcard/moneykai-runtime-window.xml $windowPath | Out-Null
-Invoke-AdbBinaryOutput -OutputPath $screenshotPath exec-out screencap -p
+Invoke-AdbBinaryOutput -OutputPath $screenshotPath exec-out screencap "-p"
 Assert-WindowHierarchy -Path $windowPath -ExpectedPackage $packageName
 Assert-PngFile -Path $screenshotPath
 Assert-NonEmptyFile -Path $launchPath -Description "Launch timing"
@@ -314,7 +320,7 @@ $summary = @(
     "",
     "## Launch Timing",
     "",
-    "- ThisTime: $($launchMetrics.ThisTime) ms",
+    "- ThisTime: $(if ($null -eq $launchMetrics.ThisTime) { 'not reported by this Android build' } else { "$($launchMetrics.ThisTime) ms" })",
     "- TotalTime: $($launchMetrics.TotalTime) ms (limit: $MaxLaunchTotalMs ms)",
     "- WaitTime: $($launchMetrics.WaitTime) ms (limit: $MaxLaunchWaitMs ms)",
     "",

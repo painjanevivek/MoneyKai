@@ -43,7 +43,7 @@ Current artifact evidence:
 | Debug APK | Built | `apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app-debug.apk` |
 | Unsigned release APK | Built for inspection | `apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app-release.apk` |
 | Unsigned release AAB | Built for inspection | `apps\MoneyKai-flutter\build\app\outputs\bundle\release\app-release.aab` |
-| Play-ready signed AAB | Not complete | Requires production upload keystore and `.\tool\audit_android_release.ps1 -RequireSigned` |
+| Play-ready signed AAB | Locally built and audited | `apps\MoneyKai-flutter\build\app\outputs\bundle\release\app-release.aab`; local signed audit and pre-upload smoke evidence are documented in `docs\flutter-play-preupload-audit-2026-06-30.md`. |
 
 Latest documented verification commands:
 
@@ -91,7 +91,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | Android release signing config | Partially complete | Gradle requires all `MONEYKAI_UPLOAD_*` vars or leaves release unsigned; audit script catches partial env, missing/empty/in-repository configured upload keystore files, unexpected signed artifacts without upload-key env, and missing signer certificate fingerprints in `-RequireSigned` evidence. Actual production signed artifacts require keystore. |
 | Android CI verification | Complete | `.github\workflows\moneykai-flutter-android.yml` runs format, analyzer, tests, Android debug/release builds, AAB build, and release audit for Flutter app changes. |
 | iOS static project audit | Complete for non-Xcode checks | `apps\MoneyKai-flutter\tool\audit_ios_project.ps1` verifies bundle id, display name, Flutter version placeholders, storyboard/runtime Info.plist wiring, scene manifest/delegate launch wiring, deployment target, app icons, launch images, no sensitive iOS permission declarations or App Transport Security overrides, and no known Android-only dependencies; CI runs it on Flutter app changes. |
-| Play Store-ready artifact | Not complete | No upload keystore was provided; current release APK/AAB are unsigned inspection artifacts. |
+| Play Store-ready artifact | Locally ready for test-track upload | Signed AAB exists and passes local release, bundletool, and AAB-derived smoke checks. Play Console upload-key acceptance, app content forms, pre-launch report, and tester gates still run in Play Console. |
 | Play Store policy readiness | Partially complete | `docs\flutter-play-store-policy-readiness.md` maps the current local MVP to Play User Data, Data safety, sensitive permissions, Financial Services, misrepresentation, and Play Protect guidance. Play Console declarations and the public privacy policy URL remain pending. |
 | Android emulator manual QA | Mostly complete | Fresh install, auth, transactions, budget, insights, export, encrypted backup export/restore, reset, sign out, visual, and hierarchy QA are documented. |
 | TalkBack spoken-output QA | Not complete | Accessibility hierarchy exists, but real spoken-output QA is still pending. |
@@ -106,13 +106,13 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 
 Required before Play Store internal testing:
 
-1. Provide or create the production Android upload keystore outside the repo.
-2. Set all four signing variables:
+1. Preserve the production Android upload keystore outside the repo.
+2. Set all four signing variables when rebuilding:
    - `MONEYKAI_UPLOAD_STORE_FILE`
    - `MONEYKAI_UPLOAD_STORE_PASSWORD`
    - `MONEYKAI_UPLOAD_KEY_ALIAS`
    - `MONEYKAI_UPLOAD_KEY_PASSWORD`
-3. Rebuild release APK/AAB.
+3. Rebuild release APK/AAB when code or version changes.
 4. Run:
 
 ```powershell
@@ -120,14 +120,17 @@ Required before Play Store internal testing:
 ```
 
 5. Record the audit output containing SHA-256 artifact hashes plus release APK/AAB signer certificate evidence.
-6. Smoke test the signed artifact.
-7. Review `docs\flutter-play-store-policy-readiness.md` against the exact signed build.
-8. Publish/update the public MoneyKai privacy policy URL.
-9. Complete Play Console Data safety.
-10. Complete Play Console Financial features declaration.
-11. Verify the Play listing accurately describes the current app and does not imply loans, investment advice, bank sync, SMS reading, notification capture, or guaranteed outcomes.
-12. Run real TalkBack spoken-output QA.
-13. Run physical Android device performance and cold-start QA:
+6. Smoke test the signed artifact from bundle-generated split APKs.
+7. Review `docs\flutter-play-store-policy-readiness.md` and `docs\flutter-play-preupload-audit-2026-06-30.md` against the exact signed build.
+8. Upload to Play internal or closed testing.
+9. Review and fix the Play pre-launch report after upload.
+10. Publish/update the public MoneyKai privacy policy URL.
+11. Complete Play Console Data safety.
+12. Complete Play Console Financial features declaration.
+13. Verify the Play listing accurately describes the current app and does not imply loans, investment advice, bank sync, SMS reading, notification capture, or guaranteed outcomes.
+14. If the account is subject to the personal-account rule, run closed testing with at least 12 opted-in testers for at least 14 continuous days before requesting production access.
+15. Run real TalkBack spoken-output QA.
+16. Run physical Android device performance and cold-start QA:
 
 ```powershell
 cd apps\MoneyKai-flutter
@@ -151,4 +154,4 @@ Required before TestFlight:
 
 ## Completion Decision
 
-The goal should remain active. The current repo proves an Android-first Flutter MVP with strong local/emulator verification, iOS-ready project structure, and documented Play policy guardrails, but it does not yet prove production-store readiness because required signing credentials, Play Console declarations/privacy policy publication, physical-device accessibility/performance QA, and macOS/Xcode iOS validation are missing.
+The goal should remain active. The current repo proves an Android-first Flutter MVP with strong local/emulator verification, iOS-ready project structure, documented Play policy guardrails, and a signed AAB that is locally eligible for Play test-track upload. It does not yet prove full production-store readiness because Play Console upload-key acceptance, Play pre-launch report, Play Console declarations/privacy policy publication, tester-duration requirements where applicable, physical-device accessibility/performance QA, and macOS/Xcode iOS validation are still external gates.

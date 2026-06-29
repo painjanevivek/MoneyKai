@@ -65,6 +65,7 @@ Android-ready items:
 - Light and dark theme screenshot QA exists for primary screens.
 - Accessibility hierarchy/focus-order snapshots exist for primary screens.
 - Play Store policy readiness guidance exists in `docs\flutter-play-store-policy-readiness.md`; current Android positioning is a local-first expense and budget tracker, not a loan, advice, bank-sync, SMS-reading, or notification-capture product.
+- A signed AAB pre-upload audit exists in `docs\flutter-play-preupload-audit-2026-06-30.md`, including bundletool validation, signed-artifact audit, AAB-derived install smoke testing, and tester/declaration gates.
 
 Current Android blockers:
 
@@ -214,6 +215,7 @@ Required before Play Store internal testing:
 - Capture signed artifact SHA-256 and signer certificate evidence from `.\tool\audit_android_release.ps1 -RequireSigned`.
 - Smoke test the release-signed artifact.
 - Review `docs\flutter-play-store-policy-readiness.md` against the exact signed build.
+- Review `docs\flutter-play-preupload-audit-2026-06-30.md` and upload the audited signed AAB to internal or closed testing.
 - Publish/update the public MoneyKai privacy policy URL.
 - Complete Play Console Data safety.
 - Complete Play Console Financial features declaration.
