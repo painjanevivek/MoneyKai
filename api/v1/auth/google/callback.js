@@ -6,6 +6,7 @@ const {
 const {
   completeGoogleOAuthCallback,
   getPublicGoogleOAuthError,
+  getWebCallbackUrl,
 } = require('../../../_lib/google-oauth');
 
 const redirectTo = (res, location) => {
@@ -24,6 +25,14 @@ const getQuery = (req) => {
   return Object.fromEntries(url.searchParams.entries());
 };
 
+const redirectToAppError = (res, message) => {
+  const location = getWebCallbackUrl('', '/dashboard');
+  const url = new URL(location);
+  url.searchParams.delete('code');
+  url.searchParams.set('error', message);
+  redirectTo(res, url.toString());
+};
+
 module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'GET')) {
     return;
@@ -39,7 +48,11 @@ module.exports = async (req, res) => {
 
   const query = getQuery(req);
   if (query.error) {
-    sendJson(res, 400, { error: 'Google sign-in was cancelled or rejected.' });
+    try {
+      redirectToAppError(res, 'Google sign-in was cancelled or rejected.');
+    } catch {
+      sendJson(res, 400, { error: 'Google sign-in was cancelled or rejected.' });
+    }
     return;
   }
 
@@ -51,6 +64,10 @@ module.exports = async (req, res) => {
     redirectTo(res, location);
   } catch (error) {
     const safe = getPublicGoogleOAuthError(error);
-    sendJson(res, safe.status, { error: safe.message });
+    try {
+      redirectToAppError(res, safe.message);
+    } catch {
+      sendJson(res, safe.status, { error: safe.message });
+    }
   }
 };

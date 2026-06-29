@@ -13,6 +13,23 @@ import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 const normalizeParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
+const sanitizeReturnPath = (value: string | undefined) => {
+  const fallback = '/dashboard';
+  const raw = String(value || '').trim();
+  if (
+    !raw ||
+    raw.length > 240 ||
+    !raw.startsWith('/') ||
+    raw.startsWith('//') ||
+    raw.includes('\\') ||
+    /[\u0000-\u001F]/.test(raw)
+  ) {
+    return fallback;
+  }
+
+  return raw;
+};
+
 export default function GoogleOAuthCallbackScreen() {
   const { colors } = useTheme();
   const params = useLocalSearchParams();
@@ -24,6 +41,13 @@ export default function GoogleOAuthCallbackScreen() {
 
     const finishGoogleSignIn = async () => {
       const code = normalizeParam(params.code);
+      const oauthError = normalizeParam(params.error);
+      if (oauthError) {
+        setError(oauthError);
+        trackUserEvent('auth_login_failed', { method: 'google' });
+        return;
+      }
+
       if (!code) {
         setError('Google sign-in did not return a usable sign-in code.');
         trackUserEvent('auth_login_failed', { method: 'google' });
@@ -47,7 +71,7 @@ export default function GoogleOAuthCallbackScreen() {
 
         const { syncRemoteState } = await import('@/services/remoteSync');
         await syncRemoteState();
-        router.replace((normalizeParam(params.returnTo) || returnTo || '/dashboard') as any);
+        router.replace(sanitizeReturnPath(returnTo) as any);
       } catch (err) {
         if (!mounted) {
           return;
@@ -63,7 +87,7 @@ export default function GoogleOAuthCallbackScreen() {
     return () => {
       mounted = false;
     };
-  }, [params.code, params.returnTo, setUser]);
+  }, [params.code, params.error, setUser]);
 
   return (
     <>

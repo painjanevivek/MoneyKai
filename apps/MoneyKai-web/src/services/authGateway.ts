@@ -28,6 +28,27 @@ class AuthGatewayError extends Error {
 
 const backendBaseUrl = getBackendBaseUrl();
 
+const getAuthGatewayUrl = (path: string, useApiPrefix = false): string => {
+  const normalizedPath = useApiPrefix && !path.startsWith('/api/')
+    ? `/api${path}`
+    : path;
+
+  return `${backendBaseUrl}${normalizedPath}`;
+};
+
+const isSameOriginBackend = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  try {
+    const backendUrl = new URL(backendBaseUrl || window.location.origin, window.location.origin);
+    return backendUrl.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+};
+
 const parseErrorMessage = async (response: Response, fallback: string) => {
   const text = await response.text().catch(() => '');
   if (!text) {
@@ -43,14 +64,20 @@ const parseErrorMessage = async (response: Response, fallback: string) => {
 };
 
 const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T> => {
-  const response = await fetch(`${backendBaseUrl}${path}`, {
+  const requestInit: RequestInit = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
     body: JSON.stringify(payload),
-  });
+  };
+
+  let response = await fetch(getAuthGatewayUrl(path), requestInit);
+
+  if (response.status === 404 && isSameOriginBackend() && !path.startsWith('/api/')) {
+    response = await fetch(getAuthGatewayUrl(path, true), requestInit);
+  }
 
   if (!response.ok) {
     const message = await parseErrorMessage(response, `Authentication request failed with ${response.status}.`);

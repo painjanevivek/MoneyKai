@@ -88,13 +88,62 @@ const getOAuthSigningSecret = () => {
   return value.trim();
 };
 
-const getBackendGoogleRedirectUri = () => {
+const getBackendGoogleRedirectUri = (candidateOrigin) => {
   const configured = process.env.GOOGLE_OAUTH_REDIRECT_URI || '';
   if (configured.trim()) {
     return configured.trim();
   }
 
+  if (candidateOrigin && isLocalWebAppUrl(candidateOrigin)) {
+    return `${normalizeWebAppUrl(candidateOrigin)}/api/v1/auth/google/callback`;
+  }
+
   return `${getAppUrl().replace(/\/$/, '')}/api/v1/auth/google/callback`;
+};
+
+const isLocalWebAppUrl = (value) => {
+  try {
+    const parsed = new URL(value);
+    return (
+      process.env.NODE_ENV !== 'production' &&
+      ['http:', 'https:'].includes(parsed.protocol) &&
+      ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const normalizeWebAppUrl = (value) => {
+  const parsed = new URL(value);
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new GoogleOAuthError('Application callback URL must use HTTP or HTTPS.', {
+      code: 'GOOGLE_APP_URL_INVALID',
+      status: 400,
+    });
+  }
+
+  if (parsed.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname)) {
+    throw new GoogleOAuthError('Application callback URL must use HTTPS outside local development.', {
+      code: 'GOOGLE_APP_URL_INSECURE',
+      status: 400,
+    });
+  }
+
+  parsed.username = '';
+  parsed.password = '';
+  parsed.hash = '';
+  parsed.search = '';
+  parsed.pathname = parsed.pathname.replace(/\/$/, '');
+  return parsed.toString().replace(/\/$/, '');
+};
+
+const resolveWebAppUrl = (candidate) => {
+  if (candidate && isLocalWebAppUrl(candidate)) {
+    return normalizeWebAppUrl(candidate);
+  }
+
+  return getAppUrl();
 };
 
 const signPayload = (payload) =>
@@ -171,8 +220,8 @@ const sanitizeReturnPath = (value) => {
   return decoded;
 };
 
-const getWebCallbackUrl = (code, returnPath) => {
-  const url = new URL('/auth/google/callback', getAppUrl());
+const getWebCallbackUrl = (code, returnPath, appUrl) => {
+  const url = new URL('/auth/google/callback', appUrl || getAppUrl());
   url.searchParams.set('code', code);
   url.searchParams.set('returnTo', sanitizeReturnPath(returnPath));
   return url.toString();
@@ -187,14 +236,18 @@ const getMobileCallbackUrl = (code, returnPath) => {
 
 const normalizePlatform = (value) => (value === 'mobile' ? 'mobile' : 'web');
 
-const buildGoogleAuthorizationUrl = ({ platform, returnTo }) => {
+const buildGoogleAuthorizationUrl = ({ platform, returnTo, requestOrigin, requestHostOrigin }) => {
   const normalizedPlatform = normalizePlatform(platform);
   const codeVerifier = randomToken(48);
+  const redirectUri = getBackendGoogleRedirectUri(requestHostOrigin);
+  const appUrl = resolveWebAppUrl(requestOrigin);
   const state = encodeSignedPayload({
     type: 'google_oauth_state',
     platform: normalizedPlatform,
     returnTo: sanitizeReturnPath(returnTo),
     codeVerifier,
+    redirectUri,
+    appUrl,
     nonce: randomToken(16),
     iat: Date.now(),
     exp: Date.now() + STATE_TTL_MS,
@@ -202,7 +255,7 @@ const buildGoogleAuthorizationUrl = ({ platform, returnTo }) => {
 
   const url = new URL(GOOGLE_AUTH_URL);
   url.searchParams.set('client_id', getGoogleClientId());
-  url.searchParams.set('redirect_uri', getBackendGoogleRedirectUri());
+  url.searchParams.set('redirect_uri', redirectUri);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('scope', 'openid email profile');
   url.searchParams.set('state', state);
@@ -217,12 +270,12 @@ const buildGoogleAuthorizationUrl = ({ platform, returnTo }) => {
   };
 };
 
-const exchangeAuthorizationCode = async ({ code, codeVerifier }) => {
+const exchangeAuthorizationCode = async ({ code, codeVerifier, redirectUri }) => {
   const body = new URLSearchParams({
     code,
     client_id: getGoogleClientId(),
     client_secret: getGoogleClientSecret(),
-    redirect_uri: getBackendGoogleRedirectUri(),
+    redirect_uri: redirectUri || getBackendGoogleRedirectUri(),
     grant_type: 'authorization_code',
     code_verifier: codeVerifier,
   });
@@ -393,6 +446,7 @@ const completeGoogleOAuthCallback = async ({ code, state }) => {
   const tokenPayload = await exchangeAuthorizationCode({
     code,
     codeVerifier: statePayload.codeVerifier,
+    redirectUri: statePayload.redirectUri,
   });
   const googleProfile = await verifyGoogleIdToken(tokenPayload.id_token);
   const firebaseUser = await signInWithGoogleIdToken({
@@ -409,7 +463,7 @@ const completeGoogleOAuthCallback = async ({ code, state }) => {
 
   return statePayload.platform === 'mobile'
     ? getMobileCallbackUrl(exchangeCode, statePayload.returnTo)
-    : getWebCallbackUrl(exchangeCode, statePayload.returnTo);
+    : getWebCallbackUrl(exchangeCode, statePayload.returnTo, statePayload.appUrl);
 };
 
 const getPublicGoogleOAuthError = (error) => {
@@ -432,5 +486,6 @@ module.exports = {
   completeGoogleOAuthCallback,
   consumeExchangeCode,
   getPublicGoogleOAuthError,
+  getWebCallbackUrl,
   sanitizeReturnPath,
 };
