@@ -66,10 +66,26 @@ Widget tests cover:
 - Compact Android-style viewport: `320 x 700`.
 - Larger iOS-style viewport: `834 x 1112`.
 
+## Visual QA
+
+Android light-theme screenshot review was captured on `MoneyKai_API_36` at `1080 x 1920` for:
+
+- Onboarding.
+- Local auth.
+- Empty dashboard.
+- Empty transactions.
+- Add transaction.
+- Populated transactions.
+- Populated dashboard.
+- Populated budget.
+- Populated insights.
+- Settings.
+- Privacy/security.
+
+The screenshots and contact sheet are stored locally under `.codex-artifacts\moneykai-qa5-visual-*.png`.
+
 ## Current limitations
 
-- App icon is still the generated Flutter placeholder and must be replaced before release prep.
-- Feature widgets are structural placeholders until the transaction/budget implementation phases.
 - Dark theme exists from Material 3 seed colors but has not had full visual QA yet.
 - No screenshot-based visual regression gate exists yet.
 

@@ -106,10 +106,10 @@ Remaining:
 - Android and iOS native launch images now use the existing MoneyKai production mark.
 - Bottom navigation labels are clamped to the standard navigation text scale so they do not wrap or clip at 1.3 Android font scale.
 - Budget limit fields select the current value on tap so emulator and device edits replace instead of accidentally appending to existing numbers.
+- Android light-theme screenshot review was captured for onboarding, auth, dashboard, transactions, add transaction, budget, insights, settings, and privacy/security.
 
 Remaining:
 
-- No full screenshot-based visual review has been captured across every Flutter screen yet.
 - Dark theme exists but has not had full visual QA.
 
 ### Accessibility
@@ -152,6 +152,7 @@ Completed on `MoneyKai_API_36`:
 - Verify export placeholder snackbar on device.
 - Run 1.3 font-scale visual QA for the Settings screen.
 - Capture Android accessibility hierarchy/focus-order snapshots for primary screens.
+- Capture Android light-theme screenshot visual QA for primary screens.
 - Reset local data.
 - Sign out.
 - Reopen app after restart and verify persisted state.
@@ -182,6 +183,18 @@ Evidence artifacts captured locally:
 - `.codex-artifacts\moneykai-window-qa4-a11y-settings.xml`
 - `.codex-artifacts\moneykai-window-qa4-a11y-privacy.xml`
 - `.codex-artifacts\moneykai-qa4-a11y-focus-summary.txt`
+- `.codex-artifacts\moneykai-qa5-visual-01-onboarding.png`
+- `.codex-artifacts\moneykai-qa5-visual-02-auth.png`
+- `.codex-artifacts\moneykai-qa5-visual-03-dashboard-empty.png`
+- `.codex-artifacts\moneykai-qa5-visual-04-transactions-empty.png`
+- `.codex-artifacts\moneykai-qa5-visual-05-add-transaction.png`
+- `.codex-artifacts\moneykai-qa5-visual-06-transactions-populated.png`
+- `.codex-artifacts\moneykai-qa5-visual-07-dashboard-populated.png`
+- `.codex-artifacts\moneykai-qa5-visual-08-budget-populated.png`
+- `.codex-artifacts\moneykai-qa5-visual-09-insights-populated.png`
+- `.codex-artifacts\moneykai-qa5-visual-10-settings.png`
+- `.codex-artifacts\moneykai-qa5-visual-11-privacy.png`
+- `.codex-artifacts\moneykai-qa5-visual-contact-sheet.png`
 
 Still required on an Android emulator or physical device:
 
