@@ -125,6 +125,64 @@ void main() {
     expect(themeRepository.readThemeMode(), ThemeMode.system);
   });
 
+  test('restores a large encrypted transaction history', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
+        hasValidUser: true,
+        transactions: List.generate(1200, (index) {
+          return {
+            'id': 'txn-$index',
+            'type': index.isEven ? 'expense' : 'income',
+            'amount': 100 + index,
+            'date': DateTime(
+              2023,
+              1,
+              1,
+            ).add(Duration(days: index)).toIso8601String(),
+            'category': index.isEven ? 'Food' : 'Salary',
+            'paymentMethod': index.isEven ? 'UPI' : 'Bank transfer',
+            'description': 'History item $index',
+          };
+        }),
+        settings: {'themeMode': 'dark'},
+      ),
+      randomBytes: (length) => List<int>.filled(length, 15),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
+    );
+
+    final result = await restoreService.restoreEncryptedBackup(
+      backupJson: backup.content,
+      password: 'correct horse battery staple',
+    );
+    final restored = transactionRepository.readTransactions();
+
+    expect(result.transactionCount, 1200);
+    expect(restored, hasLength(1200));
+    expect(restored.first.id, 'txn-1199');
+    expect(restored.last.id, 'txn-0');
+    expect(themeRepository.readThemeMode(), ThemeMode.dark);
+  });
+
   test('fails restore with the wrong password', () async {
     SharedPreferences.setMockInitialValues({});
     final storage = LocalStorageService(await SharedPreferences.getInstance());
