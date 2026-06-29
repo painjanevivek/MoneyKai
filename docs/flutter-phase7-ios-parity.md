@@ -40,6 +40,30 @@ Current direct dependencies:
 
 These are Flutter/iOS-compatible package choices. The current MVP does not add Android-only native packages, notification listener packages, SMS packages, contacts packages, camera packages, storage-permission packages, or WebView dependencies.
 
+## Static iOS audit
+
+A repeatable Windows/Linux-compatible audit now lives at:
+
+```text
+apps\MoneyKai-flutter\tool\audit_ios_project.ps1
+```
+
+Latest local result:
+
+```text
+MoneyKai iOS static project audit
+Bundle id: com.moneykai.mobile
+Display name: MoneyKai
+Flutter version: 1.0.1+2
+Deployment targets: 13.0
+App icon files: 15
+Launch image files: 3
+Sensitive iOS permissions: none declared
+Android-only dependency audit: passed
+```
+
+This audit checks the Runner bundle id, display name, Flutter version placeholders, launch storyboard, minimum deployment target, app icon set, launch image set, absence of sensitive iOS permission declarations, and absence of known Android-only package dependencies. It is also wired into `.github\workflows\moneykai-flutter-android.yml` so iOS project drift is checked on Flutter app changes even before macOS/Xcode validation is available.
+
 ## Platform behavior
 
 Shared Flutter code currently covers:

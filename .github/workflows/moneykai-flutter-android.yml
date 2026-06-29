@@ -55,6 +55,10 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Audit iOS project config
+        shell: pwsh
+        run: ./tool/audit_ios_project.ps1
+
       - name: Build debug APK
         run: flutter build apk --debug
 

@@ -162,13 +162,14 @@ Latest verified commands from `apps\MoneyKai-flutter`:
 dart format lib test
 flutter analyze
 flutter test
+.\tool\audit_ios_project.ps1
 flutter build apk --debug
 flutter build apk --release
 flutter build appbundle --release
 .\tool\audit_android_release.ps1
 ```
 
-GitHub Actions also runs the same Flutter Android check loop for app changes:
+GitHub Actions also runs the same Flutter Android check loop plus the static iOS project audit for app changes:
 
 ```text
 .github\workflows\moneykai-flutter-android.yml

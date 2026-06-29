@@ -92,6 +92,16 @@ flutter build appbundle --release
 If only part of the signing env is set, Gradle fails with an explicit MoneyKai signing error.
 The release audit script also fails on partial signing env, restricted permissions, missing artifacts, or unsigned artifacts when `-RequireSigned` is used.
 
+## iOS Static Audit
+
+The Windows/Linux-compatible iOS audit checks the shared iOS project identity and asset readiness before Mac/Xcode validation is available:
+
+```powershell
+.\tool\audit_ios_project.ps1
+```
+
+It verifies the bundle id, display name, Flutter version placeholders, minimum iOS deployment target, app icon set, launch images, absence of sensitive iOS permission declarations, and absence of known Android-only dependencies. It does not replace simulator, real-device, archive, or TestFlight QA on macOS.
+
 ## CI
 
 GitHub Actions workflow:
@@ -100,7 +110,7 @@ GitHub Actions workflow:
 .github\workflows\moneykai-flutter-android.yml
 ```
 
-The workflow runs formatting, analyzer, tests, Android debug/release builds, unsigned AAB build, and the Android artifact audit for changes under `apps\MoneyKai-flutter`.
+The workflow runs formatting, analyzer, tests, the iOS static project audit, Android debug/release builds, unsigned AAB build, and the Android artifact audit for changes under `apps\MoneyKai-flutter`.
 
 ## Android Runtime QA
 

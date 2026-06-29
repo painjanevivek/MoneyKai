@@ -16,6 +16,7 @@ Commands verified:
 dart format lib test
 flutter analyze
 flutter test
+.\tool\audit_ios_project.ps1
 flutter build apk --debug
 flutter build apk --release
 flutter build appbundle --release
@@ -26,6 +27,7 @@ Current result:
 - Formatting completed.
 - `flutter analyze` found no issues.
 - `flutter test` passed.
+- `.\tool\audit_ios_project.ps1` passed.
 - Debug APK built successfully.
 - Unsigned release APK and AAB artifacts built successfully for inspection.
 
