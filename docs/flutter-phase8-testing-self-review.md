@@ -40,7 +40,7 @@ Unit/repository tests:
 - Local budget persistence and reset.
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
-- Local error report persistence, malformed payload handling, newest-first order, and bounded history.
+- Local error report persistence, malformed payload handling, newest-first order, bounded history, and clear action.
 - Local data export JSON includes user, transactions, budget, source, format version, and timestamp.
 - Encrypted backup export produces password-protected AES-GCM JSON, rejects short passwords, and fails decryption with the wrong password.
 - Encrypted backup restore validates decrypted contents, rejects wrong passwords/malformed payloads, resets only the MoneyKai namespace, and restores user, transactions, and budget.
@@ -54,6 +54,7 @@ Widget tests:
 - Insights render savings rate and monthly trend from local data.
 - Budget screen shows category over-budget states.
 - Settings persists System/Light/Dark theme preference.
+- Settings local diagnostics review and clear action.
 - Add/edit/delete transaction flow works.
 - Transactions group by month and filter by category.
 - Settings export-to-clipboard, reset confirmation, and confirmed reset-to-auth respond.
@@ -71,9 +72,9 @@ Implemented:
 - Transactions list with search, income/expense filter, category filter, month grouping, edit, and delete.
 - Budget monthly/category limits with persisted local settings, over-budget states, and tap-to-replace editing.
 - Insights from local transaction data, including income, expense, savings rate, monthly trend, and top spending categories.
-- Settings profile display, theme preference, privacy link, local JSON export to clipboard, encrypted backup export/restore through platform file flows, namespace reset, and sign out.
+- Settings profile display, theme preference, privacy link, local diagnostics, local JSON export to clipboard, encrypted backup export/restore through platform file flows, namespace reset, and sign out.
 - Privacy/security screen explaining local-only MVP and permission boundaries.
-- Local uncaught-error capture for Flutter, platform dispatcher, and root-zone failures.
+- Local uncaught-error capture for Flutter, platform dispatcher, and root-zone failures, with in-app review and clear controls.
 
 ## Self-review findings
 
@@ -84,6 +85,7 @@ Implemented:
 - JSON parsing currently falls back to defaults/empty lists when stored payload shape is invalid.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
 - Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a bounded local `moneykai.errorReports` history.
+- Users can review and clear bounded local diagnostics from Settings without adding a remote crash SDK.
 
 Remaining:
 
@@ -144,6 +146,7 @@ Remaining:
 - Encrypted backup restore decrypts a selected backup file and restores the local profile, transactions, and budget after confirmation through the password prompt.
 - Privacy screen states the current local-only data boundary.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
+- Local diagnostics stay on-device and can be cleared from Settings.
 
 Remaining:
 

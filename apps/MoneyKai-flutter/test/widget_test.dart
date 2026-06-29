@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:moneykai/app/moneykai_app.dart';
+import 'package:moneykai/core/diagnostics/local_error_report_repository.dart';
 
 void main() {
   testWidgets('MoneyKai app shows splash and enters auth flow', (tester) async {
@@ -320,6 +321,48 @@ void main() {
     expect(find.text('Theme set to dark.'), findsOneWidget);
   });
 
+  testWidgets('settings shows and clears local diagnostics', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      LocalErrorReportRepository.reportsKey: jsonEncode([
+        {
+          'id': 'diagnostic-1',
+          'source': 'flutter',
+          'errorType': 'StateError',
+          'message': 'Bad state: test failure',
+          'stackTrace': 'stack line 1\nstack line 2',
+          'occurredAt': DateTime.utc(2026, 6, 29, 9, 45).toIso8601String(),
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Local diagnostics'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('StateError'), findsOneWidget);
+    expect(find.text('Bad state: test failure'), findsOneWidget);
+
+    await tester.tap(find.text('Clear local diagnostics'));
+    await tester.pumpAndSettle();
+
+    final preferences = await SharedPreferences.getInstance();
+    expect(
+      preferences.getString(LocalErrorReportRepository.reportsKey),
+      isNull,
+    );
+    expect(find.text('Local diagnostics cleared.'), findsOneWidget);
+  });
+
   testWidgets('settings export and reset actions respond', (tester) async {
     SharedPreferences.setMockInitialValues({});
     String? exportedText;
@@ -358,7 +401,7 @@ void main() {
     });
 
     await tester.pump(const Duration(seconds: 4));
-    await tester.drag(find.byType(ListView), const Offset(0, -360));
+    await tester.drag(find.byType(ListView), const Offset(0, -520));
     await tester.pumpAndSettle();
     final resetTile = find.widgetWithText(ListTile, 'Reset local data');
     await tester.tap(resetTile);

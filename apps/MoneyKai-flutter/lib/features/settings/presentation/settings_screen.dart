@@ -45,6 +45,13 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push(AppRoutes.privacy),
           ),
           ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('Local diagnostics'),
+            subtitle: const Text('Review recent on-device error reports'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.localDiagnostics),
+          ),
+          ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: const Text('Theme'),
             subtitle: Padding(

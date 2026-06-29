@@ -23,7 +23,7 @@ Implemented MVP:
 - Transactions list with search, income/expense filters, category filter, month grouping, edit, and delete.
 - Budget screen with monthly/category limits and over-budget states.
 - Insights screen with local income, expense, savings rate, monthly trend, and top spending categories.
-- Settings screen with profile display, persisted theme preference, privacy link, local JSON export to clipboard, encrypted backup export/restore, namespace reset, and sign out.
+- Settings screen with profile display, persisted theme preference, privacy link, local diagnostics, local JSON export to clipboard, encrypted backup export/restore, namespace reset, and sign out.
 - Privacy/security screen describing the local-only MVP boundary.
 
 Core architecture:
@@ -34,7 +34,7 @@ Core architecture:
 - Local persistence through `shared_preferences` behind a MoneyKai storage service.
 - `moneykai.*` local storage namespace and `moneykai.storageSchemaVersion`.
 - Password-encrypted backup export and restore using AES-256-GCM and PBKDF2-HMAC-SHA256.
-- Bounded local error reports for uncaught Flutter, platform dispatcher, and root-zone failures.
+- Bounded local error reports for uncaught Flutter, platform dispatcher, and root-zone failures, with in-app review and clear controls.
 - Reusable screen shell, responsive screen scaffold, metric cards, empty states, and budget progress widgets.
 
 ## Android Readiness
@@ -61,7 +61,7 @@ Android-ready items:
 - Local JSON export copies the current profile, transactions, and budget snapshot to the clipboard without adding storage or sharing permissions.
 - Encrypted backup export creates a password-protected JSON file through the Android/iOS share sheet.
 - Encrypted backup restore imports a selected password-protected JSON file and restores local profile, transactions, and budget.
-- Local error capture records uncaught failures without adding permissions or a remote crash SDK.
+- Local error capture records uncaught failures without adding permissions or a remote crash SDK, and Settings can review or clear those reports.
 - Light and dark theme screenshot QA exists for primary screens.
 - Accessibility hierarchy/focus-order snapshots exist for primary screens.
 

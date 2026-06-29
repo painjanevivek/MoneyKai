@@ -273,6 +273,7 @@ No visible button may silently do nothing.
 | `/insights` | Insights tab or stack screen | MVP |
 | `/settings` | Profile/settings tab | MVP |
 | `/privacy` | Privacy/security | MVP |
+| `/settings/local-diagnostics` | Local diagnostics | MVP |
 
 ## Architecture guardrails for implementation
 

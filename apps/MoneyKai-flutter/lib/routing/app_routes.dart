@@ -11,6 +11,7 @@ class AppRoutes {
   static const insights = '/insights';
   static const settings = '/settings';
   static const privacy = '/privacy';
+  static const localDiagnostics = '/settings/local-diagnostics';
 
   static String editTransactionPath(String id) => '/transactions/edit/$id';
 }

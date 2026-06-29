@@ -72,4 +72,21 @@ void main() {
 
     expect(repository.readReports(), isEmpty);
   });
+
+  test('clears recorded local errors', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final repository = LocalErrorReportRepository(storage);
+
+    await repository.recordError(
+      StateError('failure'),
+      StackTrace.fromString('stack'),
+      source: 'test',
+    );
+    expect(repository.readReports(), hasLength(1));
+
+    await repository.clearReports();
+
+    expect(repository.readReports(), isEmpty);
+  });
 }

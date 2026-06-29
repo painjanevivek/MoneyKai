@@ -74,6 +74,8 @@ class LocalErrorReportRepository {
     }
   }
 
+  Future<void> clearReports() => _storage.remove(reportsKey);
+
   Future<void> _writeReports(List<LocalErrorReport> reports) {
     return _storage.writeString(
       reportsKey,

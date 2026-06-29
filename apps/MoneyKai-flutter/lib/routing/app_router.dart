@@ -6,6 +6,7 @@ import '../features/budget/presentation/budget_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/insights/presentation/insights_screen.dart';
 import '../features/onboarding/presentation/splash_screen.dart';
+import '../features/settings/presentation/local_diagnostics_screen.dart';
 import '../features/settings/presentation/privacy_security_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/transactions/presentation/add_transaction_screen.dart';
@@ -67,6 +68,10 @@ GoRouter createAppRouter() {
       GoRoute(
         path: AppRoutes.privacy,
         builder: (context, state) => const PrivacySecurityScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.localDiagnostics,
+        builder: (context, state) => LocalDiagnosticsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

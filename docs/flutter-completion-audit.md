@@ -75,13 +75,13 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | MVP scope freeze | Complete | `docs\flutter-phase2-mvp-scope.md` defines screens, containers, offline-first behavior, and non-goals. |
 | Feature-first architecture | Complete | `docs\flutter-phase3-architecture.md` documents `lib\features`, repositories, Riverpod, routing, and local storage boundaries. |
 | Design system | Complete for MVP | `docs\flutter-phase4-design-system.md` documents tokens, components, screen shell, metric cards, transaction rows, budget cards, and responsive behavior. |
-| Core MVP screens functional | Complete for local MVP | Splash/onboarding, local auth, dashboard with category breakdown preview, add/edit transaction, transactions list with search/type/category filters and month grouping, budget with monthly/category over-budget states, insights with savings rate/monthly trend/top categories, settings with persisted theme preference, and privacy/security are implemented and covered by tests/manual QA. |
+| Core MVP screens functional | Complete for local MVP | Splash/onboarding, local auth, dashboard with category breakdown preview, add/edit transaction, transactions list with search/type/category filters and month grouping, budget with monthly/category over-budget states, insights with savings rate/monthly trend/top categories, settings with persisted theme preference, local diagnostics, and privacy/security are implemented and covered by tests/manual QA. |
 | Local persistence after restart | Complete | Repository tests cover persistence; emulator QA captures restart/session persistence in `docs\flutter-phase8-testing-self-review.md`. |
 | No dead routes / visible broken buttons | Complete for current MVP | Widget tests and emulator QA cover navigation/settings actions; coming-soon backend/auth/store work is documented outside the MVP UI surface. |
 | Local JSON export | Complete | Settings export tests and emulator evidence are documented in `docs\flutter-phase8-testing-self-review.md`. |
 | Encrypted backup export | Complete | AES-GCM/PBKDF2 unit tests, Settings flow, and Android share-sheet evidence are documented. |
 | Encrypted backup restore | Complete on Android emulator | Unit tests validate restore behavior; selected-file restore from Downloads is documented with QA10 evidence in `docs\flutter-phase8-testing-self-review.md`. |
-| Local error capture | Complete for local reports | Diagnostics tests and docs cover bounded local error report capture. |
+| Local error capture | Complete for local reports | Diagnostics tests and docs cover bounded local error report capture plus in-app review and clear controls. |
 | Android app icon and launch assets | Complete | Phase 6 docs record source and generated asset hashes. |
 | Android permission audit | Complete for current artifacts | Phase 6 docs and `.\tool\audit_android_release.ps1` verify no restricted SMS/storage/contact/camera/mic/location permissions. |
 | Android release signing config | Partially complete | Gradle requires all `MONEYKAI_UPLOAD_*` vars or leaves release unsigned; audit script catches partial env. Actual production signed artifacts require keystore. |
@@ -92,7 +92,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | TalkBack spoken-output QA | Not complete | Accessibility hierarchy exists, but real spoken-output QA is still pending. |
 | Physical Android device QA | Not complete | No physical Android device is connected; `apps\MoneyKai-flutter\tool\collect_android_runtime_qa.ps1 -RequirePhysical` is ready to collect launch timing, screenshot, hierarchy, and device evidence once hardware is available. |
 | iOS simulator/device/archive/TestFlight | Not complete | Current machine is Windows; macOS/Xcode and Apple Developer signing are required. |
-| Security/privacy self-review | Partially complete | Permissions, local-only boundaries, reset namespace, encrypted backups, and privacy copy are documented; local storage is not encrypted and real auth/backend sync remain future work. |
+| Security/privacy self-review | Partially complete | Permissions, local-only boundaries, reset namespace, encrypted backups, local diagnostics clearing, and privacy copy are documented; local storage is not encrypted and real auth/backend sync remain future work. |
 | Backend sync | Future work | Repository boundaries are ready; no backend sync implementation exists. |
 | Real authentication | Future work | Local auth/session boundary exists; real auth integration is still outside the MVP. |
 | Remote crash dashboard | Future work | Local error capture exists; no remote crash/error dashboard SDK or backend is configured. |
