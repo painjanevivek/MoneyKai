@@ -20,6 +20,7 @@ flutter test
 flutter build apk --debug
 flutter build apk --release
 flutter build appbundle --release
+.\tool\audit_android_release.ps1
 ```
 
 Current result:
@@ -30,6 +31,7 @@ Current result:
 - `.\tool\audit_ios_project.ps1` passed.
 - Debug APK built successfully.
 - Unsigned release APK and AAB artifacts built successfully for inspection.
+- `.\tool\audit_android_release.ps1` passed for current unsigned inspection artifacts and restricted-permission checks.
 
 ## Test coverage currently present
 

@@ -108,7 +108,7 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 | --- | --- |
 | Size | `190664156` bytes |
 | SHA-256 | `DA3E28DBCA47A6A522B0DB63B913108FCEC3A3A90548051FD5A55FC8CE3F529F` |
-| Built | `2026-06-29 21:20:28` local time |
+| Built | `2026-06-29 21:24:18` local time |
 
 Unsigned release APK for binary inspection only:
 
