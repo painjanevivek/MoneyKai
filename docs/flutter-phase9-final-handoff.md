@@ -22,7 +22,7 @@ Implemented MVP:
 - Add and edit transaction flows for local income and expenses.
 - Transactions list with search, income/expense filters, category filter, month grouping, edit, and delete.
 - Budget screen with monthly and category limits.
-- Insights screen from local transaction data.
+- Insights screen with local income, expense, savings rate, monthly trend, and top spending categories.
 - Settings screen with profile display, privacy link, local JSON export to clipboard, encrypted backup export/restore, namespace reset, and sign out.
 - Privacy/security screen describing the local-only MVP boundary.
 

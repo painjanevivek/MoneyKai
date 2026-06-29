@@ -193,6 +193,70 @@ void main() {
     expect(find.text('Top spending categories'), findsOneWidget);
   });
 
+  testWidgets('insights show savings rate and monthly trend', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'june-income',
+          'type': 'income',
+          'amount': 1000,
+          'date': DateTime(2026, 6, 5).toIso8601String(),
+          'category': 'Salary',
+          'paymentMethod': 'Bank transfer',
+          'description': 'June income',
+        },
+        {
+          'id': 'june-food',
+          'type': 'expense',
+          'amount': 400,
+          'date': DateTime(2026, 6, 6).toIso8601String(),
+          'category': 'Food',
+          'paymentMethod': 'UPI',
+          'description': 'June food',
+        },
+        {
+          'id': 'may-income',
+          'type': 'income',
+          'amount': 700,
+          'date': DateTime(2026, 5, 5).toIso8601String(),
+          'category': 'Salary',
+          'paymentMethod': 'Bank transfer',
+          'description': 'May income',
+        },
+        {
+          'id': 'may-bills',
+          'type': 'expense',
+          'amount': 350,
+          'date': DateTime(2026, 5, 6).toIso8601String(),
+          'category': 'Bills',
+          'paymentMethod': 'Card',
+          'description': 'May bills',
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Insights'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Savings rate'), findsOneWidget);
+    expect(find.text('56%'), findsOneWidget);
+    expect(find.text('Net savings'), findsOneWidget);
+    expect(find.text('Monthly trend'), findsOneWidget);
+    expect(find.text('Jun 2026'), findsOneWidget);
+    expect(find.text('May 2026'), findsOneWidget);
+    expect(find.text('Net Rs 600'), findsOneWidget);
+    expect(find.text('Net Rs 350'), findsOneWidget);
+  });
+
   testWidgets('settings export and reset actions respond', (tester) async {
     SharedPreferences.setMockInitialValues({});
     String? exportedText;

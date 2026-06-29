@@ -51,6 +51,7 @@ Widget tests:
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Dashboard category breakdown preview opens Insights.
+- Insights render savings rate and monthly trend from local data.
 - Add/edit/delete transaction flow works.
 - Transactions group by month and filter by category.
 - Settings export-to-clipboard, reset confirmation, and confirmed reset-to-auth respond.
@@ -67,7 +68,7 @@ Implemented:
 - Add transaction with validation.
 - Transactions list with search, income/expense filter, category filter, month grouping, edit, and delete.
 - Budget monthly/category limits with persisted local settings and tap-to-replace editing.
-- Insights from local transaction data.
+- Insights from local transaction data, including income, expense, savings rate, monthly trend, and top spending categories.
 - Settings profile display, privacy link, local JSON export to clipboard, encrypted backup export/restore through platform file flows, namespace reset, and sign out.
 - Privacy/security screen explaining local-only MVP and permission boundaries.
 - Local uncaught-error capture for Flutter, platform dispatcher, and root-zone failures.

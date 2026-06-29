@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/formatters/money_formatter.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -46,6 +47,7 @@ class InsightsScreen extends ConsumerWidget {
 
     final summary = _InsightSummary.fromTransactions(transactions);
     final topCategories = summary.topExpenseCategories.entries.take(5).toList();
+    final monthlyTrend = summary.monthlyTrend.entries.take(4).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -67,6 +69,16 @@ class InsightsScreen extends ConsumerWidget {
               label: 'Expense',
               value: _money.format(summary.expense),
               icon: Icons.arrow_upward,
+            ),
+            MetricCard(
+              label: 'Savings rate',
+              value: summary.formattedSavingsRate,
+              icon: Icons.trending_up,
+            ),
+            MetricCard(
+              label: 'Net savings',
+              value: _money.format(summary.netSavings),
+              icon: Icons.account_balance_wallet_outlined,
             ),
           ],
         ),
@@ -92,6 +104,21 @@ class InsightsScreen extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(height: AppSpacing.xl),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Monthly trend'),
+                const SizedBox(height: AppSpacing.md),
+                for (final month in monthlyTrend)
+                  _MonthlyTrendRow(month: month.key, summary: month.value),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -102,16 +129,30 @@ class _InsightSummary {
     required this.income,
     required this.expense,
     required this.topExpenseCategories,
+    required this.monthlyTrend,
   });
 
   final double income;
   final double expense;
   final Map<String, double> topExpenseCategories;
+  final Map<String, _MonthlyInsight> monthlyTrend;
+
+  double get netSavings => income - expense;
+
+  String get formattedSavingsRate {
+    if (income <= 0) {
+      return '0%';
+    }
+
+    final rate = (netSavings / income) * 100;
+    return '${rate.clamp(-999, 999).round()}%';
+  }
 
   static _InsightSummary fromTransactions(List<MoneyTransaction> transactions) {
     var income = 0.0;
     var expense = 0.0;
     final categoryTotals = <String, double>{};
+    final monthlyTotals = <DateTime, _MonthlyInsight>{};
 
     for (final transaction in transactions) {
       if (transaction.type == TransactionType.income) {
@@ -124,15 +165,81 @@ class _InsightSummary {
           ifAbsent: () => transaction.amount,
         );
       }
+
+      final month = DateTime(transaction.date.year, transaction.date.month);
+      final current = monthlyTotals[month] ?? const _MonthlyInsight();
+      monthlyTotals[month] = transaction.type == TransactionType.income
+          ? current.copyWith(income: current.income + transaction.amount)
+          : current.copyWith(expense: current.expense + transaction.amount);
     }
 
     final sortedCategories = categoryTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+    final monthFormatter = DateFormat('MMM yyyy');
+    final sortedMonths = monthlyTotals.entries.toList()
+      ..sort((a, b) => b.key.compareTo(a.key));
 
     return _InsightSummary(
       income: income,
       expense: expense,
       topExpenseCategories: Map.fromEntries(sortedCategories),
+      monthlyTrend: {
+        for (final entry in sortedMonths)
+          monthFormatter.format(entry.key): entry.value,
+      },
+    );
+  }
+}
+
+class _MonthlyInsight {
+  const _MonthlyInsight({this.income = 0, this.expense = 0});
+
+  final double income;
+  final double expense;
+
+  double get net => income - expense;
+
+  _MonthlyInsight copyWith({double? income, double? expense}) {
+    return _MonthlyInsight(
+      income: income ?? this.income,
+      expense: expense ?? this.expense,
+    );
+  }
+}
+
+class _MonthlyTrendRow extends StatelessWidget {
+  _MonthlyTrendRow({required this.month, required this.summary});
+
+  final String month;
+  final _MonthlyInsight summary;
+  final MoneyFormatter _money = MoneyFormatter();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final netColor = summary.net >= 0 ? colorScheme.primary : colorScheme.error;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(month, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
+            children: [
+              Text('Income ${_money.format(summary.income)}'),
+              Text('Expense ${_money.format(summary.expense)}'),
+              Text(
+                'Net ${_money.format(summary.net)}',
+                style: TextStyle(color: netColor, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
