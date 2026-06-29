@@ -50,6 +50,8 @@ dart format lib test
 flutter analyze
 flutter test
 flutter build apk --debug
+flutter build apk --release
+flutter build appbundle --release
 ```
 
 Latest verified result:
@@ -57,6 +59,8 @@ Latest verified result:
 - `flutter analyze`: passed.
 - `flutter test`: passed.
 - `flutter build apk --debug`: passed.
+- `flutter build apk --release`: passed with no upload-key env vars; produced an unsigned inspection artifact.
+- `flutter build appbundle --release`: passed with no upload-key env vars; produced an unsigned inspection artifact.
 
 ## Debug APK
 
@@ -79,6 +83,38 @@ Install for direct Android testing:
 ```powershell
 adb install -r D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app-debug.apk
 ```
+
+## Unsigned release artifacts
+
+Current release builds intentionally do not fall back to debug signing. With no `MONEYKAI_UPLOAD_*` environment variables set, Gradle produces unsigned release artifacts for binary inspection only.
+
+Latest unsigned release APK:
+
+```text
+D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app-release.apk
+```
+
+| Field | Value |
+| --- | --- |
+| Size | `51512242` bytes |
+| SHA-256 | `E6C6E91A41B65CE14F37C013BD68D5B7B97D7DE70587BB875AA5F32AA45A7A1D` |
+| Built | `2026-06-29 11:45:44` local time |
+| Signing check | `apksigner verify --verbose` returns `DOES NOT VERIFY`; `Missing META-INF/MANIFEST.MF` |
+
+Latest unsigned release AAB:
+
+```text
+D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\app-release.aab
+```
+
+| Field | Value |
+| --- | --- |
+| Size | `50517880` bytes |
+| SHA-256 | `FE6B743A1AE6E89CD6C8827A76264D7D435BC8ED64BBE8BAD871FC680A1E2AC1` |
+| Built | `2026-06-29 11:43:37` local time |
+| Signing check | `jarsigner -verify -verbose -certs` reports `jar is unsigned` |
+
+These unsigned artifacts are not Play-ready and should not be treated as installable release candidates. Use the debug APK for direct emulator/device testing until an upload keystore is provided, then rebuild signed release outputs.
 
 ## Device and emulator status
 
@@ -120,6 +156,14 @@ permission: com.moneykai.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 uses-permission: name='com.moneykai.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
 ```
 
+Compiled unsigned release APK permission dump:
+
+```text
+package: com.moneykai.mobile
+permission: com.moneykai.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission: name='com.moneykai.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
+```
+
 Restricted SMS permissions are not present:
 
 - `READ_SMS`
@@ -133,7 +177,9 @@ The Flutter MVP currently does not request notification listener, contacts, came
 
 ## Release signing
 
-The release Gradle config no longer signs release builds with the debug key. Release APK/AAB builds require upload-key environment variables:
+The release Gradle config no longer signs release builds with the debug key. If no upload-key variables are set, `flutter build apk --release` and `flutter build appbundle --release` produce unsigned inspection artifacts. If any upload-key variable is set, all four are required.
+
+Play-ready signed release APK/AAB builds require upload-key environment variables:
 
 ```powershell
 $env:MONEYKAI_UPLOAD_STORE_FILE="C:\path\to\upload-keystore.jks"
@@ -142,7 +188,7 @@ $env:MONEYKAI_UPLOAD_KEY_ALIAS="<key-alias>"
 $env:MONEYKAI_UPLOAD_KEY_PASSWORD="<key-password>"
 ```
 
-Build release artifacts only after setting those values:
+Build signed release artifacts after setting those values:
 
 ```powershell
 flutter build apk --release
@@ -162,6 +208,6 @@ No Play-ready release AAB has been produced in this phase because no upload keys
 
 - Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: real TalkBack spoken-output pass and physical-device performance/cold-start checks.
 - Create/provide the Android upload keystore.
-- Build release APK and AAB with non-debug signing.
+- Build release APK and AAB with upload-key signing.
 - Capture SHA-256 and signer certificate for the exact release artifacts.
 - Smoke test release-signed artifacts once an upload key exists.

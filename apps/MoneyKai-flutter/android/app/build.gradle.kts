@@ -8,6 +8,22 @@ val moneyKaiUploadStoreFile: String? = System.getenv("MONEYKAI_UPLOAD_STORE_FILE
 val moneyKaiUploadStorePassword: String? = System.getenv("MONEYKAI_UPLOAD_STORE_PASSWORD")
 val moneyKaiUploadKeyAlias: String? = System.getenv("MONEYKAI_UPLOAD_KEY_ALIAS")
 val moneyKaiUploadKeyPassword: String? = System.getenv("MONEYKAI_UPLOAD_KEY_PASSWORD")
+val moneyKaiUploadSigningValues = listOf(
+    moneyKaiUploadStoreFile,
+    moneyKaiUploadStorePassword,
+    moneyKaiUploadKeyAlias,
+    moneyKaiUploadKeyPassword,
+)
+val hasAnyMoneyKaiUploadSigningConfig = moneyKaiUploadSigningValues.any { !it.isNullOrBlank() }
+val hasMoneyKaiUploadSigningConfig = moneyKaiUploadSigningValues.all { !it.isNullOrBlank() }
+
+if (hasAnyMoneyKaiUploadSigningConfig && !hasMoneyKaiUploadSigningConfig) {
+    throw GradleException(
+        "MoneyKai release signing requires all MONEYKAI_UPLOAD_* environment variables: " +
+            "MONEYKAI_UPLOAD_STORE_FILE, MONEYKAI_UPLOAD_STORE_PASSWORD, " +
+            "MONEYKAI_UPLOAD_KEY_ALIAS, MONEYKAI_UPLOAD_KEY_PASSWORD."
+    )
+}
 
 android {
     namespace = "com.moneykai.mobile"
@@ -31,8 +47,8 @@ android {
 
     signingConfigs {
         create("release") {
-            if (!moneyKaiUploadStoreFile.isNullOrBlank()) {
-                storeFile = file(moneyKaiUploadStoreFile)
+            if (hasMoneyKaiUploadSigningConfig) {
+                storeFile = file(moneyKaiUploadStoreFile!!)
                 storePassword = moneyKaiUploadStorePassword
                 keyAlias = moneyKaiUploadKeyAlias
                 keyPassword = moneyKaiUploadKeyPassword
@@ -42,7 +58,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (hasMoneyKaiUploadSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = null
+            }
         }
     }
 }

@@ -17,6 +17,8 @@ dart format lib test
 flutter analyze
 flutter test
 flutter build apk --debug
+flutter build apk --release
+flutter build appbundle --release
 ```
 
 Current result:
@@ -25,6 +27,7 @@ Current result:
 - `flutter analyze` found no issues.
 - `flutter test` passed.
 - Debug APK built successfully.
+- Unsigned release APK and AAB artifacts built successfully for inspection.
 
 ## Test coverage currently present
 
@@ -63,7 +66,7 @@ Implemented:
 
 - Local persistence is simple and deterministic through `shared_preferences`.
 - JSON parsing currently falls back to defaults/empty lists when stored payload shape is invalid.
-- Release signing no longer silently uses the debug key.
+- Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
 
 Remaining:
 
