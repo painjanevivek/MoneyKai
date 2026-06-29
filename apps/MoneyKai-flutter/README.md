@@ -13,9 +13,9 @@ Implemented:
 - Dashboard with category breakdown preview, transactions, budgets with over-budget states, savings/trend insights, settings, and privacy/security.
 - Add, edit, search, type/category filter, month-group, and delete local transactions.
 - Persisted local budgets and transactions through `shared_preferences`.
-- Local JSON export to clipboard for profile, transaction, and budget data.
+- Local JSON export to clipboard for profile, transaction, budget, and theme data.
 - Password-encrypted JSON backup export through the platform share sheet.
-- Password-encrypted JSON backup restore through the platform file picker.
+- Password-encrypted JSON backup restore through the platform file picker, including saved theme preference when present.
 - Persisted System/Light/Dark theme preference.
 - Local uncaught-error capture and in-app local diagnostics review/clear.
 - MoneyKai local storage namespace reset.

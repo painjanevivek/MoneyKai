@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneykai/core/storage/local_storage_service.dart';
 import 'package:moneykai/features/auth/data/local_auth_repository.dart';
@@ -8,6 +9,7 @@ import 'package:moneykai/features/budget/data/local_budget_repository.dart';
 import 'package:moneykai/features/budget/domain/budget_state.dart';
 import 'package:moneykai/features/settings/data/encrypted_backup_service.dart';
 import 'package:moneykai/features/settings/data/local_data_export_service.dart';
+import 'package:moneykai/features/settings/data/theme_preference_repository.dart';
 import 'package:moneykai/features/transactions/data/local_transaction_repository.dart';
 import 'package:moneykai/features/transactions/domain/money_transaction.dart';
 import 'package:moneykai/features/transactions/domain/transaction_type.dart';
@@ -46,6 +48,8 @@ void main() {
     expect(clearPayload['source'], 'moneykai-local-device');
     final transactions = clearPayload['transactions'] as List<Object?>;
     expect(transactions.first, containsPair('description', 'Groceries'));
+    final settings = clearPayload['settings'] as Map<String, Object?>;
+    expect(settings['themeMode'], 'dark');
   });
 
   test('rejects short backup passwords', () async {
@@ -86,6 +90,7 @@ Future<LocalDataExportService> _seedExportService() async {
   final authRepository = LocalAuthRepository(storage);
   final transactionRepository = LocalTransactionRepository(storage);
   final budgetRepository = LocalBudgetRepository(storage);
+  final themeRepository = ThemePreferenceRepository(storage);
 
   await authRepository.saveSession(
     email: 'akshay@example.com',
@@ -105,11 +110,13 @@ Future<LocalDataExportService> _seedExportService() async {
   await budgetRepository.saveBudget(
     const BudgetState(monthlyLimit: 30000, categoryLimits: {'Food': 9000}),
   );
+  await themeRepository.saveThemeMode(ThemeMode.dark);
 
   return LocalDataExportService(
     authRepository: authRepository,
     transactionRepository: transactionRepository,
     budgetRepository: budgetRepository,
+    themeRepository: themeRepository,
     now: () => DateTime.utc(2026, 6, 29, 10, 15),
   );
 }

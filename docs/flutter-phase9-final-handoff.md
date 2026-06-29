@@ -58,9 +58,9 @@ Android-ready items:
 - Permission audit confirms no SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
 - Debug APK has been installed and smoke-tested on `MoneyKai_API_36`.
 - Primary workflows have emulator QA evidence.
-- Local JSON export copies the current profile, transactions, and budget snapshot to the clipboard without adding storage or sharing permissions.
+- Local JSON export copies the current profile, transactions, budget, and theme snapshot to the clipboard without adding storage or sharing permissions.
 - Encrypted backup export creates a password-protected JSON file through the Android/iOS share sheet.
-- Encrypted backup restore imports a selected password-protected JSON file and restores local profile, transactions, and budget.
+- Encrypted backup restore imports a selected password-protected JSON file and restores local profile, transactions, budget, and saved theme preference when present.
 - Local error capture records uncaught failures without adding permissions or a remote crash SDK, and Settings can review or clear those reports.
 - Light and dark theme screenshot QA exists for primary screens.
 - Accessibility hierarchy/focus-order snapshots exist for primary screens.

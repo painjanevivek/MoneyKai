@@ -41,9 +41,9 @@ Unit/repository tests:
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, newest-first order, bounded history, and clear action.
-- Local data export JSON includes user, transactions, budget, source, format version, and timestamp.
-- Encrypted backup export produces password-protected AES-GCM JSON, rejects short passwords, and fails decryption with the wrong password.
-- Encrypted backup restore validates decrypted contents, rejects wrong passwords/malformed payloads, resets only the MoneyKai namespace, and restores user, transactions, and budget.
+- Local data export JSON includes user, transactions, budget, theme settings, source, format version, and timestamp.
+- Encrypted backup export produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords and fails decryption with the wrong password.
+- Encrypted backup restore validates decrypted contents, rejects wrong passwords/malformed payloads, resets only the MoneyKai namespace, restores user, transactions, and budget, and restores theme settings when present.
 
 Widget tests:
 
@@ -143,7 +143,7 @@ Remaining:
 - The MVP does not request SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
 - Local export copies a plaintext JSON snapshot to the clipboard without adding storage or sharing permissions.
 - Encrypted backup export creates a password-protected JSON file with AES-256-GCM and PBKDF2-HMAC-SHA256 through the platform share sheet.
-- Encrypted backup restore decrypts a selected backup file and restores the local profile, transactions, and budget after confirmation through the password prompt.
+- Encrypted backup restore decrypts a selected backup file and restores the local profile, transactions, budget, and saved theme setting after confirmation through the password prompt.
 - Privacy screen states the current local-only data boundary.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
 - Local diagnostics stay on-device and can be cleared from Settings.

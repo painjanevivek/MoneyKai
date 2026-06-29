@@ -78,9 +78,9 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | Core MVP screens functional | Complete for local MVP | Splash/onboarding, local auth, dashboard with category breakdown preview, add/edit transaction, transactions list with search/type/category filters and month grouping, budget with monthly/category over-budget states, insights with savings rate/monthly trend/top categories, settings with persisted theme preference, local diagnostics, and privacy/security are implemented and covered by tests/manual QA. |
 | Local persistence after restart | Complete | Repository tests cover persistence; emulator QA captures restart/session persistence in `docs\flutter-phase8-testing-self-review.md`. |
 | No dead routes / visible broken buttons | Complete for current MVP | Widget tests and emulator QA cover navigation/settings actions; coming-soon backend/auth/store work is documented outside the MVP UI surface. |
-| Local JSON export | Complete | Settings export tests and emulator evidence are documented in `docs\flutter-phase8-testing-self-review.md`. |
-| Encrypted backup export | Complete | AES-GCM/PBKDF2 unit tests, Settings flow, and Android share-sheet evidence are documented. |
-| Encrypted backup restore | Complete on Android emulator | Unit tests validate restore behavior; selected-file restore from Downloads is documented with QA10 evidence in `docs\flutter-phase8-testing-self-review.md`. |
+| Local JSON export | Complete | Settings export tests and emulator evidence cover profile, transactions, budget, and theme settings in `docs\flutter-phase8-testing-self-review.md`. |
+| Encrypted backup export | Complete | AES-GCM/PBKDF2 unit tests, Settings flow, theme-setting payload coverage, and Android share-sheet evidence are documented. |
+| Encrypted backup restore | Complete on Android emulator | Unit tests validate restore behavior, older-backup compatibility, and theme-setting restore; selected-file restore from Downloads is documented with QA10 evidence in `docs\flutter-phase8-testing-self-review.md`. |
 | Local error capture | Complete for local reports | Diagnostics tests and docs cover bounded local error report capture plus in-app review and clear controls. |
 | Android app icon and launch assets | Complete | Phase 6 docs record source and generated asset hashes. |
 | Android permission audit | Complete for current artifacts | Phase 6 docs and `.\tool\audit_android_release.ps1` verify no restricted SMS/storage/contact/camera/mic/location permissions. |

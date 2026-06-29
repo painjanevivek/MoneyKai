@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneykai/core/storage/local_storage_service.dart';
 import 'package:moneykai/features/auth/data/local_auth_repository.dart';
@@ -9,6 +10,7 @@ import 'package:moneykai/features/budget/domain/budget_state.dart';
 import 'package:moneykai/features/settings/data/encrypted_backup_restore_service.dart';
 import 'package:moneykai/features/settings/data/encrypted_backup_service.dart';
 import 'package:moneykai/features/settings/data/local_data_export_service.dart';
+import 'package:moneykai/features/settings/data/theme_preference_repository.dart';
 import 'package:moneykai/features/transactions/data/local_transaction_repository.dart';
 import 'package:moneykai/features/transactions/domain/money_transaction.dart';
 import 'package:moneykai/features/transactions/domain/transaction_type.dart';
@@ -25,11 +27,13 @@ void main() {
       final authRepository = LocalAuthRepository(storage);
       final transactionRepository = LocalTransactionRepository(storage);
       final budgetRepository = LocalBudgetRepository(storage);
+      final themeRepository = ThemePreferenceRepository(storage);
       final backupService = EncryptedBackupService(
         exportService: LocalDataExportService(
           authRepository: authRepository,
           transactionRepository: transactionRepository,
           budgetRepository: budgetRepository,
+          themeRepository: themeRepository,
           now: () => DateTime.utc(2026, 6, 29, 11),
         ),
         now: () => DateTime.utc(2026, 6, 29, 11),
@@ -41,6 +45,7 @@ void main() {
         authRepository,
         transactionRepository,
         budgetRepository,
+        themeRepository,
       );
       final backup = await backupService.buildEncryptedBackup(
         password: 'correct horse battery staple',
@@ -53,6 +58,7 @@ void main() {
       await budgetRepository.saveBudget(
         const BudgetState(monthlyLimit: 1, categoryLimits: {}),
       );
+      await themeRepository.saveThemeMode(ThemeMode.light);
 
       final restoreService = EncryptedBackupRestoreService(
         backupService: backupService,
@@ -60,6 +66,7 @@ void main() {
         authRepository: authRepository,
         transactionRepository: transactionRepository,
         budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
       );
 
       final result = await restoreService.restoreEncryptedBackup(
@@ -75,9 +82,49 @@ void main() {
         'Groceries',
       );
       expect(budgetRepository.readBudget().monthlyLimit, 30000);
+      expect(themeRepository.readThemeMode(), ThemeMode.dark);
       expect(storage.readString('other.product.setting'), 'keep');
     },
   );
+
+  test('restores older encrypted backups without settings', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
+        hasValidUser: true,
+      ),
+      randomBytes: (length) => List<int>.filled(length, 7),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    await themeRepository.saveThemeMode(ThemeMode.dark);
+
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
+    );
+
+    await restoreService.restoreEncryptedBackup(
+      backupJson: backup.content,
+      password: 'correct horse battery staple',
+    );
+
+    expect(themeRepository.readThemeMode(), ThemeMode.system);
+  });
 
   test('fails restore with the wrong password', () async {
     SharedPreferences.setMockInitialValues({});
@@ -85,11 +132,13 @@ void main() {
     final authRepository = LocalAuthRepository(storage);
     final transactionRepository = LocalTransactionRepository(storage);
     final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
     final backupService = EncryptedBackupService(
       exportService: LocalDataExportService(
         authRepository: authRepository,
         transactionRepository: transactionRepository,
         budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
       ),
       randomBytes: (length) => List<int>.filled(length, 9),
     );
@@ -98,6 +147,7 @@ void main() {
       authRepository,
       transactionRepository,
       budgetRepository,
+      themeRepository,
     );
     final backup = await backupService.buildEncryptedBackup(
       password: 'correct horse battery staple',
@@ -108,6 +158,7 @@ void main() {
       authRepository: authRepository,
       transactionRepository: transactionRepository,
       budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
     );
 
     expect(
@@ -125,11 +176,13 @@ void main() {
     final authRepository = LocalAuthRepository(storage);
     final transactionRepository = LocalTransactionRepository(storage);
     final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
     final backupService = EncryptedBackupService(
       exportService: _StaticExportService(
         authRepository: authRepository,
         transactionRepository: transactionRepository,
         budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
       ),
       randomBytes: (length) => List<int>.filled(length, 3),
     );
@@ -142,6 +195,7 @@ void main() {
       authRepository: authRepository,
       transactionRepository: transactionRepository,
       budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
     );
 
     expect(
@@ -159,11 +213,13 @@ void main() {
     final authRepository = LocalAuthRepository(storage);
     final transactionRepository = LocalTransactionRepository(storage);
     final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
     final backupService = EncryptedBackupService(
       exportService: _StaticExportService(
         authRepository: authRepository,
         transactionRepository: transactionRepository,
         budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
         hasValidUser: true,
         transactions: ['bad-transaction'],
       ),
@@ -178,6 +234,46 @@ void main() {
       authRepository: authRepository,
       transactionRepository: transactionRepository,
       budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
+    );
+
+    expect(
+      restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('rejects encrypted backup with malformed settings', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
+        hasValidUser: true,
+        settings: {'themeMode': 'blue'},
+      ),
+      randomBytes: (length) => List<int>.filled(length, 6),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
     );
 
     expect(
@@ -194,6 +290,7 @@ Future<void> _seedOriginalData(
   LocalAuthRepository authRepository,
   LocalTransactionRepository transactionRepository,
   LocalBudgetRepository budgetRepository,
+  ThemePreferenceRepository themeRepository,
 ) async {
   await authRepository.saveSession(
     email: 'akshay@example.com',
@@ -213,6 +310,7 @@ Future<void> _seedOriginalData(
   await budgetRepository.saveBudget(
     const BudgetState(monthlyLimit: 30000, categoryLimits: {'Food': 9000}),
   );
+  await themeRepository.saveThemeMode(ThemeMode.dark);
 }
 
 class _StaticExportService extends LocalDataExportService {
@@ -220,12 +318,15 @@ class _StaticExportService extends LocalDataExportService {
     required super.authRepository,
     required super.transactionRepository,
     required super.budgetRepository,
+    required super.themeRepository,
     this.hasValidUser = false,
     this.transactions = const [],
+    this.settings,
   });
 
   final bool hasValidUser;
   final List<Object?> transactions;
+  final Object? settings;
 
   @override
   String buildExportJson() {
@@ -237,6 +338,7 @@ class _StaticExportService extends LocalDataExportService {
           : {'email': 'akshay@example.com'},
       'transactions': transactions,
       'budget': {'monthlyLimit': 30000, 'categoryLimits': {}},
+      if (settings != null) 'settings': settings,
     });
   }
 }

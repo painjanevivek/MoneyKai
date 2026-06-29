@@ -251,6 +251,7 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(authControllerProvider);
       ref.invalidate(transactionControllerProvider);
       ref.invalidate(budgetControllerProvider);
+      ref.invalidate(themeModeControllerProvider);
 
       if (context.mounted) {
         final messenger = ScaffoldMessenger.of(context);
@@ -342,6 +343,7 @@ class SettingsScreen extends ConsumerWidget {
     await ref.read(authControllerProvider.notifier).signOut();
     ref.invalidate(transactionControllerProvider);
     ref.invalidate(budgetControllerProvider);
+    ref.invalidate(themeModeControllerProvider);
 
     if (context.mounted) {
       final messenger = ScaffoldMessenger.of(context);

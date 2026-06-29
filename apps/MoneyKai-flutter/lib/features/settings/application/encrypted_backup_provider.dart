@@ -5,6 +5,7 @@ import '../../budget/application/budget_controller.dart';
 import '../../transactions/application/transaction_controller.dart';
 import '../../../core/storage/local_storage_provider.dart';
 import 'local_data_export_provider.dart';
+import 'theme_mode_controller.dart';
 import '../data/encrypted_backup_restore_service.dart';
 import '../data/encrypted_backup_service.dart';
 
@@ -31,6 +32,9 @@ final encryptedBackupRestoreServiceProvider =
       final budgetRepository = await ref.watch(
         localBudgetRepositoryProvider.future,
       );
+      final themeRepository = await ref.watch(
+        themePreferenceRepositoryProvider.future,
+      );
 
       return EncryptedBackupRestoreService(
         backupService: backupService,
@@ -38,5 +42,6 @@ final encryptedBackupRestoreServiceProvider =
         authRepository: authRepository,
         transactionRepository: transactionRepository,
         budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
       );
     });

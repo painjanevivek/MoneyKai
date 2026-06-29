@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+
 import '../../../core/storage/local_storage_service.dart';
 import '../../auth/data/local_auth_repository.dart';
 import '../../budget/data/local_budget_repository.dart';
@@ -7,6 +9,7 @@ import '../../budget/domain/budget_state.dart';
 import '../../transactions/data/local_transaction_repository.dart';
 import '../../transactions/domain/money_transaction.dart';
 import 'encrypted_backup_service.dart';
+import 'theme_preference_repository.dart';
 
 class EncryptedBackupRestoreResult {
   const EncryptedBackupRestoreResult({
@@ -25,6 +28,7 @@ class EncryptedBackupRestoreService {
     required this.authRepository,
     required this.transactionRepository,
     required this.budgetRepository,
+    required this.themeRepository,
   });
 
   final EncryptedBackupService backupService;
@@ -32,6 +36,7 @@ class EncryptedBackupRestoreService {
   final LocalAuthRepository authRepository;
   final LocalTransactionRepository transactionRepository;
   final LocalBudgetRepository budgetRepository;
+  final ThemePreferenceRepository themeRepository;
 
   Future<EncryptedBackupRestoreResult> restoreEncryptedBackup({
     required String backupJson,
@@ -50,6 +55,7 @@ class EncryptedBackupRestoreService {
     final user = _readUser(decoded['user']);
     final transactions = _readTransactions(decoded['transactions']);
     final budget = _readBudget(decoded['budget']);
+    final themeMode = _readThemeMode(decoded['settings']);
 
     await storage.resetNamespace();
     await authRepository.saveSession(
@@ -58,6 +64,9 @@ class EncryptedBackupRestoreService {
     );
     await transactionRepository.saveTransactions(transactions);
     await budgetRepository.saveBudget(budget);
+    if (themeMode != null) {
+      await themeRepository.saveThemeMode(themeMode);
+    }
 
     return EncryptedBackupRestoreResult(
       transactionCount: transactions.length,
@@ -112,6 +121,25 @@ class EncryptedBackupRestoreService {
     } catch (_) {
       throw const FormatException('Backup has an invalid budget.');
     }
+  }
+
+  ThemeMode? _readThemeMode(Object? rawSettings) {
+    if (rawSettings == null) {
+      return null;
+    }
+
+    if (rawSettings is! Map<String, Object?>) {
+      throw const FormatException('Backup has invalid settings.');
+    }
+
+    final themeMode = rawSettings['themeMode'];
+    return switch (themeMode) {
+      null => null,
+      'system' => ThemeMode.system,
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => throw const FormatException('Backup has invalid settings.'),
+    };
   }
 }
 

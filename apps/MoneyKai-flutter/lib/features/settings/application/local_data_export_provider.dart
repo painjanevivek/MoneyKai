@@ -4,6 +4,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../budget/application/budget_controller.dart';
 import '../../transactions/application/transaction_controller.dart';
 import '../data/local_data_export_service.dart';
+import 'theme_mode_controller.dart';
 
 final localDataExportServiceProvider = FutureProvider<LocalDataExportService>((
   ref,
@@ -15,10 +16,14 @@ final localDataExportServiceProvider = FutureProvider<LocalDataExportService>((
   final budgetRepository = await ref.watch(
     localBudgetRepositoryProvider.future,
   );
+  final themeRepository = await ref.watch(
+    themePreferenceRepositoryProvider.future,
+  );
 
   return LocalDataExportService(
     authRepository: authRepository,
     transactionRepository: transactionRepository,
     budgetRepository: budgetRepository,
+    themeRepository: themeRepository,
   );
 });
