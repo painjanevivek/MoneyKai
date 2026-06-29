@@ -74,15 +74,24 @@ adb install -r D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\
 
 ## Device and emulator status
 
-`flutter devices` currently shows no connected Android phone or running Android emulator. It shows Windows desktop, Chrome, and Edge.
-
 `flutter emulators` shows one Android emulator:
 
 ```text
 MoneyKai_API_36
 ```
 
-To run the app on Android:
+Latest emulator smoke:
+
+| Field | Value |
+| --- | --- |
+| Date | `2026-06-29` |
+| Device | `emulator-5554` from `MoneyKai_API_36` |
+| Install | Fresh `adb uninstall com.moneykai.mobile` followed by `adb install -r app-debug.apk` |
+| Launch | `adb shell am start -n com.moneykai.mobile/.MainActivity` |
+| Result | App process started and onboarding screen rendered |
+| Screenshot | `.codex-artifacts\moneykai-flutter-emulator-smoke.png` |
+
+To run the app interactively on Android:
 
 ```powershell
 flutter emulators --launch MoneyKai_API_36
@@ -142,7 +151,7 @@ No Play-ready release AAB has been produced in this phase because no upload keys
 ## Remaining Android release work
 
 - Replace generated Flutter launch screen assets with MoneyKai production artwork.
-- Launch `MoneyKai_API_36` or connect a physical Android device and run `flutter run`.
+- Run full manual workflow QA on `MoneyKai_API_36` or a physical Android device.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with non-debug signing.
 - Capture SHA-256 and signer certificate for the exact release artifacts.

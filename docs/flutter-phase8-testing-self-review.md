@@ -125,11 +125,15 @@ Remaining:
 - Local data reset does not yet clear every possible future key by namespace; it clears current transaction data and restores budget defaults.
 - No encrypted backup/export exists yet.
 
-## Manual QA still required
+## Manual QA status
 
-On an Android emulator or physical device:
+Completed on `MoneyKai_API_36`:
 
 - Fresh install.
+- App launch to onboarding screen.
+
+Still required on an Android emulator or physical device:
+
 - Local account creation.
 - App restart session restore.
 - Add income transaction.
@@ -152,6 +156,6 @@ On macOS/Xcode later:
 ## Known limitations
 
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
-- No Android emulator or physical Android runtime smoke was completed in this phase.
+- Android emulator launch smoke is complete, but full Android workflow QA is still pending.
 - No iOS build was possible on Windows.
 - Backend sync, real auth, encrypted export/backup, production launch assets, and store submission remain future work.
