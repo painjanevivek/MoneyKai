@@ -9,9 +9,25 @@ class LocalUser {
   }
 
   static LocalUser fromJson(Map<String, Object?> json) {
-    return LocalUser(
-      email: json['email'] as String,
-      displayName: json['displayName'] as String,
-    );
+    final email = json['email'];
+    final displayName = json['displayName'];
+    final trimmedEmail = email is String ? email.trim() : null;
+    final trimmedDisplayName = displayName is String
+        ? displayName.trim()
+        : null;
+
+    if (trimmedEmail == null ||
+        trimmedDisplayName == null ||
+        trimmedDisplayName.isEmpty ||
+        !_hasValidEmailShape(trimmedEmail)) {
+      throw const FormatException('Local user has invalid fields.');
+    }
+
+    return LocalUser(email: trimmedEmail, displayName: trimmedDisplayName);
   }
+}
+
+bool _hasValidEmailShape(String email) {
+  final parts = email.split('@');
+  return parts.length == 2 && parts.first.isNotEmpty && parts.last.isNotEmpty;
 }

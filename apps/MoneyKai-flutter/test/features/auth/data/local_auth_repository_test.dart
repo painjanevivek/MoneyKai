@@ -77,4 +77,14 @@ void main() {
 
     expect(repository.readSession().isAuthenticated, isFalse);
   });
+
+  test('returns signed-out state for invalid stored profile fields', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': '{"email":"@","displayName":"Akshay"}',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalAuthRepository(LocalStorageService(preferences));
+
+    expect(repository.readSession().isAuthenticated, isFalse);
+  });
 }

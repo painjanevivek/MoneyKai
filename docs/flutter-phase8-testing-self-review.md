@@ -35,7 +35,7 @@ Current result:
 
 Unit/repository tests:
 
-- Local auth session save, restore, clear, profile field trimming, invalid-field rejection, and malformed-session fallback.
+- Local auth session save, restore, clear, profile field trimming, invalid-field rejection, malformed-session fallback, and invalid stored-profile fallback.
 - Local transaction persistence in newest-first order, malformed-payload fallback, malformed-entry/amount skipping, and non-finite amount rejection.
 - Local budget persistence, reset, malformed-payload fallback, invalid stored-limit fallback, and non-finite limit rejection.
 - Budget progress calculation by current month and category.
@@ -67,7 +67,7 @@ Widget tests:
 
 Implemented:
 
-- Local profile/session boundary with trimmed profile fields plus UI and repository-level email-shape validation.
+- Local profile/session boundary with trimmed profile fields plus UI, repository-level, and stored-session email-shape validation.
 - Splash/onboarding entry.
 - Dashboard using local transaction, budget, and category breakdown data.
 - Add transaction with validation.
@@ -84,7 +84,7 @@ Implemented:
 
 - Local persistence is simple and deterministic through `shared_preferences`.
 - Local storage initializes `moneykai.storageSchemaVersion` and has a `moneykai.*` namespace reset boundary for device data.
-- JSON parsing falls back to signed-out auth, default budget, and valid transaction entries when stored local payloads are malformed.
+- JSON parsing falls back to signed-out auth, default budget, and valid transaction entries when stored local payloads are malformed or contain invalid local profile data.
 - Transaction and budget reads reject invalid stored money values, and repositories reject non-finite money values before local JSON persistence.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
 - Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a bounded local `moneykai.errorReports` history.
