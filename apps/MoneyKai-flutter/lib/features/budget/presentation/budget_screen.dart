@@ -70,6 +70,9 @@ class BudgetScreen extends ConsumerWidget {
                     category: entry.key,
                     limit: entry.value,
                     spent: progress.categorySpent[entry.key] ?? 0,
+                    isOverBudget: progress.isCategoryOverBudget(entry.key),
+                    overage: progress.categoryOverage(entry.key),
+                    ratio: progress.categoryRatio(entry.key),
                     onSave: (value) => ref
                         .read(budgetControllerProvider.notifier)
                         .updateCategoryLimit(entry.key, value),
@@ -94,17 +97,24 @@ class _CategoryBudgetTile extends StatelessWidget {
     required this.category,
     required this.limit,
     required this.spent,
+    required this.isOverBudget,
+    required this.overage,
+    required this.ratio,
     required this.onSave,
   });
 
   final String category;
   final double limit;
   final double spent;
+  final bool isOverBudget;
+  final double overage;
+  final double ratio;
   final ValueChanged<double> onSave;
 
   @override
   Widget build(BuildContext context) {
-    final ratio = limit <= 0 ? 0.0 : (spent / limit).clamp(0.0, 1.0);
+    final colorScheme = Theme.of(context).colorScheme;
+    final color = isOverBudget ? colorScheme.error : colorScheme.primary;
 
     return Card(
       child: Padding(
@@ -115,11 +125,17 @@ class _CategoryBudgetTile extends StatelessWidget {
             _BudgetLimitTile(
               title: category,
               value: limit,
-              supportingText: MoneyFormatter().format(spent),
+              supportingText: isOverBudget
+                  ? 'Over by ${MoneyFormatter().format(overage)}'
+                  : '${MoneyFormatter().format(spent)} used',
               onSave: onSave,
             ),
             const SizedBox(height: AppSpacing.sm),
-            LinearProgressIndicator(value: ratio),
+            LinearProgressIndicator(
+              value: ratio,
+              color: color,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+            ),
           ],
         ),
       ),

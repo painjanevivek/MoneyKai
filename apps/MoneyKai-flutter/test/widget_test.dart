@@ -257,6 +257,52 @@ void main() {
     expect(find.text('Net Rs 350'), findsOneWidget);
   });
 
+  testWidgets('budget shows category over-budget state', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      'moneykai.budget': jsonEncode({
+        'monthlyLimit': 2000,
+        'categoryLimits': {'Food': 600, 'Bills': 900},
+      }),
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'food-overage',
+          'type': 'expense',
+          'amount': 750,
+          'date': DateTime.now().toIso8601String(),
+          'category': 'Food',
+          'paymentMethod': 'UPI',
+          'description': 'Groceries',
+        },
+        {
+          'id': 'bills-under',
+          'type': 'expense',
+          'amount': 200,
+          'date': DateTime.now().toIso8601String(),
+          'category': 'Bills',
+          'paymentMethod': 'Card',
+          'description': 'Utilities',
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Budget'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Food'), findsOneWidget);
+    expect(find.text('Over by Rs 150'), findsOneWidget);
+    expect(find.text('Bills'), findsOneWidget);
+    expect(find.text('Rs 200 used'), findsOneWidget);
+  });
+
   testWidgets('settings export and reset actions respond', (tester) async {
     SharedPreferences.setMockInitialValues({});
     String? exportedText;

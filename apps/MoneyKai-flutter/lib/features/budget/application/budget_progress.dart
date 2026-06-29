@@ -19,6 +19,26 @@ class BudgetProgress {
       monthlyLimit <= 0 ? 0 : (monthlySpent / monthlyLimit).clamp(0, 1);
 
   bool get isOverBudget => monthlySpent > monthlyLimit;
+
+  double categoryRatio(String category) {
+    final limit = categoryLimits[category] ?? 0;
+    final spent = categorySpent[category] ?? 0;
+    return limit <= 0 ? 0 : (spent / limit).clamp(0, 1);
+  }
+
+  bool isCategoryOverBudget(String category) {
+    final limit = categoryLimits[category] ?? 0;
+    final spent = categorySpent[category] ?? 0;
+    return limit > 0 && spent > limit;
+  }
+
+  double categoryOverage(String category) {
+    if (!isCategoryOverBudget(category)) {
+      return 0;
+    }
+
+    return (categorySpent[category] ?? 0) - (categoryLimits[category] ?? 0);
+  }
 }
 
 BudgetProgress calculateBudgetProgress({

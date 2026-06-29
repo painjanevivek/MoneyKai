@@ -21,7 +21,7 @@ Implemented MVP:
 - Dashboard with balance, income, expense, record count, budget progress, category breakdown preview, and recent activity.
 - Add and edit transaction flows for local income and expenses.
 - Transactions list with search, income/expense filters, category filter, month grouping, edit, and delete.
-- Budget screen with monthly and category limits.
+- Budget screen with monthly/category limits and over-budget states.
 - Insights screen with local income, expense, savings rate, monthly trend, and top spending categories.
 - Settings screen with profile display, privacy link, local JSON export to clipboard, encrypted backup export/restore, namespace reset, and sign out.
 - Privacy/security screen describing the local-only MVP boundary.
