@@ -98,10 +98,10 @@ class EncryptedBackupService {
       throw const FormatException('Malformed MoneyKai backup payload.');
     }
 
-    final salt = base64Decode('${encryption['salt']}');
-    final nonce = base64Decode('${encryption['nonce']}');
-    final mac = base64Decode('${encryption['mac']}');
-    final cipherText = base64Decode(payload);
+    final salt = _readBase64Field(encryption, 'salt');
+    final nonce = _readBase64Field(encryption, 'nonce');
+    final mac = _readBase64Field(encryption, 'mac');
+    final cipherText = _decodeBase64(payload);
     final secretKey = await _deriveKey(password.trim(), salt);
     final clearBytes = await _cipher.decrypt(
       SecretBox(cipherText, nonce: nonce, mac: Mac(mac)),
@@ -116,6 +116,23 @@ class EncryptedBackupService {
       secretKey: SecretKey(utf8.encode(password)),
       nonce: salt,
     );
+  }
+
+  static List<int> _readBase64Field(Map<String, Object?> json, String key) {
+    final value = json[key];
+    if (value is! String) {
+      throw const FormatException('Malformed MoneyKai backup payload.');
+    }
+
+    return _decodeBase64(value);
+  }
+
+  static List<int> _decodeBase64(String value) {
+    try {
+      return base64Decode(value);
+    } on FormatException {
+      throw const FormatException('Malformed MoneyKai backup payload.');
+    }
   }
 
   static List<int> _secureRandomBytes(int length) {

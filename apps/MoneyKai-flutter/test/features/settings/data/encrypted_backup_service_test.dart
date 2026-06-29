@@ -81,6 +81,45 @@ void main() {
     );
   });
 
+  test('rejects malformed encrypted backup metadata', () async {
+    final exportService = await _seedExportService();
+    final backupService = EncryptedBackupService(exportService: exportService);
+
+    expect(
+      backupService.decryptBackup(
+        backupJson: jsonEncode({
+          'kind': 'moneykai-encrypted-backup',
+          'encryption': {'salt': 'bad'},
+          'payload': 'bad',
+        }),
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('rejects encrypted backup with invalid base64 payload', () async {
+    final exportService = await _seedExportService();
+    final backupService = EncryptedBackupService(
+      exportService: exportService,
+      now: () => DateTime.utc(2026, 6, 29, 10, 15),
+      randomBytes: (length) => List<int>.filled(length, 8),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final decoded = jsonDecode(backup.content) as Map<String, Object?>;
+    decoded['payload'] = '#not-base64';
+
+    expect(
+      backupService.decryptBackup(
+        backupJson: jsonEncode(decoded),
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('fails to decrypt with the wrong password', () async {
     final exportService = await _seedExportService();
     final backupService = EncryptedBackupService(
