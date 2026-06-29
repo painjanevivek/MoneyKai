@@ -33,6 +33,14 @@ Source SHA-256: 1190F049F658A20CF5FA36FF314A4E4ED9CC6EEEE17C1001D7DB5D0426776292
 xxxhdpi SHA-256: 3A2EB54675B564E3EB54745FE5EFA7EF74AF72A562E5BDB6A8F236B07BAD0C13
 ```
 
+Launch screen:
+
+```text
+Source: apps\MoneyKai-mobile\assets\images\icon.png
+Android image: apps\MoneyKai-flutter\android\app\src\main\res\drawable-nodpi\launch_image.png
+Android image SHA-256: 18A4F7F1A3D5250719A75C47D582BA63878B40F0320E7DE9E31EA5DC5BE7909C
+```
+
 ## Verification commands
 
 Run from `apps/MoneyKai-flutter` with Flutter on `PATH`:
@@ -62,9 +70,9 @@ Artifact metadata:
 
 | Field | Value |
 | --- | --- |
-| Size | `151827685` bytes |
-| SHA-256 | `A74DFB561739EACAFEA92305D443ED371EE148C22879DC7F6C686975E78E62D9` |
-| Built | `2026-06-29 10:56:28` local time |
+| Size | `152144647` bytes |
+| SHA-256 | `631944E50F01A228491C9C125A088624306A98C86B62A43E6E8E07651C742485` |
+| Built | `2026-06-29 11:07:57` local time |
 
 Install for direct Android testing:
 
@@ -152,7 +160,6 @@ No Play-ready release AAB has been produced in this phase because no upload keys
 
 ## Remaining Android release work
 
-- Replace generated Flutter launch screen assets with MoneyKai production artwork.
 - Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: income entry, search/filter, budget value edits, export placeholder, and text-scale/accessibility checks.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with non-debug signing.

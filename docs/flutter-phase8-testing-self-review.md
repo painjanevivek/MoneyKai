@@ -98,10 +98,10 @@ Remaining:
 - Responsive widget tests cover compact and larger viewports.
 - Flutter Material icons avoid the old React Native icon-font `NO GLYPH` problem.
 - Android and iOS launcher icon assets now use the existing MoneyKai production mark.
+- Android and iOS native launch images now use the existing MoneyKai production mark.
 
 Remaining:
 
-- Launch screen assets are still generated Flutter placeholders.
 - No screenshot-based visual review has been captured for the Flutter UI yet.
 - Dark theme exists but has not had full visual QA.
 
@@ -170,4 +170,4 @@ On macOS/Xcode later:
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
 - Android emulator scoped manual QA is partially complete, but income/search/budget-edit/accessibility/physical-device QA is still pending.
 - No iOS build was possible on Windows.
-- Backend sync, real auth, encrypted export/backup, production launch assets, and store submission remain future work.
+- Backend sync, real auth, encrypted export/backup, and store submission remain future work.
