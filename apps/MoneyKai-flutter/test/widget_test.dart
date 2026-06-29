@@ -60,6 +60,20 @@ void main() {
 
     expect(find.text('Enter a valid email'), findsOneWidget);
     expect(find.text('Dashboard'), findsNothing);
+
+    await tester.enterText(
+      find.bySemanticsLabel('Email'),
+      'akshay@ example.com',
+    );
+    await tester.tap(find.text('Create local profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a valid email'), findsOneWidget);
+    expect(
+      find.text('Could not save the local session. Try again.'),
+      findsNothing,
+    );
+    expect(find.text('Dashboard'), findsNothing);
   });
 
   testWidgets('adds, edits, and deletes a local transaction', (tester) async {

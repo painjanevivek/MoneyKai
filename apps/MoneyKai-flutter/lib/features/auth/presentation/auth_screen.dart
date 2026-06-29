@@ -6,6 +6,7 @@ import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/screen_scaffold.dart';
 import '../../../theme/app_tokens.dart';
 import '../application/auth_controller.dart';
+import '../domain/local_user.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -85,13 +86,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       return requiredError;
     }
 
-    final email = value!.trim();
-    final parts = email.split('@');
-    final hasSingleAt = parts.length == 2;
-    final hasLocalPart = hasSingleAt && parts.first.isNotEmpty;
-    final hasDomain = hasSingleAt && parts.last.isNotEmpty;
-
-    return hasLocalPart && hasDomain ? null : 'Enter a valid email';
+    return hasValidLocalEmailShape(value!.trim())
+        ? null
+        : 'Enter a valid email';
   }
 
   Future<void> _submit() async {

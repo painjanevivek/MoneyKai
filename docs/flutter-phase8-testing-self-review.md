@@ -50,7 +50,7 @@ Unit/repository tests:
 Widget tests:
 
 - Splash opens local profile flow.
-- Local profile rejects invalid email before creating a session.
+- Local profile rejects invalid and whitespace-containing email before creating a session.
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Dashboard category breakdown preview opens Insights.
