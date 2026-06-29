@@ -107,6 +107,10 @@ class EncryptedBackupService {
     final nonce = _readBase64Field(encryption, 'nonce', length: nonceLength);
     final mac = _readBase64Field(encryption, 'mac', length: macLength);
     final cipherText = _decodeBase64(payload);
+    if (cipherText.isEmpty) {
+      throw const FormatException('Malformed MoneyKai backup payload.');
+    }
+
     final secretKey = await _deriveKey(password.trim(), salt);
     final clearBytes = await _cipher.decrypt(
       SecretBox(cipherText, nonce: nonce, mac: Mac(mac)),
