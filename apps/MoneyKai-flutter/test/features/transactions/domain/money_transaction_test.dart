@@ -3,15 +3,15 @@ import 'package:moneykai/features/transactions/domain/money_transaction.dart';
 import 'package:moneykai/features/transactions/domain/transaction_type.dart';
 
 void main() {
-  test('serializes a valid transaction', () {
+  test('serializes a valid transaction with trimmed fields', () {
     final transaction = MoneyTransaction(
-      id: 'txn-1',
+      id: ' txn-1 ',
       type: TransactionType.expense,
       amount: 250,
       date: DateTime.utc(2026, 6, 29),
-      category: 'Food',
-      paymentMethod: 'UPI',
-      description: 'Lunch',
+      category: ' Food ',
+      paymentMethod: ' UPI ',
+      description: ' Lunch ',
     );
 
     expect(transaction.toJson(), {
@@ -32,6 +32,20 @@ void main() {
       amount: double.nan,
       date: DateTime.utc(2026, 6, 29),
       category: 'Food',
+      paymentMethod: 'UPI',
+      description: 'Lunch',
+    );
+
+    expect(transaction.toJson, throwsA(isA<FormatException>()));
+  });
+
+  test('rejects blank required fields during serialization', () {
+    final transaction = MoneyTransaction(
+      id: 'txn-1',
+      type: TransactionType.expense,
+      amount: 250,
+      date: DateTime.utc(2026, 6, 29),
+      category: ' ',
       paymentMethod: 'UPI',
       description: 'Lunch',
     );
