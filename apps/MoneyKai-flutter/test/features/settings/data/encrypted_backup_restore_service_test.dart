@@ -256,6 +256,60 @@ void main() {
   });
 
   test(
+    'rejects unsupported backup contents without clearing local data',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final storage = LocalStorageService(
+        await SharedPreferences.getInstance(),
+      );
+      final authRepository = LocalAuthRepository(storage);
+      final transactionRepository = LocalTransactionRepository(storage);
+      final budgetRepository = LocalBudgetRepository(storage);
+      final themeRepository = ThemePreferenceRepository(storage);
+      final backupService = EncryptedBackupService(
+        exportService: _StaticExportService(
+          authRepository: authRepository,
+          transactionRepository: transactionRepository,
+          budgetRepository: budgetRepository,
+          themeRepository: themeRepository,
+          hasValidUser: true,
+          formatVersion: LocalDataExportService.exportFormatVersion + 1,
+        ),
+        randomBytes: (length) => List<int>.filled(length, 13),
+      );
+      final backup = await backupService.buildEncryptedBackup(
+        password: 'correct horse battery staple',
+      );
+      await _seedOriginalData(
+        authRepository,
+        transactionRepository,
+        budgetRepository,
+        themeRepository,
+      );
+      final restoreService = EncryptedBackupRestoreService(
+        backupService: backupService,
+        storage: storage,
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
+      );
+
+      expect(
+        restoreService.restoreEncryptedBackup(
+          backupJson: backup.content,
+          password: 'correct horse battery staple',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+      expect(authRepository.readSession().user?.email, 'akshay@example.com');
+      expect(transactionRepository.readTransactions(), hasLength(1));
+      expect(budgetRepository.readBudget().monthlyLimit, 30000);
+      expect(themeRepository.readThemeMode(), ThemeMode.dark);
+    },
+  );
+
+  test(
     'rejects backup user email whitespace without clearing local data',
     () async {
       SharedPreferences.setMockInitialValues({});
@@ -516,6 +570,7 @@ class _StaticExportService extends LocalDataExportService {
     this.transactions = const [],
     this.budget = const {'monthlyLimit': 30000, 'categoryLimits': {}},
     this.settings,
+    this.formatVersion = LocalDataExportService.exportFormatVersion,
   });
 
   final bool hasValidUser;
@@ -523,11 +578,12 @@ class _StaticExportService extends LocalDataExportService {
   final List<Object?> transactions;
   final Object? budget;
   final Object? settings;
+  final int formatVersion;
 
   @override
   String buildExportJson() {
     return jsonEncode({
-      'formatVersion': LocalDataExportService.exportFormatVersion,
+      'formatVersion': formatVersion,
       'source': 'moneykai-local-device',
       'user':
           user ??

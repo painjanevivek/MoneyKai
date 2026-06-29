@@ -9,6 +9,7 @@ import '../../budget/domain/budget_state.dart';
 import '../../transactions/data/local_transaction_repository.dart';
 import '../../transactions/domain/money_transaction.dart';
 import 'encrypted_backup_service.dart';
+import 'local_data_export_service.dart';
 import 'theme_preference_repository.dart';
 
 class EncryptedBackupRestoreResult {
@@ -48,6 +49,8 @@ class EncryptedBackupRestoreService {
     );
     final decoded = jsonDecode(clearJson);
     if (decoded is! Map<String, Object?> ||
+        decoded['formatVersion'] !=
+            LocalDataExportService.exportFormatVersion ||
         decoded['source'] != 'moneykai-local-device') {
       throw const FormatException('Unsupported MoneyKai backup contents.');
     }

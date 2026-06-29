@@ -44,7 +44,7 @@ Unit/repository tests:
 - Theme preference persistence, stored-value trimming, and unsupported-value fallback to system theme mode.
 - Local data export JSON requires a local profile and includes user, transactions, budget, theme settings, source, format version, and timestamp.
 - Encrypted backup export requires a local profile and produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords, unsupported encryption metadata, malformed backup metadata, invalid base64 payloads, invalid encryption field lengths, empty encrypted payloads, and fails decryption with the wrong password.
-- Encrypted backup restore validates decrypted contents before reset, rejects wrong passwords/malformed payloads/invalid users/email whitespace/invalid money values, preserves existing local data on invalid-user restore failure, resets only the MoneyKai namespace for valid restores, restores user, transactions, and budget, and restores theme settings when present.
+- Encrypted backup restore validates decrypted contents before reset, rejects wrong passwords/unsupported versions/malformed payloads/invalid users/email whitespace/invalid money values, preserves existing local data on invalid restore failure, resets only the MoneyKai namespace for valid restores, restores user, transactions, and budget, and restores theme settings when present.
 
 Widget tests:
 
@@ -153,7 +153,7 @@ Remaining:
 - Privacy screen states the current local-only data boundary, including plaintext export contents, encrypted backup flow, and local diagnostics.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
 - Local diagnostics stay on-device and can be cleared from Settings.
-- Encrypted backup restore validates the profile boundary before clearing local data, so malformed backup users, including emails with whitespace, cannot erase the current local session.
+- Encrypted backup restore validates the clear payload version and profile boundary before clearing local data, so unsupported or malformed backups cannot erase the current local session.
 
 Remaining:
 
