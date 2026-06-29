@@ -96,6 +96,47 @@ function Get-DeviceProp {
     return (($value -join "`n").Trim())
 }
 
+function Assert-NonEmptyFile {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "$Description was not created: $Path"
+    }
+
+    $file = Get-Item -LiteralPath $Path
+    if ($file.Length -le 0) {
+        throw "$Description is empty: $Path"
+    }
+}
+
+function Assert-PngFile {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    Assert-NonEmptyFile -Path $Path -Description "Screenshot PNG"
+
+    $expectedSignature = [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+    $buffer = New-Object byte[] $expectedSignature.Length
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $bytesRead = $stream.Read($buffer, 0, $buffer.Length)
+    } finally {
+        $stream.Dispose()
+    }
+
+    if ($bytesRead -ne $expectedSignature.Length) {
+        throw "Screenshot PNG is too short: $Path"
+    }
+
+    for ($i = 0; $i -lt $expectedSignature.Length; $i++) {
+        if ($buffer[$i] -ne $expectedSignature[$i]) {
+            throw "Screenshot is not a valid PNG file: $Path"
+        }
+    }
+}
+
 $script:Adb = Resolve-Adb
 $devices = @(Get-ConnectedDevices)
 
@@ -164,6 +205,10 @@ Start-Sleep -Seconds 3
 Invoke-Adb shell uiautomator dump /sdcard/moneykai-runtime-window.xml | Out-Null
 Invoke-Adb pull /sdcard/moneykai-runtime-window.xml $windowPath | Out-Null
 Invoke-AdbBinaryOutput -OutputPath $screenshotPath exec-out screencap -p
+Assert-NonEmptyFile -Path $windowPath -Description "Window hierarchy"
+Assert-PngFile -Path $screenshotPath
+Assert-NonEmptyFile -Path $launchPath -Description "Launch timing"
+Assert-NonEmptyFile -Path $propsPath -Description "Device properties"
 
 $summary = @(
     "# MoneyKai Android Runtime QA Evidence",
