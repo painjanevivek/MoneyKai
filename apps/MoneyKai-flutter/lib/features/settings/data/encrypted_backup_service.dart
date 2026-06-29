@@ -98,6 +98,8 @@ class EncryptedBackupService {
       throw const FormatException('Malformed MoneyKai backup payload.');
     }
 
+    _validateBackupMetadata(decoded, encryption);
+
     final salt = _readBase64Field(encryption, 'salt');
     final nonce = _readBase64Field(encryption, 'nonce');
     final mac = _readBase64Field(encryption, 'mac');
@@ -109,6 +111,18 @@ class EncryptedBackupService {
     );
 
     return utf8.decode(clearBytes);
+  }
+
+  static void _validateBackupMetadata(
+    Map<String, Object?> root,
+    Map<String, Object?> encryption,
+  ) {
+    if (root['formatVersion'] != backupFormatVersion ||
+        encryption['algorithm'] != 'AES-256-GCM' ||
+        encryption['kdf'] != 'PBKDF2-HMAC-SHA256' ||
+        encryption['iterations'] != kdfIterations) {
+      throw const FormatException('Unsupported MoneyKai backup payload.');
+    }
   }
 
   Future<SecretKey> _deriveKey(String password, List<int> salt) {

@@ -42,7 +42,7 @@ Unit/repository tests:
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, newest-first order, bounded history, and clear action.
 - Local data export JSON requires a local profile and includes user, transactions, budget, theme settings, source, format version, and timestamp.
-- Encrypted backup export requires a local profile and produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords, malformed backup metadata, invalid base64 payloads, and fails decryption with the wrong password.
+- Encrypted backup export requires a local profile and produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords, unsupported encryption metadata, malformed backup metadata, invalid base64 payloads, and fails decryption with the wrong password.
 - Encrypted backup restore validates decrypted contents before reset, rejects wrong passwords/malformed payloads/invalid users/invalid money values, preserves existing local data on invalid-user restore failure, resets only the MoneyKai namespace for valid restores, restores user, transactions, and budget, and restores theme settings when present.
 
 Widget tests:
@@ -147,7 +147,7 @@ Remaining:
 - Local export copies a plaintext JSON snapshot to the clipboard without adding storage or sharing permissions.
 - Encrypted backup export creates a password-protected JSON file with AES-256-GCM and PBKDF2-HMAC-SHA256 through the platform share sheet.
 - Local export and encrypted backup creation require a valid local profile, preventing unusable signed-out backup payloads.
-- Encrypted backup decrypt validates metadata and base64 fields before decryption so malformed files fail through controlled format errors.
+- Encrypted backup decrypt validates format version, algorithm, KDF, iteration count, metadata, and base64 fields before decryption so unsupported or malformed files fail through controlled format errors.
 - Encrypted backup restore decrypts a selected backup file and restores the local profile, transactions, budget, and saved theme setting after confirmation through the password prompt.
 - Privacy screen states the current local-only data boundary, including plaintext export contents, encrypted backup flow, and local diagnostics.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
