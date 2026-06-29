@@ -52,7 +52,7 @@ Implemented:
 - Dashboard using local transaction and budget data.
 - Add transaction with validation.
 - Transactions list with search, income/expense filter, and delete.
-- Budget monthly/category limits with persisted local settings.
+- Budget monthly/category limits with persisted local settings and tap-to-replace editing.
 - Insights from local transaction data.
 - Settings profile display, privacy link, export placeholder, reset confirmation, and sign out.
 - Privacy/security screen explaining local-only MVP and permission boundaries.
@@ -100,6 +100,7 @@ Remaining:
 - Android and iOS launcher icon assets now use the existing MoneyKai production mark.
 - Android and iOS native launch images now use the existing MoneyKai production mark.
 - Bottom navigation labels are clamped to the standard navigation text scale so they do not wrap or clip at 1.3 Android font scale.
+- Budget limit fields select the current value on tap so emulator and device edits replace instead of accidentally appending to existing numbers.
 
 Remaining:
 
@@ -140,6 +141,7 @@ Completed on `MoneyKai_API_36`:
 - Search/filter transactions.
 - Delete transaction.
 - Budget progress update.
+- Update monthly and category budgets.
 - Verify export placeholder snackbar on device.
 - Run 1.3 font-scale visual QA for the Settings screen.
 - Reset local data.
@@ -160,10 +162,12 @@ Evidence artifacts captured locally:
 - `.codex-artifacts\moneykai-window-qa2-search-salary.xml`
 - `.codex-artifacts\moneykai-window-qa2-export-placeholder.xml`
 - `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`
+- `.codex-artifacts\moneykai-window-qa3-budget-monthly-edit.xml`
+- `.codex-artifacts\moneykai-window-qa3-budget-category-edit.xml`
+- `.codex-artifacts\moneykai-window-qa3-budget-after-restart.xml`
 
 Still required on an Android emulator or physical device:
 
-- Update monthly and category budgets.
 - Run screen reader and focus-order QA.
 - Run physical-device performance and cold-start checks.
 
@@ -177,6 +181,6 @@ On macOS/Xcode later:
 ## Known limitations
 
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
-- Android emulator scoped manual QA is partially complete, but budget-edit/screen-reader/focus-order/physical-device QA is still pending.
+- Android emulator scoped manual QA is partially complete, but screen-reader/focus-order/physical-device QA is still pending.
 - No iOS build was possible on Windows.
 - Backend sync, real auth, encrypted export/backup, and store submission remain future work.

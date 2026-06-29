@@ -176,6 +176,9 @@ class _BudgetLimitTileState extends State<_BudgetLimitTile> {
           child: TextField(
             controller: _controller,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            textInputAction: TextInputAction.done,
+            onTap: _selectAll,
+            onSubmitted: (_) => _save(),
             decoration: InputDecoration(
               labelText: widget.title,
               helperText: widget.supportingText,
@@ -189,6 +192,13 @@ class _BudgetLimitTileState extends State<_BudgetLimitTile> {
           icon: const Icon(Icons.check),
         ),
       ],
+    );
+  }
+
+  void _selectAll() {
+    _controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _controller.text.length,
     );
   }
 
