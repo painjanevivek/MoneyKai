@@ -11,6 +11,9 @@ $releaseApk = Join-Path $appRoot "build\app\outputs\flutter-apk\app-release.apk"
 $releaseAab = Join-Path $appRoot "build\app\outputs\bundle\release\app-release.aab"
 $pubspecPath = Join-Path $appRoot "pubspec.yaml"
 $androidBuildFile = Join-Path $appRoot "android\app\build.gradle.kts"
+$androidManifestPath = Join-Path $appRoot "android\app\src\main\AndroidManifest.xml"
+$backupRulesPath = Join-Path $appRoot "android\app\src\main\res\xml\backup_rules.xml"
+$dataExtractionRulesPath = Join-Path $appRoot "android\app\src\main\res\xml\data_extraction_rules.xml"
 
 $restrictedPermissions = @(
     "android.permission.READ_SMS",
@@ -87,6 +90,64 @@ function Assert-Artifact {
     if (-not (Test-Path -LiteralPath $Path)) {
         throw "Missing Android artifact: $Path"
     }
+}
+
+function Assert-SourceAndroidBackupHardening {
+    if (-not (Test-Path -LiteralPath $androidManifestPath)) {
+        throw "Missing Android manifest: $androidManifestPath"
+    }
+
+    if (-not (Test-Path -LiteralPath $backupRulesPath)) {
+        throw "Missing Android backup rules: $backupRulesPath"
+    }
+
+    if (-not (Test-Path -LiteralPath $dataExtractionRulesPath)) {
+        throw "Missing Android data extraction rules: $dataExtractionRulesPath"
+    }
+
+    [xml]$manifest = Get-Content -LiteralPath $androidManifestPath -Raw
+    $application = $manifest.manifest.application
+    if ($null -eq $application) {
+        throw "AndroidManifest.xml is missing an application element."
+    }
+
+    $androidNamespace = "http://schemas.android.com/apk/res/android"
+    if ($application.GetAttribute("allowBackup", $androidNamespace) -ne "false") {
+        throw "AndroidManifest.xml must set android:allowBackup to false."
+    }
+
+    if ($application.GetAttribute("fullBackupContent", $androidNamespace) -ne "@xml/backup_rules") {
+        throw "AndroidManifest.xml must point android:fullBackupContent to @xml/backup_rules."
+    }
+
+    if ($application.GetAttribute("dataExtractionRules", $androidNamespace) -ne "@xml/data_extraction_rules") {
+        throw "AndroidManifest.xml must point android:dataExtractionRules to @xml/data_extraction_rules."
+    }
+
+    [xml]$backupRules = Get-Content -LiteralPath $backupRulesPath -Raw
+    $backupExclude = @($backupRules."full-backup-content".exclude | Where-Object {
+        $_.domain -eq "root" -and $_.path -eq "."
+    })
+    if ($backupExclude.Count -ne 1) {
+        throw "backup_rules.xml must exclude the root domain."
+    }
+
+    [xml]$dataExtractionRules = Get-Content -LiteralPath $dataExtractionRulesPath -Raw
+    $cloudExclude = @($dataExtractionRules."data-extraction-rules"."cloud-backup".exclude | Where-Object {
+        $_.domain -eq "root" -and $_.path -eq "."
+    })
+    if ($cloudExclude.Count -ne 1) {
+        throw "data_extraction_rules.xml must exclude root cloud backup."
+    }
+
+    $transferExclude = @($dataExtractionRules."data-extraction-rules"."device-transfer".exclude | Where-Object {
+        $_.domain -eq "root" -and $_.path -eq "."
+    })
+    if ($transferExclude.Count -ne 1) {
+        throw "data_extraction_rules.xml must exclude root device transfer."
+    }
+
+    Write-Host "Android source backup hardening audit: passed"
 }
 
 function Write-ArtifactMetadata {
@@ -242,6 +303,22 @@ function Assert-ReleaseManifestHardening {
 
     if ($joinedManifest -match "usesCleartextTraffic\(.*\)=true") {
         throw "Release APK manifest allows cleartext traffic."
+    }
+
+    if ($joinedManifest -match "allowBackup\(.*\)=true") {
+        throw "Release APK manifest allows Android backup."
+    }
+
+    if ($joinedManifest -notmatch "allowBackup\(.*\).*(false|\(type 0x12\)0x0)") {
+        throw "Release APK manifest must explicitly disable Android backup."
+    }
+
+    if ($joinedManifest -notmatch "fullBackupContent\(.*\)=") {
+        throw "Release APK manifest must include fullBackupContent rules."
+    }
+
+    if ($joinedManifest -notmatch "dataExtractionRules\(.*\)=") {
+        throw "Release APK manifest must include dataExtractionRules."
     }
 
     Write-Host "Release APK manifest hardening audit: passed"
@@ -412,6 +489,8 @@ $expectedCompileSdk = "36"
 if ($expectedNamespace -ne $expectedPackage) {
     throw "Android namespace '$expectedNamespace' does not match applicationId '$expectedPackage'."
 }
+
+Assert-SourceAndroidBackupHardening
 
 $aapt2 = Resolve-AndroidBuildTool @("aapt2.exe", "aapt2")
 $apkSigner = Resolve-AndroidBuildTool @("apksigner.bat", "apksigner")
