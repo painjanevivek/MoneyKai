@@ -18,7 +18,7 @@ Implemented MVP:
 
 - Splash/onboarding.
 - Local profile/session boundary.
-- Dashboard with balance, income, expense, record count, budget progress, category breakdown preview, and recent activity.
+- Dashboard with current-month balance, income, expense, record count, budget progress, category breakdown preview, and recent activity.
 - Add and edit transaction flows for local income and expenses.
 - Transactions list with search, income/expense filters, category filter, month grouping, edit, and delete.
 - Budget screen with monthly/category limits and over-budget states.
@@ -29,7 +29,7 @@ Implemented MVP:
 Core architecture:
 
 - Feature-first Flutter structure under `lib\features`.
-- Shared routing through `go_router`.
+- Shared routing through `go_router`, with protected app routes redirecting signed-out deep links back to the local profile flow.
 - State management through `flutter_riverpod`.
 - Local persistence through `shared_preferences` behind a MoneyKai storage service.
 - `moneykai.*` local storage namespace and `moneykai.storageSchemaVersion`.
@@ -107,8 +107,8 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 | Field | Value |
 | --- | --- |
 | Size | `190664156` bytes |
-| SHA-256 | `898A1ECFFAB5CD29F259E1CA8804EBD9E8CAA4E97D3A162C49047A17C2C02645` |
-| Built | `2026-06-29 13:56:27` local time |
+| SHA-256 | `DA3E28DBCA47A6A522B0DB63B913108FCEC3A3A90548051FD5A55FC8CE3F529F` |
+| Built | `2026-06-29 21:11:04` local time |
 
 Unsigned release APK for binary inspection only:
 
