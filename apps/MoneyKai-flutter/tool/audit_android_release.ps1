@@ -649,6 +649,19 @@ if ($RequireSigned -and $setSigningEnv.Count -ne $signingEnvNames.Count) {
     throw "-RequireSigned requires all MONEYKAI_UPLOAD_* variables to be set."
 }
 
+if ($setSigningEnv.Count -eq $signingEnvNames.Count) {
+    $uploadStoreFile = [Environment]::GetEnvironmentVariable("MONEYKAI_UPLOAD_STORE_FILE")
+    $resolvedStoreFile = [System.IO.Path]::GetFullPath($uploadStoreFile)
+    if (-not (Test-Path -LiteralPath $resolvedStoreFile -PathType Leaf)) {
+        throw "MONEYKAI_UPLOAD_STORE_FILE does not point to an existing keystore file: $resolvedStoreFile"
+    }
+
+    $storeFileItem = Get-Item -LiteralPath $resolvedStoreFile
+    if ($storeFileItem.Length -le 0) {
+        throw "MONEYKAI_UPLOAD_STORE_FILE points to an empty keystore file: $resolvedStoreFile"
+    }
+}
+
 $expectedVersion = Get-PubspecVersion
 $expectedPackage = Get-GradleStringValue -Key "applicationId" -Path $androidBuildFile
 $expectedNamespace = Get-GradleStringValue -Key "namespace" -Path $androidBuildFile
