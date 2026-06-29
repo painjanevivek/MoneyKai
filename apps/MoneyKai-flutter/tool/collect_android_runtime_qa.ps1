@@ -181,6 +181,19 @@ function Assert-WindowHierarchy {
     }
 }
 
+function Format-EvidenceArtifact {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    Assert-NonEmptyFile -Path $Path -Description $Label
+    $file = Get-Item -LiteralPath $Path
+    $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash
+
+    return "- ${Label}: $Path ($($file.Length) bytes, SHA-256 $hash)"
+}
+
 $script:Adb = Resolve-Adb
 $devices = @(Get-ConnectedDevices)
 
@@ -276,10 +289,10 @@ $summary = @(
     "",
     "## Artifacts",
     "",
-    "- Window hierarchy: $windowPath",
-    "- Screenshot: $screenshotPath",
-    "- Launch timing: $launchPath",
-    "- Device properties: $propsPath",
+    (Format-EvidenceArtifact -Label "Window hierarchy" -Path $windowPath),
+    (Format-EvidenceArtifact -Label "Screenshot" -Path $screenshotPath),
+    (Format-EvidenceArtifact -Label "Launch timing" -Path $launchPath),
+    (Format-EvidenceArtifact -Label "Device properties" -Path $propsPath),
     "",
     "## Manual Checks Still Required",
     "",

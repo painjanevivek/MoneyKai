@@ -127,7 +127,7 @@ For the required physical-device release gate, use:
 .\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical
 ```
 
-The script writes evidence files under the repository root `.codex-artifacts` folder and fails if an `adb` command fails, Android launch status/timing is incomplete, the hierarchy does not include `com.moneykai.mobile`, or the device/PNG screenshot evidence is missing or empty.
+The script writes evidence files under the repository root `.codex-artifacts` folder, records size and SHA-256 metadata in the summary, and fails if an `adb` command fails, Android launch status/timing is incomplete, the hierarchy does not include `com.moneykai.mobile`, or the device/PNG screenshot evidence is missing or empty.
 
 ## Documentation
 
