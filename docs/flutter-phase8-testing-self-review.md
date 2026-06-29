@@ -73,7 +73,7 @@ Implemented:
 - Budget monthly/category limits with persisted local settings, over-budget states, and tap-to-replace editing.
 - Insights from local transaction data, including income, expense, savings rate, monthly trend, and top spending categories.
 - Settings profile display, theme preference, privacy link, local diagnostics, local JSON export to clipboard, encrypted backup export/restore through platform file flows, namespace reset, and sign out.
-- Privacy/security screen explaining local-only MVP and permission boundaries.
+- Privacy/security screen explaining local export, encrypted backup, diagnostics, and future sync/auth boundaries.
 - Local uncaught-error capture for Flutter, platform dispatcher, and root-zone failures, with in-app review and clear controls.
 
 ## Self-review findings
@@ -144,7 +144,7 @@ Remaining:
 - Local export copies a plaintext JSON snapshot to the clipboard without adding storage or sharing permissions.
 - Encrypted backup export creates a password-protected JSON file with AES-256-GCM and PBKDF2-HMAC-SHA256 through the platform share sheet.
 - Encrypted backup restore decrypts a selected backup file and restores the local profile, transactions, budget, and saved theme setting after confirmation through the password prompt.
-- Privacy screen states the current local-only data boundary.
+- Privacy screen states the current local-only data boundary, including plaintext export contents, encrypted backup flow, and local diagnostics.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
 - Local diagnostics stay on-device and can be cleared from Settings.
 

@@ -399,6 +399,7 @@ void main() {
       'email': 'akshay@example.com',
       'displayName': 'Akshay',
     });
+    expect(exported['settings'], {'themeMode': 'system'});
 
     await tester.pump(const Duration(seconds: 4));
     await tester.drag(find.byType(ListView), const Offset(0, -520));
@@ -452,7 +453,7 @@ void main() {
 
     expect(
       find.text(
-        'Local export copies a plaintext JSON snapshot to the clipboard. Encrypted backup creates and restores password-protected JSON files through device file flows. Backend sync and real auth are future integration boundaries.',
+        'Local export copies a plaintext JSON snapshot of profile, transactions, budget, and theme settings to the clipboard. Encrypted backup creates and restores password-protected JSON files through device file flows. Local diagnostics stay on this device and can be cleared from Settings. Backend sync and real auth are future integration boundaries.',
       ),
       findsOneWidget,
     );
