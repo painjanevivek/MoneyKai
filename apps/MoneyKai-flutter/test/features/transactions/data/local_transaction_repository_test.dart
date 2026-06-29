@@ -41,6 +41,37 @@ void main() {
     expect(restored.first.amount, 24000);
   });
 
+  test('persists and restores a large local transaction history', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalTransactionRepository(
+      LocalStorageService(preferences),
+    );
+
+    final transactions = List.generate(1200, (index) {
+      return MoneyTransaction(
+        id: 'txn-$index',
+        type: index.isEven ? TransactionType.expense : TransactionType.income,
+        amount: 100 + index.toDouble(),
+        date: DateTime(2023, 1, 1).add(Duration(days: index)),
+        category: index.isEven ? 'Food' : 'Salary',
+        paymentMethod: index.isEven ? 'UPI' : 'Bank transfer',
+        description: 'History item $index',
+      );
+    });
+
+    await repository.saveTransactions(transactions.reversed.toList());
+
+    final restored = repository.readTransactions();
+    expect(restored, hasLength(1200));
+    expect(restored.first.id, 'txn-1199');
+    expect(
+      restored.first.date,
+      DateTime(2023, 1, 1).add(const Duration(days: 1199)),
+    );
+    expect(restored.last.id, 'txn-0');
+  });
+
   test('returns empty list for malformed stored transactions', () async {
     SharedPreferences.setMockInitialValues({'moneykai.transactions': '{bad'});
     final preferences = await SharedPreferences.getInstance();

@@ -92,6 +92,7 @@ Implemented:
 - Local storage initializes `moneykai.storageSchemaVersion`, preserves newer schema markers, rejects non-`moneykai.*` key access, and has a `moneykai.*` namespace reset boundary for device data.
 - JSON parsing falls back to signed-out auth, default budget, and valid transaction entries when stored local payloads are malformed or contain invalid local profile data.
 - Transaction reads reject invalid stored money values and blank required fields, budget reads reject invalid stored limits/categories, and transaction/budget models and repositories reject invalid values before local JSON persistence or export.
+- Local transaction repository tests now stress a 1,200-row transaction history and verify newest-first restore order after saving reversed input.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided, and the release audit fails if no-env artifacts are unexpectedly signed or the configured upload keystore file is missing, empty, or inside the repository.
 - Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a read/write bounded local `moneykai.errorReports` history, and diagnostics read/write paths reject malformed or blank required fields.
 - Users can review and clear bounded local diagnostics from Settings without adding a remote crash SDK.
@@ -121,7 +122,7 @@ Remaining:
 Remaining:
 
 - No performance profiling has been run on a physical Android device.
-- No cold-start or large-history benchmark exists yet.
+- No formal physical-device large-history benchmark exists yet.
 
 ### UI polish
 
