@@ -107,6 +107,54 @@ void main() {
     expect(find.text('No local transactions yet'), findsOneWidget);
   });
 
+  testWidgets('edits restored transaction with custom metadata', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'custom',
+          'type': 'expense',
+          'amount': 1200,
+          'date': DateTime(2026, 6, 20).toIso8601String(),
+          'category': 'Education',
+          'paymentMethod': 'Wallet',
+          'description': 'Course fee',
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Transactions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit transaction'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit transaction'), findsOneWidget);
+    expect(find.text('Education'), findsOneWidget);
+    expect(find.text('Wallet'), findsOneWidget);
+
+    await tester.enterText(
+      find.bySemanticsLabel('Description'),
+      'Course fee updated',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Update transaction'));
+    await tester.tap(find.text('Update transaction'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Course fee updated'), findsOneWidget);
+  });
+
   testWidgets('transaction form rejects non-finite numeric input', (
     tester,
   ) async {

@@ -107,6 +107,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
   Widget _buildForm(bool isSaving) {
     final isEditing = widget.transactionId != null;
+    final categories = _optionList(_categories, _category);
+    final paymentMethods = _optionList(_paymentMethods, _paymentMethod);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -152,7 +154,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 initialValue: _category,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: [
-                  for (final category in _categories)
+                  for (final category in categories)
                     DropdownMenuItem(value: category, child: Text(category)),
                 ],
                 onChanged: (value) {
@@ -166,7 +168,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 initialValue: _paymentMethod,
                 decoration: const InputDecoration(labelText: 'Payment method'),
                 items: [
-                  for (final method in _paymentMethods)
+                  for (final method in paymentMethods)
                     DropdownMenuItem(value: method, child: Text(method)),
                 ],
                 onChanged: (value) {
@@ -202,6 +204,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
         ),
       ],
     );
+  }
+
+  List<String> _optionList(List<String> defaults, String selected) {
+    if (defaults.contains(selected)) {
+      return defaults;
+    }
+
+    return [selected, ...defaults];
   }
 
   MoneyTransaction? _findTransaction(List<MoneyTransaction> transactions) {
