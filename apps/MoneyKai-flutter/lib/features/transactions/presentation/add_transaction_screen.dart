@@ -249,11 +249,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   }
 
   Future<void> _pickDate() async {
+    final defaultFirstDate = DateTime(2020);
+    final defaultLastDate = DateTime.now().add(const Duration(days: 365));
+    final firstDate = _date.isBefore(defaultFirstDate)
+        ? DateTime(_date.year, _date.month, _date.day)
+        : defaultFirstDate;
+    final lastDate = _date.isAfter(defaultLastDate)
+        ? DateTime(_date.year, _date.month, _date.day)
+        : defaultLastDate;
     final selected = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: firstDate,
+      lastDate: lastDate,
     );
 
     if (selected != null) {

@@ -155,6 +155,43 @@ void main() {
     expect(find.text('Course fee updated'), findsOneWidget);
   });
 
+  testWidgets('opens date picker for restored transaction before 2020', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'old',
+          'type': 'expense',
+          'amount': 1200,
+          'date': DateTime(2019, 1, 15).toIso8601String(),
+          'category': 'Education',
+          'paymentMethod': 'Wallet',
+          'description': 'Old course fee',
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Transactions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit transaction'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('15 Jan 2019'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+  });
+
   testWidgets('transaction form rejects non-finite numeric input', (
     tester,
   ) async {

@@ -59,7 +59,7 @@ Widget tests:
 - Add transaction and budget forms reject non-finite numeric input.
 - Settings persists System/Light/Dark theme preference.
 - Settings local diagnostics review, clear action, and reset-cache invalidation.
-- Add/edit/delete transaction flow works, including editing restored records with non-default category and payment metadata.
+- Add/edit/delete transaction flow works, including editing restored records with non-default category/payment metadata and historical dates.
 - Transactions group by month, filter by category, and recover when the selected category disappears after deletion.
 - Settings export-to-clipboard, reset confirmation, and confirmed reset-to-profile-entry respond.
 - Settings encrypted-backup password validation responds.
