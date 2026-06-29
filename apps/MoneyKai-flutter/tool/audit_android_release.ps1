@@ -22,6 +22,41 @@ $isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
+function Get-RepositoryRoot {
+    $oldErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $gitRoot = & git -C $appRoot rev-parse --show-toplevel 2>$null
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($gitRoot)) {
+            return [System.IO.Path]::GetFullPath($gitRoot.Trim())
+        }
+    } finally {
+        $ErrorActionPreference = $oldErrorActionPreference
+    }
+
+    return [System.IO.Path]::GetFullPath((Join-Path $appRoot "..\.."))
+}
+
+function Test-IsPathWithinDirectory {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Directory
+    )
+
+    $separators = [char[]]@(
+        [System.IO.Path]::DirectorySeparatorChar,
+        [System.IO.Path]::AltDirectorySeparatorChar
+    )
+    $fullPath = [System.IO.Path]::GetFullPath($Path).TrimEnd($separators)
+    $fullDirectory = [System.IO.Path]::GetFullPath($Directory).TrimEnd($separators)
+    $fullDirectoryWithSeparator = "$fullDirectory$([System.IO.Path]::DirectorySeparatorChar)"
+
+    return $fullPath.StartsWith(
+        $fullDirectoryWithSeparator,
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+}
+
 function Resolve-AndroidBuildTool {
     param([Parameter(Mandatory = $true)][string[]]$Names)
 
@@ -659,6 +694,11 @@ if ($setSigningEnv.Count -eq $signingEnvNames.Count) {
     $storeFileItem = Get-Item -LiteralPath $resolvedStoreFile
     if ($storeFileItem.Length -le 0) {
         throw "MONEYKAI_UPLOAD_STORE_FILE points to an empty keystore file: $resolvedStoreFile"
+    }
+
+    $repoRoot = Get-RepositoryRoot
+    if (Test-IsPathWithinDirectory -Path $resolvedStoreFile -Directory $repoRoot) {
+        throw "MONEYKAI_UPLOAD_STORE_FILE must point outside the repository root: $repoRoot"
     }
 }
 
