@@ -31,7 +31,7 @@ Current result:
 - `.\tool\audit_ios_project.ps1` passed.
 - Debug APK built successfully.
 - Unsigned release APK and AAB artifacts built successfully for inspection.
-- `.\tool\audit_android_release.ps1` passed for current unsigned inspection artifacts, compiled APK identity/version/SDK/label/launch/ARM64 ABI checks, source and compiled release manifest hardening checks, exported-component exposure checks, Android backup/data-extraction opt-out checks, release AAB structure/metadata checks, and restricted-permission checks.
+- `.\tool\audit_android_release.ps1` passed for current unsigned inspection artifacts, compiled APK identity/version/SDK/label/launch/ARM64 ABI checks, exact debug/release permission allowlist checks, source and compiled release manifest hardening checks, exported-component exposure checks, Android backup/data-extraction opt-out checks, and release AAB structure/metadata checks.
 
 ## Test coverage currently present
 
@@ -149,7 +149,7 @@ Remaining:
 
 ### Security/privacy
 
-- The MVP does not request SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
+- The MVP does not request SMS, notification listener, contacts, camera, microphone, location, or storage permissions; the release audit now fails on any permission outside the current debug/release allowlists.
 - Local export copies a plaintext JSON snapshot to the clipboard without adding storage or sharing permissions.
 - Encrypted backup export creates a password-protected JSON file with AES-256-GCM and PBKDF2-HMAC-SHA256 through the platform share sheet.
 - Local export and encrypted backup creation require a valid local profile, preventing unusable signed-out backup payloads.

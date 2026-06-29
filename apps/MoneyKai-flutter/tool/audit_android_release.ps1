@@ -15,24 +15,6 @@ $androidManifestPath = Join-Path $appRoot "android\app\src\main\AndroidManifest.
 $backupRulesPath = Join-Path $appRoot "android\app\src\main\res\xml\backup_rules.xml"
 $dataExtractionRulesPath = Join-Path $appRoot "android\app\src\main\res\xml\data_extraction_rules.xml"
 
-$restrictedPermissions = @(
-    "android.permission.READ_SMS",
-    "android.permission.RECEIVE_MMS",
-    "android.permission.RECEIVE_SMS",
-    "android.permission.RECEIVE_WAP_PUSH",
-    "android.permission.SEND_SMS",
-    "android.permission.WRITE_SMS",
-    "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE",
-    "android.permission.READ_CONTACTS",
-    "android.permission.WRITE_CONTACTS",
-    "android.permission.CAMERA",
-    "android.permission.RECORD_AUDIO",
-    "android.permission.ACCESS_FINE_LOCATION",
-    "android.permission.ACCESS_COARSE_LOCATION",
-    "android.permission.READ_EXTERNAL_STORAGE",
-    "android.permission.WRITE_EXTERNAL_STORAGE"
-)
-
 $isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
     [System.Runtime.InteropServices.OSPlatform]::Windows
 )
@@ -233,24 +215,61 @@ function Get-ApkManifest {
     return $manifest
 }
 
-function Assert-NoRestrictedPermissions {
-    param(
-        [Parameter(Mandatory = $true)][string]$Label,
-        [Parameter(Mandatory = $true)][string[]]$PermissionDump
-    )
+function Get-NormalizedPermissionSurface {
+    param([Parameter(Mandatory = $true)][string[]]$PermissionDump)
 
-    $found = @()
-    foreach ($permission in $restrictedPermissions) {
-        if ($PermissionDump -match [regex]::Escape($permission)) {
-            $found += $permission
+    $surface = @()
+    foreach ($line in $PermissionDump) {
+        if ($line -match "^uses-permission:\s+name='(?<name>[^']+)'") {
+            $surface += "uses-permission:$($matches['name'])"
+            continue
+        }
+
+        if ($line -match "^permission:\s+name='(?<name>[^']+)'") {
+            $surface += "permission:$($matches['name'])"
+            continue
+        }
+
+        if ($line -match "^permission:\s+(?<name>\S+)\s*$") {
+            $surface += "permission:$($matches['name'])"
         }
     }
 
-    if ($found.Count -gt 0) {
-        throw "$Label includes restricted permissions: $($found -join ', ')"
+    return @($surface | Sort-Object -Unique)
+}
+
+function Assert-AllowedPermissions {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string[]]$PermissionDump,
+        [Parameter(Mandatory = $true)][string]$ExpectedPackage,
+        [Parameter(Mandatory = $true)][bool]$AllowInternet
+    )
+
+    $dynamicReceiverPermission = "$ExpectedPackage.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+    $expectedSurface = @(
+        "permission:$dynamicReceiverPermission",
+        "uses-permission:$dynamicReceiverPermission"
+    )
+
+    if ($AllowInternet) {
+        $expectedSurface += "uses-permission:android.permission.INTERNET"
     }
 
-    Write-Host "$Label restricted permission audit: passed"
+    $actualSurface = @(Get-NormalizedPermissionSurface -PermissionDump $PermissionDump)
+    $expectedSurface = @($expectedSurface | Sort-Object -Unique)
+    $unexpected = @($actualSurface | Where-Object { $_ -notin $expectedSurface })
+    $missing = @($expectedSurface | Where-Object { $_ -notin $actualSurface })
+
+    if ($unexpected.Count -gt 0) {
+        throw "$Label includes unexpected permissions: $($unexpected -join ', ')"
+    }
+
+    if ($missing.Count -gt 0) {
+        throw "$Label is missing expected permissions: $($missing -join ', ')"
+    }
+
+    Write-Host "$Label permission allowlist audit: passed"
 }
 
 function Assert-AabStructure {
@@ -659,8 +678,16 @@ Assert-ApkIdentity `
     -ExpectedMinSdk $expectedMinSdk `
     -ExpectedTargetSdk $expectedTargetSdk `
     -ExpectedCompileSdk $expectedCompileSdk
-Assert-NoRestrictedPermissions -Label "Debug APK" -PermissionDump $debugPermissions
-Assert-NoRestrictedPermissions -Label "Release APK" -PermissionDump $releasePermissions
+Assert-AllowedPermissions `
+    -Label "Debug APK" `
+    -PermissionDump $debugPermissions `
+    -ExpectedPackage $expectedPackage `
+    -AllowInternet $true
+Assert-AllowedPermissions `
+    -Label "Release APK" `
+    -PermissionDump $releasePermissions `
+    -ExpectedPackage $expectedPackage `
+    -AllowInternet $false
 Assert-ReleaseManifestHardening -ManifestDump $releaseManifest -ExpectedLaunchActivity $expectedLaunchActivity
 Assert-AabStructure -AabPath $releaseAab
 Write-Host ""

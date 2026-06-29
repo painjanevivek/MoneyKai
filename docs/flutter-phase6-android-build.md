@@ -218,13 +218,15 @@ apps\MoneyKai-flutter\build\app\outputs\bundle\release\app-release.aab
 ```
 
 No Play-ready release AAB has been produced in this phase because no upload keystore was provided.
+The release audit now treats the permission surface as an allowlist. The debug APK is allowed to declare `android.permission.INTERNET` plus the AndroidX dynamic-receiver permission; the release APK is allowed only the AndroidX dynamic-receiver permission currently emitted by dependencies. Any additional compiled permission fails the gate.
+
 The repeatable Android release audit lives at:
 
 ```text
 apps\MoneyKai-flutter\tool\audit_android_release.ps1
 ```
 
-It checks artifact existence, SHA-256 metadata, compiled debug/release APK identity/version/min-target-compile SDK/label/launch activity/required ARM64 ABI, restricted Android permissions, source and compiled release APK manifest hardening for debuggability, cleartext traffic, exported component exposure, Android backup opt-out, and data-extraction rules, required release AAB base-module entries, release AAB ProGuard mapping, baseline profile metadata, ARM64 native debug symbols, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, unexpected signed artifacts when no upload-key env is set, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
+It checks artifact existence, SHA-256 metadata, compiled debug/release APK identity/version/min-target-compile SDK/label/launch activity/required ARM64 ABI, exact debug/release permission allowlists, source and compiled release APK manifest hardening for debuggability, cleartext traffic, exported component exposure, Android backup opt-out, and data-extraction rules, required release AAB base-module entries, release AAB ProGuard mapping, baseline profile metadata, ARM64 native debug symbols, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, unexpected signed artifacts when no upload-key env is set, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
 
 ## Remaining Android release work
 
