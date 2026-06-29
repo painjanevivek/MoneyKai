@@ -59,10 +59,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
   Widget _buildTransactionList(List<MoneyTransaction> transactions) {
     final categories = _transactionCategories(transactions);
-    final visible = _filterTransactions(transactions);
     final selectedCategory = categories.contains(_categoryFilter)
         ? _categoryFilter
         : _allCategories;
+    final visible = _filterTransactions(
+      transactions,
+      categoryFilter: selectedCategory,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -176,10 +179,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 
   List<MoneyTransaction> _filterTransactions(
-    List<MoneyTransaction> transactions,
-  ) {
+    List<MoneyTransaction> transactions, {
+    required String categoryFilter,
+  }) {
     final query = _searchController.text.trim().toLowerCase();
-    final categoryFilter = _categoryFilter;
 
     return transactions.where((transaction) {
       final matchesType =

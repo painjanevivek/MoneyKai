@@ -250,6 +250,58 @@ void main() {
     expect(find.text('June 2026'), findsNothing);
   });
 
+  testWidgets('category filter falls back after deleting last category match', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'food',
+          'type': 'expense',
+          'amount': 625,
+          'date': DateTime(2026, 6, 20).toIso8601String(),
+          'category': 'Food',
+          'paymentMethod': 'UPI',
+          'description': 'Lunch',
+        },
+        {
+          'id': 'bills',
+          'type': 'expense',
+          'amount': 1200,
+          'date': DateTime(2026, 6, 21).toIso8601String(),
+          'category': 'Bills',
+          'paymentMethod': 'Card',
+          'description': 'Internet bill',
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Transactions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('All categories'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Food').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lunch'), findsOneWidget);
+    expect(find.text('Internet bill'), findsNothing);
+
+    await tester.tap(find.byTooltip('Delete transaction'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No matching transactions'), findsNothing);
+    expect(find.text('Internet bill'), findsOneWidget);
+  });
+
   testWidgets('dashboard shows category breakdown preview', (tester) async {
     SharedPreferences.setMockInitialValues({
       'moneykai.localSession': jsonEncode({
