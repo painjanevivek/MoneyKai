@@ -68,7 +68,6 @@ Android-ready items:
 Current Android blockers:
 
 - No upload keystore was provided, so no Play-ready signed APK/AAB has been produced.
-- End-to-end encrypted backup restore from an actual selected file still needs manual QA; restore logic is covered by automated tests and Android file-picker launch is verified.
 - Real TalkBack spoken-output QA is still pending.
 - Physical Android device performance and cold-start QA are still pending.
 
@@ -108,8 +107,8 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 | Field | Value |
 | --- | --- |
 | Size | `190664156` bytes |
-| SHA-256 | `B0862E7A48D4B22186021AB62C271E794932E2CCE92AC20326D1AD3FD4413642` |
-| Built | `2026-06-29 13:44:13` local time |
+| SHA-256 | `898A1ECFFAB5CD29F259E1CA8804EBD9E8CAA4E97D3A162C49047A17C2C02645` |
+| Built | `2026-06-29 13:56:27` local time |
 
 Unsigned release APK for binary inspection only:
 
@@ -120,8 +119,8 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 | Field | Value |
 | --- | --- |
 | Size | `52831719` bytes |
-| SHA-256 | `1239FE68F33FA0886A6472ACCE04A924E9DA40A5D5E2F891E9FA1C251FABF25C` |
-| Built | `2026-06-29 13:44:25` local time |
+| SHA-256 | `2A48EA1B253F55A53EB8E22BC6DFA471A1253F95A0C206E03F260E571975898D` |
+| Built | `2026-06-29 13:57:18` local time |
 | Signing | Unsigned; not Play-ready |
 
 Unsigned release AAB for binary inspection only:
@@ -132,9 +131,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\
 
 | Field | Value |
 | --- | --- |
-| Size | `51707068` bytes |
-| SHA-256 | `F54020BCB435859108A615021A020CE32902CFD1F4EDF54DC8DC35582FBE9159` |
-| Built | `2026-06-29 13:33:29` local time |
+| Size | `51707694` bytes |
+| SHA-256 | `FB12CC57AA140C819B864A555AC289E5C2627825154875DFAB602E6E1A952D0C` |
+| Built | `2026-06-29 13:57:38` local time |
 | Signing | Unsigned; not Play-ready |
 
 Screenshot evidence:
@@ -144,6 +143,11 @@ Screenshot evidence:
 - `.codex-artifacts\moneykai-qa5-visual-*.png`
 - `.codex-artifacts\moneykai-qa6-dark-visual-*.png`
 - `.codex-artifacts\moneykai-qa9-restore-file-picker.png`
+- `.codex-artifacts\moneykai-qa10-restore-dashboard.png`
+- `.codex-artifacts\moneykai-qa10-restore-settings.png`
+- `.codex-artifacts\moneykai-qa10-restore-transactions.png`
+- `.codex-artifacts\moneykai-qa10-restore-budget.png`
+- `.codex-artifacts\moneykai-qa10-restore-label-fixed.png`
 
 Accessibility evidence:
 
@@ -191,7 +195,6 @@ Required before Play Store internal testing:
 - Rebuild signed release APK/AAB.
 - Capture signed artifact SHA-256 and signer certificate.
 - Smoke test the release-signed artifact.
-- Run end-to-end encrypted backup restore from an actual selected file.
 - Run real TalkBack spoken-output QA.
 - Run physical-device performance and cold-start QA.
 

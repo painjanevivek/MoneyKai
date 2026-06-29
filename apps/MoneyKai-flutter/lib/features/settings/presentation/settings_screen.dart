@@ -179,6 +179,7 @@ class SettingsScreen extends ConsumerWidget {
       final password = await _requestBackupPassword(
         context,
         title: 'Restore encrypted backup',
+        actionLabel: 'Restore',
       );
       if (password == null) {
         return;
@@ -226,6 +227,7 @@ class SettingsScreen extends ConsumerWidget {
   Future<String?> _requestBackupPassword(
     BuildContext context, {
     String title = 'Create encrypted backup',
+    String actionLabel = 'Create',
   }) {
     var password = '';
 
@@ -249,7 +251,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(password),
-            child: const Text('Create'),
+            child: Text(actionLabel),
           ),
         ],
       ),

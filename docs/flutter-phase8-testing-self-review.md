@@ -140,7 +140,7 @@ Remaining:
 
 Remaining:
 
-- End-to-end encrypted backup restore from an actual selected file still needs Android emulator/device QA and iOS simulator/device QA. Restore service behavior is covered by unit tests, and Android file-picker launch evidence exists.
+- iOS simulator/device QA for encrypted backup selected-file restore is still pending. Android emulator selected-file restore from Downloads is complete.
 
 ## Manual QA status
 
@@ -160,6 +160,7 @@ Completed on `MoneyKai_API_36`:
 - Verify encrypted backup password validation on device.
 - Verify encrypted backup share sheet on device.
 - Verify encrypted backup restore file-picker launch on device.
+- Run end-to-end encrypted backup restore from an actual selected file on device.
 - Run 1.3 font-scale visual QA for the Settings screen.
 - Capture Android accessibility hierarchy/focus-order snapshots for primary screens.
 - Capture Android light-theme screenshot visual QA for primary screens.
@@ -191,6 +192,19 @@ Evidence artifacts captured locally:
 - `.codex-artifacts\moneykai-window-qa9-settings-restore-backup.xml`
 - `.codex-artifacts\moneykai-window-qa9-restore-file-picker.xml`
 - `.codex-artifacts\moneykai-qa9-restore-file-picker.png`
+- `.codex-artifacts\moneykai-qa10-04-settings-before-restore.xml`
+- `.codex-artifacts\moneykai-qa10-07-downloads-list.xml`
+- `.codex-artifacts\moneykai-qa10-09-after-restore.xml`
+- `.codex-artifacts\moneykai-qa10-10-settings-after-restore.xml`
+- `.codex-artifacts\moneykai-qa10-11-transactions-after-restore.xml`
+- `.codex-artifacts\moneykai-qa10-12-budget-after-restore.xml`
+- `.codex-artifacts\moneykai-qa10-14-restore-label-fixed.xml`
+- `.codex-artifacts\moneykai-qa10-restored-shared-prefs.xml`
+- `.codex-artifacts\moneykai-qa10-restore-dashboard.png`
+- `.codex-artifacts\moneykai-qa10-restore-settings.png`
+- `.codex-artifacts\moneykai-qa10-restore-transactions.png`
+- `.codex-artifacts\moneykai-qa10-restore-budget.png`
+- `.codex-artifacts\moneykai-qa10-restore-label-fixed.png`
 - `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`
 - `.codex-artifacts\moneykai-window-qa3-budget-monthly-edit.xml`
 - `.codex-artifacts\moneykai-window-qa3-budget-category-edit.xml`
@@ -231,7 +245,6 @@ Evidence artifacts captured locally:
 
 Still required on an Android emulator or physical device:
 
-- Run end-to-end encrypted backup restore from an actual selected file.
 - Run real TalkBack spoken-output QA.
 - Run physical-device performance and cold-start checks.
 
@@ -245,6 +258,6 @@ On macOS/Xcode later:
 ## Known limitations
 
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
-- Android emulator scoped manual QA is partially complete, but selected-file restore, real TalkBack spoken-output, and physical-device QA are still pending.
+- Android emulator scoped manual QA is partially complete, but real TalkBack spoken-output and physical-device QA are still pending.
 - No iOS build was possible on Windows.
 - Backend sync, real auth, remote crash/error reporting dashboard integration, and store submission remain future work.
