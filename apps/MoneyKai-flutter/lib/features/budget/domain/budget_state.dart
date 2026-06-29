@@ -32,10 +32,16 @@ class BudgetState {
 
   Map<String, Object?> toJson() {
     return {
-      'monthlyLimit': monthlyLimit,
+      'monthlyLimit': _requiredPositiveFiniteLimit(
+        monthlyLimit,
+        fieldName: 'Monthly budget limit',
+      ),
       'categoryLimits': {
         for (final entry in categoryLimits.entries)
-          _requiredCategoryName(entry.key): entry.value,
+          _requiredCategoryName(entry.key): _requiredPositiveFiniteLimit(
+            entry.value,
+            fieldName: 'Category budget limit',
+          ),
       },
     };
   }
@@ -47,18 +53,13 @@ class BudgetState {
         : defaultCategoryLimits;
     final monthlyLimit = (json['monthlyLimit'] as num?)?.toDouble() ?? 25000;
 
-    if (!monthlyLimit.isFinite || monthlyLimit <= 0) {
-      throw const FormatException(
-        'Monthly budget limit must be finite and greater than zero.',
-      );
-    }
+    _requiredPositiveFiniteLimit(
+      monthlyLimit,
+      fieldName: 'Monthly budget limit',
+    );
 
     for (final limit in categoryLimits.values) {
-      if (!limit.isFinite || limit <= 0) {
-        throw const FormatException(
-          'Category budget limits must be finite and greater than zero.',
-        );
-      }
+      _requiredPositiveFiniteLimit(limit, fieldName: 'Category budget limit');
     }
 
     return BudgetState(
@@ -77,10 +78,23 @@ Map<String, double> _categoryLimitsFromJson(Map<Object?, Object?> json) {
       throw const FormatException('Category budget limit is invalid.');
     }
 
-    categoryLimits[_requiredCategoryName(entry.key)] = value.toDouble();
+    categoryLimits[_requiredCategoryName(
+      entry.key,
+    )] = _requiredPositiveFiniteLimit(
+      value.toDouble(),
+      fieldName: 'Category budget limit',
+    );
   }
 
   return categoryLimits;
+}
+
+double _requiredPositiveFiniteLimit(double value, {required String fieldName}) {
+  if (!value.isFinite || value <= 0) {
+    throw FormatException('$fieldName must be finite and greater than zero.');
+  }
+
+  return value;
 }
 
 String _requiredCategoryName(Object? value) {

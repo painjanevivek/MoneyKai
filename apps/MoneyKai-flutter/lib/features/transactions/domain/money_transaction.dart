@@ -23,7 +23,7 @@ class MoneyTransaction {
     return {
       'id': _requiredText(id, fieldName: 'Transaction id'),
       'type': type.name,
-      'amount': amount,
+      'amount': _requiredPositiveFiniteAmount(amount),
       'date': date.toIso8601String(),
       'category': _requiredText(category, fieldName: 'Transaction category'),
       'paymentMethod': _requiredText(
@@ -43,12 +43,7 @@ class MoneyTransaction {
       throw const FormatException('Transaction amount is invalid.');
     }
 
-    final amount = amountValue.toDouble();
-    if (!amount.isFinite || amount <= 0) {
-      throw const FormatException(
-        'Transaction amount must be finite and greater than zero.',
-      );
-    }
+    final amount = _requiredPositiveFiniteAmount(amountValue.toDouble());
 
     return MoneyTransaction(
       id: _requiredText(json['id'], fieldName: 'Transaction id'),
@@ -73,6 +68,16 @@ class MoneyTransaction {
       ),
     );
   }
+}
+
+double _requiredPositiveFiniteAmount(double value) {
+  if (!value.isFinite || value <= 0) {
+    throw const FormatException(
+      'Transaction amount must be finite and greater than zero.',
+    );
+  }
+
+  return value;
 }
 
 String _requiredText(Object? value, {required String fieldName}) {
