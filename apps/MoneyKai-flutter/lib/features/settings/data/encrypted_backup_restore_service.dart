@@ -115,6 +115,11 @@ class EncryptedBackupRestoreService {
       throw const FormatException('Backup has an invalid budget.');
     }
 
+    if (rawBudget['monthlyLimit'] is! num ||
+        rawBudget['categoryLimits'] is! Map) {
+      throw const FormatException('Backup has an invalid budget.');
+    }
+
     try {
       return BudgetState.fromJson(rawBudget);
     } catch (_) {
