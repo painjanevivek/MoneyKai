@@ -182,7 +182,9 @@ function Assert-ApkIdentity {
         [Parameter(Mandatory = $true)][string]$ExpectedPackage,
         [Parameter(Mandatory = $true)][string]$ExpectedVersionName,
         [Parameter(Mandatory = $true)][string]$ExpectedVersionCode,
-        [Parameter(Mandatory = $true)][string]$ExpectedAppLabel
+        [Parameter(Mandatory = $true)][string]$ExpectedAppLabel,
+        [Parameter(Mandatory = $true)][string]$ExpectedLaunchActivity,
+        [Parameter(Mandatory = $true)][string]$RequiredAbi
     )
 
     $packageLine = $Badging | Where-Object { $_ -match "^package:" } | Select-Object -First 1
@@ -219,7 +221,21 @@ function Assert-ApkIdentity {
         throw "$Label application label does not match $ExpectedAppLabel."
     }
 
-    Write-Host "$Label identity audit: passed ($ExpectedPackage $ExpectedVersionName+$ExpectedVersionCode, $ExpectedAppLabel)"
+    $activityLine = $Badging | Where-Object { $_ -match "^launchable-activity:" } | Select-Object -First 1
+    if (-not $activityLine -or $activityLine -notmatch "name='([^']+)'") {
+        throw "$Label launchable activity was not found."
+    }
+    $actualLaunchActivity = $matches[1]
+    if ($actualLaunchActivity -ne $ExpectedLaunchActivity) {
+        throw "$Label launchable activity does not match $ExpectedLaunchActivity."
+    }
+
+    $nativeCodeLine = $Badging | Where-Object { $_ -match "^native-code:" } | Select-Object -First 1
+    if (-not $nativeCodeLine -or $nativeCodeLine -notmatch "'$([System.Text.RegularExpressions.Regex]::Escape($RequiredAbi))'") {
+        throw "$Label does not include required native ABI $RequiredAbi."
+    }
+
+    Write-Host "$Label identity audit: passed ($ExpectedPackage $ExpectedVersionName+$ExpectedVersionCode, $ExpectedAppLabel, $ExpectedLaunchActivity, $RequiredAbi)"
 }
 
 function Test-ApkSigned {
@@ -286,6 +302,8 @@ $expectedVersion = Get-PubspecVersion
 $expectedPackage = Get-GradleStringValue -Key "applicationId" -Path $androidBuildFile
 $expectedNamespace = Get-GradleStringValue -Key "namespace" -Path $androidBuildFile
 $expectedAppLabel = "MoneyKai"
+$expectedLaunchActivity = "$expectedPackage.MainActivity"
+$requiredAbi = "arm64-v8a"
 
 if ($expectedNamespace -ne $expectedPackage) {
     throw "Android namespace '$expectedNamespace' does not match applicationId '$expectedPackage'."
@@ -320,14 +338,18 @@ Assert-ApkIdentity `
     -ExpectedPackage $expectedPackage `
     -ExpectedVersionName $expectedVersion.Name `
     -ExpectedVersionCode $expectedVersion.Code `
-    -ExpectedAppLabel $expectedAppLabel
+    -ExpectedAppLabel $expectedAppLabel `
+    -ExpectedLaunchActivity $expectedLaunchActivity `
+    -RequiredAbi $requiredAbi
 Assert-ApkIdentity `
     -Label "Release APK" `
     -Badging $releaseBadging `
     -ExpectedPackage $expectedPackage `
     -ExpectedVersionName $expectedVersion.Name `
     -ExpectedVersionCode $expectedVersion.Code `
-    -ExpectedAppLabel $expectedAppLabel
+    -ExpectedAppLabel $expectedAppLabel `
+    -ExpectedLaunchActivity $expectedLaunchActivity `
+    -RequiredAbi $requiredAbi
 Assert-NoRestrictedPermissions -Label "Debug APK" -PermissionDump $debugPermissions
 Assert-NoRestrictedPermissions -Label "Release APK" -PermissionDump $releasePermissions
 Write-Host ""
