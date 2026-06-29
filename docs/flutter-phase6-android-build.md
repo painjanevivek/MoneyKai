@@ -87,7 +87,7 @@ Artifact metadata:
 | --- | --- |
 | Size | `190664156` bytes |
 | SHA-256 | `9850687C163146B3E75F78261028B4A1993DD4A6F5922499123AFE048A79C5AF` |
-| Built | `2026-06-29 22:22:18` local time |
+| Built | `2026-06-29 22:28:38` local time |
 
 Install for direct Android testing:
 
@@ -107,9 +107,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 
 | Field | Value |
 | --- | --- |
-| Size | `52831719` bytes |
-| SHA-256 | `2A48EA1B253F55A53EB8E22BC6DFA471A1253F95A0C206E03F260E571975898D` |
-| Built | `2026-06-29 13:57:18` local time |
+| Size | `52881679` bytes |
+| SHA-256 | `77C8BDCAC7276A0369E160299820589AF13FE47C45CAE44C99C7E941AD0E32A6` |
+| Built | `2026-06-29 22:26:15` local time |
 | Signing check | `apksigner verify --verbose` returns `DOES NOT VERIFY`; `Missing META-INF/MANIFEST.MF` |
 
 Latest unsigned release AAB:
@@ -120,9 +120,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\
 
 | Field | Value |
 | --- | --- |
-| Size | `51707694` bytes |
-| SHA-256 | `FB12CC57AA140C819B864A555AC289E5C2627825154875DFAB602E6E1A952D0C` |
-| Built | `2026-06-29 13:57:38` local time |
+| Size | `51860010` bytes |
+| SHA-256 | `5EB1FC3FC0C78706D2FE3B0A4891C791581F2CF4CE1CD0B37DAB1594D1F367AD` |
+| Built | `2026-06-29 22:26:38` local time |
 | Signing check | `jarsigner -verify -verbose -certs` reports `jar is unsigned` |
 
 These unsigned artifacts are not Play-ready and should not be treated as installable release candidates. Use the debug APK for direct emulator/device testing until an upload keystore is provided, then rebuild signed release outputs.
