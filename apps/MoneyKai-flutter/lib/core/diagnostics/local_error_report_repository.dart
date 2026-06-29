@@ -36,6 +36,9 @@ class LocalErrorReportRepository {
         final report = LocalErrorReport.fromJson(item);
         if (report != null) {
           reports.add(report);
+          if (reports.length == maxReports) {
+            break;
+          }
         }
       }
       return reports;

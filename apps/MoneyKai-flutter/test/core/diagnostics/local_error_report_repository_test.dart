@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneykai/core/diagnostics/local_error_report_repository.dart';
 import 'package:moneykai/core/storage/local_storage_service.dart';
@@ -61,6 +63,40 @@ void main() {
     expect(reports, hasLength(LocalErrorReportRepository.maxReports));
     expect(reports.first.message, contains('failure 21'));
     expect(reports.last.message, contains('failure 2'));
+  });
+
+  test('caps oversized stored local error history on read', () async {
+    SharedPreferences.setMockInitialValues({
+      LocalErrorReportRepository.reportsKey: jsonEncode([
+        for (
+          var index = 0;
+          index < LocalErrorReportRepository.maxReports + 2;
+          index++
+        )
+          {
+            'id': 'report-$index',
+            'source': 'test',
+            'errorType': 'StateError',
+            'message': 'failure $index',
+            'stackTrace': 'stack $index',
+            'occurredAt': DateTime.utc(
+              2026,
+              6,
+              29,
+              10,
+              index,
+            ).toIso8601String(),
+          },
+      ]),
+    });
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final repository = LocalErrorReportRepository(storage);
+
+    final reports = repository.readReports();
+
+    expect(reports, hasLength(LocalErrorReportRepository.maxReports));
+    expect(reports.first.id, 'report-0');
+    expect(reports.last.id, 'report-19');
   });
 
   test('ignores malformed stored report payloads', () async {
