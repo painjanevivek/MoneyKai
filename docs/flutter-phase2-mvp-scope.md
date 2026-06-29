@@ -148,7 +148,7 @@ Purpose:
 Required containers/actions:
 
 - Local profile display.
-- Theme preference if implemented without complexity.
+- Theme preference.
 - Currency display fixed to INR for MVP.
 - Local data export as JSON when implemented without extra platform dependencies.
 - Data reset with confirmation.

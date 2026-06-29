@@ -303,6 +303,23 @@ void main() {
     expect(find.text('Rs 200 used'), findsOneWidget);
   });
 
+  testWidgets('settings persists theme preference', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await _setViewport(tester, const Size(420, 900));
+    await _enterDashboard(tester);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Theme'), findsOneWidget);
+
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getString('moneykai.themeMode'), 'dark');
+    expect(find.text('Theme set to dark.'), findsOneWidget);
+  });
+
   testWidgets('settings export and reset actions respond', (tester) async {
     SharedPreferences.setMockInitialValues({});
     String? exportedText;
@@ -340,8 +357,11 @@ void main() {
       'displayName': 'Akshay',
     });
 
-    await tester.ensureVisible(find.text('Reset local data'));
-    await tester.tap(find.text('Reset local data'));
+    await tester.pump(const Duration(seconds: 4));
+    await tester.drag(find.byType(ListView), const Offset(0, -360));
+    await tester.pumpAndSettle();
+    final resetTile = find.widgetWithText(ListTile, 'Reset local data');
+    await tester.tap(resetTile);
     await tester.pumpAndSettle();
     expect(find.text('Reset local data?'), findsOneWidget);
 
@@ -349,7 +369,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Reset local data?'), findsNothing);
 
-    await tester.tap(find.text('Reset local data'));
+    await tester.tap(resetTile);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reset'));
     await tester.pumpAndSettle();

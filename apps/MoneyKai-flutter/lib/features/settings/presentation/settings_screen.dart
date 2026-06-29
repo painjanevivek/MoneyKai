@@ -14,6 +14,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../budget/application/budget_controller.dart';
 import '../application/encrypted_backup_provider.dart';
 import '../application/local_data_export_provider.dart';
+import '../application/theme_mode_controller.dart';
 import '../../transactions/application/transaction_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -22,6 +23,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
+    final selectedThemeMode =
+        ref.watch(themeModeControllerProvider).value ?? ThemeMode.system;
     final user = authState.asData?.value.user;
 
     return ScreenScaffold(
@@ -40,6 +43,36 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: const Text('Local-only MVP data boundary'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(AppRoutes.privacy),
+          ),
+          ListTile(
+            leading: const Icon(Icons.palette_outlined),
+            title: const Text('Theme'),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: SegmentedButton<ThemeMode>(
+                segments: const [
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    label: Text('System'),
+                    icon: Icon(Icons.devices_outlined),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    label: Text('Light'),
+                    icon: Icon(Icons.light_mode_outlined),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    label: Text('Dark'),
+                    icon: Icon(Icons.dark_mode_outlined),
+                  ),
+                ],
+                selected: {selectedThemeMode},
+                onSelectionChanged: (selection) {
+                  _setThemeMode(context, ref, selection.first);
+                },
+              ),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.file_download_outlined),
@@ -83,6 +116,20 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _setThemeMode(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeMode mode,
+  ) async {
+    await ref.read(themeModeControllerProvider.notifier).setThemeMode(mode);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Theme set to ${mode.name}.')));
+    }
   }
 
   Future<void> _exportLocalData(BuildContext context, WidgetRef ref) async {

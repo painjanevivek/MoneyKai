@@ -16,6 +16,7 @@ Implemented:
 - Local JSON export to clipboard for profile, transaction, and budget data.
 - Password-encrypted JSON backup export through the platform share sheet.
 - Password-encrypted JSON backup restore through the platform file picker.
+- Persisted System/Light/Dark theme preference.
 - Local uncaught-error capture under the MoneyKai storage namespace.
 - MoneyKai local storage namespace reset.
 - Android/iOS app icon and launch image assets.

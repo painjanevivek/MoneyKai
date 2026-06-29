@@ -23,7 +23,7 @@ Implemented MVP:
 - Transactions list with search, income/expense filters, category filter, month grouping, edit, and delete.
 - Budget screen with monthly/category limits and over-budget states.
 - Insights screen with local income, expense, savings rate, monthly trend, and top spending categories.
-- Settings screen with profile display, privacy link, local JSON export to clipboard, encrypted backup export/restore, namespace reset, and sign out.
+- Settings screen with profile display, persisted theme preference, privacy link, local JSON export to clipboard, encrypted backup export/restore, namespace reset, and sign out.
 - Privacy/security screen describing the local-only MVP boundary.
 
 Core architecture:
