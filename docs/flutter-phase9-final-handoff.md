@@ -1,0 +1,201 @@
+# MoneyKai Flutter Phase 9 Final Handoff
+
+Last reviewed: 2026-06-29
+
+## Summary
+
+MoneyKai now has a Flutter mobile app at:
+
+```text
+apps\MoneyKai-flutter
+```
+
+The app is Android-first and uses one shared Flutter codebase prepared for iOS. It intentionally does not reuse the old React Native implementation directly; the previous MoneyKai work was used as product and visual memory only.
+
+## What Was Built
+
+Implemented MVP:
+
+- Splash/onboarding.
+- Local sign in / local account creation boundary.
+- Dashboard with balance, income, expense, and record count.
+- Add transaction flow for local income and expenses.
+- Transactions list with search, income/expense filters, and delete.
+- Budget screen with monthly and category limits.
+- Insights screen from local transaction data.
+- Settings screen with profile display, privacy link, export placeholder, namespace reset, and sign out.
+- Privacy/security screen describing the local-only MVP boundary.
+
+Core architecture:
+
+- Feature-first Flutter structure under `lib\features`.
+- Shared routing through `go_router`.
+- State management through `flutter_riverpod`.
+- Local persistence through `shared_preferences` behind a MoneyKai storage service.
+- `moneykai.*` local storage namespace and `moneykai.storageSchemaVersion`.
+- Reusable screen shell, responsive screen scaffold, metric cards, empty states, and budget progress widgets.
+
+## Android Readiness
+
+Current Android identity:
+
+```text
+applicationId = com.moneykai.mobile
+namespace = com.moneykai.mobile
+app label = MoneyKai
+version = 1.0.1+2
+```
+
+Android-ready items:
+
+- Debug APK builds.
+- Unsigned release APK builds for inspection.
+- Unsigned release AAB builds for inspection.
+- Android launcher icon uses the MoneyKai source mark.
+- Android launch screen uses the MoneyKai source mark.
+- Permission audit confirms no SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
+- Debug APK has been installed and smoke-tested on `MoneyKai_API_36`.
+- Primary workflows have emulator QA evidence.
+- Light and dark theme screenshot QA exists for primary screens.
+- Accessibility hierarchy/focus-order snapshots exist for primary screens.
+
+Current Android blockers:
+
+- No upload keystore was provided, so no Play-ready signed APK/AAB has been produced.
+- Real TalkBack spoken-output QA is still pending.
+- Physical Android device performance and cold-start QA are still pending.
+
+## iOS Readiness
+
+iOS-ready items:
+
+- Same Flutter UI and state architecture is shared with Android.
+- Current iOS bundle id is `com.moneykai.mobile`.
+- iOS display name is `MoneyKai`.
+- Direct dependencies are iOS-compatible Flutter packages:
+  - `flutter`
+  - `cupertino_icons`
+  - `go_router`
+  - `flutter_riverpod`
+  - `shared_preferences`
+  - `intl`
+- No Android-only native dependency, SMS package, notification listener package, contacts package, camera package, or WebView dependency is used in the Flutter app layer.
+- iOS icon and launch image assets use the MoneyKai source mark.
+
+iOS blockers:
+
+- This development machine is Windows, so iOS simulator, iOS archive, IPA export, and TestFlight upload cannot be performed here.
+- macOS, Xcode, Apple Developer signing, simulator QA, and real-device QA are still required.
+
+## Artifacts
+
+Debug APK for direct Android testing:
+
+```text
+D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app-debug.apk
+```
+
+| Field | Value |
+| --- | --- |
+| Size | `170213628` bytes |
+| SHA-256 | `82DA83D89B59F0D1AD1C21E3D1F2759C7569DF31065C31763577F360DD8F8791` |
+| Built | `2026-06-29 11:54:35` local time |
+
+Unsigned release APK for binary inspection only:
+
+```text
+D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app-release.apk
+```
+
+| Field | Value |
+| --- | --- |
+| Size | `51528626` bytes |
+| SHA-256 | `F698D5796E4EE868C7826D4AFCE9963E3A6C7F9E8000C2B6959D623ACE793E34` |
+| Built | `2026-06-29 11:55:02` local time |
+| Signing | Unsigned; not Play-ready |
+
+Unsigned release AAB for binary inspection only:
+
+```text
+D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\app-release.aab
+```
+
+| Field | Value |
+| --- | --- |
+| Size | `50527919` bytes |
+| SHA-256 | `D0D7864E31B0D550C77A8FBB4DB2B94AD742253DCAD2D790455F6121F5350E21` |
+| Built | `2026-06-29 11:55:12` local time |
+| Signing | Unsigned; not Play-ready |
+
+Screenshot evidence:
+
+- `.codex-artifacts\moneykai-qa5-visual-contact-sheet.png`
+- `.codex-artifacts\moneykai-qa6-dark-visual-contact-sheet.png`
+- `.codex-artifacts\moneykai-qa5-visual-*.png`
+- `.codex-artifacts\moneykai-qa6-dark-visual-*.png`
+
+Accessibility evidence:
+
+- `.codex-artifacts\moneykai-qa4-a11y-focus-summary.txt`
+- `.codex-artifacts\moneykai-window-qa4-a11y-*.xml`
+
+## Verification
+
+Latest verified commands from `apps\MoneyKai-flutter`:
+
+```powershell
+dart format lib test
+flutter analyze
+flutter test
+flutter build apk --debug
+flutter build apk --release
+flutter build appbundle --release
+```
+
+Latest Android binary checks:
+
+```powershell
+aapt2 dump permissions build\app\outputs\flutter-apk\app-debug.apk
+aapt2 dump permissions build\app\outputs\flutter-apk\app-release.apk
+apksigner verify --verbose build\app\outputs\flutter-apk\app-release.apk
+jarsigner -verify -verbose -certs build\app\outputs\bundle\release\app-release.aab
+```
+
+Observed status:
+
+- Formatting passed.
+- Analyzer passed.
+- Tests passed.
+- Debug APK build passed.
+- Unsigned release APK build passed.
+- Unsigned release AAB build passed.
+- Release APK and AAB are intentionally unsigned without `MONEYKAI_UPLOAD_*` env vars.
+
+## Remaining Work
+
+Required before Play Store internal testing:
+
+- Provide/create the Android upload keystore.
+- Set all `MONEYKAI_UPLOAD_*` environment variables.
+- Rebuild signed release APK/AAB.
+- Capture signed artifact SHA-256 and signer certificate.
+- Smoke test the release-signed artifact.
+- Run real TalkBack spoken-output QA.
+- Run physical-device performance and cold-start QA.
+
+Required before TestFlight:
+
+- Move to macOS with Xcode installed.
+- Run `flutter doctor -v` on macOS.
+- Configure Apple Developer team and provisioning.
+- Run iOS simulator QA.
+- Run iOS real-device QA.
+- Archive and upload through Xcode Organizer.
+
+Future product/infrastructure work:
+
+- Backend sync boundary implementation.
+- Real authentication.
+- Encrypted export/backup.
+- Crash/error reporting.
+- Larger-history storage migration to SQLite/Drift/Isar if transaction volume grows.

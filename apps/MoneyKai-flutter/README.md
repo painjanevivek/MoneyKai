@@ -1,17 +1,99 @@
-# moneykai
+# MoneyKai Flutter
 
-A new Flutter project.
+Flutter mobile app for MoneyKai.
 
-## Getting Started
+Primary target: Android.
+Secondary target: iOS with the same Flutter UI and architecture.
 
-This project is a starting point for a Flutter application.
+## Current Scope
 
-A few resources to get you started if this is your first Flutter project:
+Implemented:
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- Local onboarding and local account/session boundary.
+- Dashboard, transactions, budgets, insights, settings, and privacy/security.
+- Add, search, filter, and delete local transactions.
+- Persisted local budgets and transactions through `shared_preferences`.
+- MoneyKai local storage namespace reset.
+- Android/iOS app icon and launch image assets.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Not implemented yet:
+
+- Backend sync.
+- Real authentication.
+- Encrypted export/backup.
+- Crash/error reporting integration.
+- Play-ready upload-key signing.
+- iOS archive/TestFlight build.
+
+## Run Checks
+
+From this directory:
+
+```powershell
+dart format lib test
+flutter analyze
+flutter test
+flutter build apk --debug
+```
+
+Release inspection artifacts can be built without upload-key env vars:
+
+```powershell
+flutter build apk --release
+flutter build appbundle --release
+```
+
+Those release outputs are unsigned unless all `MONEYKAI_UPLOAD_*` variables are configured.
+
+## Android Artifacts
+
+Debug APK:
+
+```text
+build\app\outputs\flutter-apk\app-debug.apk
+```
+
+Unsigned release APK:
+
+```text
+build\app\outputs\flutter-apk\app-release.apk
+```
+
+Unsigned release AAB:
+
+```text
+build\app\outputs\bundle\release\app-release.aab
+```
+
+Use the debug APK for direct emulator/device testing until an upload keystore is available.
+
+## Release Signing
+
+Set all four environment variables before building Play-ready Android artifacts:
+
+```powershell
+$env:MONEYKAI_UPLOAD_STORE_FILE="C:\path\to\upload-keystore.jks"
+$env:MONEYKAI_UPLOAD_STORE_PASSWORD="<store-password>"
+$env:MONEYKAI_UPLOAD_KEY_ALIAS="<key-alias>"
+$env:MONEYKAI_UPLOAD_KEY_PASSWORD="<key-password>"
+flutter build apk --release
+flutter build appbundle --release
+```
+
+If only part of the signing env is set, Gradle fails with an explicit MoneyKai signing error.
+
+## Documentation
+
+Project phase docs live in the repository root `docs` folder:
+
+- `docs\flutter-phase0-environment.md`
+- `docs\flutter-phase1-previous-app-memory.md`
+- `docs\flutter-phase2-mvp-scope.md`
+- `docs\flutter-phase3-architecture.md`
+- `docs\flutter-phase4-design-system.md`
+- `docs\flutter-phase6-android-build.md`
+- `docs\flutter-phase7-ios-parity.md`
+- `docs\flutter-phase8-testing-self-review.md`
+- `docs\flutter-phase9-final-handoff.md`
+
+Local QA artifacts are stored under `.codex-artifacts` at the repository root.
