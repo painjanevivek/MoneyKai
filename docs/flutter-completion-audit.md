@@ -53,6 +53,14 @@ flutter build appbundle --release
 .\tool\audit_android_release.ps1
 ```
 
+CI evidence path:
+
+```text
+.github\workflows\moneykai-flutter-android.yml
+```
+
+The CI workflow mirrors the Android verification loop for Flutter app changes on push and pull request.
+
 ## Requirement Audit
 
 | Requirement | Current status | Evidence |
@@ -76,6 +84,7 @@ flutter build appbundle --release
 | Android app icon and launch assets | Complete | Phase 6 docs record source and generated asset hashes. |
 | Android permission audit | Complete for current artifacts | Phase 6 docs and `.\tool\audit_android_release.ps1` verify no restricted SMS/storage/contact/camera/mic/location permissions. |
 | Android release signing config | Partially complete | Gradle requires all `MONEYKAI_UPLOAD_*` vars or leaves release unsigned; audit script catches partial env. Actual production signed artifacts require keystore. |
+| Android CI verification | Complete | `.github\workflows\moneykai-flutter-android.yml` runs format, analyzer, tests, Android debug/release builds, AAB build, and release audit for Flutter app changes. |
 | Play Store-ready artifact | Not complete | No upload keystore was provided; current release APK/AAB are unsigned inspection artifacts. |
 | Android emulator manual QA | Mostly complete | Fresh install, auth, transactions, budget, insights, export, encrypted backup export/restore, reset, sign out, visual, and hierarchy QA are documented. |
 | TalkBack spoken-output QA | Not complete | Accessibility hierarchy exists, but real spoken-output QA is still pending. |

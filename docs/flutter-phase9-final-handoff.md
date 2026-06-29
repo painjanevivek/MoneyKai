@@ -168,6 +168,12 @@ flutter build appbundle --release
 .\tool\audit_android_release.ps1
 ```
 
+GitHub Actions also runs the same Flutter Android check loop for app changes:
+
+```text
+.github\workflows\moneykai-flutter-android.yml
+```
+
 Latest Android binary checks:
 
 ```powershell

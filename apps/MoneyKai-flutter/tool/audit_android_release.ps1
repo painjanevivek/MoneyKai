@@ -28,14 +28,20 @@ $restrictedPermissions = @(
     "android.permission.WRITE_EXTERNAL_STORAGE"
 )
 
+$isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
+    [System.Runtime.InteropServices.OSPlatform]::Windows
+)
+
 function Resolve-AndroidBuildTool {
-    param([Parameter(Mandatory = $true)][string]$Name)
+    param([Parameter(Mandatory = $true)][string[]]$Names)
 
     $sdkRoots = @(
         $env:ANDROID_HOME,
         $env:ANDROID_SDK_ROOT,
-        "D:\Android\Sdk",
-        "$env:LOCALAPPDATA\Android\Sdk"
+        $(if ($isWindows) { "D:\Android\Sdk" }),
+        $(if ($isWindows -and $env:LOCALAPPDATA) { "$env:LOCALAPPDATA\Android\Sdk" }),
+        $(if (-not $isWindows) { "/usr/local/lib/android/sdk" }),
+        $(if (-not $isWindows -and $env:HOME) { "$env:HOME/Android/Sdk" })
     ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
 
     foreach ($root in $sdkRoots) {
@@ -47,9 +53,11 @@ function Resolve-AndroidBuildTool {
         $candidate = Get-ChildItem -LiteralPath $buildTools -Directory |
             Sort-Object Name -Descending |
             ForEach-Object {
-                $toolPath = Join-Path $_.FullName $Name
-                if (Test-Path -LiteralPath $toolPath) {
-                    $toolPath
+                foreach ($name in $Names) {
+                    $toolPath = Join-Path $_.FullName $name
+                    if (Test-Path -LiteralPath $toolPath) {
+                        $toolPath
+                    }
                 }
             } |
             Select-Object -First 1
@@ -59,12 +67,14 @@ function Resolve-AndroidBuildTool {
         }
     }
 
-    $pathCandidate = Get-Command $Name -ErrorAction SilentlyContinue
-    if ($pathCandidate) {
-        return $pathCandidate.Source
+    foreach ($name in $Names) {
+        $pathCandidate = Get-Command $name -ErrorAction SilentlyContinue
+        if ($pathCandidate) {
+            return $pathCandidate.Source
+        }
     }
 
-    throw "Could not find Android build tool: $Name"
+    throw "Could not find Android build tool: $($Names -join ' or ')"
 }
 
 function Assert-Artifact {
@@ -175,8 +185,8 @@ if ($RequireSigned -and $setSigningEnv.Count -ne $signingEnvNames.Count) {
     throw "-RequireSigned requires all MONEYKAI_UPLOAD_* variables to be set."
 }
 
-$aapt2 = Resolve-AndroidBuildTool "aapt2.exe"
-$apkSigner = Resolve-AndroidBuildTool "apksigner.bat"
+$aapt2 = Resolve-AndroidBuildTool @("aapt2.exe", "aapt2")
+$apkSigner = Resolve-AndroidBuildTool @("apksigner.bat", "apksigner")
 
 Assert-Artifact $debugApk
 Assert-Artifact $releaseApk

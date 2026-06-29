@@ -65,6 +65,14 @@ Latest verified result:
 - `.\tool\audit_android_release.ps1`: passed for current unsigned inspection artifacts and reports unsigned release signing state.
 - `.\tool\audit_android_release.ps1` with a partial signing environment: failed as expected.
 
+The same Flutter Android check loop is also wired into GitHub Actions:
+
+```text
+.github\workflows\moneykai-flutter-android.yml
+```
+
+That workflow runs formatting, analyzer, tests, debug APK build, unsigned release APK build, unsigned release AAB build, and `.\tool\audit_android_release.ps1` on push/PR changes touching the Flutter app or Flutter docs.
+
 ## Debug APK
 
 Latest debug artifact:

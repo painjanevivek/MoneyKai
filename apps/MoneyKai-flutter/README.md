@@ -92,6 +92,16 @@ flutter build appbundle --release
 If only part of the signing env is set, Gradle fails with an explicit MoneyKai signing error.
 The release audit script also fails on partial signing env, restricted permissions, missing artifacts, or unsigned artifacts when `-RequireSigned` is used.
 
+## CI
+
+GitHub Actions workflow:
+
+```text
+.github\workflows\moneykai-flutter-android.yml
+```
+
+The workflow runs formatting, analyzer, tests, Android debug/release builds, unsigned AAB build, and the Android artifact audit for changes under `apps\MoneyKai-flutter`.
+
 ## Documentation
 
 Project phase docs live in the repository root `docs` folder:
