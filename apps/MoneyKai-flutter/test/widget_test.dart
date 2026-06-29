@@ -404,6 +404,8 @@ void main() {
   });
 
   testWidgets('dashboard shows category breakdown preview', (tester) async {
+    final now = DateTime.now();
+
     SharedPreferences.setMockInitialValues({
       'moneykai.localSession': jsonEncode({
         'email': 'akshay@example.com',
@@ -414,7 +416,7 @@ void main() {
           'id': 'food',
           'type': 'expense',
           'amount': 900,
-          'date': DateTime(2026, 6, 8).toIso8601String(),
+          'date': DateTime(now.year, now.month, 8).toIso8601String(),
           'category': 'Food',
           'paymentMethod': 'UPI',
           'description': 'Dinner',
@@ -423,7 +425,7 @@ void main() {
           'id': 'bills',
           'type': 'expense',
           'amount': 500,
-          'date': DateTime(2026, 6, 7).toIso8601String(),
+          'date': DateTime(now.year, now.month, 7).toIso8601String(),
           'category': 'Bills',
           'paymentMethod': 'Card',
           'description': 'Internet bill',
@@ -451,6 +453,68 @@ void main() {
 
     expect(find.text('Insights'), findsWidgets);
     expect(find.text('Top spending categories'), findsOneWidget);
+  });
+
+  testWidgets('dashboard metrics use current-month transactions', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'current-income',
+          'type': 'income',
+          'amount': 1000,
+          'date': DateTime(now.year, now.month, 5).toIso8601String(),
+          'category': 'Salary',
+          'paymentMethod': 'Bank transfer',
+          'description': 'Current income',
+        },
+        {
+          'id': 'current-expense',
+          'type': 'expense',
+          'amount': 250,
+          'date': DateTime(now.year, now.month, 6).toIso8601String(),
+          'category': 'Food',
+          'paymentMethod': 'UPI',
+          'description': 'Current lunch',
+        },
+        {
+          'id': 'older-income',
+          'type': 'income',
+          'amount': 9000,
+          'date': DateTime(now.year, now.month - 1, 5).toIso8601String(),
+          'category': 'Salary',
+          'paymentMethod': 'Bank transfer',
+          'description': 'Older income',
+        },
+        {
+          'id': 'future-expense',
+          'type': 'expense',
+          'amount': 5000,
+          'date': DateTime(now.year, now.month + 1, 6).toIso8601String(),
+          'category': 'Shopping',
+          'paymentMethod': 'Card',
+          'description': 'Future purchase',
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rs 750'), findsOneWidget);
+    expect(find.text('Rs 1,000'), findsWidgets);
+    expect(find.text('Rs 250'), findsWidgets);
+    expect(find.text('Rs 4,750'), findsNothing);
+    expect(find.text('Rs 10,000'), findsNothing);
   });
 
   testWidgets('insights show savings rate and monthly trend', (tester) async {

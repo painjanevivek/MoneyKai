@@ -54,6 +54,7 @@ Widget tests:
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Dashboard category breakdown preview opens Insights.
+- Dashboard monthly metrics ignore restored older or future-dated records outside the current month.
 - Insights render savings rate and monthly trend from local data.
 - Budget screen shows category over-budget states.
 - Add transaction and budget forms reject non-finite numeric input.

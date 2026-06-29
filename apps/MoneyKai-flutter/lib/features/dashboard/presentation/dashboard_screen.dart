@@ -26,8 +26,9 @@ class DashboardScreen extends ConsumerWidget {
     final budget = ref.watch(budgetControllerProvider);
 
     final transactionList = transactions.asData?.value ?? const [];
+    final monthlyTransactions = _currentMonthTransactions(transactionList);
     final budgetState = budget.asData?.value;
-    final summary = _DashboardSummary.fromTransactions(transactionList);
+    final summary = _DashboardSummary.fromTransactions(monthlyTransactions);
     final budgetProgress = budgetState == null
         ? null
         : calculateBudgetProgress(
@@ -69,7 +70,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
               MetricCard(
                 label: 'Records',
-                value: transactionList.length.toString(),
+                value: monthlyTransactions.length.toString(),
                 icon: Icons.receipt_long_outlined,
               ),
             ],
@@ -90,12 +91,24 @@ class DashboardScreen extends ConsumerWidget {
             child: const Text('Review budget'),
           ),
           const SizedBox(height: AppSpacing.xl),
-          _CategoryBreakdownPreview(transactions: transactionList),
+          _CategoryBreakdownPreview(transactions: monthlyTransactions),
           const SizedBox(height: AppSpacing.xl),
           _RecentActivity(transactions: transactionList.take(3).toList()),
         ],
       ),
     );
+  }
+
+  List<MoneyTransaction> _currentMonthTransactions(
+    List<MoneyTransaction> transactions,
+  ) {
+    final now = DateTime.now();
+    return [
+      for (final transaction in transactions)
+        if (transaction.date.year == now.year &&
+            transaction.date.month == now.month)
+          transaction,
+    ];
   }
 }
 
