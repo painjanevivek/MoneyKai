@@ -53,6 +53,31 @@ function Invoke-Adb {
     & $script:Adb @adbArguments
 }
 
+function Invoke-AdbBinaryOutput {
+    param(
+        [Parameter(Mandatory = $true)][string]$OutputPath,
+        [Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments
+    )
+
+    $adbArguments = @()
+    if ($script:SelectedDeviceId) {
+        $adbArguments += @("-s", $script:SelectedDeviceId)
+    }
+    $adbArguments += $Arguments
+
+    $process = Start-Process `
+        -FilePath $script:Adb `
+        -ArgumentList $adbArguments `
+        -NoNewWindow `
+        -PassThru `
+        -Wait `
+        -RedirectStandardOutput $OutputPath
+
+    if ($process.ExitCode -ne 0) {
+        throw "adb $($Arguments -join ' ') failed with exit code $($process.ExitCode)."
+    }
+}
+
 function Get-ConnectedDevices {
     $lines = & $script:Adb devices
     $devices = @()
@@ -138,7 +163,7 @@ $launchOutput | Set-Content -LiteralPath $launchPath -Encoding UTF8
 Start-Sleep -Seconds 3
 Invoke-Adb shell uiautomator dump /sdcard/moneykai-runtime-window.xml | Out-Null
 Invoke-Adb pull /sdcard/moneykai-runtime-window.xml $windowPath | Out-Null
-Invoke-Adb exec-out screencap -p > $screenshotPath
+Invoke-AdbBinaryOutput -OutputPath $screenshotPath exec-out screencap -p
 
 $summary = @(
     "# MoneyKai Android Runtime QA Evidence",

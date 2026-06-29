@@ -280,6 +280,7 @@ cd apps\MoneyKai-flutter
 ```
 
 The `-RequirePhysical` variant intentionally fails on emulators and should be used for the remaining physical-device release gate.
+The collector writes Android screenshots through binary stdout redirection so captured PNG evidence is not re-encoded by Windows PowerShell.
 
 On macOS/Xcode later:
 

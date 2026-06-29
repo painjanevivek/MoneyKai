@@ -90,7 +90,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | Play Store-ready artifact | Not complete | No upload keystore was provided; current release APK/AAB are unsigned inspection artifacts. |
 | Android emulator manual QA | Mostly complete | Fresh install, auth, transactions, budget, insights, export, encrypted backup export/restore, reset, sign out, visual, and hierarchy QA are documented. |
 | TalkBack spoken-output QA | Not complete | Accessibility hierarchy exists, but real spoken-output QA is still pending. |
-| Physical Android device QA | Not complete | No physical Android device is connected; `apps\MoneyKai-flutter\tool\collect_android_runtime_qa.ps1 -RequirePhysical` is ready to collect launch timing, screenshot, hierarchy, and device evidence once hardware is available. |
+| Physical Android device QA | Not complete | No physical Android device is connected; `apps\MoneyKai-flutter\tool\collect_android_runtime_qa.ps1 -RequirePhysical` is ready to collect launch timing, binary PNG screenshot, hierarchy, and device evidence once hardware is available. |
 | iOS simulator/device/archive/TestFlight | Not complete | Current machine is Windows; macOS/Xcode and Apple Developer signing are required. |
 | Security/privacy self-review | Partially complete | Permissions, local-only boundaries, enforced storage namespace, reset namespace, plaintext export contents, encrypted backups, local diagnostics clearing, and privacy copy are documented; local storage is not encrypted and real auth/backend sync remain future work. |
 | Backend sync | Future work | Repository boundaries are ready; no backend sync implementation exists. |

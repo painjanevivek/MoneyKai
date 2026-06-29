@@ -115,7 +115,7 @@ The workflow runs formatting, analyzer, tests, the iOS static project audit, And
 
 ## Android Runtime QA
 
-Collect launch timing, screenshot, UI hierarchy, and device properties after connecting an Android device:
+Collect launch timing, a binary PNG screenshot, UI hierarchy, and device properties after connecting an Android device:
 
 ```powershell
 .\tool\collect_android_runtime_qa.ps1 -Install
