@@ -31,15 +31,19 @@ class BudgetState {
   }
 
   Map<String, Object?> toJson() {
-    return {'monthlyLimit': monthlyLimit, 'categoryLimits': categoryLimits};
+    return {
+      'monthlyLimit': monthlyLimit,
+      'categoryLimits': {
+        for (final entry in categoryLimits.entries)
+          _requiredCategoryName(entry.key): entry.value,
+      },
+    };
   }
 
   static BudgetState fromJson(Map<String, Object?> json) {
     final rawCategoryLimits = json['categoryLimits'];
     final categoryLimits = rawCategoryLimits is Map
-        ? rawCategoryLimits.map(
-            (key, value) => MapEntry(key.toString(), (value as num).toDouble()),
-          )
+        ? _categoryLimitsFromJson(rawCategoryLimits)
         : defaultCategoryLimits;
     final monthlyLimit = (json['monthlyLimit'] as num?)?.toDouble() ?? 25000;
 
@@ -62,4 +66,32 @@ class BudgetState {
       categoryLimits: categoryLimits,
     );
   }
+}
+
+Map<String, double> _categoryLimitsFromJson(Map<Object?, Object?> json) {
+  final categoryLimits = <String, double>{};
+
+  for (final entry in json.entries) {
+    final value = entry.value;
+    if (value is! num) {
+      throw const FormatException('Category budget limit is invalid.');
+    }
+
+    categoryLimits[_requiredCategoryName(entry.key)] = value.toDouble();
+  }
+
+  return categoryLimits;
+}
+
+String _requiredCategoryName(Object? value) {
+  if (value is! String) {
+    throw const FormatException('Budget category name is invalid.');
+  }
+
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    throw const FormatException('Budget category name is required.');
+  }
+
+  return trimmed;
 }

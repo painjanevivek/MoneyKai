@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneykai/core/storage/local_storage_service.dart';
 import 'package:moneykai/features/budget/data/local_budget_repository.dart';
@@ -50,6 +52,21 @@ void main() {
     expect(budget.categoryLimits, BudgetState.defaultCategoryLimits);
   });
 
+  test('returns default budget for blank stored category names', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.budget': jsonEncode({
+        'monthlyLimit': 42000,
+        'categoryLimits': {' ': 12000},
+      }),
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalBudgetRepository(LocalStorageService(preferences));
+
+    final budget = repository.readBudget();
+    expect(budget.monthlyLimit, BudgetState.initial().monthlyLimit);
+    expect(budget.categoryLimits, BudgetState.defaultCategoryLimits);
+  });
+
   test('returns default budget for non-positive stored limits', () async {
     SharedPreferences.setMockInitialValues({
       'moneykai.budget':
@@ -80,6 +97,20 @@ void main() {
           monthlyLimit: 25000,
           categoryLimits: {'Food': double.nan},
         ),
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    expect(preferences.getString('moneykai.budget'), isNull);
+  });
+
+  test('rejects blank category names before saving budget', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalBudgetRepository(LocalStorageService(preferences));
+
+    expect(
+      () => repository.saveBudget(
+        const BudgetState(monthlyLimit: 25000, categoryLimits: {' ': 12000}),
       ),
       throwsA(isA<FormatException>()),
     );
