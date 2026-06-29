@@ -41,9 +41,24 @@ class BudgetState {
             (key, value) => MapEntry(key.toString(), (value as num).toDouble()),
           )
         : defaultCategoryLimits;
+    final monthlyLimit = (json['monthlyLimit'] as num?)?.toDouble() ?? 25000;
+
+    if (!monthlyLimit.isFinite || monthlyLimit <= 0) {
+      throw const FormatException(
+        'Monthly budget limit must be finite and greater than zero.',
+      );
+    }
+
+    for (final limit in categoryLimits.values) {
+      if (!limit.isFinite || limit <= 0) {
+        throw const FormatException(
+          'Category budget limits must be finite and greater than zero.',
+        );
+      }
+    }
 
     return BudgetState(
-      monthlyLimit: (json['monthlyLimit'] as num?)?.toDouble() ?? 25000,
+      monthlyLimit: monthlyLimit,
       categoryLimits: categoryLimits,
     );
   }

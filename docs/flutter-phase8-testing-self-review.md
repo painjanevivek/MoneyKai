@@ -36,14 +36,14 @@ Current result:
 Unit/repository tests:
 
 - Local auth session save, restore, clear, profile field trimming, invalid-field rejection, and malformed-session fallback.
-- Local transaction persistence in newest-first order, malformed-payload fallback, malformed-entry skipping, and non-finite amount rejection.
-- Local budget persistence, reset, malformed-payload fallback, and non-finite limit rejection.
+- Local transaction persistence in newest-first order, malformed-payload fallback, malformed-entry/amount skipping, and non-finite amount rejection.
+- Local budget persistence, reset, malformed-payload fallback, invalid stored-limit fallback, and non-finite limit rejection.
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, newest-first order, bounded history, and clear action.
 - Local data export JSON includes user, transactions, budget, theme settings, source, format version, and timestamp.
 - Encrypted backup export produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords and fails decryption with the wrong password.
-- Encrypted backup restore validates decrypted contents, rejects wrong passwords/malformed payloads, resets only the MoneyKai namespace, restores user, transactions, and budget, and restores theme settings when present.
+- Encrypted backup restore validates decrypted contents, rejects wrong passwords/malformed payloads/invalid money values, resets only the MoneyKai namespace, restores user, transactions, and budget, and restores theme settings when present.
 
 Widget tests:
 
@@ -85,7 +85,7 @@ Implemented:
 - Local persistence is simple and deterministic through `shared_preferences`.
 - Local storage initializes `moneykai.storageSchemaVersion` and has a `moneykai.*` namespace reset boundary for device data.
 - JSON parsing falls back to signed-out auth, default budget, and valid transaction entries when stored local payloads are malformed.
-- Transaction and budget repositories reject non-finite money values before local JSON persistence.
+- Transaction and budget reads reject invalid stored money values, and repositories reject non-finite money values before local JSON persistence.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
 - Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a bounded local `moneykai.errorReports` history.
 - Users can review and clear bounded local diagnostics from Settings without adding a remote crash SDK.

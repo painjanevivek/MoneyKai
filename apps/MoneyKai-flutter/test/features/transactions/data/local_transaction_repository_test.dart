@@ -52,7 +52,7 @@ void main() {
   test('skips malformed transaction entries', () async {
     SharedPreferences.setMockInitialValues({
       'moneykai.transactions':
-          '[{"id":"bad"},{"id":"good","type":"expense","amount":250,"date":"2026-06-01T00:00:00.000","category":"Food","paymentMethod":"UPI","description":"Lunch"}]',
+          '[{"id":"bad"},{"id":"zero","type":"expense","amount":0,"date":"2026-06-01T00:00:00.000","category":"Food","paymentMethod":"UPI","description":"Bad amount"},{"id":"good","type":"expense","amount":250,"date":"2026-06-01T00:00:00.000","category":"Food","paymentMethod":"UPI","description":"Lunch"}]',
     });
     final preferences = await SharedPreferences.getInstance();
     final repository = LocalTransactionRepository(

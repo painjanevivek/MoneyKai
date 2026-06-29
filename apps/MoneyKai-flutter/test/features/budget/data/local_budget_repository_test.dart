@@ -50,6 +50,19 @@ void main() {
     expect(budget.categoryLimits, BudgetState.defaultCategoryLimits);
   });
 
+  test('returns default budget for non-positive stored limits', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.budget':
+          '{"monthlyLimit":0,"categoryLimits":{"Food":12000,"Transport":-1}}',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalBudgetRepository(LocalStorageService(preferences));
+
+    final budget = repository.readBudget();
+    expect(budget.monthlyLimit, BudgetState.initial().monthlyLimit);
+    expect(budget.categoryLimits, BudgetState.defaultCategoryLimits);
+  });
+
   test('rejects non-finite budget values before saving', () async {
     SharedPreferences.setMockInitialValues({});
     final preferences = await SharedPreferences.getInstance();

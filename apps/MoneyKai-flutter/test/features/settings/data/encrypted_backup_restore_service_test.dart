@@ -246,6 +246,97 @@ void main() {
     );
   });
 
+  test('rejects encrypted backup with invalid transaction amounts', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
+        hasValidUser: true,
+        transactions: [
+          {
+            'id': 'bad',
+            'type': 'expense',
+            'amount': 0,
+            'date': '2026-06-01T00:00:00.000',
+            'category': 'Food',
+            'paymentMethod': 'UPI',
+            'description': 'Bad amount',
+          },
+        ],
+      ),
+      randomBytes: (length) => List<int>.filled(length, 8),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
+    );
+
+    expect(
+      restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('rejects encrypted backup with invalid budget limits', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
+        hasValidUser: true,
+        budget: {
+          'monthlyLimit': 30000,
+          'categoryLimits': {'Food': -1},
+        },
+      ),
+      randomBytes: (length) => List<int>.filled(length, 10),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
+    );
+
+    expect(
+      restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('rejects encrypted backup with malformed settings', () async {
     SharedPreferences.setMockInitialValues({});
     final storage = LocalStorageService(await SharedPreferences.getInstance());
@@ -321,11 +412,13 @@ class _StaticExportService extends LocalDataExportService {
     required super.themeRepository,
     this.hasValidUser = false,
     this.transactions = const [],
+    this.budget = const {'monthlyLimit': 30000, 'categoryLimits': {}},
     this.settings,
   });
 
   final bool hasValidUser;
   final List<Object?> transactions;
+  final Object? budget;
   final Object? settings;
 
   @override
@@ -337,7 +430,7 @@ class _StaticExportService extends LocalDataExportService {
           ? {'email': 'akshay@example.com', 'displayName': 'Akshay'}
           : {'email': 'akshay@example.com'},
       'transactions': transactions,
-      'budget': {'monthlyLimit': 30000, 'categoryLimits': {}},
+      'budget': budget,
       if (settings != null) 'settings': settings,
     });
   }

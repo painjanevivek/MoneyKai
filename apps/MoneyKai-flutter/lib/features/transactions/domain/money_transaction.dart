@@ -32,10 +32,17 @@ class MoneyTransaction {
   }
 
   static MoneyTransaction fromJson(Map<String, Object?> json) {
+    final amount = (json['amount'] as num).toDouble();
+    if (!amount.isFinite || amount <= 0) {
+      throw const FormatException(
+        'Transaction amount must be finite and greater than zero.',
+      );
+    }
+
     return MoneyTransaction(
       id: json['id'] as String,
       type: TransactionType.values.byName(json['type'] as String),
-      amount: (json['amount'] as num).toDouble(),
+      amount: amount,
       date: DateTime.parse(json['date'] as String),
       category: json['category'] as String,
       paymentMethod: json['paymentMethod'] as String,
