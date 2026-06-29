@@ -43,7 +43,7 @@ Unit/repository tests:
 - Local error report persistence, malformed payload handling, newest-first order, bounded history, and clear action.
 - Local data export JSON includes user, transactions, budget, theme settings, source, format version, and timestamp.
 - Encrypted backup export produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords and fails decryption with the wrong password.
-- Encrypted backup restore validates decrypted contents, rejects wrong passwords/malformed payloads/invalid money values, resets only the MoneyKai namespace, restores user, transactions, and budget, and restores theme settings when present.
+- Encrypted backup restore validates decrypted contents before reset, rejects wrong passwords/malformed payloads/invalid users/invalid money values, preserves existing local data on invalid-user restore failure, resets only the MoneyKai namespace for valid restores, restores user, transactions, and budget, and restores theme settings when present.
 
 Widget tests:
 
@@ -150,6 +150,7 @@ Remaining:
 - Privacy screen states the current local-only data boundary, including plaintext export contents, encrypted backup flow, and local diagnostics.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
 - Local diagnostics stay on-device and can be cleared from Settings.
+- Encrypted backup restore validates the profile boundary before clearing local data, so malformed backup users cannot erase the current local session.
 
 Remaining:
 

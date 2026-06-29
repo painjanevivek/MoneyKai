@@ -81,14 +81,20 @@ class EncryptedBackupRestoreService {
 
     final email = rawUser['email'];
     final displayName = rawUser['displayName'];
+    final trimmedEmail = email is String ? email.trim() : null;
+    final trimmedDisplayName = displayName is String
+        ? displayName.trim()
+        : null;
     if (email is! String ||
-        email.trim().isEmpty ||
         displayName is! String ||
-        displayName.trim().isEmpty) {
+        trimmedEmail == null ||
+        trimmedDisplayName == null ||
+        trimmedDisplayName.isEmpty ||
+        !_hasValidEmailShape(trimmedEmail)) {
       throw const FormatException('Backup has an invalid local user.');
     }
 
-    return _RestoredUser(email: email, displayName: displayName);
+    return _RestoredUser(email: trimmedEmail, displayName: trimmedDisplayName);
   }
 
   List<MoneyTransaction> _readTransactions(Object? rawTransactions) {
@@ -140,6 +146,11 @@ class EncryptedBackupRestoreService {
       'dark' => ThemeMode.dark,
       _ => throw const FormatException('Backup has invalid settings.'),
     };
+  }
+
+  bool _hasValidEmailShape(String email) {
+    final parts = email.split('@');
+    return parts.length == 2 && parts.first.isNotEmpty && parts.last.isNotEmpty;
   }
 }
 
