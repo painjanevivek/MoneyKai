@@ -702,7 +702,33 @@ function Get-AabCertificateOutput {
             throw "keytool certificate inspection failed for release AAB."
         }
 
-        return $output
+        if ([string]::IsNullOrWhiteSpace(($output -join "`n"))) {
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($AabPath)
+            $tempDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "moneykai-aab-certificate-$([System.Guid]::NewGuid())"
+            New-Item -ItemType Directory -Force -Path $tempDirectory | Out-Null
+
+            try {
+                $certificateEntry = $archive.Entries |
+                    Where-Object { $_.FullName -match "^META-INF/.+\.(RSA|DSA|EC)$" } |
+                    Select-Object -First 1
+
+                if (-not $certificateEntry) {
+                    throw "Release AAB does not contain a signer certificate block under META-INF."
+                }
+
+                $certificatePath = Join-Path $tempDirectory ([System.IO.Path]::GetFileName($certificateEntry.FullName))
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($certificateEntry, $certificatePath, $true)
+                $output = & $Keytool -printcert -file $certificatePath 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    throw "keytool certificate inspection failed for release AAB signer block."
+                }
+            } finally {
+                $archive.Dispose()
+                Remove-Item -LiteralPath $tempDirectory -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        return @($output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
     } finally {
         $ErrorActionPreference = $oldErrorActionPreference
     }
