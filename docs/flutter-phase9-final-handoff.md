@@ -213,6 +213,13 @@ Required before Play Store internal testing:
 - Run real TalkBack spoken-output QA.
 - Run physical-device performance and cold-start QA.
 
+Physical-device evidence can be collected with:
+
+```powershell
+cd apps\MoneyKai-flutter
+.\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical
+```
+
 Required before TestFlight:
 
 - Move to macOS with Xcode installed.

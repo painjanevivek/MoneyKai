@@ -102,6 +102,22 @@ GitHub Actions workflow:
 
 The workflow runs formatting, analyzer, tests, Android debug/release builds, unsigned AAB build, and the Android artifact audit for changes under `apps\MoneyKai-flutter`.
 
+## Android Runtime QA
+
+Collect launch timing, screenshot, UI hierarchy, and device properties after connecting an Android device:
+
+```powershell
+.\tool\collect_android_runtime_qa.ps1 -Install
+```
+
+For the required physical-device release gate, use:
+
+```powershell
+.\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical
+```
+
+The script writes evidence files under the repository root `.codex-artifacts` folder.
+
 ## Documentation
 
 Project phase docs live in the repository root `docs` folder:

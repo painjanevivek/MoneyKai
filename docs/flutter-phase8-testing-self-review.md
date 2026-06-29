@@ -248,6 +248,16 @@ Still required on an Android emulator or physical device:
 - Run real TalkBack spoken-output QA.
 - Run physical-device performance and cold-start checks.
 
+Runtime evidence collector:
+
+```powershell
+cd apps\MoneyKai-flutter
+.\tool\collect_android_runtime_qa.ps1 -Install
+.\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical
+```
+
+The `-RequirePhysical` variant intentionally fails on emulators and should be used for the remaining physical-device release gate.
+
 On macOS/Xcode later:
 
 - iOS simulator run.
