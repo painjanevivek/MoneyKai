@@ -9,6 +9,8 @@ $appRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $debugApk = Join-Path $appRoot "build\app\outputs\flutter-apk\app-debug.apk"
 $releaseApk = Join-Path $appRoot "build\app\outputs\flutter-apk\app-release.apk"
 $releaseAab = Join-Path $appRoot "build\app\outputs\bundle\release\app-release.aab"
+$pubspecPath = Join-Path $appRoot "pubspec.yaml"
+$androidBuildFile = Join-Path $appRoot "android\app\build.gradle.kts"
 
 $restrictedPermissions = @(
     "android.permission.READ_SMS",
@@ -96,6 +98,39 @@ function Write-ArtifactMetadata {
     Write-Host "  SHA-256: $($hash.Hash)"
 }
 
+function Get-PubspecVersion {
+    $versionLine = Get-Content -LiteralPath $pubspecPath |
+        Where-Object { $_ -match "^\s*version:\s*(\S+)\s*$" } |
+        Select-Object -First 1
+
+    if (-not $versionLine -or $versionLine -notmatch "^\s*version:\s*([^+]+)\+(\d+)\s*$") {
+        throw "Could not read Flutter versionName+versionCode from $pubspecPath."
+    }
+
+    return [PSCustomObject]@{
+        Name = $matches[1]
+        Code = $matches[2]
+    }
+}
+
+function Get-GradleStringValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$Key,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $pattern = "^\s*$([System.Text.RegularExpressions.Regex]::Escape($Key))\s*=\s*`"([^`"]+)`"\s*$"
+    $line = Get-Content -LiteralPath $Path |
+        Where-Object { $_ -match $pattern } |
+        Select-Object -First 1
+
+    if (-not $line -or $line -notmatch $pattern) {
+        throw "Could not read '$Key' from $Path."
+    }
+
+    return $matches[1]
+}
+
 function Get-ApkPermissions {
     param(
         [Parameter(Mandatory = $true)][string]$Aapt2,
@@ -103,6 +138,21 @@ function Get-ApkPermissions {
     )
 
     & $Aapt2 dump permissions $ApkPath
+}
+
+function Get-ApkBadging {
+    param(
+        [Parameter(Mandatory = $true)][string]$Aapt2,
+        [Parameter(Mandatory = $true)][string]$ApkPath
+    )
+
+    $badging = & $Aapt2 dump badging $ApkPath
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "aapt2 dump badging failed for $ApkPath with exit code $exitCode."
+    }
+
+    return $badging
 }
 
 function Assert-NoRestrictedPermissions {
@@ -123,6 +173,53 @@ function Assert-NoRestrictedPermissions {
     }
 
     Write-Host "$Label restricted permission audit: passed"
+}
+
+function Assert-ApkIdentity {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string[]]$Badging,
+        [Parameter(Mandatory = $true)][string]$ExpectedPackage,
+        [Parameter(Mandatory = $true)][string]$ExpectedVersionName,
+        [Parameter(Mandatory = $true)][string]$ExpectedVersionCode,
+        [Parameter(Mandatory = $true)][string]$ExpectedAppLabel
+    )
+
+    $packageLine = $Badging | Where-Object { $_ -match "^package:" } | Select-Object -First 1
+    if (-not $packageLine -or $packageLine -notmatch "name='([^']+)'") {
+        throw "$Label package id was not found."
+    }
+    $actualPackage = $matches[1]
+    if ($actualPackage -ne $ExpectedPackage) {
+        throw "$Label package id does not match $ExpectedPackage."
+    }
+
+    if ($packageLine -notmatch "versionCode='([^']+)'") {
+        throw "$Label versionCode was not found."
+    }
+    $actualVersionCode = $matches[1]
+    if ($actualVersionCode -ne $ExpectedVersionCode) {
+        throw "$Label versionCode does not match $ExpectedVersionCode."
+    }
+
+    if ($packageLine -notmatch "versionName='([^']+)'") {
+        throw "$Label versionName was not found."
+    }
+    $actualVersionName = $matches[1]
+    if ($actualVersionName -ne $ExpectedVersionName) {
+        throw "$Label versionName does not match $ExpectedVersionName."
+    }
+
+    $labelLine = $Badging | Where-Object { $_ -match "^application-label:" } | Select-Object -First 1
+    if (-not $labelLine -or $labelLine -notmatch "^application-label:'([^']+)'") {
+        throw "$Label application label was not found."
+    }
+    $actualAppLabel = $matches[1]
+    if ($actualAppLabel -ne $ExpectedAppLabel) {
+        throw "$Label application label does not match $ExpectedAppLabel."
+    }
+
+    Write-Host "$Label identity audit: passed ($ExpectedPackage $ExpectedVersionName+$ExpectedVersionCode, $ExpectedAppLabel)"
 }
 
 function Test-ApkSigned {
@@ -185,6 +282,15 @@ if ($RequireSigned -and $setSigningEnv.Count -ne $signingEnvNames.Count) {
     throw "-RequireSigned requires all MONEYKAI_UPLOAD_* variables to be set."
 }
 
+$expectedVersion = Get-PubspecVersion
+$expectedPackage = Get-GradleStringValue -Key "applicationId" -Path $androidBuildFile
+$expectedNamespace = Get-GradleStringValue -Key "namespace" -Path $androidBuildFile
+$expectedAppLabel = "MoneyKai"
+
+if ($expectedNamespace -ne $expectedPackage) {
+    throw "Android namespace '$expectedNamespace' does not match applicationId '$expectedPackage'."
+}
+
 $aapt2 = Resolve-AndroidBuildTool @("aapt2.exe", "aapt2")
 $apkSigner = Resolve-AndroidBuildTool @("apksigner.bat", "apksigner")
 
@@ -206,6 +312,22 @@ Write-Host ""
 
 $debugPermissions = @(Get-ApkPermissions -Aapt2 $aapt2 -ApkPath $debugApk)
 $releasePermissions = @(Get-ApkPermissions -Aapt2 $aapt2 -ApkPath $releaseApk)
+$debugBadging = @(Get-ApkBadging -Aapt2 $aapt2 -ApkPath $debugApk)
+$releaseBadging = @(Get-ApkBadging -Aapt2 $aapt2 -ApkPath $releaseApk)
+Assert-ApkIdentity `
+    -Label "Debug APK" `
+    -Badging $debugBadging `
+    -ExpectedPackage $expectedPackage `
+    -ExpectedVersionName $expectedVersion.Name `
+    -ExpectedVersionCode $expectedVersion.Code `
+    -ExpectedAppLabel $expectedAppLabel
+Assert-ApkIdentity `
+    -Label "Release APK" `
+    -Badging $releaseBadging `
+    -ExpectedPackage $expectedPackage `
+    -ExpectedVersionName $expectedVersion.Name `
+    -ExpectedVersionCode $expectedVersion.Code `
+    -ExpectedAppLabel $expectedAppLabel
 Assert-NoRestrictedPermissions -Label "Debug APK" -PermissionDump $debugPermissions
 Assert-NoRestrictedPermissions -Label "Release APK" -PermissionDump $releasePermissions
 Write-Host ""
