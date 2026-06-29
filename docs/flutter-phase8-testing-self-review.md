@@ -227,4 +227,4 @@ On macOS/Xcode later:
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
 - Android emulator scoped manual QA is partially complete, but real TalkBack spoken-output and physical-device QA are still pending.
 - No iOS build was possible on Windows.
-- Backend sync, real auth, encrypted export/backup, and store submission remain future work.
+- Backend sync, real auth, encrypted backup/export file flow, and store submission remain future work.

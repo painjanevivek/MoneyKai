@@ -121,6 +121,24 @@ void main() {
 
     expect(find.text('Local sign in'), findsOneWidget);
   });
+
+  testWidgets('privacy screen explains local export boundary', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await _setViewport(tester, const Size(420, 900));
+    await _enterDashboard(tester);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Privacy and security'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Local export copies a plaintext JSON snapshot to the clipboard. Backend sync, real auth, and encrypted backup/export files are future integration boundaries.',
+      ),
+      findsOneWidget,
+    );
+  });
 }
 
 Future<void> _setViewport(WidgetTester tester, Size size) async {
