@@ -191,7 +191,7 @@ The Flutter MVP currently does not request notification listener, contacts, came
 
 ## Release signing
 
-The release Gradle config no longer signs release builds with the debug key. If no upload-key variables are set, `flutter build apk --release` and `flutter build appbundle --release` produce unsigned inspection artifacts. If any upload-key variable is set, all four are required.
+The release Gradle config no longer signs release builds with the debug key. If no upload-key variables are set, `flutter build apk --release` and `flutter build appbundle --release` produce unsigned inspection artifacts, and the release audit fails if either artifact is unexpectedly signed. If any upload-key variable is set, all four are required.
 
 Play-ready signed release APK/AAB builds require upload-key environment variables:
 
@@ -224,7 +224,7 @@ The repeatable Android release audit lives at:
 apps\MoneyKai-flutter\tool\audit_android_release.ps1
 ```
 
-It checks artifact existence, SHA-256 metadata, compiled debug/release APK identity/version/min-target-compile SDK/label/launch activity/required ARM64 ABI, restricted Android permissions, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
+It checks artifact existence, SHA-256 metadata, compiled debug/release APK identity/version/min-target-compile SDK/label/launch activity/required ARM64 ABI, restricted Android permissions, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, unexpected signed artifacts when no upload-key env is set, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
 
 ## Remaining Android release work
 

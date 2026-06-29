@@ -406,6 +406,14 @@ if ($RequireSigned) {
 
     Write-Host "Release signing audit: signed APK and AAB verified"
 } else {
+    if ($setSigningEnv.Count -eq 0 -and $releaseApkSigning.Signed) {
+        throw "Release APK is unexpectedly signed without MONEYKAI_UPLOAD_* variables."
+    }
+
+    if ($setSigningEnv.Count -eq 0 -and $releaseAabSigning.Signed) {
+        throw "Release AAB is unexpectedly signed without MONEYKAI_UPLOAD_* variables."
+    }
+
     $apkState = if ($releaseApkSigning.Signed) { "signed" } else { "unsigned inspection artifact" }
     $aabState = if ($releaseAabSigning.Signed) { "signed" } else { "unsigned inspection artifact" }
     Write-Host "Release APK signing state: $apkState"
