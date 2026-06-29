@@ -131,20 +131,32 @@ Completed on `MoneyKai_API_36`:
 
 - Fresh install.
 - App launch to onboarding screen.
-
-Still required on an Android emulator or physical device:
-
 - Local account creation.
 - App restart session restore.
-- Add income transaction.
 - Add expense transaction.
-- Search/filter transactions.
 - Delete transaction.
 - Budget progress update.
-- Update monthly and category budgets.
 - Reset local data.
 - Sign out.
 - Reopen app after restart and verify persisted state.
+
+Evidence artifacts captured locally:
+
+- `.codex-artifacts\moneykai-flutter-emulator-smoke.png`
+- `.codex-artifacts\moneykai-window-dashboard-after-restart-open.xml`
+- `.codex-artifacts\moneykai-window-transactions-after-add.xml`
+- `.codex-artifacts\moneykai-window-budget-after-expense.xml`
+- `.codex-artifacts\moneykai-window-insights-after-expense.xml`
+- `.codex-artifacts\moneykai-window-after-sign-out.xml`
+
+Still required on an Android emulator or physical device:
+
+- Add income transaction.
+- Search/filter transactions.
+- Update monthly and category budgets.
+- Verify export placeholder snackbar on device.
+- Run text-scale, screen reader, and focus-order QA.
+- Run physical-device performance and cold-start checks.
 
 On macOS/Xcode later:
 
@@ -156,6 +168,6 @@ On macOS/Xcode later:
 ## Known limitations
 
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
-- Android emulator launch smoke is complete, but full Android workflow QA is still pending.
+- Android emulator scoped manual QA is partially complete, but income/search/budget-edit/accessibility/physical-device QA is still pending.
 - No iOS build was possible on Windows.
 - Backend sync, real auth, encrypted export/backup, production launch assets, and store submission remain future work.

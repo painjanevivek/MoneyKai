@@ -91,6 +91,8 @@ Latest emulator smoke:
 | Result | App process started and onboarding screen rendered |
 | Screenshot | `.codex-artifacts\moneykai-flutter-emulator-smoke.png` |
 
+Scoped manual QA on the same emulator also verified local account creation, expense add/delete, dashboard persistence after force-stop/start, budget and insights updates from the expense, reset confirmation/success, and sign out back to local auth. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml`.
+
 To run the app interactively on Android:
 
 ```powershell
@@ -151,7 +153,7 @@ No Play-ready release AAB has been produced in this phase because no upload keys
 ## Remaining Android release work
 
 - Replace generated Flutter launch screen assets with MoneyKai production artwork.
-- Run full manual workflow QA on `MoneyKai_API_36` or a physical Android device.
+- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: income entry, search/filter, budget value edits, export placeholder, and text-scale/accessibility checks.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with non-debug signing.
 - Capture SHA-256 and signer certificate for the exact release artifacts.
