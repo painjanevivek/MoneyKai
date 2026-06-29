@@ -37,6 +37,7 @@ Unit/repository tests:
 - Local transaction persistence in newest-first order.
 - Local budget persistence and reset.
 - Budget progress calculation by current month and category.
+- Local storage schema initialization and MoneyKai namespace reset.
 
 Widget tests:
 
@@ -44,7 +45,7 @@ Widget tests:
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Add/delete transaction flow works.
-- Settings export placeholder and reset confirmation respond.
+- Settings export placeholder, reset confirmation, and confirmed reset-to-auth respond.
 
 ## Current functional state
 
@@ -57,7 +58,7 @@ Implemented:
 - Transactions list with search, income/expense filter, and delete.
 - Budget monthly/category limits with persisted local settings and tap-to-replace editing.
 - Insights from local transaction data.
-- Settings profile display, privacy link, export placeholder, reset confirmation, and sign out.
+- Settings profile display, privacy link, export placeholder, namespace reset, and sign out.
 - Privacy/security screen explaining local-only MVP and permission boundaries.
 
 ## Self-review findings
@@ -65,13 +66,14 @@ Implemented:
 ### Robustness
 
 - Local persistence is simple and deterministic through `shared_preferences`.
+- Local storage initializes `moneykai.storageSchemaVersion` and has a `moneykai.*` namespace reset boundary for device data.
 - JSON parsing currently falls back to defaults/empty lists when stored payload shape is invalid.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
 
 Remaining:
 
 - Local storage is not encrypted.
-- No migration/versioning layer exists for local JSON payloads yet.
+- No non-trivial migration has been needed beyond the current schema-version marker.
 - No crash/error reporting is configured in the Flutter app yet.
 
 ### Scalability
@@ -127,10 +129,10 @@ Remaining:
 - The MVP does not request SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
 - Export is clearly marked coming soon.
 - Privacy screen states the current local-only data boundary.
+- Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
 
 Remaining:
 
-- Local data reset does not yet clear every possible future key by namespace; it clears current transaction data and restores budget defaults.
 - No encrypted backup/export exists yet.
 
 ## Manual QA status

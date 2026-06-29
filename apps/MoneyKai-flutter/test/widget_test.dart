@@ -94,6 +94,13 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(find.text('Reset local data?'), findsNothing);
+
+    await tester.tap(find.text('Reset local data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reset'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Local sign in'), findsOneWidget);
   });
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/storage/local_storage_provider.dart';
 import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/screen_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
@@ -52,7 +53,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             title: const Text('Reset local data'),
             subtitle: const Text(
-              'Clears local transactions and restores budget defaults',
+              'Clears local profile, transactions, and budget data',
             ),
             onTap: () => _confirmReset(context, ref),
           ),
@@ -77,7 +78,7 @@ class SettingsScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Reset local data?'),
         content: const Text(
-          'This clears local transactions and restores budget defaults on this device.',
+          'This clears MoneyKai data on this device, including the local profile, transactions, and budget settings.',
         ),
         actions: [
           TextButton(
@@ -96,13 +97,18 @@ class SettingsScreen extends ConsumerWidget {
       return;
     }
 
-    await ref.read(transactionControllerProvider.notifier).clearTransactions();
-    await ref.read(budgetControllerProvider.notifier).resetBudget();
+    final storage = await ref.read(localStorageServiceProvider.future);
+    await storage.resetNamespace();
+    await ref.read(authControllerProvider.notifier).signOut();
+    ref.invalidate(transactionControllerProvider);
+    ref.invalidate(budgetControllerProvider);
 
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Local data reset.')));
+      final messenger = ScaffoldMessenger.of(context);
+      context.go(AppRoutes.signIn);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Local MoneyKai data reset.')),
+      );
     }
   }
 }

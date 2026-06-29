@@ -31,7 +31,7 @@ The existing React Native mobile app remains at `apps/MoneyKai-mobile` for histo
 | UI | Flutter Material 3 | Stable cross-platform UI with Android-first behavior and iOS compatibility. |
 | Routing | `go_router` | Declarative route map, stack routes, and shell navigation without custom router code. |
 | State management | `flutter_riverpod` | Explicit providers and testable state boundaries without widget-owned business logic. |
-| Local persistence | `shared_preferences` for initial MVP settings/session boundary | Small dependency surface for early local state. More complex transaction storage can move to SQLite/Drift/Isar only when query complexity justifies it. |
+| Local persistence | `shared_preferences` behind a MoneyKai storage service | Small dependency surface for early local state, with a `moneykai.*` namespace, schema version metadata, and a namespace reset boundary. More complex transaction storage can move to SQLite/Drift/Isar only when query complexity justifies it. |
 | Formatting | `intl` | INR and date formatting without hand-written locale formatting. |
 
 ## Folder structure
