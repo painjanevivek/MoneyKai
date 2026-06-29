@@ -51,6 +51,7 @@ Widget tests:
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Add/edit/delete transaction flow works.
+- Transactions group by month and filter by category.
 - Settings export-to-clipboard, reset confirmation, and confirmed reset-to-auth respond.
 - Settings encrypted-backup password validation responds.
 - Settings encrypted-backup restore action is visible.
@@ -63,7 +64,7 @@ Implemented:
 - Splash/onboarding entry.
 - Dashboard using local transaction and budget data.
 - Add transaction with validation.
-- Transactions list with search, income/expense filter, edit, and delete.
+- Transactions list with search, income/expense filter, category filter, month grouping, edit, and delete.
 - Budget monthly/category limits with persisted local settings and tap-to-replace editing.
 - Insights from local transaction data.
 - Settings profile display, privacy link, local JSON export to clipboard, encrypted backup export/restore through platform file flows, namespace reset, and sign out.
@@ -155,7 +156,7 @@ Completed on `MoneyKai_API_36`:
 - Add income transaction.
 - Add expense transaction.
 - Edit transaction.
-- Search/filter transactions.
+- Search, type-filter, category-filter, and month-group transactions.
 - Delete transaction.
 - Budget progress update.
 - Update monthly and category budgets.

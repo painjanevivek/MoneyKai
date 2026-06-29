@@ -89,6 +89,60 @@ void main() {
     expect(find.text('No local transactions yet'), findsOneWidget);
   });
 
+  testWidgets('groups transactions by month and filters by category', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'salary',
+          'type': 'income',
+          'amount': 45000,
+          'date': DateTime(2026, 6, 3).toIso8601String(),
+          'category': 'Salary',
+          'paymentMethod': 'Bank transfer',
+          'description': 'Salary deposit',
+        },
+        {
+          'id': 'groceries',
+          'type': 'expense',
+          'amount': 625,
+          'date': DateTime(2026, 5, 20).toIso8601String(),
+          'category': 'Food',
+          'paymentMethod': 'UPI',
+          'description': 'Grocery run',
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Transactions'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('June 2026'), findsOneWidget);
+    expect(find.text('May 2026'), findsOneWidget);
+    expect(find.text('Salary deposit'), findsOneWidget);
+    expect(find.text('Grocery run'), findsOneWidget);
+
+    await tester.tap(find.text('All categories'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Food').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Grocery run'), findsOneWidget);
+    expect(find.text('Salary deposit'), findsNothing);
+    expect(find.text('May 2026'), findsOneWidget);
+    expect(find.text('June 2026'), findsNothing);
+  });
+
   testWidgets('settings export and reset actions respond', (tester) async {
     SharedPreferences.setMockInitialValues({});
     String? exportedText;

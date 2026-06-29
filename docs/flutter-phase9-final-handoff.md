@@ -20,7 +20,7 @@ Implemented MVP:
 - Local sign in / local account creation boundary.
 - Dashboard with balance, income, expense, and record count.
 - Add and edit transaction flows for local income and expenses.
-- Transactions list with search, income/expense filters, edit, and delete.
+- Transactions list with search, income/expense filters, category filter, month grouping, edit, and delete.
 - Budget screen with monthly and category limits.
 - Insights screen from local transaction data.
 - Settings screen with profile display, privacy link, local JSON export to clipboard, encrypted backup export/restore, namespace reset, and sign out.
