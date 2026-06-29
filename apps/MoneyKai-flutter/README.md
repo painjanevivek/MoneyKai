@@ -105,5 +105,6 @@ Project phase docs live in the repository root `docs` folder:
 - `docs\flutter-phase7-ios-parity.md`
 - `docs\flutter-phase8-testing-self-review.md`
 - `docs\flutter-phase9-final-handoff.md`
+- `docs\flutter-completion-audit.md`
 
 Local QA artifacts are stored under `.codex-artifacts` at the repository root.

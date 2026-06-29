@@ -191,6 +191,12 @@ Observed status:
 
 ## Remaining Work
 
+The current requirement-by-requirement completion status is tracked in:
+
+```text
+docs\flutter-completion-audit.md
+```
+
 Required before Play Store internal testing:
 
 - Provide/create the Android upload keystore.
