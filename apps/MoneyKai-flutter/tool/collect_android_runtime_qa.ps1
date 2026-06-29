@@ -162,6 +162,25 @@ function Assert-LaunchOutput {
     }
 }
 
+function Assert-WindowHierarchy {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$ExpectedPackage
+    )
+
+    Assert-NonEmptyFile -Path $Path -Description "Window hierarchy"
+
+    $content = Get-Content -Raw -LiteralPath $Path
+    if ($content -notmatch "<hierarchy") {
+        throw "Window hierarchy XML is malformed: $Path"
+    }
+
+    $escapedPackage = [System.Text.RegularExpressions.Regex]::Escape($ExpectedPackage)
+    if ($content -notmatch "package=`"$escapedPackage`"") {
+        throw "Window hierarchy does not include package $ExpectedPackage."
+    }
+}
+
 $script:Adb = Resolve-Adb
 $devices = @(Get-ConnectedDevices)
 
@@ -231,7 +250,7 @@ Start-Sleep -Seconds 3
 Invoke-Adb shell uiautomator dump /sdcard/moneykai-runtime-window.xml | Out-Null
 Invoke-Adb pull /sdcard/moneykai-runtime-window.xml $windowPath | Out-Null
 Invoke-AdbBinaryOutput -OutputPath $screenshotPath exec-out screencap -p
-Assert-NonEmptyFile -Path $windowPath -Description "Window hierarchy"
+Assert-WindowHierarchy -Path $windowPath -ExpectedPackage $packageName
 Assert-PngFile -Path $screenshotPath
 Assert-NonEmptyFile -Path $launchPath -Description "Launch timing"
 Assert-NonEmptyFile -Path $propsPath -Description "Device properties"
