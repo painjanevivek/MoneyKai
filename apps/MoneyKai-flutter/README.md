@@ -11,7 +11,7 @@ Implemented:
 
 - Local onboarding and local account/session boundary.
 - Dashboard, transactions, budgets, insights, settings, and privacy/security.
-- Add, search, filter, and delete local transactions.
+- Add, edit, search, filter, and delete local transactions.
 - Persisted local budgets and transactions through `shared_preferences`.
 - Local JSON export to clipboard for profile, transaction, and budget data.
 - Password-encrypted JSON backup export through the platform share sheet.

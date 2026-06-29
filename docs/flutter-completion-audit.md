@@ -75,7 +75,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | MVP scope freeze | Complete | `docs\flutter-phase2-mvp-scope.md` defines screens, containers, offline-first behavior, and non-goals. |
 | Feature-first architecture | Complete | `docs\flutter-phase3-architecture.md` documents `lib\features`, repositories, Riverpod, routing, and local storage boundaries. |
 | Design system | Complete for MVP | `docs\flutter-phase4-design-system.md` documents tokens, components, screen shell, metric cards, transaction rows, budget cards, and responsive behavior. |
-| Core MVP screens functional | Complete for local MVP | Splash/onboarding, local auth, dashboard, add transaction, transactions list, budget, insights, settings, and privacy/security are implemented and covered by tests/manual QA. |
+| Core MVP screens functional | Complete for local MVP | Splash/onboarding, local auth, dashboard, add/edit transaction, transactions list, budget, insights, settings, and privacy/security are implemented and covered by tests/manual QA. |
 | Local persistence after restart | Complete | Repository tests cover persistence; emulator QA captures restart/session persistence in `docs\flutter-phase8-testing-self-review.md`. |
 | No dead routes / visible broken buttons | Complete for current MVP | Widget tests and emulator QA cover navigation/settings actions; coming-soon backend/auth/store work is documented outside the MVP UI surface. |
 | Local JSON export | Complete | Settings export tests and emulator evidence are documented in `docs\flutter-phase8-testing-self-review.md`. |

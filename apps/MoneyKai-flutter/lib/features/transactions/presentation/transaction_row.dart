@@ -8,11 +8,13 @@ import '../domain/transaction_type.dart';
 class TransactionRow extends StatelessWidget {
   TransactionRow({
     required this.transaction,
+    required this.onEdit,
     required this.onDelete,
     super.key,
   });
 
   final MoneyTransaction transaction;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   final MoneyFormatter _money = MoneyFormatter();
@@ -51,6 +53,11 @@ class TransactionRow extends StatelessWidget {
                     : colorScheme.error,
                 fontWeight: FontWeight.w700,
               ),
+            ),
+            IconButton(
+              tooltip: 'Edit transaction',
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_outlined),
             ),
             IconButton(
               tooltip: 'Delete transaction',

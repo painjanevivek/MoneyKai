@@ -99,12 +99,9 @@ Required containers/actions:
 - Type filter: all, income, expense.
 - Category filter.
 - Month grouping.
+- Edit transaction.
 - Delete transaction.
 - Empty state.
-
-Deferred:
-
-- Full edit transaction flow may be added after delete and add are stable.
 
 ### 6. Budget
 
@@ -271,6 +268,7 @@ No visible button may silently do nothing.
 | `/dashboard` | Dashboard tab | MVP |
 | `/transactions` | Transactions tab | MVP |
 | `/transactions/add` | Add transaction | MVP |
+| `/transactions/edit/:id` | Edit transaction | MVP |
 | `/budget` | Budget tab | MVP |
 | `/insights` | Insights tab or stack screen | MVP |
 | `/settings` | Profile/settings tab | MVP |

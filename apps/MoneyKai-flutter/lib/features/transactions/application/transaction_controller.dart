@@ -63,6 +63,39 @@ class TransactionController extends AsyncNotifier<List<MoneyTransaction>> {
     });
   }
 
+  Future<void> updateTransaction(String id, TransactionDraft draft) async {
+    state = await AsyncValue.guard(() async {
+      final repository = await ref.read(
+        localTransactionRepositoryProvider.future,
+      );
+      final current = state.asData?.value ?? repository.readTransactions();
+      var found = false;
+      final next = current.map((transaction) {
+        if (transaction.id != id) {
+          return transaction;
+        }
+
+        found = true;
+        return MoneyTransaction(
+          id: transaction.id,
+          type: draft.type,
+          amount: draft.amount,
+          date: draft.date,
+          category: draft.category,
+          paymentMethod: draft.paymentMethod,
+          description: draft.description,
+        );
+      }).toList()..sort((a, b) => b.date.compareTo(a.date));
+
+      if (!found) {
+        throw StateError('Transaction not found.');
+      }
+
+      await repository.saveTransactions(next);
+      return next;
+    });
+  }
+
   Future<void> clearTransactions() async {
     state = await AsyncValue.guard(() async {
       final repository = await ref.read(

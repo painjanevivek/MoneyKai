@@ -44,7 +44,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('adds and deletes a local transaction', (tester) async {
+  testWidgets('adds, edits, and deletes a local transaction', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await _setViewport(tester, const Size(420, 900));
     await _enterDashboard(tester);
@@ -64,10 +64,28 @@ void main() {
 
     expect(find.text('Grocery run'), findsOneWidget);
 
+    await tester.tap(find.byTooltip('Edit transaction'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit transaction'), findsOneWidget);
+
+    await tester.enterText(find.bySemanticsLabel('Amount'), '625');
+    await tester.enterText(
+      find.bySemanticsLabel('Description'),
+      'Monthly groceries',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Update transaction'));
+    await tester.tap(find.text('Update transaction'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Monthly groceries'), findsOneWidget);
+    expect(find.text('Grocery run'), findsNothing);
+
     await tester.tap(find.byTooltip('Delete transaction'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Grocery run'), findsNothing);
+    expect(find.text('Monthly groceries'), findsNothing);
     expect(find.text('No local transactions yet'), findsOneWidget);
   });
 

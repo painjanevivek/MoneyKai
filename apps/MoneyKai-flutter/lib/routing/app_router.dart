@@ -60,6 +60,11 @@ GoRouter createAppRouter() {
         builder: (context, state) => const AddTransactionScreen(),
       ),
       GoRoute(
+        path: AppRoutes.editTransaction,
+        builder: (context, state) =>
+            AddTransactionScreen(transactionId: state.pathParameters['id']),
+      ),
+      GoRoute(
         path: AppRoutes.privacy,
         builder: (context, state) => const PrivacySecurityScreen(),
       ),

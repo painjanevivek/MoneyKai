@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/screen_scaffold.dart';
 import '../../../theme/app_tokens.dart';
 import '../application/transaction_controller.dart';
+import '../domain/money_transaction.dart';
 import '../domain/transaction_draft.dart';
 import '../domain/transaction_type.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
-  const AddTransactionScreen({super.key});
+  const AddTransactionScreen({this.transactionId, super.key});
+
+  final String? transactionId;
 
   @override
   ConsumerState<AddTransactionScreen> createState() =>
@@ -39,6 +43,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   DateTime _date = DateTime.now();
   String _category = _categories.first;
   String _paymentMethod = _paymentMethods.first;
+  bool _didPrepareEditForm = false;
 
   @override
   void dispose() {
@@ -50,11 +55,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     final transactions = ref.watch(transactionControllerProvider);
+    final isEditing = widget.transactionId != null;
 
     return ScreenScaffold(
-      title: 'Add transaction',
-      subtitle:
-          'Record local income and expenses. Saved records update the transaction list immediately.',
+      title: isEditing ? 'Edit transaction' : 'Add transaction',
+      subtitle: isEditing
+          ? 'Update a local record and keep budgets and insights in sync.'
+          : 'Record local income and expenses. Saved records update the transaction list immediately.',
       actions: [
         IconButton(
           tooltip: 'Close',
@@ -62,103 +69,165 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           icon: const Icon(Icons.close),
         ),
       ],
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SegmentedButton<TransactionType>(
-            segments: const [
-              ButtonSegment(
-                value: TransactionType.expense,
-                label: Text('Expense'),
-                icon: Icon(Icons.arrow_upward),
+      body: isEditing
+          ? transactions.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) => EmptyState(
+                title: 'Transaction unavailable',
+                body: 'This local transaction could not be loaded.',
+                icon: Icons.error_outline,
+                action: OutlinedButton(
+                  onPressed: () =>
+                      ref.invalidate(transactionControllerProvider),
+                  child: const Text('Retry'),
+                ),
               ),
-              ButtonSegment(
-                value: TransactionType.income,
-                label: Text('Income'),
-                icon: Icon(Icons.arrow_downward),
+              data: (items) {
+                final transaction = _findTransaction(items);
+                if (transaction == null) {
+                  return EmptyState(
+                    title: 'Transaction not found',
+                    body:
+                        'This local record may have been deleted on this device.',
+                    icon: Icons.search_off,
+                    action: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Back to transactions'),
+                    ),
+                  );
+                }
+
+                _prepareEditForm(transaction);
+                return _buildForm(transactions.isLoading);
+              },
+            )
+          : _buildForm(transactions.isLoading),
+    );
+  }
+
+  Widget _buildForm(bool isSaving) {
+    final isEditing = widget.transactionId != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SegmentedButton<TransactionType>(
+          segments: const [
+            ButtonSegment(
+              value: TransactionType.expense,
+              label: Text('Expense'),
+              icon: Icon(Icons.arrow_upward),
+            ),
+            ButtonSegment(
+              value: TransactionType.income,
+              label: Text('Income'),
+              icon: Icon(Icons.arrow_downward),
+            ),
+          ],
+          selected: {_type},
+          onSelectionChanged: (selection) {
+            setState(() {
+              _type = selection.first;
+              _category = _type == TransactionType.income
+                  ? 'Salary'
+                  : _categories.first;
+            });
+          },
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _amountController,
+                decoration: const InputDecoration(labelText: 'Amount'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: _amountValidator,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              DropdownButtonFormField<String>(
+                initialValue: _category,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: [
+                  for (final category in _categories)
+                    DropdownMenuItem(value: category, child: Text(category)),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _category = value);
+                  }
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              DropdownButtonFormField<String>(
+                initialValue: _paymentMethod,
+                decoration: const InputDecoration(labelText: 'Payment method'),
+                items: [
+                  for (final method in _paymentMethods)
+                    DropdownMenuItem(value: method, child: Text(method)),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _paymentMethod = value);
+                  }
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+                textInputAction: TextInputAction.done,
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? 'Description is required'
+                    : null,
               ),
             ],
-            selected: {_type},
-            onSelectionChanged: (selection) {
-              setState(() {
-                _type = selection.first;
-                _category = _type == TransactionType.income
-                    ? 'Salary'
-                    : _categories.first;
-              });
-            },
           ),
-          const SizedBox(height: AppSpacing.xl),
-          Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: _amountController,
-                  decoration: const InputDecoration(labelText: 'Amount'),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  validator: _amountValidator,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                DropdownButtonFormField<String>(
-                  initialValue: _category,
-                  decoration: const InputDecoration(labelText: 'Category'),
-                  items: [
-                    for (final category in _categories)
-                      DropdownMenuItem(value: category, child: Text(category)),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _category = value);
-                    }
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                DropdownButtonFormField<String>(
-                  initialValue: _paymentMethod,
-                  decoration: const InputDecoration(
-                    labelText: 'Payment method',
-                  ),
-                  items: [
-                    for (final method in _paymentMethods)
-                      DropdownMenuItem(value: method, child: Text(method)),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _paymentMethod = value);
-                    }
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                  textInputAction: TextInputAction.done,
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? 'Description is required'
-                      : null,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          OutlinedButton.icon(
-            onPressed: _pickDate,
-            icon: const Icon(Icons.calendar_today_outlined),
-            label: Text(_dateFormatter.format(_date)),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          FilledButton(
-            onPressed: transactions.isLoading ? null : _save,
-            child: transactions.isLoading
-                ? const Text('Saving...')
-                : const Text('Save transaction'),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        OutlinedButton.icon(
+          onPressed: _pickDate,
+          icon: const Icon(Icons.calendar_today_outlined),
+          label: Text(_dateFormatter.format(_date)),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        FilledButton(
+          onPressed: isSaving ? null : _save,
+          child: isSaving
+              ? const Text('Saving...')
+              : Text(isEditing ? 'Update transaction' : 'Save transaction'),
+        ),
+      ],
     );
+  }
+
+  MoneyTransaction? _findTransaction(List<MoneyTransaction> transactions) {
+    for (final transaction in transactions) {
+      if (transaction.id == widget.transactionId) {
+        return transaction;
+      }
+    }
+
+    return null;
+  }
+
+  void _prepareEditForm(MoneyTransaction transaction) {
+    if (_didPrepareEditForm) {
+      return;
+    }
+
+    _type = transaction.type;
+    _date = transaction.date;
+    _category = transaction.category;
+    _paymentMethod = transaction.paymentMethod;
+    _amountController.text = transaction.amount.toStringAsFixed(
+      transaction.amount.truncateToDouble() == transaction.amount ? 0 : 2,
+    );
+    _descriptionController.text = transaction.description;
+    _didPrepareEditForm = true;
   }
 
   String? _amountValidator(String? value) {
@@ -187,18 +256,20 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       return;
     }
 
-    await ref
-        .read(transactionControllerProvider.notifier)
-        .addTransaction(
-          TransactionDraft(
-            type: _type,
-            amount: double.parse(_amountController.text),
-            date: _date,
-            category: _category,
-            paymentMethod: _paymentMethod,
-            description: _descriptionController.text.trim(),
-          ),
-        );
+    final draft = TransactionDraft(
+      type: _type,
+      amount: double.parse(_amountController.text.trim()),
+      date: _date,
+      category: _category,
+      paymentMethod: _paymentMethod,
+      description: _descriptionController.text.trim(),
+    );
+    final controller = ref.read(transactionControllerProvider.notifier);
+    if (widget.transactionId == null) {
+      await controller.addTransaction(draft);
+    } else {
+      await controller.updateTransaction(widget.transactionId!, draft);
+    }
 
     if (!mounted) {
       return;
@@ -212,9 +283,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Transaction saved.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          widget.transactionId == null
+              ? 'Transaction saved.'
+              : 'Transaction updated.',
+        ),
+      ),
+    );
     Navigator.of(context).pop();
   }
 }

@@ -50,7 +50,7 @@ Widget tests:
 - Splash opens local auth flow.
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
-- Add/delete transaction flow works.
+- Add/edit/delete transaction flow works.
 - Settings export-to-clipboard, reset confirmation, and confirmed reset-to-auth respond.
 - Settings encrypted-backup password validation responds.
 - Settings encrypted-backup restore action is visible.
@@ -63,7 +63,7 @@ Implemented:
 - Splash/onboarding entry.
 - Dashboard using local transaction and budget data.
 - Add transaction with validation.
-- Transactions list with search, income/expense filter, and delete.
+- Transactions list with search, income/expense filter, edit, and delete.
 - Budget monthly/category limits with persisted local settings and tap-to-replace editing.
 - Insights from local transaction data.
 - Settings profile display, privacy link, local JSON export to clipboard, encrypted backup export/restore through platform file flows, namespace reset, and sign out.
@@ -154,6 +154,7 @@ Completed on `MoneyKai_API_36`:
 - App restart session restore.
 - Add income transaction.
 - Add expense transaction.
+- Edit transaction.
 - Search/filter transactions.
 - Delete transaction.
 - Budget progress update.

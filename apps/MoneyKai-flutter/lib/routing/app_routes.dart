@@ -6,8 +6,11 @@ class AppRoutes {
   static const dashboard = '/dashboard';
   static const transactions = '/transactions';
   static const addTransaction = '/transactions/add';
+  static const editTransaction = '/transactions/edit/:id';
   static const budget = '/budget';
   static const insights = '/insights';
   static const settings = '/settings';
   static const privacy = '/privacy';
+
+  static String editTransactionPath(String id) => '/transactions/edit/$id';
 }

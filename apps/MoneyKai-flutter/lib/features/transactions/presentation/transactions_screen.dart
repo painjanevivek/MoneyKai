@@ -103,6 +103,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: TransactionRow(
                 transaction: transaction,
+                onEdit: () =>
+                    context.push(AppRoutes.editTransactionPath(transaction.id)),
                 onDelete: () => ref
                     .read(transactionControllerProvider.notifier)
                     .deleteTransaction(transaction.id),
