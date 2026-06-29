@@ -143,6 +143,56 @@ void main() {
     expect(find.text('June 2026'), findsNothing);
   });
 
+  testWidgets('dashboard shows category breakdown preview', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'food',
+          'type': 'expense',
+          'amount': 900,
+          'date': DateTime(2026, 6, 8).toIso8601String(),
+          'category': 'Food',
+          'paymentMethod': 'UPI',
+          'description': 'Dinner',
+        },
+        {
+          'id': 'bills',
+          'type': 'expense',
+          'amount': 500,
+          'date': DateTime(2026, 6, 7).toIso8601String(),
+          'category': 'Bills',
+          'paymentMethod': 'Card',
+          'description': 'Internet bill',
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Category breakdown'), findsOneWidget);
+    expect(find.text('Food'), findsWidgets);
+    expect(find.text('Bills'), findsWidgets);
+
+    final viewInsightsButton = find.widgetWithText(
+      OutlinedButton,
+      'View insights',
+    );
+    await tester.drag(find.byType(ListView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+    await tester.tap(viewInsightsButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Insights'), findsWidgets);
+    expect(find.text('Top spending categories'), findsOneWidget);
+  });
+
   testWidgets('settings export and reset actions respond', (tester) async {
     SharedPreferences.setMockInitialValues({});
     String? exportedText;

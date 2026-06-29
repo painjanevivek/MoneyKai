@@ -10,7 +10,7 @@ Secondary target: iOS with the same Flutter UI and architecture.
 Implemented:
 
 - Local onboarding and local account/session boundary.
-- Dashboard, transactions, budgets, insights, settings, and privacy/security.
+- Dashboard with category breakdown preview, transactions, budgets, insights, settings, and privacy/security.
 - Add, edit, search, type/category filter, month-group, and delete local transactions.
 - Persisted local budgets and transactions through `shared_preferences`.
 - Local JSON export to clipboard for profile, transaction, and budget data.

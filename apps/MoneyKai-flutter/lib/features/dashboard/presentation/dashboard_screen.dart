@@ -90,7 +90,113 @@ class DashboardScreen extends ConsumerWidget {
             child: const Text('Review budget'),
           ),
           const SizedBox(height: AppSpacing.xl),
+          _CategoryBreakdownPreview(transactions: transactionList),
+          const SizedBox(height: AppSpacing.xl),
           _RecentActivity(transactions: transactionList.take(3).toList()),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryBreakdownPreview extends StatelessWidget {
+  const _CategoryBreakdownPreview({required this.transactions});
+
+  final List<MoneyTransaction> transactions;
+
+  @override
+  Widget build(BuildContext context) {
+    final expenseTotals = _expenseTotalsByCategory(transactions);
+    final topCategories = expenseTotals.entries.take(3).toList();
+    final totalExpense = expenseTotals.values.fold<double>(
+      0,
+      (sum, amount) => sum + amount,
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Category breakdown',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (topCategories.isEmpty)
+              const Text('Add expenses to see your top spending categories.')
+            else
+              for (final category in topCategories)
+                _CategoryBreakdownRow(
+                  category: category.key,
+                  amount: category.value,
+                  total: totalExpense,
+                ),
+            const SizedBox(height: AppSpacing.md),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton(
+                onPressed: () => context.go(AppRoutes.insights),
+                child: const Text('View insights'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Map<String, double> _expenseTotalsByCategory(
+    List<MoneyTransaction> transactions,
+  ) {
+    final totals = <String, double>{};
+    for (final transaction in transactions) {
+      if (transaction.type != TransactionType.expense) {
+        continue;
+      }
+
+      totals.update(
+        transaction.category,
+        (value) => value + transaction.amount,
+        ifAbsent: () => transaction.amount,
+      );
+    }
+
+    final sorted = totals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return Map.fromEntries(sorted);
+  }
+}
+
+class _CategoryBreakdownRow extends StatelessWidget {
+  const _CategoryBreakdownRow({
+    required this.category,
+    required this.amount,
+    required this.total,
+  });
+
+  final String category;
+  final double amount;
+  final double total;
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = total <= 0 ? 0.0 : (amount / total).clamp(0.0, 1.0);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(category)),
+              Text(MoneyFormatter().format(amount)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          LinearProgressIndicator(value: ratio),
         ],
       ),
     );

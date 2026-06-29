@@ -18,7 +18,7 @@ Implemented MVP:
 
 - Splash/onboarding.
 - Local sign in / local account creation boundary.
-- Dashboard with balance, income, expense, and record count.
+- Dashboard with balance, income, expense, record count, budget progress, category breakdown preview, and recent activity.
 - Add and edit transaction flows for local income and expenses.
 - Transactions list with search, income/expense filters, category filter, month grouping, edit, and delete.
 - Budget screen with monthly and category limits.

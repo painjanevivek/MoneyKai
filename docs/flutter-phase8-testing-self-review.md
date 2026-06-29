@@ -50,6 +50,7 @@ Widget tests:
 - Splash opens local auth flow.
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
+- Dashboard category breakdown preview opens Insights.
 - Add/edit/delete transaction flow works.
 - Transactions group by month and filter by category.
 - Settings export-to-clipboard, reset confirmation, and confirmed reset-to-auth respond.
@@ -62,7 +63,7 @@ Implemented:
 
 - Local account/session boundary.
 - Splash/onboarding entry.
-- Dashboard using local transaction and budget data.
+- Dashboard using local transaction, budget, and category breakdown data.
 - Add transaction with validation.
 - Transactions list with search, income/expense filter, category filter, month grouping, edit, and delete.
 - Budget monthly/category limits with persisted local settings and tap-to-replace editing.
