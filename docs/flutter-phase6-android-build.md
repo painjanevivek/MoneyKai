@@ -99,7 +99,7 @@ Latest emulator smoke:
 | Result | App process started and onboarding screen rendered |
 | Screenshot | `.codex-artifacts\moneykai-flutter-emulator-smoke.png` |
 
-Scoped manual QA on the same emulator also verified local account creation, income add, expense add/delete, transaction income/expense filters, transaction search, dashboard persistence after force-stop/start, monthly and category budget value edits with restart persistence, budget and insights updates from expenses, export placeholder feedback, reset confirmation/success, sign out back to local auth, and a 1.3 font-scale Settings screen pass after the bottom navigation label fix. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml` and `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`.
+Scoped manual QA on the same emulator also verified local account creation, income add, expense add/delete, transaction income/expense filters, transaction search, dashboard persistence after force-stop/start, monthly and category budget value edits with restart persistence, budget and insights updates from expenses, export placeholder feedback, reset confirmation/success, sign out back to local auth, Android accessibility hierarchy labels/focus order across the primary screens, and a 1.3 font-scale Settings screen pass after the bottom navigation label fix. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml`, `.codex-artifacts\moneykai-qa4-a11y-focus-summary.txt`, and `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`.
 
 To run the app interactively on Android:
 
@@ -160,7 +160,7 @@ No Play-ready release AAB has been produced in this phase because no upload keys
 
 ## Remaining Android release work
 
-- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: screen reader/focus-order checks and physical-device performance/cold-start checks.
+- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: real TalkBack spoken-output pass and physical-device performance/cold-start checks.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with non-debug signing.
 - Capture SHA-256 and signer certificate for the exact release artifacts.

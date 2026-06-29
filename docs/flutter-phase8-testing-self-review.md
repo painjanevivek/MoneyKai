@@ -112,10 +112,12 @@ Remaining:
 - Major icon-only actions use tooltips.
 - Standard Material form fields/buttons/navigation are used.
 - A 1.3 Android font-scale Settings screen pass was captured after fixing bottom navigation label wrapping.
+- Android accessibility hierarchy/focus-order snapshots were captured for onboarding, auth, dashboard, transactions, budget, insights, settings, and privacy/security.
+- Primary actionable controls expose labels in the hierarchy, including auth fields, bottom navigation, filter buttons, add/save/delete actions, settings actions, and the privacy back button.
 
 Remaining:
 
-- Screen reader labels and focus order need manual QA on device.
+- A real TalkBack spoken-output pass still needs manual QA on a device or emulator session where TalkBack can be operated interactively.
 
 ### Security/privacy
 
@@ -144,6 +146,7 @@ Completed on `MoneyKai_API_36`:
 - Update monthly and category budgets.
 - Verify export placeholder snackbar on device.
 - Run 1.3 font-scale visual QA for the Settings screen.
+- Capture Android accessibility hierarchy/focus-order snapshots for primary screens.
 - Reset local data.
 - Sign out.
 - Reopen app after restart and verify persisted state.
@@ -165,10 +168,19 @@ Evidence artifacts captured locally:
 - `.codex-artifacts\moneykai-window-qa3-budget-monthly-edit.xml`
 - `.codex-artifacts\moneykai-window-qa3-budget-category-edit.xml`
 - `.codex-artifacts\moneykai-window-qa3-budget-after-restart.xml`
+- `.codex-artifacts\moneykai-window-qa4-a11y-onboarding.xml`
+- `.codex-artifacts\moneykai-window-qa4-a11y-auth.xml`
+- `.codex-artifacts\moneykai-window-qa4-a11y-dashboard.xml`
+- `.codex-artifacts\moneykai-window-qa4-a11y-transactions.xml`
+- `.codex-artifacts\moneykai-window-qa4-a11y-budget.xml`
+- `.codex-artifacts\moneykai-window-qa4-a11y-insights.xml`
+- `.codex-artifacts\moneykai-window-qa4-a11y-settings.xml`
+- `.codex-artifacts\moneykai-window-qa4-a11y-privacy.xml`
+- `.codex-artifacts\moneykai-qa4-a11y-focus-summary.txt`
 
 Still required on an Android emulator or physical device:
 
-- Run screen reader and focus-order QA.
+- Run real TalkBack spoken-output QA.
 - Run physical-device performance and cold-start checks.
 
 On macOS/Xcode later:
@@ -181,6 +193,6 @@ On macOS/Xcode later:
 ## Known limitations
 
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
-- Android emulator scoped manual QA is partially complete, but screen-reader/focus-order/physical-device QA is still pending.
+- Android emulator scoped manual QA is partially complete, but real TalkBack spoken-output and physical-device QA are still pending.
 - No iOS build was possible on Windows.
 - Backend sync, real auth, encrypted export/backup, and store submission remain future work.
