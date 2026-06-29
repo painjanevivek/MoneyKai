@@ -343,6 +343,14 @@ function Assert-ReleaseManifestHardening {
         throw "Release APK manifest must include dataExtractionRules."
     }
 
+    if ($joinedManifest -match "extractNativeLibs\(.*\)=true") {
+        throw "Release APK manifest extracts native libraries."
+    }
+
+    if ($joinedManifest -notmatch "extractNativeLibs\(.*\).*(false|\(type 0x12\)0x0)") {
+        throw "Release APK manifest must explicitly disable native library extraction."
+    }
+
     Assert-ReleaseManifestExportedComponents `
         -ManifestDump $ManifestDump `
         -ExpectedLaunchActivity $ExpectedLaunchActivity

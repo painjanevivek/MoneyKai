@@ -31,7 +31,7 @@ Current result:
 - `.\tool\audit_ios_project.ps1` passed.
 - Debug APK built successfully.
 - Unsigned release APK and AAB artifacts built successfully for inspection.
-- `.\tool\audit_android_release.ps1` passed for current unsigned inspection artifacts, compiled APK identity/version/SDK/label/launch/ARM64 ABI checks, exact debug/release permission allowlist checks, source and compiled release manifest hardening checks, exported-component exposure checks, Android backup/data-extraction opt-out checks, and release AAB structure/metadata checks.
+- `.\tool\audit_android_release.ps1` passed for current unsigned inspection artifacts, compiled APK identity/version/SDK/label/launch/ARM64 ABI checks, exact debug/release permission allowlist checks, source and compiled release manifest hardening checks, exported-component exposure checks, native-library extraction checks, Android backup/data-extraction opt-out checks, and release AAB structure/metadata checks.
 
 ## Test coverage currently present
 
