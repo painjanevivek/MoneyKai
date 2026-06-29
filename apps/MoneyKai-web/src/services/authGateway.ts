@@ -27,26 +27,32 @@ class AuthGatewayError extends Error {
 }
 
 const backendBaseUrl = getBackendBaseUrl();
+const AUTH_GATEWAY_TIMEOUT_MS = 5_000;
 
-const getAuthGatewayUrl = (path: string, useApiPrefix = false): string => {
-  const normalizedPath = useApiPrefix && !path.startsWith('/api/')
-    ? `/api${path}`
-    : path;
+const withApiPrefix = (path: string): string =>
+  path.startsWith('/api/') ? path : `/api${path}`;
 
-  return `${backendBaseUrl}${normalizedPath}`;
+const getRuntimeOrigin = (): string =>
+  typeof window === 'undefined' ? '' : window.location.origin;
+
+const appendUnique = (values: string[], value: string) => {
+  if (value && !values.includes(value)) {
+    values.push(value);
+  }
 };
 
-const isSameOriginBackend = (): boolean => {
-  if (typeof window === 'undefined') {
-    return false;
+const getAuthGatewayUrls = (path: string): string[] => {
+  const urls: string[] = [];
+  const runtimeOrigin = getRuntimeOrigin();
+
+  if (runtimeOrigin) {
+    appendUnique(urls, `${runtimeOrigin}${withApiPrefix(path)}`);
   }
 
-  try {
-    const backendUrl = new URL(backendBaseUrl || window.location.origin, window.location.origin);
-    return backendUrl.origin === window.location.origin;
-  } catch {
-    return false;
-  }
+  appendUnique(urls, `${backendBaseUrl}${path}`);
+  appendUnique(urls, `${backendBaseUrl}${withApiPrefix(path)}`);
+
+  return urls;
 };
 
 const parseErrorMessage = async (response: Response, fallback: string) => {
@@ -63,6 +69,20 @@ const parseErrorMessage = async (response: Response, fallback: string) => {
   }
 };
 
+const fetchAuthGateway = async (url: string, init: RequestInit): Promise<Response> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AUTH_GATEWAY_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T> => {
   const requestInit: RequestInit = {
     method: 'POST',
@@ -72,19 +92,38 @@ const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T>
     },
     body: JSON.stringify(payload),
   };
+  const urls = getAuthGatewayUrls(path);
+  let lastResponse: Response | null = null;
+  let lastNetworkError: unknown = null;
 
-  let response = await fetch(getAuthGatewayUrl(path), requestInit);
+  for (const url of urls) {
+    try {
+      const response = await fetchAuthGateway(url, requestInit);
+      lastResponse = response;
 
-  if (response.status === 404 && isSameOriginBackend() && !path.startsWith('/api/')) {
-    response = await fetch(getAuthGatewayUrl(path, true), requestInit);
+      if (response.ok) {
+        return (await response.json()) as T;
+      }
+
+      if (![404, 405].includes(response.status)) {
+        break;
+      }
+    } catch (error) {
+      lastNetworkError = error;
+    }
   }
 
-  if (!response.ok) {
-    const message = await parseErrorMessage(response, `Authentication request failed with ${response.status}.`);
-    throw new AuthGatewayError(message, response.status);
+  if (lastResponse) {
+    const message = await parseErrorMessage(lastResponse, `Authentication request failed with ${lastResponse.status}.`);
+    throw new AuthGatewayError(message, lastResponse.status);
   }
 
-  return (await response.json()) as T;
+  throw new AuthGatewayError(
+    lastNetworkError instanceof Error
+      ? lastNetworkError.message
+      : 'Authentication service is unreachable.',
+    0,
+  );
 };
 
 const signInWithGatewayToken = async (response: AuthGatewayResponse): Promise<UserCredential> => {

@@ -34,6 +34,17 @@ const getFriendlyAuthMessage = (error: unknown) => {
   if (lower.includes('too-many-requests')) {
     return 'Too many attempts. Please wait a moment before trying again.';
   }
+  if (
+    lower.includes('failed to fetch') ||
+    lower.includes('network request failed') ||
+    lower.includes('unreachable') ||
+    lower.includes('aborted') ||
+    lower.includes('aborterror') ||
+    lower.includes('authentication request failed with 404') ||
+    lower.includes('authentication request failed with 405')
+  ) {
+    return 'MoneyKai could not reach the authentication service. Check the web API deployment, then try again.';
+  }
   if (lower.includes('cancelled') || lower.includes('rejected')) {
     return 'Google sign-in was cancelled. Try again, or use email login.';
   }
@@ -54,6 +65,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [authError, setAuthError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
   const submitting = useRef(false);
 
@@ -74,13 +86,16 @@ export default function LoginScreen() {
     if (Object.keys(newErrors).length > 0) return;
 
     submitting.current = true;
+    setAuthError('');
     try {
       trackUserEvent('auth_login_submitted', { method: 'email' });
       await signIn(email, password);
       trackUserEvent('auth_login_succeeded', { method: 'email' });
     } catch (err) {
+      const message = getFriendlyAuthMessage(err);
       trackUserEvent('auth_login_failed', { method: 'email' });
-      Alert.alert('Login Failed', getFriendlyAuthMessage(err));
+      setAuthError(message);
+      Alert.alert('Login Failed', message);
     } finally {
       submitting.current = false;
     }
@@ -89,14 +104,17 @@ export default function LoginScreen() {
   const handleGoogleSignIn = async () => {
     if (submitting.current) return;
     submitting.current = true;
+    setAuthError('');
     setGoogleLoading(true);
     try {
       trackUserEvent('auth_login_submitted', { method: 'google' });
       await signInWithGoogle();
       trackUserEvent('auth_login_succeeded', { method: 'google' });
     } catch (err) {
+      const message = getFriendlyAuthMessage(err);
       trackUserEvent('auth_login_failed', { method: 'google' });
-      Alert.alert('Google Sign-In Failed', getFriendlyAuthMessage(err));
+      setAuthError(message);
+      Alert.alert('Google Sign-In Failed', message);
     } finally {
       setGoogleLoading(false);
       submitting.current = false;
@@ -204,6 +222,32 @@ export default function LoginScreen() {
 
             <View style={{ flex: isWide ? 1.15 : undefined, justifyContent: 'center', maxWidth: isWide ? 590 : undefined }}>
               <View>
+                {authError ? (
+                  <View
+                    accessibilityRole="alert"
+                    style={{
+                      backgroundColor: colors.emergencyBg,
+                      borderColor: colors.error,
+                      borderRadius: BorderRadius.md,
+                      borderWidth: 1,
+                      marginBottom: Spacing.md,
+                      paddingHorizontal: Spacing.md,
+                      paddingVertical: Spacing.sm,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.error,
+                        fontFamily: Typography.fontFamily.medium,
+                        fontSize: Typography.fontSize.sm,
+                        lineHeight: Typography.lineHeight.sm,
+                      }}
+                    >
+                      {authError}
+                    </Text>
+                  </View>
+                ) : null}
+
             <Input
               label="Email"
                     placeholder="Email"

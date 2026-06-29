@@ -53,6 +53,7 @@ yarn-error.*
 
 # test output
 coverage/
+test-results/
 .pytest_cache/
 **/.pytest_cache/
 __pycache__/

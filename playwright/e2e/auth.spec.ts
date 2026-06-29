@@ -46,4 +46,37 @@ test.describe('MoneyKai auth journeys', () => {
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByText('Welcome back')).toBeVisible();
   });
+
+  test('Google login starts through the same-origin web auth route', async ({ page }) => {
+    const legacyBackendCalls: string[] = [];
+    const authStartCalls: string[] = [];
+
+    await page.route('http://localhost:8000/**', async (route) => {
+      legacyBackendCalls.push(route.request().url());
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'legacy backend route should not be used first' }),
+      });
+    });
+
+    await page.route('**/api/v1/auth/google/start', async (route) => {
+      authStartCalls.push(route.request().url());
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          authorizationUrl: new URL('/auth/google/callback?error=Mocked%20Google%20failure', page.url()).toString(),
+        }),
+      });
+    });
+
+    await page.goto('/login');
+    await page.getByTestId('login-google').click();
+
+    await expect(page).toHaveURL(/\/auth\/google\/callback/);
+    await expect(page.getByText('Google sign-in failed')).toBeVisible();
+    expect(authStartCalls).toHaveLength(1);
+    expect(legacyBackendCalls).toEqual([]);
+  });
 });
