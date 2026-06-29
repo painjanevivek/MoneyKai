@@ -29,7 +29,7 @@ Implemented MVP:
 Core architecture:
 
 - Feature-first Flutter structure under `lib\features`.
-- Shared routing through `go_router`, with protected app routes redirecting signed-out deep links back to the local profile flow.
+- Shared routing through `go_router`, with protected app routes redirecting signed-out deep links back to the local profile flow and authenticated local-profile hits back to Dashboard.
 - State management through `flutter_riverpod`.
 - Local persistence through `shared_preferences` behind a MoneyKai storage service.
 - `moneykai.*` local storage namespace and `moneykai.storageSchemaVersion`.
@@ -108,7 +108,7 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 | --- | --- |
 | Size | `190664156` bytes |
 | SHA-256 | `DA3E28DBCA47A6A522B0DB63B913108FCEC3A3A90548051FD5A55FC8CE3F529F` |
-| Built | `2026-06-29 21:11:04` local time |
+| Built | `2026-06-29 21:20:28` local time |
 
 Unsigned release APK for binary inspection only:
 
