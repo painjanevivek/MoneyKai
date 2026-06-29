@@ -21,7 +21,7 @@ Current iOS project configuration:
 | Bundle identifier | `com.moneykai.mobile` |
 | Display name | `MoneyKai` |
 | Flutter version | `1.0.1+2` from `pubspec.yaml` |
-| App icon | Generated Flutter placeholder |
+| App icon | MoneyKai icon generated from `apps\MoneyKai-mobile\assets\images\icon.png` |
 | Launch screen | Generated Flutter placeholder |
 
 ## Package parity check
@@ -103,7 +103,7 @@ flutter build ios --release
 
 ## Remaining iOS parity work
 
-- Replace generated app icon and launch assets.
+- Replace generated launch assets.
 - Perform simulator QA on small and large iPhones.
 - Perform real-device QA before TestFlight.
 - Configure Apple signing team and provisioning.

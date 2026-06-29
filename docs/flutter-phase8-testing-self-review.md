@@ -97,10 +97,11 @@ Remaining:
 - Design tokens, theme, app shell, metric cards, budget progress card, empty states, and responsive screen wrapper exist.
 - Responsive widget tests cover compact and larger viewports.
 - Flutter Material icons avoid the old React Native icon-font `NO GLYPH` problem.
+- Android and iOS launcher icon assets now use the existing MoneyKai production mark.
 
 Remaining:
 
-- App icon and launch assets are still generated Flutter placeholders.
+- Launch screen assets are still generated Flutter placeholders.
 - No screenshot-based visual review has been captured for the Flutter UI yet.
 - Dark theme exists but has not had full visual QA.
 
@@ -153,4 +154,4 @@ On macOS/Xcode later:
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
 - No Android emulator or physical Android runtime smoke was completed in this phase.
 - No iOS build was possible on Windows.
-- Backend sync, real auth, encrypted export/backup, production icons, and store submission remain future work.
+- Backend sync, real auth, encrypted export/backup, production launch assets, and store submission remain future work.

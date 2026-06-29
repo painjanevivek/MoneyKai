@@ -24,6 +24,15 @@ namespace = com.moneykai.mobile
 app label = MoneyKai
 ```
 
+Launcher icon:
+
+```text
+Source: apps\MoneyKai-mobile\assets\images\icon.png
+Generated Android densities: mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi
+Source SHA-256: 1190F049F658A20CF5FA36FF314A4E4ED9CC6EEEE17C1001D7DB5D0426776292
+xxxhdpi SHA-256: 3A2EB54675B564E3EB54745FE5EFA7EF74AF72A562E5BDB6A8F236B07BAD0C13
+```
+
 ## Verification commands
 
 Run from `apps/MoneyKai-flutter` with Flutter on `PATH`:
@@ -53,9 +62,9 @@ Artifact metadata:
 
 | Field | Value |
 | --- | --- |
-| Size | `151818524` bytes |
-| SHA-256 | `BE5A28BCBC83057668C0713A7DEB81084CD54EA6FD815613BA3A6873652A8A34` |
-| Built | `2026-06-29 10:50:00` local time |
+| Size | `151827685` bytes |
+| SHA-256 | `A74DFB561739EACAFEA92305D443ED371EE148C22879DC7F6C686975E78E62D9` |
+| Built | `2026-06-29 10:56:28` local time |
 
 Install for direct Android testing:
 
@@ -132,7 +141,7 @@ No Play-ready release AAB has been produced in this phase because no upload keys
 
 ## Remaining Android release work
 
-- Replace generated Flutter launcher icon with MoneyKai production artwork.
+- Replace generated Flutter launch screen assets with MoneyKai production artwork.
 - Launch `MoneyKai_API_36` or connect a physical Android device and run `flutter run`.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with non-debug signing.
