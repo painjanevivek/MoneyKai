@@ -14,6 +14,7 @@ $androidBuildFile = Join-Path $appRoot "android\app\build.gradle.kts"
 $androidManifestPath = Join-Path $appRoot "android\app\src\main\AndroidManifest.xml"
 $backupRulesPath = Join-Path $appRoot "android\app\src\main\res\xml\backup_rules.xml"
 $dataExtractionRulesPath = Join-Path $appRoot "android\app\src\main\res\xml\data_extraction_rules.xml"
+$networkSecurityConfigPath = Join-Path $appRoot "android\app\src\main\res\xml\network_security_config.xml"
 
 $isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
     [System.Runtime.InteropServices.OSPlatform]::Windows
@@ -87,6 +88,10 @@ function Assert-SourceAndroidBackupHardening {
         throw "Missing Android data extraction rules: $dataExtractionRulesPath"
     }
 
+    if (-not (Test-Path -LiteralPath $networkSecurityConfigPath)) {
+        throw "Missing Android network security config: $networkSecurityConfigPath"
+    }
+
     [xml]$manifest = Get-Content -LiteralPath $androidManifestPath -Raw
     $application = $manifest.manifest.application
     if ($null -eq $application) {
@@ -104,6 +109,14 @@ function Assert-SourceAndroidBackupHardening {
 
     if ($application.GetAttribute("dataExtractionRules", $androidNamespace) -ne "@xml/data_extraction_rules") {
         throw "AndroidManifest.xml must point android:dataExtractionRules to @xml/data_extraction_rules."
+    }
+
+    if ($application.GetAttribute("networkSecurityConfig", $androidNamespace) -ne "@xml/network_security_config") {
+        throw "AndroidManifest.xml must point android:networkSecurityConfig to @xml/network_security_config."
+    }
+
+    if ($application.GetAttribute("usesCleartextTraffic", $androidNamespace) -ne "false") {
+        throw "AndroidManifest.xml must set android:usesCleartextTraffic to false."
     }
 
     [xml]$backupRules = Get-Content -LiteralPath $backupRulesPath -Raw
@@ -127,6 +140,12 @@ function Assert-SourceAndroidBackupHardening {
     })
     if ($transferExclude.Count -ne 1) {
         throw "data_extraction_rules.xml must exclude root device transfer."
+    }
+
+    [xml]$networkSecurityConfig = Get-Content -LiteralPath $networkSecurityConfigPath -Raw
+    $baseConfig = $networkSecurityConfig."network-security-config"."base-config"
+    if ($null -eq $baseConfig -or $baseConfig.cleartextTrafficPermitted -ne "false") {
+        throw "network_security_config.xml must disable cleartext traffic in base-config."
     }
 
     Write-Host "Android source backup hardening audit: passed"
@@ -325,6 +344,14 @@ function Assert-ReleaseManifestHardening {
 
     if ($joinedManifest -match "usesCleartextTraffic\(.*\)=true") {
         throw "Release APK manifest allows cleartext traffic."
+    }
+
+    if ($joinedManifest -notmatch "usesCleartextTraffic\(.*\).*(false|\(type 0x12\)0x0)") {
+        throw "Release APK manifest must explicitly disable cleartext traffic."
+    }
+
+    if ($joinedManifest -notmatch "networkSecurityConfig\(.*\)=") {
+        throw "Release APK manifest must include networkSecurityConfig."
     }
 
     if ($joinedManifest -match "allowBackup\(.*\)=true") {

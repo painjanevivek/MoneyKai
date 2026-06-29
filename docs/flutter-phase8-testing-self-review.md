@@ -31,7 +31,7 @@ Current result:
 - `.\tool\audit_ios_project.ps1` passed.
 - Debug APK built successfully.
 - Unsigned release APK and AAB artifacts built successfully for inspection.
-- `.\tool\audit_android_release.ps1` passed for current unsigned inspection artifacts, compiled APK identity/version/SDK/label/launch/ARM64 ABI checks, exact debug/release permission allowlist checks, source and compiled release manifest hardening checks, exported-component exposure checks, native-library extraction checks, Android backup/data-extraction opt-out checks, and release AAB structure/metadata checks.
+- `.\tool\audit_android_release.ps1` passed for current unsigned inspection artifacts, compiled APK identity/version/SDK/label/launch/ARM64 ABI checks, exact debug/release permission allowlist checks, source and compiled release manifest hardening checks, cleartext-denying network security config checks, exported-component exposure checks, native-library extraction checks, Android backup/data-extraction opt-out checks, and release AAB structure/metadata checks.
 
 ## Test coverage currently present
 
@@ -160,6 +160,7 @@ Remaining:
 - Local diagnostics stay on-device and can be cleared from Settings.
 - Encrypted backup restore validates the clear payload version, profile boundary, and budget shape before clearing local data, so unsupported or malformed backups cannot erase the current local session.
 - Android manifest hardening disables system backup and supplies root-excluding backup/data-extraction rules, with the release audit checking both source XML and compiled release APK output.
+- Android network hardening sets `usesCleartextTraffic=false` and supplies a cleartext-denying network security config, with the release audit checking source XML and compiled release APK output.
 - The release audit also rejects unexpected exported Android components; the current compiled manifest exposes only the launcher activity plus AndroidX's `ProfileInstallReceiver` guarded by `android.permission.DUMP`.
 
 Remaining:

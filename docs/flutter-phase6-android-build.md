@@ -226,7 +226,7 @@ The repeatable Android release audit lives at:
 apps\MoneyKai-flutter\tool\audit_android_release.ps1
 ```
 
-It checks artifact existence, SHA-256 metadata, compiled debug/release APK identity/version/min-target-compile SDK/label/launch activity/required ARM64 ABI, exact debug/release permission allowlists, source and compiled release APK manifest hardening for debuggability, cleartext traffic, exported component exposure, native-library extraction, Android backup opt-out, and data-extraction rules, required release AAB base-module entries, release AAB ProGuard mapping, baseline profile metadata, ARM64 native debug symbols, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, unexpected signed artifacts when no upload-key env is set, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
+It checks artifact existence, SHA-256 metadata, compiled debug/release APK identity/version/min-target-compile SDK/label/launch activity/required ARM64 ABI, exact debug/release permission allowlists, source and compiled release APK manifest hardening for debuggability, cleartext-denying network security config, exported component exposure, native-library extraction, Android backup opt-out, and data-extraction rules, required release AAB base-module entries, release AAB ProGuard mapping, baseline profile metadata, ARM64 native debug symbols, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, unexpected signed artifacts when no upload-key env is set, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
 
 ## Remaining Android release work
 
