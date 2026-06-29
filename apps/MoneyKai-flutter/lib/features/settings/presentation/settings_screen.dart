@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/storage/local_storage_provider.dart';
@@ -7,6 +8,7 @@ import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/screen_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../budget/application/budget_controller.dart';
+import '../application/local_data_export_provider.dart';
 import '../../transactions/application/transaction_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -37,14 +39,8 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.file_download_outlined),
             title: const Text('Export local data'),
-            subtitle: const Text('Coming soon'),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Local data export is coming soon.'),
-                ),
-              );
-            },
+            subtitle: const Text('Copies local JSON to clipboard'),
+            onTap: () => _exportLocalData(context, ref),
           ),
           ListTile(
             leading: Icon(
@@ -70,6 +66,26 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _exportLocalData(BuildContext context, WidgetRef ref) async {
+    try {
+      final exporter = await ref.read(localDataExportServiceProvider.future);
+      final exportJson = exporter.buildExportJson();
+      await Clipboard.setData(ClipboardData(text: exportJson));
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Local data copied to clipboard.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not export local data.')),
+        );
+      }
+    }
   }
 
   Future<void> _confirmReset(BuildContext context, WidgetRef ref) async {

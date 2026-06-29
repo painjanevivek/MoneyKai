@@ -74,9 +74,9 @@ Artifact metadata:
 
 | Field | Value |
 | --- | --- |
-| Size | `170213628` bytes |
-| SHA-256 | `82DA83D89B59F0D1AD1C21E3D1F2759C7569DF31065C31763577F360DD8F8791` |
-| Built | `2026-06-29 11:54:35` local time |
+| Size | `170214283` bytes |
+| SHA-256 | `C9BE69CD14C139E50599B92E58828397631D678CB626E3C8AAF90E277F7E3407` |
+| Built | `2026-06-29 12:35:59` local time |
 
 Install for direct Android testing:
 
@@ -97,8 +97,8 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 | Field | Value |
 | --- | --- |
 | Size | `51528626` bytes |
-| SHA-256 | `F698D5796E4EE868C7826D4AFCE9963E3A6C7F9E8000C2B6959D623ACE793E34` |
-| Built | `2026-06-29 11:55:02` local time |
+| SHA-256 | `FE56B7CADFE99859303C087A1C7EDC12C222BD4299E2E41CCEFB6F2F54AA2755` |
+| Built | `2026-06-29 12:36:09` local time |
 | Signing check | `apksigner verify --verbose` returns `DOES NOT VERIFY`; `Missing META-INF/MANIFEST.MF` |
 
 Latest unsigned release AAB:
@@ -109,9 +109,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\
 
 | Field | Value |
 | --- | --- |
-| Size | `50527919` bytes |
-| SHA-256 | `D0D7864E31B0D550C77A8FBB4DB2B94AD742253DCAD2D790455F6121F5350E21` |
-| Built | `2026-06-29 11:55:12` local time |
+| Size | `50559557` bytes |
+| SHA-256 | `96E6A5AF66A66D63D82A15D3810967B9E548287D83E6F6105FBB774467D5DA07` |
+| Built | `2026-06-29 12:29:43` local time |
 | Signing check | `jarsigner -verify -verbose -certs` reports `jar is unsigned` |
 
 These unsigned artifacts are not Play-ready and should not be treated as installable release candidates. Use the debug APK for direct emulator/device testing until an upload keystore is provided, then rebuild signed release outputs.
@@ -135,7 +135,7 @@ Latest emulator smoke:
 | Result | App process started and onboarding screen rendered |
 | Screenshot | `.codex-artifacts\moneykai-flutter-emulator-smoke.png` |
 
-Scoped manual QA on the same emulator also verified local account creation, income add, expense add/delete, transaction income/expense filters, transaction search, dashboard persistence after force-stop/start, monthly and category budget value edits with restart persistence, budget and insights updates from expenses, export placeholder feedback, reset confirmation/success, sign out back to local auth, Android accessibility hierarchy labels/focus order across the primary screens, Android light-theme and dark-theme screenshot visual review across the primary screens, and a 1.3 font-scale Settings screen pass after the bottom navigation label fix. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml`, `.codex-artifacts\moneykai-qa4-a11y-focus-summary.txt`, `.codex-artifacts\moneykai-qa5-visual-*.png`, `.codex-artifacts\moneykai-qa6-dark-visual-*.png`, and `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`.
+Scoped manual QA on the same emulator also verified local account creation, income add, expense add/delete, transaction income/expense filters, transaction search, dashboard persistence after force-stop/start, monthly and category budget value edits with restart persistence, budget and insights updates from expenses, export action feedback, reset confirmation/success, sign out back to local auth, Android accessibility hierarchy labels/focus order across the primary screens, Android light-theme and dark-theme screenshot visual review across the primary screens, and a 1.3 font-scale Settings screen pass after the bottom navigation label fix. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml`, `.codex-artifacts\moneykai-qa4-a11y-focus-summary.txt`, `.codex-artifacts\moneykai-qa5-visual-*.png`, `.codex-artifacts\moneykai-qa6-dark-visual-*.png`, and `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`.
 
 To run the app interactively on Android:
 

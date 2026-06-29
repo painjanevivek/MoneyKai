@@ -38,6 +38,7 @@ Unit/repository tests:
 - Local budget persistence and reset.
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
+- Local data export JSON includes user, transactions, budget, source, format version, and timestamp.
 
 Widget tests:
 
@@ -45,7 +46,7 @@ Widget tests:
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Add/delete transaction flow works.
-- Settings export placeholder, reset confirmation, and confirmed reset-to-auth respond.
+- Settings export-to-clipboard, reset confirmation, and confirmed reset-to-auth respond.
 
 ## Current functional state
 
@@ -58,7 +59,7 @@ Implemented:
 - Transactions list with search, income/expense filter, and delete.
 - Budget monthly/category limits with persisted local settings and tap-to-replace editing.
 - Insights from local transaction data.
-- Settings profile display, privacy link, export placeholder, namespace reset, and sign out.
+- Settings profile display, privacy link, local JSON export to clipboard, namespace reset, and sign out.
 - Privacy/security screen explaining local-only MVP and permission boundaries.
 
 ## Self-review findings
@@ -124,7 +125,7 @@ Remaining:
 ### Security/privacy
 
 - The MVP does not request SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
-- Export is clearly marked coming soon.
+- Local export copies a plaintext JSON snapshot to the clipboard without adding storage or sharing permissions.
 - Privacy screen states the current local-only data boundary.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
 
@@ -146,7 +147,7 @@ Completed on `MoneyKai_API_36`:
 - Delete transaction.
 - Budget progress update.
 - Update monthly and category budgets.
-- Verify export placeholder snackbar on device.
+- Verify export action feedback on device.
 - Run 1.3 font-scale visual QA for the Settings screen.
 - Capture Android accessibility hierarchy/focus-order snapshots for primary screens.
 - Capture Android light-theme screenshot visual QA for primary screens.
@@ -168,6 +169,9 @@ Evidence artifacts captured locally:
 - `.codex-artifacts\moneykai-window-qa2-filter-expense.xml`
 - `.codex-artifacts\moneykai-window-qa2-search-salary.xml`
 - `.codex-artifacts\moneykai-window-qa2-export-placeholder.xml`
+- `.codex-artifacts\moneykai-window-qa7-settings-before-export.xml`
+- `.codex-artifacts\moneykai-window-qa7-export-copied.xml`
+- `.codex-artifacts\moneykai-qa7-export-copied.png`
 - `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`
 - `.codex-artifacts\moneykai-window-qa3-budget-monthly-edit.xml`
 - `.codex-artifacts\moneykai-window-qa3-budget-category-edit.xml`

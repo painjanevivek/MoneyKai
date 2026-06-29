@@ -153,7 +153,7 @@ Required containers/actions:
 - Local profile display.
 - Theme preference if implemented without complexity.
 - Currency display fixed to INR for MVP.
-- Data export placeholder marked coming soon unless implemented.
+- Local data export as JSON when implemented without extra platform dependencies.
 - Data reset with confirmation.
 - Sign out.
 

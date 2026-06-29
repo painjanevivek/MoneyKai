@@ -23,7 +23,7 @@ Implemented MVP:
 - Transactions list with search, income/expense filters, and delete.
 - Budget screen with monthly and category limits.
 - Insights screen from local transaction data.
-- Settings screen with profile display, privacy link, export placeholder, namespace reset, and sign out.
+- Settings screen with profile display, privacy link, local JSON export to clipboard, namespace reset, and sign out.
 - Privacy/security screen describing the local-only MVP boundary.
 
 Core architecture:
@@ -56,6 +56,7 @@ Android-ready items:
 - Permission audit confirms no SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
 - Debug APK has been installed and smoke-tested on `MoneyKai_API_36`.
 - Primary workflows have emulator QA evidence.
+- Local JSON export copies the current profile, transactions, and budget snapshot to the clipboard without adding storage or sharing permissions.
 - Light and dark theme screenshot QA exists for primary screens.
 - Accessibility hierarchy/focus-order snapshots exist for primary screens.
 
@@ -97,9 +98,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 
 | Field | Value |
 | --- | --- |
-| Size | `170213628` bytes |
-| SHA-256 | `82DA83D89B59F0D1AD1C21E3D1F2759C7569DF31065C31763577F360DD8F8791` |
-| Built | `2026-06-29 11:54:35` local time |
+| Size | `170214283` bytes |
+| SHA-256 | `C9BE69CD14C139E50599B92E58828397631D678CB626E3C8AAF90E277F7E3407` |
+| Built | `2026-06-29 12:35:59` local time |
 
 Unsigned release APK for binary inspection only:
 
@@ -110,8 +111,8 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 | Field | Value |
 | --- | --- |
 | Size | `51528626` bytes |
-| SHA-256 | `F698D5796E4EE868C7826D4AFCE9963E3A6C7F9E8000C2B6959D623ACE793E34` |
-| Built | `2026-06-29 11:55:02` local time |
+| SHA-256 | `FE56B7CADFE99859303C087A1C7EDC12C222BD4299E2E41CCEFB6F2F54AA2755` |
+| Built | `2026-06-29 12:36:09` local time |
 | Signing | Unsigned; not Play-ready |
 
 Unsigned release AAB for binary inspection only:
@@ -122,9 +123,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\
 
 | Field | Value |
 | --- | --- |
-| Size | `50527919` bytes |
-| SHA-256 | `D0D7864E31B0D550C77A8FBB4DB2B94AD742253DCAD2D790455F6121F5350E21` |
-| Built | `2026-06-29 11:55:12` local time |
+| Size | `50559557` bytes |
+| SHA-256 | `96E6A5AF66A66D63D82A15D3810967B9E548287D83E6F6105FBB774467D5DA07` |
+| Built | `2026-06-29 12:29:43` local time |
 | Signing | Unsigned; not Play-ready |
 
 Screenshot evidence:
@@ -196,6 +197,6 @@ Future product/infrastructure work:
 
 - Backend sync boundary implementation.
 - Real authentication.
-- Encrypted export/backup.
+- Encrypted backup/export file flow.
 - Crash/error reporting.
 - Larger-history storage migration to SQLite/Drift/Isar if transaction volume grows.

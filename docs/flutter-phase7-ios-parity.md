@@ -47,7 +47,7 @@ Shared Flutter code currently covers:
 - Transactions list, search, filter, and delete.
 - Budget setup and progress.
 - Insights from local transaction data.
-- Settings, privacy/security, sign out, export placeholder, and local reset.
+- Settings, privacy/security, sign out, local JSON export to clipboard, and local reset.
 
 The MVP intentionally avoids:
 

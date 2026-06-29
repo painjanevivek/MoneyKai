@@ -1,11 +1,6 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:convert';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -77,6 +72,24 @@ void main() {
 
   testWidgets('settings export and reset actions respond', (tester) async {
     SharedPreferences.setMockInitialValues({});
+    String? exportedText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          exportedText =
+              (call.arguments as Map<Object?, Object?>)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
     await _setViewport(tester, const Size(420, 900));
     await _enterDashboard(tester);
 
@@ -85,7 +98,13 @@ void main() {
 
     await tester.tap(find.text('Export local data'));
     await tester.pumpAndSettle();
-    expect(find.text('Local data export is coming soon.'), findsOneWidget);
+    expect(find.text('Local data copied to clipboard.'), findsOneWidget);
+    final exported = jsonDecode(exportedText!) as Map<String, Object?>;
+    expect(exported['source'], 'moneykai-local-device');
+    expect(exported['user'], {
+      'email': 'akshay@example.com',
+      'displayName': 'Akshay',
+    });
 
     await tester.tap(find.text('Reset local data'));
     await tester.pumpAndSettle();
