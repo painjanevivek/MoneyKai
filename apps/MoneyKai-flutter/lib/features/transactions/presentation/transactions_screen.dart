@@ -59,9 +59,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
   Widget _buildTransactionList(List<MoneyTransaction> transactions) {
     final categories = _transactionCategories(transactions);
-    final selectedCategory = categories.contains(_categoryFilter)
-        ? _categoryFilter
-        : _allCategories;
+    final selectedCategory = _selectedCategory(categories);
     final visible = _filterTransactions(
       transactions,
       categoryFilter: selectedCategory,
@@ -198,6 +196,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
       return matchesType && matchesCategory && matchesQuery;
     }).toList();
+  }
+
+  String _selectedCategory(List<String> categories) {
+    if (_categoryFilter == _allCategories ||
+        categories.contains(_categoryFilter)) {
+      return _categoryFilter;
+    }
+
+    _categoryFilter = _allCategories;
+    return _allCategories;
   }
 
   List<String> _transactionCategories(List<MoneyTransaction> transactions) {

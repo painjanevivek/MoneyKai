@@ -388,6 +388,19 @@ void main() {
 
     expect(find.text('No matching transactions'), findsNothing);
     expect(find.text('Internet bill'), findsOneWidget);
+
+    await tester.tap(find.text('Add transaction'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.bySemanticsLabel('Amount'), '350');
+    await tester.enterText(find.bySemanticsLabel('Description'), 'Dinner');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.ensureVisible(find.text('Save transaction'));
+    await tester.tap(find.text('Save transaction'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dinner'), findsOneWidget);
+    expect(find.text('Internet bill'), findsOneWidget);
   });
 
   testWidgets('dashboard shows category breakdown preview', (tester) async {
