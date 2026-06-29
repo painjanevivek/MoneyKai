@@ -52,6 +52,22 @@ void main() {
     expect(repository.readSession().user?.email, 'akshay@example.com');
   });
 
+  test('rejects invalid local profile fields before saving', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalAuthRepository(LocalStorageService(preferences));
+
+    expect(
+      repository.saveSession(email: '@', displayName: 'Akshay'),
+      throwsA(isA<FormatException>()),
+    );
+    expect(
+      repository.saveSession(email: 'akshay@example.com', displayName: '   '),
+      throwsA(isA<FormatException>()),
+    );
+    expect(repository.readSession().isAuthenticated, isFalse);
+  });
+
   test('returns signed-out state for incomplete stored sessions', () async {
     SharedPreferences.setMockInitialValues({
       'moneykai.localSession': '{"email":"akshay@example.com"}',

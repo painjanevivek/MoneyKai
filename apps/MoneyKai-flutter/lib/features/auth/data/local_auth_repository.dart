@@ -33,9 +33,15 @@ class LocalAuthRepository {
     required String email,
     required String displayName,
   }) async {
+    final trimmedEmail = email.trim();
+    final trimmedDisplayName = displayName.trim();
+    if (trimmedDisplayName.isEmpty || !_hasValidEmailShape(trimmedEmail)) {
+      throw const FormatException('Local profile has invalid fields.');
+    }
+
     final user = LocalUser(
-      email: email.trim(),
-      displayName: displayName.trim(),
+      email: trimmedEmail,
+      displayName: trimmedDisplayName,
     );
     await _storage.writeString(_sessionKey, jsonEncode(user.toJson()));
     return AuthSessionState(user: user);
@@ -44,5 +50,10 @@ class LocalAuthRepository {
   Future<AuthSessionState> clearSession() async {
     await _storage.remove(_sessionKey);
     return const AuthSessionState();
+  }
+
+  bool _hasValidEmailShape(String email) {
+    final parts = email.split('@');
+    return parts.length == 2 && parts.first.isNotEmpty && parts.last.isNotEmpty;
   }
 }
