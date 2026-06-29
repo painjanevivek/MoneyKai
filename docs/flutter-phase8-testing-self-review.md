@@ -41,7 +41,7 @@ Unit/repository tests:
 - Local user, transaction, and budget model JSON serialization reject invalid values before export.
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
-- Local error report persistence, malformed payload handling, blank required-field skipping, newest-first order, read/write bounded history, and clear action.
+- Local error report persistence, malformed payload handling, blank required-field read/write validation, newest-first order, read/write bounded history, and clear action.
 - Theme preference persistence, stored-value trimming, and unsupported-value fallback to system theme mode.
 - Local data export JSON requires a local profile and includes user, transactions, budget, theme settings, source, format version, and timestamp.
 - Encrypted backup export requires a local profile and produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords, unsupported encryption metadata, malformed backup metadata, invalid base64 payloads, invalid encryption field lengths, empty encrypted payloads, and fails decryption with the wrong password.
@@ -89,7 +89,7 @@ Implemented:
 - JSON parsing falls back to signed-out auth, default budget, and valid transaction entries when stored local payloads are malformed or contain invalid local profile data.
 - Transaction reads reject invalid stored money values and blank required fields, budget reads reject invalid stored limits/categories, and transaction/budget models and repositories reject invalid values before local JSON persistence or export.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
-- Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a read/write bounded local `moneykai.errorReports` history, and diagnostics reads skip malformed or blank required fields.
+- Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a read/write bounded local `moneykai.errorReports` history, and diagnostics read/write paths reject malformed or blank required fields.
 - Users can review and clear bounded local diagnostics from Settings without adding a remote crash SDK.
 
 Remaining:

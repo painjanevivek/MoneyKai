@@ -38,6 +38,46 @@ void main() {
     expect(reports.last.occurredAt, DateTime.utc(2026, 6, 29, 9, 30));
   });
 
+  test('trims source before recording local errors', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final repository = LocalErrorReportRepository(
+      storage,
+      now: () => DateTime.utc(2026, 6, 29, 9, 30),
+    );
+
+    await repository.recordError(
+      StateError('failure'),
+      StackTrace.fromString('stack'),
+      source: ' test ',
+    );
+
+    final reports = repository.readReports();
+
+    expect(reports, hasLength(1));
+    expect(reports.single.source, 'test');
+    expect(reports.single.id, '1782725400000000-test');
+  });
+
+  test('does not store local errors with blank sources', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final storage = LocalStorageService(preferences);
+    final repository = LocalErrorReportRepository(storage);
+
+    await repository.recordError(
+      StateError('failure'),
+      StackTrace.fromString('stack'),
+      source: ' ',
+    );
+
+    expect(repository.readReports(), isEmpty);
+    expect(
+      preferences.getString(LocalErrorReportRepository.reportsKey),
+      isNull,
+    );
+  });
+
   test('keeps a bounded local error history', () async {
     SharedPreferences.setMockInitialValues({});
     final storage = LocalStorageService(await SharedPreferences.getInstance());

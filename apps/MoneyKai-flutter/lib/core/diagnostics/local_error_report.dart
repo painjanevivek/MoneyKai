@@ -17,9 +17,9 @@ class LocalErrorReport {
 
   Map<String, Object?> toJson() {
     return {
-      'id': id,
-      'source': source,
-      'errorType': errorType,
+      'id': _requiredText(id, fieldName: 'id'),
+      'source': _requiredText(source, fieldName: 'source'),
+      'errorType': _requiredText(errorType, fieldName: 'errorType'),
       'message': message,
       'stackTrace': stackTrace,
       'occurredAt': occurredAt.toUtc().toIso8601String(),
@@ -64,4 +64,13 @@ String? _trimmedText(Object? value) {
 
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+String _requiredText(String value, {required String fieldName}) {
+  final trimmed = _trimmedText(value);
+  if (trimmed == null) {
+    throw FormatException('Local error report $fieldName cannot be blank.');
+  }
+
+  return trimmed;
 }

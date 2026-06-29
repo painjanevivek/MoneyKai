@@ -62,9 +62,13 @@ class LocalErrorReportRepository {
   }) async {
     try {
       final occurredAt = _now().toUtc();
+      final trimmedSource = source.trim();
+      if (trimmedSource.isEmpty) {
+        throw const FormatException('Local error source cannot be blank.');
+      }
       final report = LocalErrorReport(
-        id: '${occurredAt.microsecondsSinceEpoch}-$source',
-        source: source,
+        id: '${occurredAt.microsecondsSinceEpoch}-$trimmedSource',
+        source: trimmedSource,
         errorType: error.runtimeType.toString(),
         message: error.toString(),
         stackTrace: stackTrace?.toString() ?? '',
