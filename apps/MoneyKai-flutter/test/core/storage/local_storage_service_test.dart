@@ -16,6 +16,38 @@ void main() {
     );
   });
 
+  test('preserves newer MoneyKai storage schema versions', () async {
+    SharedPreferences.setMockInitialValues({
+      LocalStorageService.schemaVersionKey:
+          LocalStorageService.currentSchemaVersion + 1,
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final storage = LocalStorageService(preferences);
+
+    await storage.ensureInitialized();
+
+    expect(
+      preferences.getInt(LocalStorageService.schemaVersionKey),
+      LocalStorageService.currentSchemaVersion + 1,
+    );
+  });
+
+  test('rejects storage access outside the MoneyKai namespace', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final storage = LocalStorageService(preferences);
+
+    expect(
+      () => storage.readString('other.product.setting'),
+      throwsArgumentError,
+    );
+    expect(
+      () => storage.writeString('other.product.setting', 'value'),
+      throwsArgumentError,
+    );
+    expect(() => storage.remove('other.product.setting'), throwsArgumentError);
+  });
+
   test(
     'resets only the MoneyKai namespace and restores schema metadata',
     () async {

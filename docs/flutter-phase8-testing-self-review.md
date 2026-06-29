@@ -42,7 +42,7 @@ Unit/repository tests:
 - Local budget persistence, reset, malformed-payload fallback, invalid stored-limit/category fallback, and non-finite limit rejection.
 - Local user, transaction, and budget model JSON serialization trims valid text and rejects invalid values or blank required fields before export.
 - Budget progress calculation by current month and category.
-- Local storage schema initialization and MoneyKai namespace reset.
+- Local storage schema initialization, future schema preservation, MoneyKai namespace reset, and rejection of non-MoneyKai key access.
 - Local error report persistence, malformed payload handling, blank required-field read/write validation, newest-first order, read/write bounded history, and clear action.
 - Theme preference persistence, stored-value trimming, and unsupported-value fallback to system theme mode.
 - Local data export JSON requires a local profile and includes user, transactions, budget, theme settings, source, format version, and timestamp.
@@ -89,7 +89,7 @@ Implemented:
 ### Robustness
 
 - Local persistence is simple and deterministic through `shared_preferences`.
-- Local storage initializes `moneykai.storageSchemaVersion` and has a `moneykai.*` namespace reset boundary for device data.
+- Local storage initializes `moneykai.storageSchemaVersion`, preserves newer schema markers, rejects non-`moneykai.*` key access, and has a `moneykai.*` namespace reset boundary for device data.
 - JSON parsing falls back to signed-out auth, default budget, and valid transaction entries when stored local payloads are malformed or contain invalid local profile data.
 - Transaction reads reject invalid stored money values and blank required fields, budget reads reject invalid stored limits/categories, and transaction/budget models and repositories reject invalid values before local JSON persistence or export.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.

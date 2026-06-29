@@ -32,7 +32,7 @@ Core architecture:
 - Shared routing through `go_router`, with protected app routes redirecting signed-out deep links back to the local profile flow and authenticated local-profile hits back to Dashboard.
 - State management through `flutter_riverpod`.
 - Local persistence through `shared_preferences` behind a MoneyKai storage service.
-- `moneykai.*` local storage namespace and `moneykai.storageSchemaVersion`.
+- Enforced `moneykai.*` local storage namespace and `moneykai.storageSchemaVersion`.
 - Password-encrypted backup export and restore using AES-256-GCM and PBKDF2-HMAC-SHA256.
 - Bounded local error reports for uncaught Flutter, platform dispatcher, and root-zone failures, with in-app review and clear controls.
 - Reusable screen shell, responsive screen scaffold, metric cards, empty states, and budget progress widgets.
@@ -107,8 +107,8 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 | Field | Value |
 | --- | --- |
 | Size | `190664156` bytes |
-| SHA-256 | `DA3E28DBCA47A6A522B0DB63B913108FCEC3A3A90548051FD5A55FC8CE3F529F` |
-| Built | `2026-06-29 21:24:18` local time |
+| SHA-256 | `9850687C163146B3E75F78261028B4A1993DD4A6F5922499123AFE048A79C5AF` |
+| Built | `2026-06-29 22:22:18` local time |
 
 Unsigned release APK for binary inspection only:
 

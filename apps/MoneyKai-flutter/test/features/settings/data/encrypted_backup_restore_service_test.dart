@@ -21,9 +21,8 @@ void main() {
     'restores user, transactions, and budget from encrypted backup',
     () async {
       SharedPreferences.setMockInitialValues({'other.product.setting': 'keep'});
-      final storage = LocalStorageService(
-        await SharedPreferences.getInstance(),
-      );
+      final preferences = await SharedPreferences.getInstance();
+      final storage = LocalStorageService(preferences);
       final authRepository = LocalAuthRepository(storage);
       final transactionRepository = LocalTransactionRepository(storage);
       final budgetRepository = LocalBudgetRepository(storage);
@@ -83,7 +82,7 @@ void main() {
       );
       expect(budgetRepository.readBudget().monthlyLimit, 30000);
       expect(themeRepository.readThemeMode(), ThemeMode.dark);
-      expect(storage.readString('other.product.setting'), 'keep');
+      expect(preferences.getString('other.product.setting'), 'keep');
     },
   );
 

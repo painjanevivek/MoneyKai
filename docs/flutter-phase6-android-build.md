@@ -86,8 +86,8 @@ Artifact metadata:
 | Field | Value |
 | --- | --- |
 | Size | `190664156` bytes |
-| SHA-256 | `DA3E28DBCA47A6A522B0DB63B913108FCEC3A3A90548051FD5A55FC8CE3F529F` |
-| Built | `2026-06-29 21:24:18` local time |
+| SHA-256 | `9850687C163146B3E75F78261028B4A1993DD4A6F5922499123AFE048A79C5AF` |
+| Built | `2026-06-29 22:22:18` local time |
 
 Install for direct Android testing:
 

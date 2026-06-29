@@ -92,7 +92,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | TalkBack spoken-output QA | Not complete | Accessibility hierarchy exists, but real spoken-output QA is still pending. |
 | Physical Android device QA | Not complete | No physical Android device is connected; `apps\MoneyKai-flutter\tool\collect_android_runtime_qa.ps1 -RequirePhysical` is ready to collect launch timing, screenshot, hierarchy, and device evidence once hardware is available. |
 | iOS simulator/device/archive/TestFlight | Not complete | Current machine is Windows; macOS/Xcode and Apple Developer signing are required. |
-| Security/privacy self-review | Partially complete | Permissions, local-only boundaries, reset namespace, plaintext export contents, encrypted backups, local diagnostics clearing, and privacy copy are documented; local storage is not encrypted and real auth/backend sync remain future work. |
+| Security/privacy self-review | Partially complete | Permissions, local-only boundaries, enforced storage namespace, reset namespace, plaintext export contents, encrypted backups, local diagnostics clearing, and privacy copy are documented; local storage is not encrypted and real auth/backend sync remain future work. |
 | Backend sync | Future work | Repository boundaries are ready; no backend sync implementation exists. |
 | Real authentication | Future work | Local auth/session boundary exists; real auth integration is still outside the MVP. |
 | Remote crash dashboard | Future work | Local error capture exists; no remote crash/error dashboard SDK or backend is configured. |

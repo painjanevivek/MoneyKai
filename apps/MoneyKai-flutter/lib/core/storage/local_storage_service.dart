@@ -25,13 +25,20 @@ class LocalStorageService {
     await _preferences.setInt(schemaVersionKey, currentSchemaVersion);
   }
 
-  String? readString(String key) => _preferences.getString(key);
+  String? readString(String key) {
+    _assertMoneyKaiKey(key);
+    return _preferences.getString(key);
+  }
 
   Future<void> writeString(String key, String value) {
+    _assertMoneyKaiKey(key);
     return _preferences.setString(key, value);
   }
 
-  Future<void> remove(String key) => _preferences.remove(key);
+  Future<void> remove(String key) {
+    _assertMoneyKaiKey(key);
+    return _preferences.remove(key);
+  }
 
   Future<void> resetNamespace() async {
     final moneyKaiKeys = _preferences.getKeys().where(
@@ -43,5 +50,15 @@ class LocalStorageService {
     }
 
     await ensureInitialized();
+  }
+
+  static void _assertMoneyKaiKey(String key) {
+    if (!key.startsWith(namespacePrefix)) {
+      throw ArgumentError.value(
+        key,
+        'key',
+        'MoneyKai local storage keys must start with $namespacePrefix',
+      );
+    }
   }
 }
