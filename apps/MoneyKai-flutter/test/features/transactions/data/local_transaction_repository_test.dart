@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moneykai/core/storage/local_storage_service.dart';
 import 'package:moneykai/features/transactions/data/local_transaction_repository.dart';
@@ -64,6 +66,43 @@ void main() {
     expect(restored.single.id, 'good');
   });
 
+  test('skips stored transactions with blank required fields', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.transactions': jsonEncode([
+        {
+          'id': 'blank-category',
+          'type': 'expense',
+          'amount': 250,
+          'date': '2026-06-01T00:00:00.000',
+          'category': ' ',
+          'paymentMethod': 'UPI',
+          'description': 'Lunch',
+        },
+        {
+          'id': ' good ',
+          'type': 'expense',
+          'amount': 250,
+          'date': '2026-06-01T00:00:00.000',
+          'category': ' Food ',
+          'paymentMethod': ' UPI ',
+          'description': ' Lunch ',
+        },
+      ]),
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalTransactionRepository(
+      LocalStorageService(preferences),
+    );
+
+    final restored = repository.readTransactions();
+
+    expect(restored, hasLength(1));
+    expect(restored.single.id, 'good');
+    expect(restored.single.category, 'Food');
+    expect(restored.single.paymentMethod, 'UPI');
+    expect(restored.single.description, 'Lunch');
+  });
+
   test('rejects non-finite transaction amounts before saving', () async {
     SharedPreferences.setMockInitialValues({});
     final preferences = await SharedPreferences.getInstance();
@@ -79,6 +118,30 @@ void main() {
       category: 'Food',
       paymentMethod: 'UPI',
       description: 'Invalid amount',
+    );
+
+    expect(
+      () => repository.saveTransactions([transaction]),
+      throwsA(isA<FormatException>()),
+    );
+    expect(preferences.getString('moneykai.transactions'), isNull);
+  });
+
+  test('rejects blank required transaction fields before saving', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalTransactionRepository(
+      LocalStorageService(preferences),
+    );
+
+    final transaction = MoneyTransaction(
+      id: 'blank',
+      type: TransactionType.expense,
+      amount: 250,
+      date: DateTime(2026, 6, 1),
+      category: 'Food',
+      paymentMethod: ' ',
+      description: 'Lunch',
     );
 
     expect(
