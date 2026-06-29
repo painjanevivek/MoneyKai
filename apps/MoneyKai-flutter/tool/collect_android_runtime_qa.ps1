@@ -148,6 +148,20 @@ function Assert-PngFile {
     }
 }
 
+function Assert-LaunchOutput {
+    param([Parameter(Mandatory = $true)][string[]]$Output)
+
+    $joinedOutput = $Output -join "`n"
+    if ($joinedOutput -notmatch "(?m)^Status:\s*ok\s*$") {
+        throw "Android launch did not report Status: ok."
+    }
+
+    if ($joinedOutput -notmatch "(?m)^(ThisTime|TotalTime):\s*\d+\s*$" -or
+        $joinedOutput -notmatch "(?m)^WaitTime:\s*\d+\s*$") {
+        throw "Android launch timing output is incomplete."
+    }
+}
+
 $script:Adb = Resolve-Adb
 $devices = @(Get-ConnectedDevices)
 
@@ -210,6 +224,7 @@ $deviceProps.GetEnumerator() | ForEach-Object { "$($_.Key): $($_.Value)" } |
 
 Invoke-Adb shell am force-stop $packageName | Out-Null
 $launchOutput = Invoke-Adb shell am start -W -n $mainActivity
+Assert-LaunchOutput -Output $launchOutput
 $launchOutput | Set-Content -LiteralPath $launchPath -Encoding UTF8
 
 Start-Sleep -Seconds 3
