@@ -4,6 +4,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val moneyKaiUploadStoreFile: String? = System.getenv("MONEYKAI_UPLOAD_STORE_FILE")
+val moneyKaiUploadStorePassword: String? = System.getenv("MONEYKAI_UPLOAD_STORE_PASSWORD")
+val moneyKaiUploadKeyAlias: String? = System.getenv("MONEYKAI_UPLOAD_KEY_ALIAS")
+val moneyKaiUploadKeyPassword: String? = System.getenv("MONEYKAI_UPLOAD_KEY_PASSWORD")
+
 android {
     namespace = "com.moneykai.mobile"
     compileSdk = flutter.compileSdkVersion
@@ -24,10 +29,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (!moneyKaiUploadStoreFile.isNullOrBlank()) {
+                storeFile = file(moneyKaiUploadStoreFile)
+                storePassword = moneyKaiUploadStorePassword
+                keyAlias = moneyKaiUploadKeyAlias
+                keyPassword = moneyKaiUploadKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
