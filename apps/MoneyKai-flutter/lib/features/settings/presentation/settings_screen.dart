@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/screen_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../budget/application/budget_controller.dart';
+import '../../transactions/application/transaction_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -32,6 +34,29 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push(AppRoutes.privacy),
           ),
           ListTile(
+            leading: const Icon(Icons.file_download_outlined),
+            title: const Text('Export local data'),
+            subtitle: const Text('Coming soon'),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Local data export is coming soon.'),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.delete_forever_outlined,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            title: const Text('Reset local data'),
+            subtitle: const Text(
+              'Clears local transactions and restores budget defaults',
+            ),
+            onTap: () => _confirmReset(context, ref),
+          ),
+          ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),
             onTap: () async {
@@ -44,5 +69,40 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmReset(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset local data?'),
+        content: const Text(
+          'This clears local transactions and restores budget defaults on this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    await ref.read(transactionControllerProvider.notifier).clearTransactions();
+    await ref.read(budgetControllerProvider.notifier).resetBudget();
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Local data reset.')));
+    }
   }
 }

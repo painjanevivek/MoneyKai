@@ -62,4 +62,14 @@ class TransactionController extends AsyncNotifier<List<MoneyTransaction>> {
       return next;
     });
   }
+
+  Future<void> clearTransactions() async {
+    state = await AsyncValue.guard(() async {
+      final repository = await ref.read(
+        localTransactionRepositoryProvider.future,
+      );
+      await repository.saveTransactions(const []);
+      return const [];
+    });
+  }
 }

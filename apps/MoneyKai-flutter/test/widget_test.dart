@@ -74,6 +74,27 @@ void main() {
     expect(find.text('Grocery run'), findsNothing);
     expect(find.text('No local transactions yet'), findsOneWidget);
   });
+
+  testWidgets('settings export and reset actions respond', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await _setViewport(tester, const Size(420, 900));
+    await _enterDashboard(tester);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Export local data'));
+    await tester.pumpAndSettle();
+    expect(find.text('Local data export is coming soon.'), findsOneWidget);
+
+    await tester.tap(find.text('Reset local data'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reset local data?'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reset local data?'), findsNothing);
+  });
 }
 
 Future<void> _setViewport(WidgetTester tester, Size size) async {

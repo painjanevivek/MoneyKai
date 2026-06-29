@@ -70,6 +70,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   ? const Text('Opening MoneyKai...')
                   : const Text('Enter MoneyKai'),
             ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton(
+              onPressed: authState.isLoading ? null : _submit,
+              child: const Text('Create local account'),
+            ),
             if (authState.hasError) ...[
               const SizedBox(height: AppSpacing.md),
               Text(
