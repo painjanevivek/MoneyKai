@@ -99,20 +99,22 @@ Remaining:
 - Flutter Material icons avoid the old React Native icon-font `NO GLYPH` problem.
 - Android and iOS launcher icon assets now use the existing MoneyKai production mark.
 - Android and iOS native launch images now use the existing MoneyKai production mark.
+- Bottom navigation labels are clamped to the standard navigation text scale so they do not wrap or clip at 1.3 Android font scale.
 
 Remaining:
 
-- No screenshot-based visual review has been captured for the Flutter UI yet.
+- No full screenshot-based visual review has been captured across every Flutter screen yet.
 - Dark theme exists but has not had full visual QA.
 
 ### Accessibility
 
 - Major icon-only actions use tooltips.
 - Standard Material form fields/buttons/navigation are used.
+- A 1.3 Android font-scale Settings screen pass was captured after fixing bottom navigation label wrapping.
 
 Remaining:
 
-- Screen reader labels, text scale behavior, and focus order need manual QA on device.
+- Screen reader labels and focus order need manual QA on device.
 
 ### Security/privacy
 
@@ -133,9 +135,13 @@ Completed on `MoneyKai_API_36`:
 - App launch to onboarding screen.
 - Local account creation.
 - App restart session restore.
+- Add income transaction.
 - Add expense transaction.
+- Search/filter transactions.
 - Delete transaction.
 - Budget progress update.
+- Verify export placeholder snackbar on device.
+- Run 1.3 font-scale visual QA for the Settings screen.
 - Reset local data.
 - Sign out.
 - Reopen app after restart and verify persisted state.
@@ -148,14 +154,17 @@ Evidence artifacts captured locally:
 - `.codex-artifacts\moneykai-window-budget-after-expense.xml`
 - `.codex-artifacts\moneykai-window-insights-after-expense.xml`
 - `.codex-artifacts\moneykai-window-after-sign-out.xml`
+- `.codex-artifacts\moneykai-window-qa2-transactions-income-expense.xml`
+- `.codex-artifacts\moneykai-window-qa2-filter-income.xml`
+- `.codex-artifacts\moneykai-window-qa2-filter-expense.xml`
+- `.codex-artifacts\moneykai-window-qa2-search-salary.xml`
+- `.codex-artifacts\moneykai-window-qa2-export-placeholder.xml`
+- `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`
 
 Still required on an Android emulator or physical device:
 
-- Add income transaction.
-- Search/filter transactions.
 - Update monthly and category budgets.
-- Verify export placeholder snackbar on device.
-- Run text-scale, screen reader, and focus-order QA.
+- Run screen reader and focus-order QA.
 - Run physical-device performance and cold-start checks.
 
 On macOS/Xcode later:
@@ -168,6 +177,6 @@ On macOS/Xcode later:
 ## Known limitations
 
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
-- Android emulator scoped manual QA is partially complete, but income/search/budget-edit/accessibility/physical-device QA is still pending.
+- Android emulator scoped manual QA is partially complete, but budget-edit/screen-reader/focus-order/physical-device QA is still pending.
 - No iOS build was possible on Windows.
 - Backend sync, real auth, encrypted export/backup, and store submission remain future work.

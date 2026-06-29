@@ -71,8 +71,8 @@ Artifact metadata:
 | Field | Value |
 | --- | --- |
 | Size | `152144647` bytes |
-| SHA-256 | `631944E50F01A228491C9C125A088624306A98C86B62A43E6E8E07651C742485` |
-| Built | `2026-06-29 11:07:57` local time |
+| SHA-256 | `06DDBE8A288EDA53A7289F988ED8C9B2711508997A7A063787792051074000F0` |
+| Built | `2026-06-29 11:17:57` local time |
 
 Install for direct Android testing:
 
@@ -99,7 +99,7 @@ Latest emulator smoke:
 | Result | App process started and onboarding screen rendered |
 | Screenshot | `.codex-artifacts\moneykai-flutter-emulator-smoke.png` |
 
-Scoped manual QA on the same emulator also verified local account creation, expense add/delete, dashboard persistence after force-stop/start, budget and insights updates from the expense, reset confirmation/success, and sign out back to local auth. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml`.
+Scoped manual QA on the same emulator also verified local account creation, income add, expense add/delete, transaction income/expense filters, transaction search, dashboard persistence after force-stop/start, budget and insights updates from expenses, export placeholder feedback, reset confirmation/success, sign out back to local auth, and a 1.3 font-scale Settings screen pass after the bottom navigation label fix. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml` and `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`.
 
 To run the app interactively on Android:
 
@@ -160,8 +160,8 @@ No Play-ready release AAB has been produced in this phase because no upload keys
 
 ## Remaining Android release work
 
-- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: income entry, search/filter, budget value edits, export placeholder, and text-scale/accessibility checks.
+- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: budget value edits, screen reader/focus-order checks, and physical-device performance/cold-start checks.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with non-debug signing.
 - Capture SHA-256 and signer certificate for the exact release artifacts.
-- Smoke test fresh install, local account creation, add/delete transaction, budget progress, settings reset, and restart persistence on an Android device.
+- Smoke test release-signed artifacts once an upload key exists.

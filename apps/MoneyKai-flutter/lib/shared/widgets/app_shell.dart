@@ -23,13 +23,16 @@ class AppShell extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(child: child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
-        onDestinationSelected: (index) => context.go(_tabs[index].route),
-        destinations: [
-          for (final tab in _tabs)
-            NavigationDestination(icon: Icon(tab.icon), label: tab.label),
-        ],
+      bottomNavigationBar: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1,
+        child: NavigationBar(
+          selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
+          onDestinationSelected: (index) => context.go(_tabs[index].route),
+          destinations: [
+            for (final tab in _tabs)
+              NavigationDestination(icon: Icon(tab.icon), label: tab.label),
+          ],
+        ),
       ),
     );
   }
