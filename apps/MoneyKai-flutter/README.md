@@ -91,7 +91,7 @@ flutter build appbundle --release
 ```
 
 If only part of the signing env is set, Gradle fails with an explicit MoneyKai signing error.
-The release audit script also fails on partial signing env, compiled APK identity/version/label/launch/ABI drift, restricted permissions, missing artifacts, or unsigned artifacts when `-RequireSigned` is used.
+The release audit script also fails on partial signing env, compiled APK identity/version/SDK/label/launch/ABI drift, restricted permissions, missing artifacts, or unsigned artifacts when `-RequireSigned` is used.
 
 ## iOS Static Audit
 

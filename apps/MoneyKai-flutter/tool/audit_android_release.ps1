@@ -184,7 +184,10 @@ function Assert-ApkIdentity {
         [Parameter(Mandatory = $true)][string]$ExpectedVersionCode,
         [Parameter(Mandatory = $true)][string]$ExpectedAppLabel,
         [Parameter(Mandatory = $true)][string]$ExpectedLaunchActivity,
-        [Parameter(Mandatory = $true)][string]$RequiredAbi
+        [Parameter(Mandatory = $true)][string]$RequiredAbi,
+        [Parameter(Mandatory = $true)][string]$ExpectedMinSdk,
+        [Parameter(Mandatory = $true)][string]$ExpectedTargetSdk,
+        [Parameter(Mandatory = $true)][string]$ExpectedCompileSdk
     )
 
     $packageLine = $Badging | Where-Object { $_ -match "^package:" } | Select-Object -First 1
@@ -212,6 +215,32 @@ function Assert-ApkIdentity {
         throw "$Label versionName does not match $ExpectedVersionName."
     }
 
+    if ($packageLine -notmatch "compileSdkVersion='([^']+)'") {
+        throw "$Label compileSdkVersion was not found."
+    }
+    $actualCompileSdk = $matches[1]
+    if ($actualCompileSdk -ne $ExpectedCompileSdk) {
+        throw "$Label compileSdkVersion does not match $ExpectedCompileSdk."
+    }
+
+    $minSdkLine = $Badging | Where-Object { $_ -match "^minSdkVersion:" } | Select-Object -First 1
+    if (-not $minSdkLine -or $minSdkLine -notmatch "minSdkVersion:'([^']+)'") {
+        throw "$Label minSdkVersion was not found."
+    }
+    $actualMinSdk = $matches[1]
+    if ($actualMinSdk -ne $ExpectedMinSdk) {
+        throw "$Label minSdkVersion does not match $ExpectedMinSdk."
+    }
+
+    $targetSdkLine = $Badging | Where-Object { $_ -match "^targetSdkVersion:" } | Select-Object -First 1
+    if (-not $targetSdkLine -or $targetSdkLine -notmatch "targetSdkVersion:'([^']+)'") {
+        throw "$Label targetSdkVersion was not found."
+    }
+    $actualTargetSdk = $matches[1]
+    if ($actualTargetSdk -ne $ExpectedTargetSdk) {
+        throw "$Label targetSdkVersion does not match $ExpectedTargetSdk."
+    }
+
     $labelLine = $Badging | Where-Object { $_ -match "^application-label:" } | Select-Object -First 1
     if (-not $labelLine -or $labelLine -notmatch "^application-label:'([^']+)'") {
         throw "$Label application label was not found."
@@ -235,7 +264,7 @@ function Assert-ApkIdentity {
         throw "$Label does not include required native ABI $RequiredAbi."
     }
 
-    Write-Host "$Label identity audit: passed ($ExpectedPackage $ExpectedVersionName+$ExpectedVersionCode, $ExpectedAppLabel, $ExpectedLaunchActivity, $RequiredAbi)"
+    Write-Host "$Label identity audit: passed ($ExpectedPackage $ExpectedVersionName+$ExpectedVersionCode, min $ExpectedMinSdk, target $ExpectedTargetSdk, compile $ExpectedCompileSdk, $ExpectedAppLabel, $ExpectedLaunchActivity, $RequiredAbi)"
 }
 
 function Test-ApkSigned {
@@ -304,6 +333,9 @@ $expectedNamespace = Get-GradleStringValue -Key "namespace" -Path $androidBuildF
 $expectedAppLabel = "MoneyKai"
 $expectedLaunchActivity = "$expectedPackage.MainActivity"
 $requiredAbi = "arm64-v8a"
+$expectedMinSdk = "24"
+$expectedTargetSdk = "36"
+$expectedCompileSdk = "36"
 
 if ($expectedNamespace -ne $expectedPackage) {
     throw "Android namespace '$expectedNamespace' does not match applicationId '$expectedPackage'."
@@ -340,7 +372,10 @@ Assert-ApkIdentity `
     -ExpectedVersionCode $expectedVersion.Code `
     -ExpectedAppLabel $expectedAppLabel `
     -ExpectedLaunchActivity $expectedLaunchActivity `
-    -RequiredAbi $requiredAbi
+    -RequiredAbi $requiredAbi `
+    -ExpectedMinSdk $expectedMinSdk `
+    -ExpectedTargetSdk $expectedTargetSdk `
+    -ExpectedCompileSdk $expectedCompileSdk
 Assert-ApkIdentity `
     -Label "Release APK" `
     -Badging $releaseBadging `
@@ -349,7 +384,10 @@ Assert-ApkIdentity `
     -ExpectedVersionCode $expectedVersion.Code `
     -ExpectedAppLabel $expectedAppLabel `
     -ExpectedLaunchActivity $expectedLaunchActivity `
-    -RequiredAbi $requiredAbi
+    -RequiredAbi $requiredAbi `
+    -ExpectedMinSdk $expectedMinSdk `
+    -ExpectedTargetSdk $expectedTargetSdk `
+    -ExpectedCompileSdk $expectedCompileSdk
 Assert-NoRestrictedPermissions -Label "Debug APK" -PermissionDump $debugPermissions
 Assert-NoRestrictedPermissions -Label "Release APK" -PermissionDump $releasePermissions
 Write-Host ""
