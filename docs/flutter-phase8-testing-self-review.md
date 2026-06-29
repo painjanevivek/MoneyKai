@@ -159,7 +159,7 @@ Remaining:
 - Privacy screen states the current local-only data boundary, including plaintext export contents, encrypted backup flow, and local diagnostics.
 - Local reset clears the full MoneyKai shared-preferences namespace, invalidates cached diagnostics, and returns to local auth.
 - Local diagnostics stay on-device and can be cleared from Settings.
-- Encrypted backup restore validates the clear payload version, profile boundary, and budget shape before clearing local data, so unsupported or malformed backups cannot erase the current local session.
+- Encrypted backup restore validates the clear payload version, profile boundary, transactions, budget shape, and settings before clearing local data; malformed-backup tests assert the current local session survives those failures.
 - Android manifest hardening disables system backup and supplies root-excluding backup/data-extraction rules, with the release audit checking both source XML and compiled release APK output.
 - Android network hardening sets `usesCleartextTraffic=false` and supplies a cleartext-denying network security config, with the release audit checking source XML and compiled release APK output.
 - The release audit also rejects unexpected exported Android components; the current compiled manifest exposes only the launcher activity plus AndroidX's `ProfileInstallReceiver` guarded by `android.permission.DUMP`.

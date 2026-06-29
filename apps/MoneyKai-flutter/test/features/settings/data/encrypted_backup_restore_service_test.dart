@@ -440,6 +440,12 @@ void main() {
     final backup = await backupService.buildEncryptedBackup(
       password: 'correct horse battery staple',
     );
+    await _seedOriginalData(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
+    );
     final restoreService = EncryptedBackupRestoreService(
       backupService: backupService,
       storage: storage,
@@ -455,6 +461,12 @@ void main() {
         password: 'correct horse battery staple',
       ),
       throwsA(isA<FormatException>()),
+    );
+    _expectOriginalDataIntact(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
     );
   });
 
@@ -489,6 +501,12 @@ void main() {
     final backup = await backupService.buildEncryptedBackup(
       password: 'correct horse battery staple',
     );
+    await _seedOriginalData(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
+    );
     final restoreService = EncryptedBackupRestoreService(
       backupService: backupService,
       storage: storage,
@@ -504,6 +522,12 @@ void main() {
         password: 'correct horse battery staple',
       ),
       throwsA(isA<FormatException>()),
+    );
+    _expectOriginalDataIntact(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
     );
   });
 
@@ -531,6 +555,12 @@ void main() {
     final backup = await backupService.buildEncryptedBackup(
       password: 'correct horse battery staple',
     );
+    await _seedOriginalData(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
+    );
     final restoreService = EncryptedBackupRestoreService(
       backupService: backupService,
       storage: storage,
@@ -546,6 +576,12 @@ void main() {
         password: 'correct horse battery staple',
       ),
       throwsA(isA<FormatException>()),
+    );
+    _expectOriginalDataIntact(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
     );
   });
 
@@ -624,6 +660,12 @@ void main() {
     final backup = await backupService.buildEncryptedBackup(
       password: 'correct horse battery staple',
     );
+    await _seedOriginalData(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
+    );
     final restoreService = EncryptedBackupRestoreService(
       backupService: backupService,
       storage: storage,
@@ -639,6 +681,12 @@ void main() {
         password: 'correct horse battery staple',
       ),
       throwsA(isA<FormatException>()),
+    );
+    _expectOriginalDataIntact(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
     );
   });
 }
@@ -668,6 +716,18 @@ Future<void> _seedOriginalData(
     const BudgetState(monthlyLimit: 30000, categoryLimits: {'Food': 9000}),
   );
   await themeRepository.saveThemeMode(ThemeMode.dark);
+}
+
+void _expectOriginalDataIntact(
+  LocalAuthRepository authRepository,
+  LocalTransactionRepository transactionRepository,
+  LocalBudgetRepository budgetRepository,
+  ThemePreferenceRepository themeRepository,
+) {
+  expect(authRepository.readSession().user?.email, 'akshay@example.com');
+  expect(transactionRepository.readTransactions(), hasLength(1));
+  expect(budgetRepository.readBudget().monthlyLimit, 30000);
+  expect(themeRepository.readThemeMode(), ThemeMode.dark);
 }
 
 class _StaticExportService extends LocalDataExportService {
