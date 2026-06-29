@@ -209,7 +209,7 @@ Required before Play Store internal testing:
 - Provide/create the Android upload keystore.
 - Set all `MONEYKAI_UPLOAD_*` environment variables.
 - Rebuild signed release APK/AAB.
-- Capture signed artifact SHA-256 and signer certificate.
+- Capture signed artifact SHA-256 and signer certificate evidence from `.\tool\audit_android_release.ps1 -RequireSigned`.
 - Smoke test the release-signed artifact.
 - Run real TalkBack spoken-output QA.
 - Run physical-device performance and cold-start QA.

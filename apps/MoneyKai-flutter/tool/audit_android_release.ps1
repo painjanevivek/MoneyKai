@@ -102,6 +102,33 @@ function Resolve-AndroidBuildTool {
     throw "Could not find Android build tool: $($Names -join ' or ')"
 }
 
+function Resolve-JavaTool {
+    param([Parameter(Mandatory = $true)][string[]]$Names)
+
+    $javaHomes = @(
+        $env:JAVA_HOME,
+        $(if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME "bin" })
+    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+
+    foreach ($root in $javaHomes) {
+        foreach ($name in $Names) {
+            $toolPath = Join-Path $root $name
+            if (Test-Path -LiteralPath $toolPath) {
+                return $toolPath
+            }
+        }
+    }
+
+    foreach ($name in $Names) {
+        $pathCandidate = Get-Command $name -ErrorAction SilentlyContinue
+        if ($pathCandidate) {
+            return $pathCandidate.Source
+        }
+    }
+
+    throw "Could not find Java tool: $($Names -join ' or ')"
+}
+
 function Assert-Artifact {
     param([Parameter(Mandatory = $true)][string]$Path)
 
@@ -633,7 +660,7 @@ function Test-ApkSigned {
     $oldErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        $output = & $ApkSigner verify --verbose $ApkPath 2>&1
+        $output = & $ApkSigner verify --verbose --print-certs $ApkPath 2>&1
         $signed = $LASTEXITCODE -eq 0
         return [PSCustomObject]@{
             Signed = $signed
@@ -659,6 +686,52 @@ function Test-AabSigned {
     } finally {
         $ErrorActionPreference = $oldErrorActionPreference
     }
+}
+
+function Get-AabCertificateOutput {
+    param(
+        [Parameter(Mandatory = $true)][string]$Keytool,
+        [Parameter(Mandatory = $true)][string]$AabPath
+    )
+
+    $oldErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = & $Keytool -printcert -jarfile $AabPath 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "keytool certificate inspection failed for release AAB."
+        }
+
+        return $output
+    } finally {
+        $ErrorActionPreference = $oldErrorActionPreference
+    }
+}
+
+function Assert-CertificateFingerprintOutput {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string[]]$Output
+    )
+
+    $joinedOutput = $Output -join "`n"
+    if ($joinedOutput -notmatch "(?i)SHA-?256") {
+        throw "$Label certificate output does not include a SHA-256 fingerprint."
+    }
+}
+
+function Write-CertificateEvidence {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string[]]$Output
+    )
+
+    Assert-CertificateFingerprintOutput -Label $Label -Output $Output
+
+    Write-Host "${Label} signer certificate evidence:"
+    $Output |
+        Where-Object { $_ -match "(?i)certificate|signer|owner|issuer|serial|digest|SHA-?256" } |
+        ForEach-Object { Write-Host "  $($_.Trim())" }
 }
 
 $signingEnvNames = @(
@@ -720,6 +793,7 @@ Assert-SourceAndroidBackupHardening
 
 $aapt2 = Resolve-AndroidBuildTool @("aapt2.exe", "aapt2")
 $apkSigner = Resolve-AndroidBuildTool @("apksigner.bat", "apksigner")
+$keytool = Resolve-JavaTool @("keytool.exe", "keytool")
 
 Assert-Artifact $debugApk
 Assert-Artifact $releaseApk
@@ -729,6 +803,7 @@ Write-Host "MoneyKai Android release audit"
 Write-Host "App root: $appRoot"
 Write-Host "aapt2: $aapt2"
 Write-Host "apksigner: $apkSigner"
+Write-Host "keytool: $keytool"
 Write-Host "Signing env: $($setSigningEnv.Count) of $($signingEnvNames.Count) variables set"
 Write-Host ""
 
@@ -792,7 +867,10 @@ if ($RequireSigned) {
         throw "Release AAB is not signed."
     }
 
+    $releaseAabCertificateOutput = Get-AabCertificateOutput -Keytool $keytool -AabPath $releaseAab
     Write-Host "Release signing audit: signed APK and AAB verified"
+    Write-CertificateEvidence -Label "Release APK" -Output $releaseApkSigning.Output
+    Write-CertificateEvidence -Label "Release AAB" -Output $releaseAabCertificateOutput
 } else {
     if ($setSigningEnv.Count -eq 0 -and $releaseApkSigning.Signed) {
         throw "Release APK is unexpectedly signed without MONEYKAI_UPLOAD_* variables."

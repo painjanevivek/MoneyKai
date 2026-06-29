@@ -226,12 +226,12 @@ The repeatable Android release audit lives at:
 apps\MoneyKai-flutter\tool\audit_android_release.ps1
 ```
 
-It checks artifact existence, SHA-256 metadata, compiled debug/release APK identity/version/min-target-compile SDK/label/launch activity/required ARM64 ABI, exact debug/release permission allowlists, source and compiled release APK manifest hardening for debuggability, cleartext-denying network security config, exported component exposure, native-library extraction, Android backup opt-out, and data-extraction rules, required release AAB base-module entries, release AAB ProGuard mapping, baseline profile metadata, ARM64 native debug symbols, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, upload keystore file existence/location when signing env is set, unexpected signed artifacts when no upload-key env is set, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
+It checks artifact existence, SHA-256 metadata, compiled debug/release APK identity/version/min-target-compile SDK/label/launch activity/required ARM64 ABI, exact debug/release permission allowlists, source and compiled release APK manifest hardening for debuggability, cleartext-denying network security config, exported component exposure, native-library extraction, Android backup opt-out, and data-extraction rules, required release AAB base-module entries, release AAB ProGuard mapping, baseline profile metadata, ARM64 native debug symbols, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, signed-artifact certificate fingerprints when `-RequireSigned` is used, upload keystore file existence/location when signing env is set, unexpected signed artifacts when no upload-key env is set, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
 
 ## Remaining Android release work
 
 - Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: real TalkBack spoken-output pass and physical-device performance/cold-start checks. The runtime QA collector enforces default cold-start limits of `TotalTime <= 5000 ms` and `WaitTime <= 6000 ms`; override them only when the slower physical test-device class is documented.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with upload-key signing.
-- Capture SHA-256 and signer certificate for the exact release artifacts.
+- Capture SHA-256 and signer certificate evidence for the exact release artifacts from `.\tool\audit_android_release.ps1 -RequireSigned`.
 - Smoke test release-signed artifacts once an upload key exists.

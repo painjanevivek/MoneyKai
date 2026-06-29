@@ -87,7 +87,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | Local error capture | Complete for local reports | Diagnostics tests and docs cover bounded local error report capture plus in-app review and clear controls. |
 | Android app icon and launch assets | Complete | Phase 6 docs record source and generated asset hashes. |
 | Android permission/privacy audit | Complete for current artifacts | Phase 6 docs and `.\tool\audit_android_release.ps1` verify compiled APK identity/version/SDK/label/launch/ARM64 ABI, exact debug/release permission allowlists, release manifest hardening, cleartext-denying network security config, exported-component exposure, native-library extraction, and Android backup/data-extraction opt-out. |
-| Android release signing config | Partially complete | Gradle requires all `MONEYKAI_UPLOAD_*` vars or leaves release unsigned; audit script catches partial env, missing/empty/in-repository configured upload keystore files, and unexpected signed artifacts without upload-key env. Actual production signed artifacts require keystore. |
+| Android release signing config | Partially complete | Gradle requires all `MONEYKAI_UPLOAD_*` vars or leaves release unsigned; audit script catches partial env, missing/empty/in-repository configured upload keystore files, unexpected signed artifacts without upload-key env, and missing signer certificate fingerprints in `-RequireSigned` evidence. Actual production signed artifacts require keystore. |
 | Android CI verification | Complete | `.github\workflows\moneykai-flutter-android.yml` runs format, analyzer, tests, Android debug/release builds, AAB build, and release audit for Flutter app changes. |
 | iOS static project audit | Complete for non-Xcode checks | `apps\MoneyKai-flutter\tool\audit_ios_project.ps1` verifies bundle id, display name, Flutter version placeholders, storyboard/runtime Info.plist wiring, scene manifest/delegate launch wiring, deployment target, app icons, launch images, no sensitive iOS permission declarations or App Transport Security overrides, and no known Android-only dependencies; CI runs it on Flutter app changes. |
 | Play Store-ready artifact | Not complete | No upload keystore was provided; current release APK/AAB are unsigned inspection artifacts. |
@@ -117,9 +117,10 @@ Required before Play Store internal testing:
 .\tool\audit_android_release.ps1 -RequireSigned
 ```
 
-5. Smoke test the signed artifact.
-6. Run real TalkBack spoken-output QA.
-7. Run physical Android device performance and cold-start QA:
+5. Record the audit output containing SHA-256 artifact hashes plus release APK/AAB signer certificate evidence.
+6. Smoke test the signed artifact.
+7. Run real TalkBack spoken-output QA.
+8. Run physical Android device performance and cold-start QA:
 
 ```powershell
 cd apps\MoneyKai-flutter
