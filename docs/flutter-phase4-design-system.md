@@ -68,7 +68,7 @@ Widget tests cover:
 
 ## Visual QA
 
-Android light-theme screenshot review was captured on `MoneyKai_API_36` at `1080 x 1920` for:
+Android light-theme and dark-theme screenshot reviews were captured on `MoneyKai_API_36` at `1080 x 1920` for:
 
 - Onboarding.
 - Local auth.
@@ -82,11 +82,13 @@ Android light-theme screenshot review was captured on `MoneyKai_API_36` at `1080
 - Settings.
 - Privacy/security.
 
-The screenshots and contact sheet are stored locally under `.codex-artifacts\moneykai-qa5-visual-*.png`.
+The screenshots and contact sheets are stored locally under:
+
+- `.codex-artifacts\moneykai-qa5-visual-*.png`
+- `.codex-artifacts\moneykai-qa6-dark-visual-*.png`
 
 ## Current limitations
 
-- Dark theme exists from Material 3 seed colors but has not had full visual QA yet.
 - No screenshot-based visual regression gate exists yet.
 
 ## Verification
