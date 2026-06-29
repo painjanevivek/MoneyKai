@@ -69,6 +69,8 @@ venv/
 # local validation artifacts
 .codex-artifacts/
 .codex-logs/
+.agents/
+skills-lock.json
 tmp-*.png
 playwright-report/
 apps/*/artifacts/**
