@@ -155,6 +155,21 @@ function Get-ApkBadging {
     return $badging
 }
 
+function Get-ApkManifest {
+    param(
+        [Parameter(Mandatory = $true)][string]$Aapt2,
+        [Parameter(Mandatory = $true)][string]$ApkPath
+    )
+
+    $manifest = & $Aapt2 dump xmltree --file AndroidManifest.xml $ApkPath
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "aapt2 dump manifest failed for $ApkPath with exit code $exitCode."
+    }
+
+    return $manifest
+}
+
 function Assert-NoRestrictedPermissions {
     param(
         [Parameter(Mandatory = $true)][string]$Label,
@@ -173,6 +188,21 @@ function Assert-NoRestrictedPermissions {
     }
 
     Write-Host "$Label restricted permission audit: passed"
+}
+
+function Assert-ReleaseManifestHardening {
+    param([Parameter(Mandatory = $true)][string[]]$ManifestDump)
+
+    $joinedManifest = $ManifestDump -join "`n"
+    if ($joinedManifest -match "debuggable\(.*\)=true") {
+        throw "Release APK manifest is debuggable."
+    }
+
+    if ($joinedManifest -match "usesCleartextTraffic\(.*\)=true") {
+        throw "Release APK manifest allows cleartext traffic."
+    }
+
+    Write-Host "Release APK manifest hardening audit: passed"
 }
 
 function Assert-ApkIdentity {
@@ -364,6 +394,7 @@ $debugPermissions = @(Get-ApkPermissions -Aapt2 $aapt2 -ApkPath $debugApk)
 $releasePermissions = @(Get-ApkPermissions -Aapt2 $aapt2 -ApkPath $releaseApk)
 $debugBadging = @(Get-ApkBadging -Aapt2 $aapt2 -ApkPath $debugApk)
 $releaseBadging = @(Get-ApkBadging -Aapt2 $aapt2 -ApkPath $releaseApk)
+$releaseManifest = @(Get-ApkManifest -Aapt2 $aapt2 -ApkPath $releaseApk)
 Assert-ApkIdentity `
     -Label "Debug APK" `
     -Badging $debugBadging `
@@ -390,6 +421,7 @@ Assert-ApkIdentity `
     -ExpectedCompileSdk $expectedCompileSdk
 Assert-NoRestrictedPermissions -Label "Debug APK" -PermissionDump $debugPermissions
 Assert-NoRestrictedPermissions -Label "Release APK" -PermissionDump $releasePermissions
+Assert-ReleaseManifestHardening -ManifestDump $releaseManifest
 Write-Host ""
 
 $releaseApkSigning = Test-ApkSigned -ApkSigner $apkSigner -ApkPath $releaseApk
