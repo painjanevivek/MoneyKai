@@ -165,6 +165,7 @@ flutter test
 flutter build apk --debug
 flutter build apk --release
 flutter build appbundle --release
+.\tool\audit_android_release.ps1
 ```
 
 Latest Android binary checks:
@@ -174,6 +175,7 @@ aapt2 dump permissions build\app\outputs\flutter-apk\app-debug.apk
 aapt2 dump permissions build\app\outputs\flutter-apk\app-release.apk
 apksigner verify --verbose build\app\outputs\flutter-apk\app-release.apk
 jarsigner -verify -verbose -certs build\app\outputs\bundle\release\app-release.aab
+.\tool\audit_android_release.ps1
 ```
 
 Observed status:
@@ -185,6 +187,7 @@ Observed status:
 - Unsigned release APK build passed.
 - Unsigned release AAB build passed.
 - Release APK and AAB are intentionally unsigned without `MONEYKAI_UPLOAD_*` env vars.
+- Repeatable Android release audit passed for the current unsigned inspection artifacts.
 
 ## Remaining Work
 

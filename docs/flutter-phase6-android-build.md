@@ -52,6 +52,7 @@ flutter test
 flutter build apk --debug
 flutter build apk --release
 flutter build appbundle --release
+.\tool\audit_android_release.ps1
 ```
 
 Latest verified result:
@@ -61,6 +62,8 @@ Latest verified result:
 - `flutter build apk --debug`: passed.
 - `flutter build apk --release`: passed with no upload-key env vars; produced an unsigned inspection artifact.
 - `flutter build appbundle --release`: passed with no upload-key env vars; produced an unsigned inspection artifact.
+- `.\tool\audit_android_release.ps1`: passed for current unsigned inspection artifacts and reports unsigned release signing state.
+- `.\tool\audit_android_release.ps1` with a partial signing environment: failed as expected.
 
 ## Debug APK
 
@@ -193,6 +196,7 @@ Build signed release artifacts after setting those values:
 ```powershell
 flutter build apk --release
 flutter build appbundle --release
+.\tool\audit_android_release.ps1 -RequireSigned
 ```
 
 Expected release output paths:
@@ -203,6 +207,13 @@ apps\MoneyKai-flutter\build\app\outputs\bundle\release\app-release.aab
 ```
 
 No Play-ready release AAB has been produced in this phase because no upload keystore was provided.
+The repeatable Android release audit lives at:
+
+```text
+apps\MoneyKai-flutter\tool\audit_android_release.ps1
+```
+
+It checks artifact existence, SHA-256 metadata, restricted Android permissions, release APK signing state through `apksigner`, release AAB signing state through `jarsigner`, and partial `MONEYKAI_UPLOAD_*` signing environment mistakes.
 
 ## Remaining Android release work
 

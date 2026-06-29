@@ -44,9 +44,15 @@ Release inspection artifacts can be built without upload-key env vars:
 ```powershell
 flutter build apk --release
 flutter build appbundle --release
+.\tool\audit_android_release.ps1
 ```
 
 Those release outputs are unsigned unless all `MONEYKAI_UPLOAD_*` variables are configured.
+After building signed release outputs with upload-key variables, run:
+
+```powershell
+.\tool\audit_android_release.ps1 -RequireSigned
+```
 
 ## Android Artifacts
 
@@ -84,6 +90,7 @@ flutter build appbundle --release
 ```
 
 If only part of the signing env is set, Gradle fails with an explicit MoneyKai signing error.
+The release audit script also fails on partial signing env, restricted permissions, missing artifacts, or unsigned artifacts when `-RequireSigned` is used.
 
 ## Documentation
 
