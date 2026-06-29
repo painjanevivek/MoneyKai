@@ -66,6 +66,20 @@ function Get-PlistValue {
         [Parameter(Mandatory = $true)][string]$Key
     )
 
+    $node = Get-PlistNode -Plist $Plist -Key $Key
+    if ($null -eq $node) {
+        return $null
+    }
+
+    return $node.InnerText
+}
+
+function Get-PlistNode {
+    param(
+        [Parameter(Mandatory = $true)][xml]$Plist,
+        [Parameter(Mandatory = $true)][string]$Key
+    )
+
     $dictChildren = @($Plist.DocumentElement.dict.ChildNodes)
     for ($index = 0; $index -lt $dictChildren.Count; $index++) {
         if ($dictChildren[$index].Name -eq "key" -and $dictChildren[$index].InnerText -eq $Key) {
@@ -73,11 +87,36 @@ function Get-PlistValue {
                 return $null
             }
 
-            return $dictChildren[$index + 1].InnerText
+            return $dictChildren[$index + 1]
         }
     }
 
     return $null
+}
+
+function Assert-PlistBoolean {
+    param(
+        [Parameter(Mandatory = $true)][xml]$Plist,
+        [Parameter(Mandatory = $true)][string]$Key,
+        [Parameter(Mandatory = $true)][bool]$Expected
+    )
+
+    $node = Get-PlistNode -Plist $Plist -Key $Key
+    if ($null -eq $node) {
+        throw "Missing required Info.plist boolean key: $Key"
+    }
+
+    $actual = if ($node.Name -eq "true") {
+        $true
+    } elseif ($node.Name -eq "false") {
+        $false
+    } else {
+        throw "Info.plist key $Key must be a boolean."
+    }
+
+    if ($actual -ne $Expected) {
+        throw "Info.plist key $Key expected '$Expected' but found '$actual'."
+    }
 }
 
 function Assert-AssetFile {
@@ -118,6 +157,9 @@ Assert-Equal "CFBundleIdentifier" (Get-PlistValue -Plist $plist -Key "CFBundleId
 Assert-Equal "CFBundleShortVersionString" (Get-PlistValue -Plist $plist -Key "CFBundleShortVersionString") '$(FLUTTER_BUILD_NAME)'
 Assert-Equal "CFBundleVersion" (Get-PlistValue -Plist $plist -Key "CFBundleVersion") '$(FLUTTER_BUILD_NUMBER)'
 Assert-Equal "UILaunchStoryboardName" (Get-PlistValue -Plist $plist -Key "UILaunchStoryboardName") "LaunchScreen"
+Assert-Equal "UIMainStoryboardFile" (Get-PlistValue -Plist $plist -Key "UIMainStoryboardFile") "Main"
+Assert-PlistBoolean -Plist $plist -Key "LSRequiresIPhoneOS" -Expected $true
+Assert-PlistBoolean -Plist $plist -Key "UIApplicationSupportsIndirectInputEvents" -Expected $true
 
 $sensitivePermissionKeys = @(
     "NSCameraUsageDescription",
@@ -137,6 +179,10 @@ foreach ($key in $sensitivePermissionKeys) {
 
 if ($null -ne (Get-PlistValue -Plist $plist -Key "UIBackgroundModes")) {
     throw "Unexpected UIBackgroundModes entry present."
+}
+
+if ($null -ne (Get-PlistNode -Plist $plist -Key "NSAppTransportSecurity")) {
+    throw "Unexpected NSAppTransportSecurity override present."
 }
 
 $projectText = Get-Content -LiteralPath $projectPath -Raw
