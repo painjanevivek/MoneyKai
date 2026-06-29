@@ -78,6 +78,50 @@ void main() {
     expect(settings['themeMode'], 'dark');
   });
 
+  test('exports a large transaction history without truncating rows', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final storage = LocalStorageService(preferences);
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
+
+    await authRepository.saveSession(
+      email: 'akshay@example.com',
+      displayName: 'Akshay',
+    );
+    await transactionRepository.saveTransactions(
+      List.generate(1200, (index) {
+        return MoneyTransaction(
+          id: 'txn-$index',
+          type: index.isEven ? TransactionType.expense : TransactionType.income,
+          amount: 100 + index.toDouble(),
+          date: DateTime(2023, 1, 1).add(Duration(days: index)),
+          category: index.isEven ? 'Food' : 'Salary',
+          paymentMethod: index.isEven ? 'UPI' : 'Bank transfer',
+          description: 'History item $index',
+        );
+      }).reversed.toList(),
+    );
+
+    final exportService = LocalDataExportService(
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
+      now: () => DateTime.utc(2026, 6, 29, 8, 30),
+    );
+
+    final decoded =
+        jsonDecode(exportService.buildExportJson()) as Map<String, Object?>;
+    final transactions = decoded['transactions'] as List<Object?>;
+
+    expect(transactions, hasLength(1200));
+    expect(transactions.first, containsPair('id', 'txn-1199'));
+    expect(transactions.last, containsPair('id', 'txn-0'));
+  });
+
   test('rejects export without a local profile', () async {
     SharedPreferences.setMockInitialValues({});
     final storage = LocalStorageService(await SharedPreferences.getInstance());
