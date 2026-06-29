@@ -38,6 +38,7 @@ Unit/repository tests:
 - Local budget persistence and reset.
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
+- Local error report persistence, malformed payload handling, newest-first order, and bounded history.
 - Local data export JSON includes user, transactions, budget, source, format version, and timestamp.
 
 Widget tests:
@@ -61,6 +62,7 @@ Implemented:
 - Insights from local transaction data.
 - Settings profile display, privacy link, local JSON export to clipboard, namespace reset, and sign out.
 - Privacy/security screen explaining local-only MVP and permission boundaries.
+- Local uncaught-error capture for Flutter, platform dispatcher, and root-zone failures.
 
 ## Self-review findings
 
@@ -70,12 +72,13 @@ Implemented:
 - Local storage initializes `moneykai.storageSchemaVersion` and has a `moneykai.*` namespace reset boundary for device data.
 - JSON parsing currently falls back to defaults/empty lists when stored payload shape is invalid.
 - Release signing no longer silently uses the debug key; release builds are unsigned unless all upload-key env vars are provided.
+- Startup config records uncaught Flutter, platform dispatcher, and root-zone failures to a bounded local `moneykai.errorReports` history.
 
 Remaining:
 
 - Local storage is not encrypted.
 - No non-trivial migration has been needed beyond the current schema-version marker.
-- No crash/error reporting is configured in the Flutter app yet.
+- No remote crash/error reporting dashboard is configured yet.
 
 ### Scalability
 
@@ -227,4 +230,4 @@ On macOS/Xcode later:
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
 - Android emulator scoped manual QA is partially complete, but real TalkBack spoken-output and physical-device QA are still pending.
 - No iOS build was possible on Windows.
-- Backend sync, real auth, encrypted backup/export file flow, and store submission remain future work.
+- Backend sync, real auth, encrypted backup/export file flow, remote crash/error reporting dashboard integration, and store submission remain future work.
