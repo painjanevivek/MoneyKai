@@ -37,6 +37,21 @@ void main() {
     expect(repository.readSession().isAuthenticated, isFalse);
   });
 
+  test('trims local profile fields before saving', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalAuthRepository(LocalStorageService(preferences));
+
+    final saved = await repository.saveSession(
+      email: '  akshay@example.com  ',
+      displayName: '  Akshay  ',
+    );
+
+    expect(saved.user?.email, 'akshay@example.com');
+    expect(saved.user?.displayName, 'Akshay');
+    expect(repository.readSession().user?.email, 'akshay@example.com');
+  });
+
   test('returns signed-out state for incomplete stored sessions', () async {
     SharedPreferences.setMockInitialValues({
       'moneykai.localSession': '{"email":"akshay@example.com"}',

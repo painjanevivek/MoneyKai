@@ -33,7 +33,10 @@ class LocalAuthRepository {
     required String email,
     required String displayName,
   }) async {
-    final user = LocalUser(email: email, displayName: displayName);
+    final user = LocalUser(
+      email: email.trim(),
+      displayName: displayName.trim(),
+    );
     await _storage.writeString(_sessionKey, jsonEncode(user.toJson()));
     return AuthSessionState(user: user);
   }

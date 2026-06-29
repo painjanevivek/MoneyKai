@@ -35,7 +35,7 @@ Current result:
 
 Unit/repository tests:
 
-- Local auth session save, restore, clear, and malformed-session fallback.
+- Local auth session save, restore, clear, profile field trimming, and malformed-session fallback.
 - Local transaction persistence in newest-first order, malformed-payload fallback, and malformed-entry skipping.
 - Local budget persistence, reset, and malformed-payload fallback.
 - Budget progress calculation by current month and category.
@@ -48,6 +48,7 @@ Unit/repository tests:
 Widget tests:
 
 - Splash opens local profile flow.
+- Local profile rejects invalid email before creating a session.
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Dashboard category breakdown preview opens Insights.
@@ -65,7 +66,7 @@ Widget tests:
 
 Implemented:
 
-- Local profile/session boundary.
+- Local profile/session boundary with trimmed profile fields and basic email-shape validation.
 - Splash/onboarding entry.
 - Dashboard using local transaction, budget, and category breakdown data.
 - Add transaction with validation.

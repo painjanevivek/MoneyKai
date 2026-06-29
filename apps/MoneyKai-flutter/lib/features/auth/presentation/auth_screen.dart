@@ -85,7 +85,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       return requiredError;
     }
 
-    return value!.contains('@') ? null : 'Enter a valid email';
+    final email = value!.trim();
+    final parts = email.split('@');
+    final hasSingleAt = parts.length == 2;
+    final hasLocalPart = hasSingleAt && parts.first.isNotEmpty;
+    final hasDomain = hasSingleAt && parts.last.isNotEmpty;
+
+    return hasLocalPart && hasDomain ? null : 'Enter a valid email';
   }
 
   Future<void> _submit() async {

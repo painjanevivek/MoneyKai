@@ -45,6 +45,23 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('local profile rejects invalid email', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.bySemanticsLabel('Name'), 'Akshay');
+    await tester.enterText(find.bySemanticsLabel('Email'), '@');
+    await tester.tap(find.text('Create local profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a valid email'), findsOneWidget);
+    expect(find.text('Dashboard'), findsNothing);
+  });
+
   testWidgets('adds, edits, and deletes a local transaction', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await _setViewport(tester, const Size(420, 900));
