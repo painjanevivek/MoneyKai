@@ -4,13 +4,19 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
+import { Button } from '../ui/Button';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { formatRelativeDate } from '../../utils/dateUtils';
 import { getCategoryById } from '../../constants/categories';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 
-export const RecentTransactions: React.FC<{ onViewAll?: () => void }> = ({ onViewAll }) => {
+type RecentTransactionsProps = {
+  onAddTransaction?: () => void;
+  onViewAll?: () => void;
+};
+
+export const RecentTransactions: React.FC<RecentTransactionsProps> = ({ onAddTransaction, onViewAll }) => {
   const { colors } = useTheme();
   const recentTxns = useTransactionStore((s) => s.getRecentTransactions(5));
 
@@ -37,6 +43,14 @@ export const RecentTransactions: React.FC<{ onViewAll?: () => void }> = ({ onVie
           icon="receipt-outline"
           title="No transactions yet"
           message="Add income or expenses to see recent activity and dashboard totals."
+          action={onAddTransaction ? (
+            <Button
+              title="Add transaction"
+              icon="plus"
+              onPress={onAddTransaction}
+              size="sm"
+            />
+          ) : undefined}
           style={{ paddingVertical: Spacing.xl }}
         />
       ) : recentTxns.map((txn, index) => {

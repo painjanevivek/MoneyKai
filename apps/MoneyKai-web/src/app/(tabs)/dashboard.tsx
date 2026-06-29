@@ -33,27 +33,43 @@ function SummaryCard({
   label,
   value,
   subtitle,
+  status,
 }: {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   label: string;
   value: string;
   subtitle?: string;
+  status?: 'neutral' | 'positive' | 'warning' | 'danger';
 }) {
   const { colors } = useTheme();
+  const statusColor = status === 'positive'
+    ? colors.success
+    : status === 'warning'
+      ? colors.warning
+      : status === 'danger'
+        ? colors.error
+        : colors.textTertiary;
 
   return (
-    <Card style={{ flex: 1, minWidth: 220 }}>
-      <View style={{ width: 40, height: 40, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm }}>
-        <MaterialCommunityIcons name={icon} size={20} color={colors.primary} />
+    <Card variant="outlined" style={{ flex: 1, flexBasis: 220, minWidth: 220, minHeight: 140 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm }}>
+        <View style={{ width: 34, height: 34, borderRadius: BorderRadius.sm, backgroundColor: colors.surfaceElevated, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderLight }}>
+          <MaterialCommunityIcons name={icon} size={18} color={colors.textSecondary} />
+        </View>
+        <Text style={{ flex: 1, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }} numberOfLines={2}>
+          {label}
+        </Text>
       </View>
-      <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-        {label}
-      </Text>
-      <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.bold, color: colors.textPrimary, marginTop: 4 }}>
+      <Text
+        style={{ fontSize: Typography.fontSize['2xl'], lineHeight: Typography.lineHeight['2xl'], fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.78}
+      >
         {value}
       </Text>
       {subtitle ? (
-        <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary, marginTop: 4, lineHeight: 18 }}>
+        <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: status ? statusColor : colors.textTertiary, marginTop: 4, lineHeight: 18 }}>
           {subtitle}
         </Text>
       ) : null}
@@ -84,14 +100,14 @@ function ActivationPanel({ steps }: { steps: ActivationStep[] }) {
     <Card>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
         <View style={{ flex: 1, minWidth: 260 }}>
-          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
-            FIRST VALUE LOOP
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+            SETUP
           </Text>
           <Text style={{ marginTop: 4, fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-            Get to your first useful review
+            Finish the first useful review
           </Text>
           <Text style={{ marginTop: 6, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-            MoneyKai becomes clearer once a budget and a few reviewed records are in place.
+            Add the minimum context needed for budgets, records, and reports to read correctly.
           </Text>
         </View>
         <View style={{ minWidth: 180 }}>
@@ -117,17 +133,22 @@ function ActivationPanel({ steps }: { steps: ActivationStep[] }) {
               padding: Spacing.md,
               borderRadius: BorderRadius.sm,
               borderWidth: 1,
-              borderColor: step.done ? `${colors.success}44` : colors.borderLight,
-              backgroundColor: step.done ? `${colors.success}12` : colors.surfaceElevated,
+              borderColor: colors.borderLight,
+              backgroundColor: colors.surfaceElevated,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-              <View style={{ width: 34, height: 34, borderRadius: BorderRadius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: step.done ? `${colors.success}20` : colors.primaryBg }}>
-                <MaterialCommunityIcons name={step.done ? 'check' : step.icon} size={18} color={step.done ? colors.success : colors.primary} />
+              <View style={{ width: 34, height: 34, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight }}>
+                <MaterialCommunityIcons name={step.done ? 'check' : step.icon} size={18} color={step.done ? colors.success : colors.textSecondary} />
               </View>
-              <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                {step.title}
-              </Text>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  {step.title}
+                </Text>
+                <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, color: step.done ? colors.success : colors.textTertiary }}>
+                  {step.done ? 'Complete' : 'Next'}
+                </Text>
+              </View>
             </View>
             <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
               {step.body}
@@ -243,30 +264,35 @@ export default function DashboardScreen() {
       label: 'Monthly Budget',
       value: formatCurrency(allowance),
       subtitle: allowance > 0 ? `${Math.round(budgetUsage)}% used this month` : 'Monthly budget not set yet',
+      status: allowance > 0 ? 'neutral' as const : 'warning' as const,
     },
     {
       icon: 'arrow-up-circle-outline' as const,
       label: 'Total Spent',
       value: formatCurrency(totalSpent),
       subtitle: 'Expense total for the current month',
+      status: budgetUsage > 80 ? 'warning' as const : 'neutral' as const,
     },
     {
       icon: 'cash-check' as const,
       label: 'Remaining',
       value: formatCurrency(Math.max(0, remaining)),
       subtitle: remaining < 0 ? 'Over the limit' : 'Still available to spend',
+      status: remaining < 0 ? 'danger' as const : 'positive' as const,
     },
     {
       icon: 'cash-multiple' as const,
       label: 'Income',
       value: formatCurrency(totalIncome),
       subtitle: 'Tracked income for the month',
+      status: 'neutral' as const,
     },
     {
       icon: 'account-group-outline' as const,
       label: 'Active Groups',
       value: String(activeGroups),
       subtitle: activeGroups > 0 ? 'Shared spending is active' : 'No active shared groups',
+      status: 'neutral' as const,
     },
   ] as const;
 
@@ -280,9 +306,10 @@ export default function DashboardScreen() {
     <ScrollView showsVerticalScrollIndicator={true} contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['4xl'] }}>
       <WorkspaceHeader
         icon="view-dashboard-outline"
-        eyebrow="MONEY CONTROL CENTER"
+        eyebrow="DASHBOARD"
         title={`Welcome back, ${firstName}`}
-        description="A private desktop workspace for reviewed transactions, budgets, shared spending, savings, and portfolio context."
+        description="Reviewed transactions, budgets, shared spending, savings, and portfolio context in one workspace."
+        variant="quiet"
         metrics={[
           { label: 'Available', value: formatCurrency(Math.max(0, remaining)), tone: remaining < 0 ? 'danger' : 'positive' },
           { label: 'Spent', value: formatCurrency(totalSpent), tone: 'warning' },
@@ -300,7 +327,6 @@ export default function DashboardScreen() {
               title="Transactions"
               onPress={() => router.push('/transactions' as any)}
               variant="outline"
-              tone="onDark"
               icon="swap-horizontal"
               style={{ flexGrow: 1, flexShrink: 1, flexBasis: 168 }}
             />
@@ -308,7 +334,6 @@ export default function DashboardScreen() {
               title="AI Review"
               onPress={() => router.push('/ai-review' as any)}
               variant="outline"
-              tone="onDark"
               icon="receipt-text-outline"
               style={{ flexGrow: 1, flexShrink: 1, flexBasis: 168 }}
             />
@@ -316,7 +341,6 @@ export default function DashboardScreen() {
               title="Portfolio"
               onPress={() => router.push('/portfolio' as any)}
               variant="outline"
-              tone="onDark"
               icon="briefcase-outline"
               style={{ flexGrow: 1, flexShrink: 1, flexBasis: 168 }}
             />
@@ -334,6 +358,7 @@ export default function DashboardScreen() {
             label={card.label}
             value={card.value}
             subtitle={card.subtitle}
+            status={card.status}
           />
         ))}
       </View>
@@ -349,7 +374,10 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-          <RecentTransactions />
+          <RecentTransactions
+            onViewAll={() => router.push('/transactions' as any)}
+            onAddTransaction={() => router.push('/transactions' as any)}
+          />
 
           <Card>
             <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
@@ -416,7 +444,7 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                 Active Challenge
               </Text>
-              <TouchableOpacity onPress={() => router.push('/goals' as any)}>
+              <TouchableOpacity onPress={() => router.push('/goals' as any)} accessibilityRole="link" accessibilityLabel="View goals">
                 <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>
                   View Goals
                 </Text>
