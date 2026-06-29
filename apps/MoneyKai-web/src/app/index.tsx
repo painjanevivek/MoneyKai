@@ -6,25 +6,25 @@ import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 const palette = {
-  page: '#F4F5F8',
-  pageSoft: '#EEF0F5',
+  page: '#F7F6F3',
+  pageSoft: '#F1F0EC',
   surface: '#FFFFFF',
-  surfaceHigh: '#F8FAFC',
+  surfaceHigh: '#FBFAF7',
   surfaceWarm: '#FFFFFF',
-  border: 'rgba(15, 23, 42, 0.1)',
-  borderStrong: 'rgba(124, 58, 237, 0.24)',
-  text: '#0F172A',
-  muted: '#475569',
-  faint: '#64748B',
-  ink: '#0F172A',
-  green: '#16A34A',
-  greenDeep: '#0F766E',
-  greenSoft: 'rgba(22, 163, 74, 0.1)',
-  violet: '#7C3AED',
-  violetSoft: 'rgba(124, 58, 237, 0.1)',
-  gold: '#92400E',
-  goldSoft: 'rgba(245, 158, 11, 0.1)',
-  redSoft: 'rgba(251, 113, 133, 0.14)',
+  border: 'rgba(28, 25, 23, 0.1)',
+  borderStrong: 'rgba(28, 25, 23, 0.18)',
+  text: '#1F1F1D',
+  muted: '#5F5E59',
+  faint: '#85827A',
+  ink: '#1F1F1D',
+  green: '#2F6F55',
+  greenDeep: '#315F4E',
+  greenSoft: 'rgba(47, 111, 85, 0.08)',
+  accent: '#2F2F2B',
+  accentSoft: 'rgba(31, 31, 29, 0.06)',
+  gold: '#7A5A22',
+  goldSoft: 'rgba(122, 90, 34, 0.08)',
+  redSoft: 'rgba(154, 52, 45, 0.08)',
 };
 
 const navLinks = [
@@ -161,9 +161,9 @@ const badgeStyle: CSSProperties = {
 
 const cardStyle: CSSProperties = {
   border: `1px solid ${palette.border}`,
-  borderRadius: 18,
+  borderRadius: 12,
   background: palette.surface,
-  boxShadow: '0 18px 50px rgba(15, 23, 42, 0.08)',
+  boxShadow: '0 14px 34px rgba(28, 25, 23, 0.06)',
 };
 
 function cxGrid(isWide: boolean, min = '260px'): CSSProperties {
@@ -190,7 +190,7 @@ function Section({
       id={id}
       aria-labelledby={labelledBy}
       style={{
-        background: palette.page,
+        background: palette.surface,
         padding: compact ? '52px 18px' : '84px 24px',
         borderTop: `1px solid ${palette.border}`,
       }}
@@ -216,9 +216,9 @@ function LinkButton({
       href={href}
       style={{
         alignItems: 'center',
-        background: primary ? palette.violet : '#FFFFFF',
-        border: `1px solid ${primary ? palette.violet : palette.borderStrong}`,
-        borderRadius: 14,
+        background: primary ? palette.accent : '#FFFFFF',
+        border: `1px solid ${primary ? palette.accent : palette.borderStrong}`,
+        borderRadius: 8,
         boxSizing: 'border-box',
         color: primary ? '#FFFFFF' : palette.text,
         display: 'inline-flex',
@@ -301,7 +301,7 @@ function LandingHeader({ compact }: { compact: boolean }) {
               aria-controls="site-navigation"
               onClick={() => setOpen((value) => !value)}
               style={{
-                background: 'rgba(245, 251, 248, 0.07)',
+                background: '#FFFFFF',
                 border: `1px solid ${palette.borderStrong}`,
                 borderRadius: 8,
                 color: palette.text,
@@ -368,7 +368,7 @@ function ProductPreview({ compact }: { compact: boolean }) {
       aria-label="MoneyKai private report preview"
       style={{
         ...cardStyle,
-        background: `radial-gradient(circle at 92% 8%, ${palette.violetSoft}, transparent 30%), linear-gradient(180deg, ${palette.surfaceWarm}, #F8FAFC)`,
+        background: `linear-gradient(180deg, ${palette.surfaceWarm}, ${palette.surfaceHigh})`,
         color: palette.ink,
         minHeight: compact ? 380 : 500,
         overflow: 'hidden',
@@ -386,7 +386,7 @@ function ProductPreview({ compact }: { compact: boolean }) {
         <div
           style={{
             alignItems: 'center',
-            background: palette.violet,
+            background: palette.accent,
             borderRadius: 8,
             color: '#FFFFFF',
             display: 'flex',
@@ -504,10 +504,9 @@ export default function LandingScreen() {
       />
       <div
         style={{
-          background:
-            `linear-gradient(180deg, ${palette.page} 0%, #FFFFFF 42%, ${palette.page} 100%)`,
+          background: palette.page,
           color: palette.text,
-          colorScheme: 'dark',
+          colorScheme: 'light',
           fontFamily: 'Inter, Poppins_400Regular, system-ui, sans-serif',
           minHeight: '100vh',
         }}
@@ -517,14 +516,13 @@ export default function LandingScreen() {
         <main
           id="main-content"
           style={{
-            background: `linear-gradient(180deg, ${palette.page} 0%, #FFFFFF 42%, ${palette.page} 100%)`,
+            background: palette.page,
           }}
         >
           <section
             aria-labelledby="hero-title"
             style={{
-              background:
-                `radial-gradient(circle at 82% 12%, ${palette.violetSoft}, transparent 28%), radial-gradient(circle at 16% 82%, ${palette.greenSoft}, transparent 26%), ${palette.page}`,
+              background: palette.page,
               padding: isCompact ? '48px 18px 52px' : '82px 24px 88px',
             }}
           >
@@ -601,7 +599,7 @@ export default function LandingScreen() {
                 <div style={cxGrid(isWide)}>
                   {flowSteps.map((step) => (
                     <article key={step.title} style={{ ...cardStyle, padding: 22 }}>
-                      <span style={{ color: palette.violet, fontSize: 13, fontWeight: 900 }}>{step.eyebrow}</span>
+                      <span style={{ color: palette.accent, fontSize: 13, fontWeight: 900 }}>{step.eyebrow}</span>
                       <h3 style={{ color: palette.text, fontSize: 22, lineHeight: '28px', margin: '12px 0 0' }}>{step.title}</h3>
                       <p style={{ ...paragraphStyle, marginTop: 10 }}>{step.body}</p>
                     </article>
@@ -639,7 +637,7 @@ export default function LandingScreen() {
               <div
                 style={{
                   ...cardStyle,
-                  background: `linear-gradient(135deg, ${palette.greenSoft}, ${palette.violetSoft}, ${palette.goldSoft}), ${palette.surface}`,
+                  background: palette.surface,
                   display: 'grid',
                   gap: isCompact ? 24 : 36,
                   gridTemplateColumns: isWide ? '0.9fr 1.1fr' : '1fr',
@@ -658,7 +656,7 @@ export default function LandingScreen() {
                 <div style={{ display: 'grid', gap: 12 }}>
                   {['Reviewable drafts before report updates', 'Plain summaries instead of advice claims', 'Support and legal pages linked from every public page', 'Reduced motion and accessible contrast by default'].map((item) => (
                     <div key={item} style={{ alignItems: 'center', background: '#FFFFFF', border: `1px solid ${palette.border}`, borderRadius: 14, display: 'flex', gap: 12, padding: 14 }}>
-                      <span aria-hidden="true" style={{ background: palette.violet, borderRadius: 999, height: 9, width: 9 }} />
+                      <span aria-hidden="true" style={{ background: palette.accent, borderRadius: 999, height: 9, width: 9 }} />
                       <span style={{ color: palette.text, fontSize: 15, fontWeight: 700 }}>{item}</span>
                     </div>
                   ))}
@@ -717,12 +715,12 @@ export default function LandingScreen() {
                         ...cardStyle,
                         background:
                           index === 1
-                            ? 'linear-gradient(145deg, #F8FFFC 0%, #ECFDF7 43%, #EEF2FF 100%)'
+                            ? palette.surfaceHigh
                             : cardStyle.background,
-                        border: index === 1 ? '1px solid rgba(124, 58, 237, 0.18)' : cardStyle.border,
+                        border: index === 1 ? `1px solid ${palette.borderStrong}` : cardStyle.border,
                         boxShadow:
                           index === 1
-                            ? '0 20px 52px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.92)'
+                            ? '0 16px 38px rgba(28, 25, 23, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.92)'
                             : cardStyle.boxShadow,
                         padding: 22,
                       }}
@@ -776,7 +774,7 @@ export default function LandingScreen() {
                   style={{
                     ...cardStyle,
                     alignItems: 'center',
-                    background: `linear-gradient(135deg, ${palette.greenSoft}, ${palette.violetSoft}, ${palette.redSoft}), ${palette.surfaceHigh}`,
+                    background: palette.surface,
                     display: 'grid',
                     gap: 22,
                     justifyItems: 'center',
