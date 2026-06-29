@@ -35,10 +35,10 @@ Current result:
 
 Unit/repository tests:
 
-- Local auth session save, restore, clear, profile field trimming, invalid-field/email-whitespace rejection, malformed-session fallback, and invalid stored-profile fallback.
+- Local auth session save, restore, clear, profile field trimming, model serialization validation, invalid-field/email-whitespace rejection, malformed-session fallback, and invalid stored-profile fallback.
 - Local transaction persistence in newest-first order, malformed-payload fallback, malformed-entry/amount skipping, blank required-field handling, and non-finite amount rejection.
 - Local budget persistence, reset, malformed-payload fallback, invalid stored-limit/category fallback, and non-finite limit rejection.
-- Transaction and budget model JSON serialization rejects invalid numeric values before export.
+- Local user, transaction, and budget model JSON serialization reject invalid values before export.
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, blank required-field skipping, newest-first order, read/write bounded history, and clear action.

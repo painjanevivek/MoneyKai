@@ -5,26 +5,50 @@ class LocalUser {
   final String displayName;
 
   Map<String, Object?> toJson() {
-    return {'email': email, 'displayName': displayName};
+    return {
+      'email': _requiredLocalEmail(email),
+      'displayName': _requiredDisplayName(displayName),
+    };
   }
 
   static LocalUser fromJson(Map<String, Object?> json) {
     final email = json['email'];
     final displayName = json['displayName'];
-    final trimmedEmail = email is String ? email.trim() : null;
-    final trimmedDisplayName = displayName is String
-        ? displayName.trim()
-        : null;
-
-    if (trimmedEmail == null ||
-        trimmedDisplayName == null ||
-        trimmedDisplayName.isEmpty ||
-        !hasValidLocalEmailShape(trimmedEmail)) {
+    try {
+      return LocalUser(
+        email: _requiredLocalEmail(email),
+        displayName: _requiredDisplayName(displayName),
+      );
+    } catch (_) {
       throw const FormatException('Local user has invalid fields.');
     }
-
-    return LocalUser(email: trimmedEmail, displayName: trimmedDisplayName);
   }
+}
+
+String _requiredLocalEmail(Object? value) {
+  if (value is! String) {
+    throw const FormatException('Local user email is invalid.');
+  }
+
+  final trimmed = value.trim();
+  if (!hasValidLocalEmailShape(trimmed)) {
+    throw const FormatException('Local user email is invalid.');
+  }
+
+  return trimmed;
+}
+
+String _requiredDisplayName(Object? value) {
+  if (value is! String) {
+    throw const FormatException('Local user display name is invalid.');
+  }
+
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    throw const FormatException('Local user display name is required.');
+  }
+
+  return trimmed;
 }
 
 bool hasValidLocalEmailShape(String email) {
