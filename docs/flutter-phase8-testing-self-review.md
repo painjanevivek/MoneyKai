@@ -51,6 +51,7 @@ Widget tests:
 
 - Splash opens local profile flow.
 - Local profile rejects invalid and whitespace-containing email before creating a session.
+- Signed-out deep links to protected app routes redirect to the local profile flow.
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Dashboard category breakdown preview opens Insights.

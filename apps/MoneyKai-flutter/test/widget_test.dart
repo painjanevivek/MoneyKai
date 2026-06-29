@@ -76,6 +76,19 @@ void main() {
     expect(find.text('Dashboard'), findsNothing);
   });
 
+  testWidgets('signed-out deep link redirects to local profile', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester, initialLocation: '/dashboard');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Local profile'), findsOneWidget);
+    expect(find.text('Create local profile'), findsOneWidget);
+    expect(find.text('Dashboard'), findsNothing);
+  });
+
   testWidgets('adds, edits, and deletes a local transaction', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await _setViewport(tester, const Size(420, 900));
@@ -854,6 +867,11 @@ Future<void> _enterDashboard(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _pumpApp(WidgetTester tester) async {
-  await tester.pumpWidget(const ProviderScope(child: MoneyKaiApp()));
+Future<void> _pumpApp(
+  WidgetTester tester, {
+  String initialLocation = '/splash',
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(child: MoneyKaiApp(initialLocation: initialLocation)),
+  );
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/domain/auth_session_state.dart';
 import '../features/auth/presentation/auth_screen.dart';
 import '../features/budget/presentation/budget_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
@@ -14,9 +16,15 @@ import '../features/transactions/presentation/transactions_screen.dart';
 import '../shared/widgets/app_shell.dart';
 import 'app_routes.dart';
 
-GoRouter createAppRouter() {
+GoRouter createAppRouter({
+  String initialLocation = AppRoutes.splash,
+  ValueGetter<AsyncValue<AuthSessionState>>? readAuthState,
+  Listenable? refreshListenable,
+}) {
   return GoRouter(
-    initialLocation: AppRoutes.splash,
+    initialLocation: initialLocation,
+    refreshListenable: refreshListenable,
+    redirect: (context, state) => _authRedirect(state, readAuthState?.call()),
     routes: [
       GoRoute(
         path: AppRoutes.splash,
@@ -79,4 +87,28 @@ GoRouter createAppRouter() {
       body: Center(child: Text('Route not found: ${state.uri}')),
     ),
   );
+}
+
+String? _authRedirect(
+  GoRouterState state,
+  AsyncValue<AuthSessionState>? authState,
+) {
+  if (authState == null) {
+    return null;
+  }
+
+  final isPublicRoute =
+      state.matchedLocation == AppRoutes.splash ||
+      state.matchedLocation == AppRoutes.signIn;
+  final isAuthenticated = authState.asData?.value.isAuthenticated ?? false;
+
+  if (!isAuthenticated && !isPublicRoute) {
+    return AppRoutes.signIn;
+  }
+
+  if (isAuthenticated && state.matchedLocation == AppRoutes.signIn) {
+    return AppRoutes.dashboard;
+  }
+
+  return null;
 }
