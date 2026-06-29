@@ -34,8 +34,10 @@ Current direct dependencies:
 - `flutter_riverpod`
 - `shared_preferences`
 - `intl`
+- `cryptography`
+- `share_plus`
 
-These are Flutter/iOS-compatible package choices. The current MVP does not add Android-only native packages, notification listener packages, SMS packages, contacts packages, camera packages, or WebView dependencies.
+These are Flutter/iOS-compatible package choices. The current MVP does not add Android-only native packages, notification listener packages, SMS packages, contacts packages, camera packages, storage-permission packages, or WebView dependencies.
 
 ## Platform behavior
 
@@ -47,7 +49,7 @@ Shared Flutter code currently covers:
 - Transactions list, search, filter, and delete.
 - Budget setup and progress.
 - Insights from local transaction data.
-- Settings, privacy/security, sign out, local JSON export to clipboard, and local reset.
+- Settings, privacy/security, sign out, local JSON export to clipboard, encrypted backup export through the platform share sheet, and local reset.
 
 The MVP intentionally avoids:
 
@@ -107,4 +109,5 @@ flutter build ios --release
 - Perform real-device QA before TestFlight.
 - Configure Apple signing team and provisioning.
 - Validate local persistence after app restart on iOS.
+- Validate encrypted backup share-sheet behavior on iOS.
 - Confirm text scale, safe areas, keyboard behavior, and date picker UX on iOS.

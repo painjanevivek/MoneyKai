@@ -1,13 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/storage/local_storage_provider.dart';
 import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/screen_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../budget/application/budget_controller.dart';
+import '../application/encrypted_backup_provider.dart';
 import '../application/local_data_export_provider.dart';
 import '../../transactions/application/transaction_controller.dart';
 
@@ -41,6 +45,12 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Export local data'),
             subtitle: const Text('Copies local JSON to clipboard'),
             onTap: () => _exportLocalData(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.lock_outline),
+            title: const Text('Create encrypted backup'),
+            subtitle: const Text('Shares a password-protected JSON file'),
+            onTap: () => _createEncryptedBackup(context, ref),
           ),
           ListTile(
             leading: Icon(
@@ -86,6 +96,86 @@ class SettingsScreen extends ConsumerWidget {
         );
       }
     }
+  }
+
+  Future<void> _createEncryptedBackup(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final password = await _requestBackupPassword(context);
+    if (password == null) {
+      return;
+    }
+
+    try {
+      final backupService = await ref.read(
+        encryptedBackupServiceProvider.future,
+      );
+      final backup = await backupService.buildEncryptedBackup(
+        password: password,
+      );
+      await SharePlus.instance.share(
+        ShareParams(
+          title: 'MoneyKai encrypted backup',
+          text: 'MoneyKai encrypted backup. Keep the password separate.',
+          files: [
+            XFile.fromData(
+              utf8.encode(backup.content),
+              mimeType: 'application/json',
+            ),
+          ],
+          fileNameOverrides: [backup.fileName],
+        ),
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Encrypted backup ready to share.')),
+        );
+      }
+    } on FormatException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not create encrypted backup.')),
+        );
+      }
+    }
+  }
+
+  Future<String?> _requestBackupPassword(BuildContext context) {
+    var password = '';
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create encrypted backup'),
+        content: TextField(
+          autofocus: true,
+          obscureText: true,
+          onChanged: (value) => password = value,
+          decoration: const InputDecoration(
+            labelText: 'Backup password',
+            helperText: 'Use at least 8 characters.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(password),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _confirmReset(BuildContext context, WidgetRef ref) async {

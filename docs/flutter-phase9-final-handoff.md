@@ -23,7 +23,7 @@ Implemented MVP:
 - Transactions list with search, income/expense filters, and delete.
 - Budget screen with monthly and category limits.
 - Insights screen from local transaction data.
-- Settings screen with profile display, privacy link, local JSON export to clipboard, namespace reset, and sign out.
+- Settings screen with profile display, privacy link, local JSON export to clipboard, encrypted backup export, namespace reset, and sign out.
 - Privacy/security screen describing the local-only MVP boundary.
 
 Core architecture:
@@ -33,6 +33,7 @@ Core architecture:
 - State management through `flutter_riverpod`.
 - Local persistence through `shared_preferences` behind a MoneyKai storage service.
 - `moneykai.*` local storage namespace and `moneykai.storageSchemaVersion`.
+- Password-encrypted backup exports using AES-256-GCM and PBKDF2-HMAC-SHA256.
 - Bounded local error reports for uncaught Flutter, platform dispatcher, and root-zone failures.
 - Reusable screen shell, responsive screen scaffold, metric cards, empty states, and budget progress widgets.
 
@@ -58,6 +59,7 @@ Android-ready items:
 - Debug APK has been installed and smoke-tested on `MoneyKai_API_36`.
 - Primary workflows have emulator QA evidence.
 - Local JSON export copies the current profile, transactions, and budget snapshot to the clipboard without adding storage or sharing permissions.
+- Encrypted backup export creates a password-protected JSON file through the Android/iOS share sheet.
 - Local error capture records uncaught failures without adding permissions or a remote crash SDK.
 - Light and dark theme screenshot QA exists for primary screens.
 - Accessibility hierarchy/focus-order snapshots exist for primary screens.
@@ -82,6 +84,8 @@ iOS-ready items:
   - `flutter_riverpod`
   - `shared_preferences`
   - `intl`
+  - `cryptography`
+  - `share_plus`
 - No Android-only native dependency, SMS package, notification listener package, contacts package, camera package, or WebView dependency is used in the Flutter app layer.
 - iOS icon and launch image assets use the MoneyKai source mark.
 
@@ -100,9 +104,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 
 | Field | Value |
 | --- | --- |
-| Size | `170221331` bytes |
-| SHA-256 | `CECF745890F80CA66C8FFC182CB18282E72B366C6F096DA00D65E24F48A6618A` |
-| Built | `2026-06-29 12:54:21` local time |
+| Size | `190664098` bytes |
+| SHA-256 | `D8B4B32E3869F91694BC9FB02F0CFD948942801F8099F2AB63244DDAE92EBD6D` |
+| Built | `2026-06-29 13:19:34` local time |
 
 Unsigned release APK for binary inspection only:
 
@@ -112,9 +116,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 
 | Field | Value |
 | --- | --- |
-| Size | `51528626` bytes |
-| SHA-256 | `5A937E66D7638D99C90F548C5688236CD6358766EB60ADAFD4207B41409DE0BE` |
-| Built | `2026-06-29 12:54:50` local time |
+| Size | `52716963` bytes |
+| SHA-256 | `3B8906F7343B3C32CD6759588A9310B7AD0CC0B956F5A9B95606979281E5E6C2` |
+| Built | `2026-06-29 13:19:48` local time |
 | Signing | Unsigned; not Play-ready |
 
 Unsigned release AAB for binary inspection only:
@@ -125,9 +129,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\
 
 | Field | Value |
 | --- | --- |
-| Size | `50594310` bytes |
-| SHA-256 | `289815D3B45978AE1A7C50F4ED683CB742A2796CFDCB878F75526C7BD3BCF8BA` |
-| Built | `2026-06-29 12:55:01` local time |
+| Size | `51613455` bytes |
+| SHA-256 | `77FC6FEF3DFDF0488FB183CD2E8C87D9D6888D7CD26373646100BFC427170BA4` |
+| Built | `2026-06-29 13:11:55` local time |
 | Signing | Unsigned; not Play-ready |
 
 Screenshot evidence:
@@ -199,6 +203,6 @@ Future product/infrastructure work:
 
 - Backend sync boundary implementation.
 - Real authentication.
-- Encrypted backup/export file flow.
+- Backup restore/import.
 - Remote crash/error reporting dashboard integration.
 - Larger-history storage migration to SQLite/Drift/Isar if transaction volume grows.

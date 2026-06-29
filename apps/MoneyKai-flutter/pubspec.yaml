@@ -38,6 +38,8 @@ dependencies:
   flutter_riverpod: ^3.3.2
   shared_preferences: ^2.5.5
   intl: ^0.20.3
+  cryptography: ^2.9.0
+  share_plus: ^13.2.0
 
 dev_dependencies:
   flutter_test:

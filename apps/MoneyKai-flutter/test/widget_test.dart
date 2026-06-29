@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -122,6 +123,26 @@ void main() {
     expect(find.text('Local sign in'), findsOneWidget);
   });
 
+  testWidgets('encrypted backup requires a strong password', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await _setViewport(tester, const Size(420, 900));
+    await _enterDashboard(tester);
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create encrypted backup'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.bySemanticsLabel('Backup password'), 'short');
+    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Backup password must be at least 8 characters.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('privacy screen explains local export boundary', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await _setViewport(tester, const Size(420, 900));
@@ -134,7 +155,7 @@ void main() {
 
     expect(
       find.text(
-        'Local export copies a plaintext JSON snapshot to the clipboard. Backend sync, real auth, and encrypted backup/export files are future integration boundaries.',
+        'Local export copies a plaintext JSON snapshot to the clipboard. Encrypted backup creates a password-protected JSON file through the device share sheet. Backend sync, real auth, and restore/import are future integration boundaries.',
       ),
       findsOneWidget,
     );

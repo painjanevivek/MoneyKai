@@ -40,6 +40,7 @@ Unit/repository tests:
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, newest-first order, and bounded history.
 - Local data export JSON includes user, transactions, budget, source, format version, and timestamp.
+- Encrypted backup export produces password-protected AES-GCM JSON, rejects short passwords, and fails decryption with the wrong password.
 
 Widget tests:
 
@@ -48,6 +49,7 @@ Widget tests:
 - App shell renders on larger iOS-style viewport.
 - Add/delete transaction flow works.
 - Settings export-to-clipboard, reset confirmation, and confirmed reset-to-auth respond.
+- Settings encrypted-backup password validation responds.
 
 ## Current functional state
 
@@ -60,7 +62,7 @@ Implemented:
 - Transactions list with search, income/expense filter, and delete.
 - Budget monthly/category limits with persisted local settings and tap-to-replace editing.
 - Insights from local transaction data.
-- Settings profile display, privacy link, local JSON export to clipboard, namespace reset, and sign out.
+- Settings profile display, privacy link, local JSON export to clipboard, encrypted backup export through the platform share sheet, namespace reset, and sign out.
 - Privacy/security screen explaining local-only MVP and permission boundaries.
 - Local uncaught-error capture for Flutter, platform dispatcher, and root-zone failures.
 
@@ -129,12 +131,13 @@ Remaining:
 
 - The MVP does not request SMS, notification listener, contacts, camera, microphone, location, or storage permissions.
 - Local export copies a plaintext JSON snapshot to the clipboard without adding storage or sharing permissions.
+- Encrypted backup export creates a password-protected JSON file with AES-256-GCM and PBKDF2-HMAC-SHA256 through the platform share sheet.
 - Privacy screen states the current local-only data boundary.
 - Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
 
 Remaining:
 
-- No encrypted backup/export exists yet.
+- Backup restore/import is not implemented yet.
 
 ## Manual QA status
 
@@ -151,6 +154,8 @@ Completed on `MoneyKai_API_36`:
 - Budget progress update.
 - Update monthly and category budgets.
 - Verify export action feedback on device.
+- Verify encrypted backup password validation on device.
+- Verify encrypted backup share sheet on device.
 - Run 1.3 font-scale visual QA for the Settings screen.
 - Capture Android accessibility hierarchy/focus-order snapshots for primary screens.
 - Capture Android light-theme screenshot visual QA for primary screens.
@@ -175,6 +180,10 @@ Evidence artifacts captured locally:
 - `.codex-artifacts\moneykai-window-qa7-settings-before-export.xml`
 - `.codex-artifacts\moneykai-window-qa7-export-copied.xml`
 - `.codex-artifacts\moneykai-qa7-export-copied.png`
+- `.codex-artifacts\moneykai-window-qa8-settings-encrypted-backup.xml`
+- `.codex-artifacts\moneykai-window-qa8-encrypted-backup-short-password.xml`
+- `.codex-artifacts\moneykai-window-qa8-encrypted-backup-share-sheet.xml`
+- `.codex-artifacts\moneykai-qa8-encrypted-backup-share-sheet.png`
 - `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`
 - `.codex-artifacts\moneykai-window-qa3-budget-monthly-edit.xml`
 - `.codex-artifacts\moneykai-window-qa3-budget-category-edit.xml`
@@ -230,4 +239,4 @@ On macOS/Xcode later:
 - No production upload keystore was provided, so no Play-ready release AAB was produced.
 - Android emulator scoped manual QA is partially complete, but real TalkBack spoken-output and physical-device QA are still pending.
 - No iOS build was possible on Windows.
-- Backend sync, real auth, encrypted backup/export file flow, remote crash/error reporting dashboard integration, and store submission remain future work.
+- Backend sync, real auth, backup restore/import, remote crash/error reporting dashboard integration, and store submission remain future work.
