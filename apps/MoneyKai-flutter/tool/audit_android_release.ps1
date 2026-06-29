@@ -294,7 +294,10 @@ function Assert-AabStructure {
 }
 
 function Assert-ReleaseManifestHardening {
-    param([Parameter(Mandatory = $true)][string[]]$ManifestDump)
+    param(
+        [Parameter(Mandatory = $true)][string[]]$ManifestDump,
+        [Parameter(Mandatory = $true)][string]$ExpectedLaunchActivity
+    )
 
     $joinedManifest = $ManifestDump -join "`n"
     if ($joinedManifest -match "debuggable\(.*\)=true") {
@@ -321,7 +324,123 @@ function Assert-ReleaseManifestHardening {
         throw "Release APK manifest must include dataExtractionRules."
     }
 
+    Assert-ReleaseManifestExportedComponents `
+        -ManifestDump $ManifestDump `
+        -ExpectedLaunchActivity $ExpectedLaunchActivity
+
     Write-Host "Release APK manifest hardening audit: passed"
+}
+
+function Get-ManifestComponentBlocks {
+    param([Parameter(Mandatory = $true)][string[]]$ManifestDump)
+
+    $components = @()
+    for ($index = 0; $index -lt $ManifestDump.Count; $index++) {
+        $line = $ManifestDump[$index]
+        if ($line -notmatch "^(?<indent>\s*)E: (?<type>activity|activity-alias|service|receiver|provider)\b") {
+            continue
+        }
+
+        $indentLength = $matches["indent"].Length
+        $type = $matches["type"]
+        $blockLines = @($line)
+
+        for ($nextIndex = $index + 1; $nextIndex -lt $ManifestDump.Count; $nextIndex++) {
+            $nextLine = $ManifestDump[$nextIndex]
+            if ($nextLine -match "^(?<indent>\s*)E: " -and $matches["indent"].Length -le $indentLength) {
+                break
+            }
+
+            $blockLines += $nextLine
+        }
+
+        $components += [PSCustomObject]@{
+            Type = $type
+            Lines = $blockLines
+        }
+    }
+
+    return $components
+}
+
+function Get-ManifestBlockAttribute {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Lines,
+        [Parameter(Mandatory = $true)][string]$AttributeName
+    )
+
+    $attributeLine = $Lines |
+        Where-Object { $_ -match "A: http://schemas\.android\.com/apk/res/android:$([regex]::Escape($AttributeName))\(" } |
+        Select-Object -First 1
+
+    if (-not $attributeLine) {
+        return $null
+    }
+
+    if ($attributeLine -match '="([^"]*)"') {
+        return $matches[1]
+    }
+
+    if ($attributeLine -match "\)=([^\s]+)") {
+        return $matches[1]
+    }
+
+    return $attributeLine.Trim()
+}
+
+function Assert-ReleaseManifestExportedComponents {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$ManifestDump,
+        [Parameter(Mandatory = $true)][string]$ExpectedLaunchActivity
+    )
+
+    $allowedExportedComponents = @(
+        [PSCustomObject]@{
+            Type = "activity"
+            Name = $ExpectedLaunchActivity
+            Permission = $null
+        },
+        [PSCustomObject]@{
+            Type = "receiver"
+            Name = "androidx.profileinstaller.ProfileInstallReceiver"
+            Permission = "android.permission.DUMP"
+        }
+    )
+
+    $exportedComponents = @()
+    foreach ($component in Get-ManifestComponentBlocks -ManifestDump $ManifestDump) {
+        $exported = Get-ManifestBlockAttribute -Lines $component.Lines -AttributeName "exported"
+        if ($exported -notmatch "^(true|\(type 0x12\)0xffffffff)$") {
+            continue
+        }
+
+        $exportedComponents += [PSCustomObject]@{
+            Type = $component.Type
+            Name = Get-ManifestBlockAttribute -Lines $component.Lines -AttributeName "name"
+            Permission = Get-ManifestBlockAttribute -Lines $component.Lines -AttributeName "permission"
+        }
+    }
+
+    foreach ($component in $exportedComponents) {
+        $allowed = $allowedExportedComponents | Where-Object {
+            $_.Type -eq $component.Type -and
+                $_.Name -eq $component.Name -and
+                $_.Permission -eq $component.Permission
+        } | Select-Object -First 1
+
+        if (-not $allowed) {
+            throw "Unexpected exported Android component: $($component.Type) $($component.Name) permission=$($component.Permission)"
+        }
+    }
+
+    $launchActivity = $exportedComponents | Where-Object {
+        $_.Type -eq "activity" -and $_.Name -eq $ExpectedLaunchActivity
+    }
+    if (@($launchActivity).Count -ne 1) {
+        throw "Release APK manifest must expose exactly one launcher activity: $ExpectedLaunchActivity"
+    }
+
+    Write-Host "Release APK exported component audit: passed"
 }
 
 function Assert-ApkIdentity {
@@ -542,7 +661,7 @@ Assert-ApkIdentity `
     -ExpectedCompileSdk $expectedCompileSdk
 Assert-NoRestrictedPermissions -Label "Debug APK" -PermissionDump $debugPermissions
 Assert-NoRestrictedPermissions -Label "Release APK" -PermissionDump $releasePermissions
-Assert-ReleaseManifestHardening -ManifestDump $releaseManifest
+Assert-ReleaseManifestHardening -ManifestDump $releaseManifest -ExpectedLaunchActivity $expectedLaunchActivity
 Assert-AabStructure -AabPath $releaseAab
 Write-Host ""
 
