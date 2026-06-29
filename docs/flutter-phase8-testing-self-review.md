@@ -58,7 +58,7 @@ Widget tests:
 - Budget screen shows category over-budget states.
 - Add transaction and budget forms reject non-finite numeric input.
 - Settings persists System/Light/Dark theme preference.
-- Settings local diagnostics review and clear action.
+- Settings local diagnostics review, clear action, and reset-cache invalidation.
 - Add/edit/delete transaction flow works, including editing restored records with non-default category and payment metadata.
 - Transactions group by month and filter by category.
 - Settings export-to-clipboard, reset confirmation, and confirmed reset-to-profile-entry respond.
@@ -152,7 +152,7 @@ Remaining:
 - Encrypted backup decrypt validates format version, algorithm, KDF, iteration count, metadata, base64 fields, salt/nonce/MAC lengths, and encrypted payload presence before decryption so unsupported or malformed files fail through controlled format errors.
 - Encrypted backup restore decrypts a selected backup file and restores the local profile, transactions, budget, and saved theme setting after confirmation through the password prompt.
 - Privacy screen states the current local-only data boundary, including plaintext export contents, encrypted backup flow, and local diagnostics.
-- Local reset clears the full MoneyKai shared-preferences namespace and returns to local auth.
+- Local reset clears the full MoneyKai shared-preferences namespace, invalidates cached diagnostics, and returns to local auth.
 - Local diagnostics stay on-device and can be cleared from Settings.
 - Encrypted backup restore validates the clear payload version, profile boundary, and budget shape before clearing local data, so unsupported or malformed backups cannot erase the current local session.
 

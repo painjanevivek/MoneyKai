@@ -469,6 +469,59 @@ void main() {
     expect(find.text('Local diagnostics cleared.'), findsOneWidget);
   });
 
+  testWidgets('reset local data clears cached diagnostics view', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+      LocalErrorReportRepository.reportsKey: jsonEncode([
+        {
+          'id': 'diagnostic-1',
+          'source': 'flutter',
+          'errorType': 'StateError',
+          'message': 'Bad state: stale failure',
+          'stackTrace': 'stack line 1',
+          'occurredAt': DateTime.utc(2026, 6, 29, 9, 45).toIso8601String(),
+        },
+      ]),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open dashboard'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Local diagnostics'));
+    await tester.pumpAndSettle();
+    expect(find.text('StateError'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -520));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'Reset local data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reset'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.bySemanticsLabel('Name'), 'Priya');
+    await tester.enterText(find.bySemanticsLabel('Email'), 'priya@example.com');
+    await tester.tap(find.text('Create local profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Local diagnostics'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No local error reports'), findsOneWidget);
+    expect(find.text('StateError'), findsNothing);
+  });
+
   testWidgets('settings export and reset actions respond', (tester) async {
     SharedPreferences.setMockInitialValues({});
     String? exportedText;

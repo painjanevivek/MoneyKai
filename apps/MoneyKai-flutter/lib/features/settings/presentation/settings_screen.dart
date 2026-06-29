@@ -7,6 +7,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/diagnostics/local_error_report_provider.dart';
 import '../../../core/storage/local_storage_provider.dart';
 import '../../../routing/app_routes.dart';
 import '../../../shared/widgets/screen_scaffold.dart';
@@ -258,6 +259,7 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(transactionControllerProvider);
       ref.invalidate(budgetControllerProvider);
       ref.invalidate(themeModeControllerProvider);
+      ref.invalidate(localErrorReportsProvider);
 
       if (context.mounted) {
         final messenger = ScaffoldMessenger.of(context);
@@ -350,6 +352,7 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(transactionControllerProvider);
     ref.invalidate(budgetControllerProvider);
     ref.invalidate(themeModeControllerProvider);
+    ref.invalidate(localErrorReportsProvider);
 
     if (context.mounted) {
       final messenger = ScaffoldMessenger.of(context);
