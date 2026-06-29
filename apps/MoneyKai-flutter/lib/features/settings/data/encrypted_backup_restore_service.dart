@@ -78,27 +78,16 @@ class EncryptedBackupRestoreService {
     );
   }
 
-  _RestoredUser _readUser(Object? rawUser) {
+  LocalUser _readUser(Object? rawUser) {
     if (rawUser is! Map<String, Object?>) {
       throw const FormatException('Backup is missing a local user.');
     }
 
-    final email = rawUser['email'];
-    final displayName = rawUser['displayName'];
-    final trimmedEmail = email is String ? email.trim() : null;
-    final trimmedDisplayName = displayName is String
-        ? displayName.trim()
-        : null;
-    if (email is! String ||
-        displayName is! String ||
-        trimmedEmail == null ||
-        trimmedDisplayName == null ||
-        trimmedDisplayName.isEmpty ||
-        !hasValidLocalEmailShape(trimmedEmail)) {
+    try {
+      return LocalUser.fromJson(rawUser);
+    } catch (_) {
       throw const FormatException('Backup has an invalid local user.');
     }
-
-    return _RestoredUser(email: trimmedEmail, displayName: trimmedDisplayName);
   }
 
   List<MoneyTransaction> _readTransactions(Object? rawTransactions) {
@@ -151,11 +140,4 @@ class EncryptedBackupRestoreService {
       _ => throw const FormatException('Backup has invalid settings.'),
     };
   }
-}
-
-class _RestoredUser {
-  const _RestoredUser({required this.email, required this.displayName});
-
-  final String email;
-  final String displayName;
 }
