@@ -30,4 +30,28 @@ void main() {
       'dark',
     );
   });
+
+  test('trims stored theme mode before restoring', () async {
+    SharedPreferences.setMockInitialValues({
+      ThemePreferenceRepository.themeModeKey: ' dark ',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = ThemePreferenceRepository(
+      LocalStorageService(preferences),
+    );
+
+    expect(repository.readThemeMode(), ThemeMode.dark);
+  });
+
+  test('returns system theme mode for unsupported stored values', () async {
+    SharedPreferences.setMockInitialValues({
+      ThemePreferenceRepository.themeModeKey: 'blue',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = ThemePreferenceRepository(
+      LocalStorageService(preferences),
+    );
+
+    expect(repository.readThemeMode(), ThemeMode.system);
+  });
 }

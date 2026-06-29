@@ -10,7 +10,7 @@ class ThemePreferenceRepository {
   final LocalStorageService _storage;
 
   ThemeMode readThemeMode() {
-    final stored = _storage.readString(themeModeKey);
+    final stored = _storage.readString(themeModeKey)?.trim();
     return switch (stored) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,

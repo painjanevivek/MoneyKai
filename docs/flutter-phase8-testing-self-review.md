@@ -41,6 +41,7 @@ Unit/repository tests:
 - Budget progress calculation by current month and category.
 - Local storage schema initialization and MoneyKai namespace reset.
 - Local error report persistence, malformed payload handling, blank required-field skipping, newest-first order, read/write bounded history, and clear action.
+- Theme preference persistence, stored-value trimming, and unsupported-value fallback to system theme mode.
 - Local data export JSON requires a local profile and includes user, transactions, budget, theme settings, source, format version, and timestamp.
 - Encrypted backup export requires a local profile and produces password-protected AES-GCM JSON with local profile, transactions, budget, and theme settings; it rejects short passwords, unsupported encryption metadata, malformed backup metadata, invalid base64 payloads, invalid encryption field lengths, empty encrypted payloads, and fails decryption with the wrong password.
 - Encrypted backup restore validates decrypted contents before reset, rejects wrong passwords/malformed payloads/invalid users/invalid money values, preserves existing local data on invalid-user restore failure, resets only the MoneyKai namespace for valid restores, restores user, transactions, and budget, and restores theme settings when present.
