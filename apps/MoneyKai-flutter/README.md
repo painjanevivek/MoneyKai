@@ -15,6 +15,7 @@ Implemented:
 - Persisted local budgets and transactions through `shared_preferences`.
 - Local JSON export to clipboard for profile, transaction, and budget data.
 - Password-encrypted JSON backup export through the platform share sheet.
+- Password-encrypted JSON backup restore through the platform file picker.
 - Local uncaught-error capture under the MoneyKai storage namespace.
 - MoneyKai local storage namespace reset.
 - Android/iOS app icon and launch image assets.
@@ -23,7 +24,6 @@ Not implemented yet:
 
 - Backend sync.
 - Real authentication.
-- Backup restore/import flow.
 - Remote crash/error reporting dashboard integration.
 - Play-ready upload-key signing.
 - iOS archive/TestFlight build.

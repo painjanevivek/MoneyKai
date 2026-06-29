@@ -34,7 +34,7 @@ The existing React Native mobile app remains at `apps/MoneyKai-mobile` for histo
 | Local persistence | `shared_preferences` behind a MoneyKai storage service | Small dependency surface for early local state, with a `moneykai.*` namespace, schema version metadata, and a namespace reset boundary. More complex transaction storage can move to SQLite/Drift/Isar only when query complexity justifies it. |
 | Diagnostics | Local bounded error reports in the MoneyKai storage namespace | Captures uncaught Flutter, platform dispatcher, and root-zone errors without adding a remote crash service before credentials/config exist. |
 | Encrypted export | `cryptography` with AES-256-GCM and PBKDF2-HMAC-SHA256 | Produces password-protected backup JSON without hand-rolling crypto primitives. |
-| File sharing | `share_plus` | Uses the Android/iOS platform share sheet for encrypted backup files without storage permissions. |
+| File sharing/import | `share_plus` and `file_selector` | Uses Android/iOS platform file flows for encrypted backup export and restore without storage permissions. |
 | Formatting | `intl` | INR and date formatting without hand-written locale formatting. |
 
 ## Folder structure

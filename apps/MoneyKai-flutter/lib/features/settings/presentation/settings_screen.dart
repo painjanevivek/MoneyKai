@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -51,6 +52,12 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('Create encrypted backup'),
             subtitle: const Text('Shares a password-protected JSON file'),
             onTap: () => _createEncryptedBackup(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.restore_outlined),
+            title: const Text('Restore encrypted backup'),
+            subtitle: const Text('Imports a password-protected JSON file'),
+            onTap: () => _restoreEncryptedBackup(context, ref),
           ),
           ListTile(
             leading: Icon(
@@ -148,13 +155,84 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  Future<String?> _requestBackupPassword(BuildContext context) {
+  Future<void> _restoreEncryptedBackup(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    try {
+      final file = await openFile(
+        acceptedTypeGroups: const [
+          XTypeGroup(
+            label: 'MoneyKai backup',
+            extensions: ['json'],
+            mimeTypes: ['application/json'],
+          ),
+        ],
+      );
+      if (file == null) {
+        return;
+      }
+
+      if (!context.mounted) {
+        return;
+      }
+      final password = await _requestBackupPassword(
+        context,
+        title: 'Restore encrypted backup',
+      );
+      if (password == null) {
+        return;
+      }
+
+      final backupJson = await file.readAsString();
+      final restoreService = await ref.read(
+        encryptedBackupRestoreServiceProvider.future,
+      );
+      final result = await restoreService.restoreEncryptedBackup(
+        backupJson: backupJson,
+        password: password,
+      );
+
+      ref.invalidate(authControllerProvider);
+      ref.invalidate(transactionControllerProvider);
+      ref.invalidate(budgetControllerProvider);
+
+      if (context.mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        context.go(AppRoutes.dashboard);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Restored ${result.transactionCount} transactions for ${result.displayName}.',
+            ),
+          ),
+        );
+      }
+    } on FormatException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not restore encrypted backup.')),
+        );
+      }
+    }
+  }
+
+  Future<String?> _requestBackupPassword(
+    BuildContext context, {
+    String title = 'Create encrypted backup',
+  }) {
     var password = '';
 
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create encrypted backup'),
+        title: Text(title),
         content: TextField(
           autofocus: true,
           obscureText: true,

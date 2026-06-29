@@ -96,6 +96,7 @@ void main() {
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
+    expect(find.text('Restore encrypted backup'), findsOneWidget);
 
     await tester.tap(find.text('Export local data'));
     await tester.pumpAndSettle();
@@ -107,6 +108,7 @@ void main() {
       'displayName': 'Akshay',
     });
 
+    await tester.ensureVisible(find.text('Reset local data'));
     await tester.tap(find.text('Reset local data'));
     await tester.pumpAndSettle();
     expect(find.text('Reset local data?'), findsOneWidget);
@@ -155,7 +157,7 @@ void main() {
 
     expect(
       find.text(
-        'Local export copies a plaintext JSON snapshot to the clipboard. Encrypted backup creates a password-protected JSON file through the device share sheet. Backend sync, real auth, and restore/import are future integration boundaries.',
+        'Local export copies a plaintext JSON snapshot to the clipboard. Encrypted backup creates and restores password-protected JSON files through device file flows. Backend sync and real auth are future integration boundaries.',
       ),
       findsOneWidget,
     );

@@ -74,9 +74,9 @@ Artifact metadata:
 
 | Field | Value |
 | --- | --- |
-| Size | `190664098` bytes |
-| SHA-256 | `D8B4B32E3869F91694BC9FB02F0CFD948942801F8099F2AB63244DDAE92EBD6D` |
-| Built | `2026-06-29 13:19:34` local time |
+| Size | `190664156` bytes |
+| SHA-256 | `B0862E7A48D4B22186021AB62C271E794932E2CCE92AC20326D1AD3FD4413642` |
+| Built | `2026-06-29 13:44:13` local time |
 
 Install for direct Android testing:
 
@@ -96,9 +96,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 
 | Field | Value |
 | --- | --- |
-| Size | `52716963` bytes |
-| SHA-256 | `3B8906F7343B3C32CD6759588A9310B7AD0CC0B956F5A9B95606979281E5E6C2` |
-| Built | `2026-06-29 13:19:48` local time |
+| Size | `52831719` bytes |
+| SHA-256 | `1239FE68F33FA0886A6472ACCE04A924E9DA40A5D5E2F891E9FA1C251FABF25C` |
+| Built | `2026-06-29 13:44:25` local time |
 | Signing check | `apksigner verify --verbose` returns `DOES NOT VERIFY`; `Missing META-INF/MANIFEST.MF` |
 
 Latest unsigned release AAB:
@@ -109,9 +109,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\
 
 | Field | Value |
 | --- | --- |
-| Size | `51613455` bytes |
-| SHA-256 | `77FC6FEF3DFDF0488FB183CD2E8C87D9D6888D7CD26373646100BFC427170BA4` |
-| Built | `2026-06-29 13:11:55` local time |
+| Size | `51707068` bytes |
+| SHA-256 | `F54020BCB435859108A615021A020CE32902CFD1F4EDF54DC8DC35582FBE9159` |
+| Built | `2026-06-29 13:33:29` local time |
 | Signing check | `jarsigner -verify -verbose -certs` reports `jar is unsigned` |
 
 These unsigned artifacts are not Play-ready and should not be treated as installable release candidates. Use the debug APK for direct emulator/device testing until an upload keystore is provided, then rebuild signed release outputs.
@@ -135,7 +135,7 @@ Latest emulator smoke:
 | Result | App process started and onboarding screen rendered |
 | Screenshot | `.codex-artifacts\moneykai-flutter-emulator-smoke.png` |
 
-Scoped manual QA on the same emulator also verified local account creation, income add, expense add/delete, transaction income/expense filters, transaction search, dashboard persistence after force-stop/start, monthly and category budget value edits with restart persistence, budget and insights updates from expenses, export action feedback, encrypted backup password validation and Android share sheet launch, reset confirmation/success, sign out back to local auth, Android accessibility hierarchy labels/focus order across the primary screens, Android light-theme and dark-theme screenshot visual review across the primary screens, and a 1.3 font-scale Settings screen pass after the bottom navigation label fix. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml`, `.codex-artifacts\moneykai-qa4-a11y-focus-summary.txt`, `.codex-artifacts\moneykai-qa5-visual-*.png`, `.codex-artifacts\moneykai-qa6-dark-visual-*.png`, and `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`.
+Scoped manual QA on the same emulator also verified local account creation, income add, expense add/delete, transaction income/expense filters, transaction search, dashboard persistence after force-stop/start, monthly and category budget value edits with restart persistence, budget and insights updates from expenses, export action feedback, encrypted backup password validation, Android share sheet launch, restore file-picker launch, reset confirmation/success, sign out back to local auth, Android accessibility hierarchy labels/focus order across the primary screens, Android light-theme and dark-theme screenshot visual review across the primary screens, and a 1.3 font-scale Settings screen pass after the bottom navigation label fix. Evidence snapshots are stored locally under `.codex-artifacts\moneykai-window-*.xml`, `.codex-artifacts\moneykai-qa4-a11y-focus-summary.txt`, `.codex-artifacts\moneykai-qa5-visual-*.png`, `.codex-artifacts\moneykai-qa6-dark-visual-*.png`, and `.codex-artifacts\moneykai-qa2-settings-fontscale-13-fixed.png`.
 
 To run the app interactively on Android:
 
@@ -206,7 +206,7 @@ No Play-ready release AAB has been produced in this phase because no upload keys
 
 ## Remaining Android release work
 
-- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: real TalkBack spoken-output pass and physical-device performance/cold-start checks.
+- Run remaining manual workflow QA on `MoneyKai_API_36` or a physical Android device: end-to-end encrypted backup restore from an actual selected file, real TalkBack spoken-output pass, and physical-device performance/cold-start checks.
 - Create/provide the Android upload keystore.
 - Build release APK and AAB with upload-key signing.
 - Capture SHA-256 and signer certificate for the exact release artifacts.

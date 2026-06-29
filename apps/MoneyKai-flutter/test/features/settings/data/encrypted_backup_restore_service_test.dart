@@ -1,0 +1,242 @@
+import 'dart:convert';
+
+import 'package:cryptography/cryptography.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:moneykai/core/storage/local_storage_service.dart';
+import 'package:moneykai/features/auth/data/local_auth_repository.dart';
+import 'package:moneykai/features/budget/data/local_budget_repository.dart';
+import 'package:moneykai/features/budget/domain/budget_state.dart';
+import 'package:moneykai/features/settings/data/encrypted_backup_restore_service.dart';
+import 'package:moneykai/features/settings/data/encrypted_backup_service.dart';
+import 'package:moneykai/features/settings/data/local_data_export_service.dart';
+import 'package:moneykai/features/transactions/data/local_transaction_repository.dart';
+import 'package:moneykai/features/transactions/domain/money_transaction.dart';
+import 'package:moneykai/features/transactions/domain/transaction_type.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  test(
+    'restores user, transactions, and budget from encrypted backup',
+    () async {
+      SharedPreferences.setMockInitialValues({'other.product.setting': 'keep'});
+      final storage = LocalStorageService(
+        await SharedPreferences.getInstance(),
+      );
+      final authRepository = LocalAuthRepository(storage);
+      final transactionRepository = LocalTransactionRepository(storage);
+      final budgetRepository = LocalBudgetRepository(storage);
+      final backupService = EncryptedBackupService(
+        exportService: LocalDataExportService(
+          authRepository: authRepository,
+          transactionRepository: transactionRepository,
+          budgetRepository: budgetRepository,
+          now: () => DateTime.utc(2026, 6, 29, 11),
+        ),
+        now: () => DateTime.utc(2026, 6, 29, 11),
+        randomBytes: (length) =>
+            List<int>.generate(length, (index) => index + 4),
+      );
+
+      await _seedOriginalData(
+        authRepository,
+        transactionRepository,
+        budgetRepository,
+      );
+      final backup = await backupService.buildEncryptedBackup(
+        password: 'correct horse battery staple',
+      );
+      await authRepository.saveSession(
+        email: 'changed@example.com',
+        displayName: 'Changed',
+      );
+      await transactionRepository.saveTransactions(const []);
+      await budgetRepository.saveBudget(
+        const BudgetState(monthlyLimit: 1, categoryLimits: {}),
+      );
+
+      final restoreService = EncryptedBackupRestoreService(
+        backupService: backupService,
+        storage: storage,
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+      );
+
+      final result = await restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'correct horse battery staple',
+      );
+
+      expect(result.displayName, 'Akshay');
+      expect(result.transactionCount, 1);
+      expect(authRepository.readSession().user?.email, 'akshay@example.com');
+      expect(
+        transactionRepository.readTransactions().single.description,
+        'Groceries',
+      );
+      expect(budgetRepository.readBudget().monthlyLimit, 30000);
+      expect(storage.readString('other.product.setting'), 'keep');
+    },
+  );
+
+  test('fails restore with the wrong password', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final backupService = EncryptedBackupService(
+      exportService: LocalDataExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+      ),
+      randomBytes: (length) => List<int>.filled(length, 9),
+    );
+
+    await _seedOriginalData(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+    );
+
+    expect(
+      restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'wrong horse battery staple',
+      ),
+      throwsA(isA<SecretBoxAuthenticationError>()),
+    );
+  });
+
+  test('rejects encrypted backup with malformed clear contents', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+      ),
+      randomBytes: (length) => List<int>.filled(length, 3),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+    );
+
+    expect(
+      restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('rejects encrypted backup with malformed transactions', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        hasValidUser: true,
+        transactions: ['bad-transaction'],
+      ),
+      randomBytes: (length) => List<int>.filled(length, 5),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+    );
+
+    expect(
+      restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+}
+
+Future<void> _seedOriginalData(
+  LocalAuthRepository authRepository,
+  LocalTransactionRepository transactionRepository,
+  LocalBudgetRepository budgetRepository,
+) async {
+  await authRepository.saveSession(
+    email: 'akshay@example.com',
+    displayName: 'Akshay',
+  );
+  await transactionRepository.saveTransactions([
+    MoneyTransaction(
+      id: 'txn-1',
+      type: TransactionType.expense,
+      amount: 899,
+      date: DateTime.utc(2026, 6, 29),
+      category: 'Food',
+      paymentMethod: 'UPI',
+      description: 'Groceries',
+    ),
+  ]);
+  await budgetRepository.saveBudget(
+    const BudgetState(monthlyLimit: 30000, categoryLimits: {'Food': 9000}),
+  );
+}
+
+class _StaticExportService extends LocalDataExportService {
+  _StaticExportService({
+    required super.authRepository,
+    required super.transactionRepository,
+    required super.budgetRepository,
+    this.hasValidUser = false,
+    this.transactions = const [],
+  });
+
+  final bool hasValidUser;
+  final List<Object?> transactions;
+
+  @override
+  String buildExportJson() {
+    return jsonEncode({
+      'formatVersion': LocalDataExportService.exportFormatVersion,
+      'source': 'moneykai-local-device',
+      'user': hasValidUser
+          ? {'email': 'akshay@example.com', 'displayName': 'Akshay'}
+          : {'email': 'akshay@example.com'},
+      'transactions': transactions,
+      'budget': {'monthlyLimit': 30000, 'categoryLimits': {}},
+    });
+  }
+}

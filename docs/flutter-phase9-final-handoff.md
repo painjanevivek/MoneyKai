@@ -23,7 +23,7 @@ Implemented MVP:
 - Transactions list with search, income/expense filters, and delete.
 - Budget screen with monthly and category limits.
 - Insights screen from local transaction data.
-- Settings screen with profile display, privacy link, local JSON export to clipboard, encrypted backup export, namespace reset, and sign out.
+- Settings screen with profile display, privacy link, local JSON export to clipboard, encrypted backup export/restore, namespace reset, and sign out.
 - Privacy/security screen describing the local-only MVP boundary.
 
 Core architecture:
@@ -33,7 +33,7 @@ Core architecture:
 - State management through `flutter_riverpod`.
 - Local persistence through `shared_preferences` behind a MoneyKai storage service.
 - `moneykai.*` local storage namespace and `moneykai.storageSchemaVersion`.
-- Password-encrypted backup exports using AES-256-GCM and PBKDF2-HMAC-SHA256.
+- Password-encrypted backup export and restore using AES-256-GCM and PBKDF2-HMAC-SHA256.
 - Bounded local error reports for uncaught Flutter, platform dispatcher, and root-zone failures.
 - Reusable screen shell, responsive screen scaffold, metric cards, empty states, and budget progress widgets.
 
@@ -60,6 +60,7 @@ Android-ready items:
 - Primary workflows have emulator QA evidence.
 - Local JSON export copies the current profile, transactions, and budget snapshot to the clipboard without adding storage or sharing permissions.
 - Encrypted backup export creates a password-protected JSON file through the Android/iOS share sheet.
+- Encrypted backup restore imports a selected password-protected JSON file and restores local profile, transactions, and budget.
 - Local error capture records uncaught failures without adding permissions or a remote crash SDK.
 - Light and dark theme screenshot QA exists for primary screens.
 - Accessibility hierarchy/focus-order snapshots exist for primary screens.
@@ -67,6 +68,7 @@ Android-ready items:
 Current Android blockers:
 
 - No upload keystore was provided, so no Play-ready signed APK/AAB has been produced.
+- End-to-end encrypted backup restore from an actual selected file still needs manual QA; restore logic is covered by automated tests and Android file-picker launch is verified.
 - Real TalkBack spoken-output QA is still pending.
 - Physical Android device performance and cold-start QA are still pending.
 
@@ -86,6 +88,7 @@ iOS-ready items:
   - `intl`
   - `cryptography`
   - `share_plus`
+  - `file_selector`
 - No Android-only native dependency, SMS package, notification listener package, contacts package, camera package, or WebView dependency is used in the Flutter app layer.
 - iOS icon and launch image assets use the MoneyKai source mark.
 
@@ -104,9 +107,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 
 | Field | Value |
 | --- | --- |
-| Size | `190664098` bytes |
-| SHA-256 | `D8B4B32E3869F91694BC9FB02F0CFD948942801F8099F2AB63244DDAE92EBD6D` |
-| Built | `2026-06-29 13:19:34` local time |
+| Size | `190664156` bytes |
+| SHA-256 | `B0862E7A48D4B22186021AB62C271E794932E2CCE92AC20326D1AD3FD4413642` |
+| Built | `2026-06-29 13:44:13` local time |
 
 Unsigned release APK for binary inspection only:
 
@@ -116,9 +119,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\flutter-apk\app
 
 | Field | Value |
 | --- | --- |
-| Size | `52716963` bytes |
-| SHA-256 | `3B8906F7343B3C32CD6759588A9310B7AD0CC0B956F5A9B95606979281E5E6C2` |
-| Built | `2026-06-29 13:19:48` local time |
+| Size | `52831719` bytes |
+| SHA-256 | `1239FE68F33FA0886A6472ACCE04A924E9DA40A5D5E2F891E9FA1C251FABF25C` |
+| Built | `2026-06-29 13:44:25` local time |
 | Signing | Unsigned; not Play-ready |
 
 Unsigned release AAB for binary inspection only:
@@ -129,9 +132,9 @@ D:\Work\Project\MoneyKai\apps\MoneyKai-flutter\build\app\outputs\bundle\release\
 
 | Field | Value |
 | --- | --- |
-| Size | `51613455` bytes |
-| SHA-256 | `77FC6FEF3DFDF0488FB183CD2E8C87D9D6888D7CD26373646100BFC427170BA4` |
-| Built | `2026-06-29 13:11:55` local time |
+| Size | `51707068` bytes |
+| SHA-256 | `F54020BCB435859108A615021A020CE32902CFD1F4EDF54DC8DC35582FBE9159` |
+| Built | `2026-06-29 13:33:29` local time |
 | Signing | Unsigned; not Play-ready |
 
 Screenshot evidence:
@@ -140,6 +143,7 @@ Screenshot evidence:
 - `.codex-artifacts\moneykai-qa6-dark-visual-contact-sheet.png`
 - `.codex-artifacts\moneykai-qa5-visual-*.png`
 - `.codex-artifacts\moneykai-qa6-dark-visual-*.png`
+- `.codex-artifacts\moneykai-qa9-restore-file-picker.png`
 
 Accessibility evidence:
 
@@ -187,6 +191,7 @@ Required before Play Store internal testing:
 - Rebuild signed release APK/AAB.
 - Capture signed artifact SHA-256 and signer certificate.
 - Smoke test the release-signed artifact.
+- Run end-to-end encrypted backup restore from an actual selected file.
 - Run real TalkBack spoken-output QA.
 - Run physical-device performance and cold-start QA.
 
@@ -203,6 +208,5 @@ Future product/infrastructure work:
 
 - Backend sync boundary implementation.
 - Real authentication.
-- Backup restore/import.
 - Remote crash/error reporting dashboard integration.
 - Larger-history storage migration to SQLite/Drift/Isar if transaction volume grows.

@@ -15,7 +15,7 @@ class PrivacySecurityScreen extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(20),
           child: Text(
-            'Local export copies a plaintext JSON snapshot to the clipboard. Encrypted backup creates a password-protected JSON file through the device share sheet. Backend sync, real auth, and restore/import are future integration boundaries.',
+            'Local export copies a plaintext JSON snapshot to the clipboard. Encrypted backup creates and restores password-protected JSON files through device file flows. Backend sync and real auth are future integration boundaries.',
           ),
         ),
       ),

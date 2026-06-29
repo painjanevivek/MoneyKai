@@ -40,7 +40,7 @@ dependencies:
   intl: ^0.20.3
   cryptography: ^2.9.0
   share_plus: ^13.2.0
-
+  file_selector: ^1.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
