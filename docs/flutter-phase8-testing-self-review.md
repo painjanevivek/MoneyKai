@@ -35,7 +35,7 @@ Current result:
 
 Unit/repository tests:
 
-- Local auth session save, restore, clear, profile field trimming, invalid-field rejection, malformed-session fallback, and invalid stored-profile fallback.
+- Local auth session save, restore, clear, profile field trimming, invalid-field/email-whitespace rejection, malformed-session fallback, and invalid stored-profile fallback.
 - Local transaction persistence in newest-first order, malformed-payload fallback, malformed-entry/amount skipping, blank required-field handling, and non-finite amount rejection.
 - Local budget persistence, reset, malformed-payload fallback, invalid stored-limit/category fallback, and non-finite limit rejection.
 - Budget progress calculation by current month and category.

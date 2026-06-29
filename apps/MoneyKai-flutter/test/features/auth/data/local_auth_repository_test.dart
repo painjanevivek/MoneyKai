@@ -65,6 +65,13 @@ void main() {
       repository.saveSession(email: 'akshay@example.com', displayName: '   '),
       throwsA(isA<FormatException>()),
     );
+    expect(
+      repository.saveSession(
+        email: 'akshay@ example.com',
+        displayName: 'Akshay',
+      ),
+      throwsA(isA<FormatException>()),
+    );
     expect(repository.readSession().isAuthenticated, isFalse);
   });
 
@@ -81,6 +88,17 @@ void main() {
   test('returns signed-out state for invalid stored profile fields', () async {
     SharedPreferences.setMockInitialValues({
       'moneykai.localSession': '{"email":"@","displayName":"Akshay"}',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalAuthRepository(LocalStorageService(preferences));
+
+    expect(repository.readSession().isAuthenticated, isFalse);
+  });
+
+  test('returns signed-out state for stored emails with whitespace', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession':
+          '{"email":"akshay@ example.com","displayName":"Akshay"}',
     });
     final preferences = await SharedPreferences.getInstance();
     final repository = LocalAuthRepository(LocalStorageService(preferences));

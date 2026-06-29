@@ -54,6 +54,9 @@ class LocalAuthRepository {
 
   bool _hasValidEmailShape(String email) {
     final parts = email.split('@');
-    return parts.length == 2 && parts.first.isNotEmpty && parts.last.isNotEmpty;
+    return parts.length == 2 &&
+        parts.first.isNotEmpty &&
+        parts.last.isNotEmpty &&
+        !email.contains(RegExp(r'\s'));
   }
 }
