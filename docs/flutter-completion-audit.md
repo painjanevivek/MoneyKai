@@ -71,7 +71,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | --- | --- | --- |
 | Build with Flutter and Dart | Complete | Flutter app exists under `apps\MoneyKai-flutter`; phase docs and README identify the Flutter implementation. |
 | Do not blindly reuse old React Native implementation | Complete | `docs\flutter-phase1-previous-app-memory.md` documents prior app memory and what was carried forward as product context. |
-| Android first | Complete for unsigned/emulator state | Debug APK, unsigned release APK, unsigned AAB with base-module structure audit, emulator QA, permission audit, and release audit are documented in `docs\flutter-phase6-android-build.md`. |
+| Android first | Complete for unsigned/emulator state | Debug APK, unsigned release APK, unsigned AAB with base-module, ProGuard mapping, baseline profile, and ARM64 symbol audits, emulator QA, permission audit, and release audit are documented in `docs\flutter-phase6-android-build.md`. |
 | iOS-ready same codebase | Partially complete | iOS bundle/display config and dependency compatibility are documented in `docs\flutter-phase7-ios-parity.md`; actual iOS build requires macOS/Xcode. |
 | Environment verification before code | Complete | `docs\flutter-phase0-environment.md` documents Flutter/Dart/Android readiness and Windows/iOS limitation. |
 | Previous app recollection | Complete | `docs\flutter-phase1-previous-app-memory.md` records screens, flows, storage, UI decisions, and discarded historical APK concerns. |

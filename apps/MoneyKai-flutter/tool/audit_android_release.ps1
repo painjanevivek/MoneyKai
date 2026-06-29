@@ -204,7 +204,13 @@ function Assert-AabStructure {
         "base/assets/flutter_assets/FontManifest.json",
         "base/lib/arm64-v8a/libapp.so",
         "base/lib/arm64-v8a/libdartjni.so",
-        "base/lib/arm64-v8a/libflutter.so"
+        "base/lib/arm64-v8a/libflutter.so",
+        "BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map",
+        "BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof",
+        "BUNDLE-METADATA/com.android.tools.build.profiles/baseline.profm",
+        "BUNDLE-METADATA/com.android.tools.build.debugsymbols/arm64-v8a/libapp.so.sym",
+        "BUNDLE-METADATA/com.android.tools.build.debugsymbols/arm64-v8a/libdartjni.so.sym",
+        "BUNDLE-METADATA/com.android.tools.build.debugsymbols/arm64-v8a/libflutter.so.sym"
     )
 
     $archive = [System.IO.Compression.ZipFile]::OpenRead($AabPath)
