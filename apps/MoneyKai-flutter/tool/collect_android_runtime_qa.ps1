@@ -50,7 +50,13 @@ function Invoke-Adb {
     }
     $adbArguments += $Arguments
 
-    & $script:Adb @adbArguments
+    $output = & $script:Adb @adbArguments
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "adb $($Arguments -join ' ') failed with exit code $exitCode."
+    }
+
+    return $output
 }
 
 function Invoke-AdbBinaryOutput {
@@ -80,6 +86,11 @@ function Invoke-AdbBinaryOutput {
 
 function Get-ConnectedDevices {
     $lines = & $script:Adb devices
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "adb devices failed with exit code $exitCode."
+    }
+
     $devices = @()
     foreach ($line in $lines) {
         if ($line -match "^(\S+)\s+device$") {
