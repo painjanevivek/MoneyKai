@@ -26,7 +26,9 @@ class DashboardScreen extends StatelessWidget {
             mainAxisSpacing: 12,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.2,
+            childAspectRatio: MediaQuery.sizeOf(context).width >= 600
+                ? 1.08
+                : 0.86,
             children: [
               MetricCard(
                 label: 'Balance',

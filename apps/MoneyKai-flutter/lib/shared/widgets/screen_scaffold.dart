@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_tokens.dart';
+
 class ScreenScaffold extends StatelessWidget {
   const ScreenScaffold({
     required this.title,
@@ -20,17 +22,24 @@ class ScreenScaffold extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(actions: actions),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        children: [
-          Text(title, style: textTheme.headlineMedium),
-          if (subtitle != null) ...[
-            const SizedBox(height: 8),
-            Text(subtitle!, style: textTheme.bodyLarge),
-          ],
-          const SizedBox(height: 24),
-          body,
-        ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: AppBreakpoints.maxContentWidth,
+          ),
+          child: ListView(
+            padding: AppInsets.screen,
+            children: [
+              Text(title, style: textTheme.headlineMedium),
+              if (subtitle != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(subtitle!, style: textTheme.bodyLarge),
+              ],
+              const SizedBox(height: AppSpacing.xxl),
+              body,
+            ],
+          ),
+        ),
       ),
     );
   }

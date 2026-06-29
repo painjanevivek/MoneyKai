@@ -13,58 +13,60 @@ import '../features/transactions/presentation/transactions_screen.dart';
 import '../shared/widgets/app_shell.dart';
 import 'app_routes.dart';
 
-final appRouter = GoRouter(
-  initialLocation: AppRoutes.splash,
-  routes: [
-    GoRoute(
-      path: AppRoutes.splash,
-      builder: (context, state) => const SplashScreen(),
+GoRouter createAppRouter() {
+  return GoRouter(
+    initialLocation: AppRoutes.splash,
+    routes: [
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.signIn,
+        builder: (context, state) => const AuthScreen(),
+      ),
+      ShellRoute(
+        builder: (context, state, child) => AppShell(child: child),
+        routes: [
+          GoRoute(
+            path: AppRoutes.dashboard,
+            pageBuilder: (context, state) =>
+                NoTransitionPage(child: DashboardScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.transactions,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: TransactionsScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.budget,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: BudgetScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.insights,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: InsightsScreen()),
+          ),
+          GoRoute(
+            path: AppRoutes.settings,
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: SettingsScreen()),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.addTransaction,
+        builder: (context, state) => const AddTransactionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.privacy,
+        builder: (context, state) => const PrivacySecurityScreen(),
+      ),
+    ],
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(title: const Text('MoneyKai')),
+      body: Center(child: Text('Route not found: ${state.uri}')),
     ),
-    GoRoute(
-      path: AppRoutes.signIn,
-      builder: (context, state) => const AuthScreen(),
-    ),
-    ShellRoute(
-      builder: (context, state, child) => AppShell(child: child),
-      routes: [
-        GoRoute(
-          path: AppRoutes.dashboard,
-          pageBuilder: (context, state) =>
-              NoTransitionPage(child: DashboardScreen()),
-        ),
-        GoRoute(
-          path: AppRoutes.transactions,
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: TransactionsScreen()),
-        ),
-        GoRoute(
-          path: AppRoutes.budget,
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: BudgetScreen()),
-        ),
-        GoRoute(
-          path: AppRoutes.insights,
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: InsightsScreen()),
-        ),
-        GoRoute(
-          path: AppRoutes.settings,
-          pageBuilder: (context, state) =>
-              const NoTransitionPage(child: SettingsScreen()),
-        ),
-      ],
-    ),
-    GoRoute(
-      path: AppRoutes.addTransaction,
-      builder: (context, state) => const AddTransactionScreen(),
-    ),
-    GoRoute(
-      path: AppRoutes.privacy,
-      builder: (context, state) => const PrivacySecurityScreen(),
-    ),
-  ],
-  errorBuilder: (context, state) => Scaffold(
-    appBar: AppBar(title: const Text('MoneyKai')),
-    body: Center(child: Text('Route not found: ${state.uri}')),
-  ),
-);
+  );
+}

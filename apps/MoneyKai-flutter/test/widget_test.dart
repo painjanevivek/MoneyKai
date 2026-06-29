@@ -5,6 +5,7 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:moneykai/app/moneykai_app.dart';
@@ -20,4 +21,39 @@ void main() {
 
     expect(find.text('Local sign in'), findsOneWidget);
   });
+
+  testWidgets('MoneyKai shell renders on a compact Android viewport', (
+    tester,
+  ) async {
+    await _setViewport(tester, const Size(320, 700));
+    await _enterDashboard(tester);
+
+    expect(find.text('Dashboard'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('MoneyKai shell renders on a larger iOS-style viewport', (
+    tester,
+  ) async {
+    await _setViewport(tester, const Size(834, 1112));
+    await _enterDashboard(tester);
+
+    expect(find.text('Dashboard'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+}
+
+Future<void> _setViewport(WidgetTester tester, Size size) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+Future<void> _enterDashboard(WidgetTester tester) async {
+  await tester.pumpWidget(const MoneyKaiApp());
+  await tester.tap(find.text('Continue'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Enter MoneyKai'));
+  await tester.pumpAndSettle();
 }

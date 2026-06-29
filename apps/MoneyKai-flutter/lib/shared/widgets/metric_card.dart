@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_tokens.dart';
+
 class MetricCard extends StatelessWidget {
   const MetricCard({
     required this.label,
@@ -19,15 +21,24 @@ class MetricCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (icon != null) Icon(icon, color: colorScheme.primary),
-            if (icon != null) const SizedBox(height: 12),
-            Text(label, style: textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Text(value, style: textTheme.headlineSmall),
+            if (icon != null) Icon(icon, color: colorScheme.primary, size: 20),
+            if (icon != null) const SizedBox(height: AppSpacing.sm),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.labelLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(value, style: textTheme.headlineSmall),
+            ),
           ],
         ),
       ),

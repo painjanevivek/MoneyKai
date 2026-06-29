@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../routing/app_routes.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/screen_scaffold.dart';
+import '../../../theme/app_tokens.dart';
 
 class TransactionsScreen extends StatelessWidget {
   const TransactionsScreen({super.key});
@@ -20,7 +22,7 @@ class TransactionsScreen extends StatelessWidget {
             leading: Icon(Icons.search),
             hintText: 'Search transactions',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           SegmentedButton<String>(
             segments: const [
               ButtonSegment(value: 'all', label: Text('All')),
@@ -30,20 +32,17 @@ class TransactionsScreen extends StatelessWidget {
             selected: const {'all'},
             onSelectionChanged: (_) {},
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           OutlinedButton.icon(
             onPressed: () => context.push(AppRoutes.addTransaction),
             icon: const Icon(Icons.add),
             label: const Text('Add transaction'),
           ),
-          const SizedBox(height: 20),
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
+          const SizedBox(height: AppSpacing.xl),
+          const EmptyState(
+            title: 'No local transactions yet',
+            body:
                 'Transaction persistence is wired in the next implementation phase.',
-              ),
-            ),
           ),
         ],
       ),
