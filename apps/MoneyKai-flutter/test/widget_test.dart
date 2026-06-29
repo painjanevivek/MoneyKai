@@ -89,6 +89,23 @@ void main() {
     expect(find.text('Dashboard'), findsNothing);
   });
 
+  testWidgets('authenticated local profile route redirects to dashboard', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': jsonEncode({
+        'email': 'akshay@example.com',
+        'displayName': 'Akshay',
+      }),
+    });
+    await _setViewport(tester, const Size(420, 900));
+    await _pumpApp(tester, initialLocation: '/auth/sign-in');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dashboard'), findsWidgets);
+    expect(find.text('Create local profile'), findsNothing);
+  });
+
   testWidgets('adds, edits, and deletes a local transaction', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await _setViewport(tester, const Size(420, 900));
