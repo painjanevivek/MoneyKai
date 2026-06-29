@@ -37,6 +37,7 @@ Run from repo root unless noted.
 npm run launch:check
 npm run release:handoff-baseline
 npm run security:check
+npm run --silent backup-restore:handoff
 npm run mobile:typecheck
 npm run mobile:lint
 npm run mobile:test:capture
@@ -57,7 +58,9 @@ npm run mobile:release:android:verify -- --aab apps\MoneyKai-mobile\path\to\prod
 npm run mobile:release:android:capture -- --aab apps\MoneyKai-mobile\path\to\production.aab --build-id <eas-build-id> --eas-url <eas-build-url>
 ```
 
-Paste the capture output into `docs/phase5-internal-release-signoff.md` before submit. The capture command computes SHA-256, records the current commit, captures the artifact signer certificate, rejects Android debug signing by default, runs the restricted-SMS permission verifier against the exact artifact, and prints the handoff table.
+Paste the backup/restore handoff block from `npm run --silent backup-restore:handoff` into `apps/MoneyKai-mobile/docs/phase5-internal-release-signoff.md`. That command runs `npm run backup-restore:gate`, records current commit metadata, and prints the gate pass/fail output as Markdown.
+
+Paste the Android artifact capture output into `apps/MoneyKai-mobile/docs/phase5-internal-release-signoff.md` before submit. The capture command computes SHA-256, records the current commit, captures the artifact signer certificate, rejects Android debug signing by default, runs the restricted-SMS permission verifier against the exact artifact, and prints the handoff table.
 
 `npm run release:handoff-baseline` fails if this document or the signoff document still points at an older handoff commit than the checked-out `HEAD`. Keep it green before starting the next Play-internal production AAB build.
 
@@ -89,6 +92,7 @@ npx eas submit --platform android --profile production
 - Produce a fresh production AAB from `1bae4b5` or later.
 - Verify EAS login/token access and Play Console submit credentials before build/submit.
 - Run permission verification and handoff capture against the exact downloaded AAB.
+- Paste the backup/restore Markdown evidence from `npm run --silent backup-restore:handoff` into the signoff doc.
 - Record artifact path, SHA-256, EAS build URL/build ID, signing expectation, device smoke result, tester group, and Sentry/backend diagnostics visibility.
 - Smoke the signed artifact on a physical Android device, including launch, notification-access controls, Auto Capture draft review, backup preview/restore copy, and the in-app testing report bundle.
 - Complete final Play Console Data Safety/reviewer-note review before moving beyond internal testing.

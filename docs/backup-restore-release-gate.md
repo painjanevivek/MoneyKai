@@ -22,6 +22,16 @@ The gate runs:
   - restore latest backup action
 - Static checks that mobile and web backup services still enforce signed-in user ownership before restore.
 
+## Handoff Markdown Capture
+
+For the Phase 5 internal handoff, use the handoff command instead of manually copying terminal output:
+
+```powershell
+npm run --silent backup-restore:handoff
+```
+
+The command runs `npm run backup-restore:gate`, captures the current branch, commit hash, commit date, commit subject, worktree state, gate result, exit code, and full pass/fail output, then prints one Markdown block bounded by `BACKUP_RESTORE_HANDOFF_START` and `BACKUP_RESTORE_HANDOFF_END`. Paste that block into the Phase 5 signoff docs. The command exits non-zero when the underlying gate fails.
+
 ## Manual Smoke Still Required
 
 The automated gate does not prove production Firebase Console, backend, Firestore indexes/rules, or device/browser auth state. Before an internal handoff, also run one signed-in smoke with the exact handoff build:

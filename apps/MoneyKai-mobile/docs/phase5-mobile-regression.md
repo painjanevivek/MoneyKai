@@ -13,7 +13,7 @@ Automated validation passes and Android release artifacts build. Runtime device 
 | TypeScript | Pending latest run | `npm.cmd run mobile:typecheck` |
 | Lint | Pending latest run | `npm.cmd run mobile:lint` |
 | Capture/diagnostics tests | Pending latest run | `npm.cmd run mobile:test:capture` |
-| Backup/restore release gate | Pending latest run | `npm.cmd run backup-restore:gate` |
+| Backup/restore release gate | Pending latest handoff block | `npm.cmd run --silent backup-restore:handoff` |
 | Web export from mobile app | Pending latest run | `npm.cmd run mobile:build` |
 | Expo autolinking | Pending latest run | `npx.cmd expo-modules-autolinking verify --platform android` |
 | Play-safe APK build | Pending latest run | `:app:assembleRelease` with native SMS disabled |

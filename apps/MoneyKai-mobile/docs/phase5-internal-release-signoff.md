@@ -66,6 +66,7 @@ Run or record these before sending the next build to internal testers:
 - `npm run launch:check`
 - `npm run release:handoff-baseline`
 - `npm run security:check`
+- `npm run --silent backup-restore:handoff`
 - `npm run mobile:typecheck`
 - `npm run mobile:lint`
 - `npm run mobile:test:capture`
@@ -137,9 +138,17 @@ Replace this table with the output from `npm run mobile:release:android:capture 
 | Devices validated | Pending |
 | Notification access tested | Pending |
 | Auto Capture draft review tested | Pending |
-| Backup preview/restore tested | Pending |
+| Backup preview/restore tested | Pending handoff block from `npm run --silent backup-restore:handoff` plus live signed-in smoke |
 | Privacy/disclosure copy reviewed | Pending |
 | Sentry/backend diagnostics visible | Pending |
+
+## Backup/Restore handoff evidence
+
+Replace this placeholder with the Markdown block from `npm run --silent backup-restore:handoff`. The command runs `npm run backup-restore:gate`, records current commit metadata, and includes the gate pass/fail output.
+
+<!-- BACKUP_RESTORE_HANDOFF_START -->
+Pending backup/restore handoff evidence.
+<!-- BACKUP_RESTORE_HANDOFF_END -->
 
 ## Final signoff state
 

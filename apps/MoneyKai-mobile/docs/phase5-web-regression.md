@@ -13,7 +13,7 @@ The web app is part of the monorepo and must stay stable while mobile release wo
 | Web typecheck | Pending latest run | `npm.cmd run web:typecheck` |
 | Web lint | Pending latest run | `npm.cmd run web:lint` |
 | Web build/export | Pending latest run | `npm.cmd run web:build` |
-| Backup/restore release gate | Pending latest run | `npm.cmd run backup-restore:gate` |
+| Backup/restore release gate | Pending latest handoff block | `npm.cmd run --silent backup-restore:handoff` |
 
 ## Smoke checklist
 
