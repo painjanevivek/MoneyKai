@@ -1,6 +1,6 @@
 # MoneyKai Flutter Phase 9 Final Handoff
 
-Last reviewed: 2026-06-29
+Last reviewed: 2026-06-30
 
 ## Summary
 
@@ -64,10 +64,12 @@ Android-ready items:
 - Local error capture records uncaught failures without adding permissions or a remote crash SDK, and Settings can review or clear those reports.
 - Light and dark theme screenshot QA exists for primary screens.
 - Accessibility hierarchy/focus-order snapshots exist for primary screens.
+- Play Store policy readiness guidance exists in `docs\flutter-play-store-policy-readiness.md`; current Android positioning is a local-first expense and budget tracker, not a loan, advice, bank-sync, SMS-reading, or notification-capture product.
 
 Current Android blockers:
 
 - No upload keystore was provided, so no Play-ready signed APK/AAB has been produced.
+- Play Console Data safety, privacy policy URL, and Financial features declaration are still pending.
 - Real TalkBack spoken-output QA is still pending.
 - Physical Android device performance and cold-start QA are still pending.
 
@@ -211,6 +213,11 @@ Required before Play Store internal testing:
 - Rebuild signed release APK/AAB.
 - Capture signed artifact SHA-256 and signer certificate evidence from `.\tool\audit_android_release.ps1 -RequireSigned`.
 - Smoke test the release-signed artifact.
+- Review `docs\flutter-play-store-policy-readiness.md` against the exact signed build.
+- Publish/update the public MoneyKai privacy policy URL.
+- Complete Play Console Data safety.
+- Complete Play Console Financial features declaration.
+- Verify the Play listing, screenshots, and declarations describe only the current production behavior.
 - Run real TalkBack spoken-output QA.
 - Run physical-device performance and cold-start QA.
 

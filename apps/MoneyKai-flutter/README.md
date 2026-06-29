@@ -55,6 +55,8 @@ After building signed release outputs with upload-key variables, run:
 .\tool\audit_android_release.ps1 -RequireSigned
 ```
 
+Before Play Console upload, review the Android policy gate in `docs\flutter-play-store-policy-readiness.md`. The current Play-safe positioning is a local-first expense and budget tracker; do not describe unsupported loans, investment advice, bank sync, SMS reading, notification capture, or guaranteed outcomes.
+
 ## Android Artifacts
 
 Debug APK:
@@ -145,5 +147,6 @@ Project phase docs live in the repository root `docs` folder:
 - `docs\flutter-phase8-testing-self-review.md`
 - `docs\flutter-phase9-final-handoff.md`
 - `docs\flutter-completion-audit.md`
+- `docs\flutter-play-store-policy-readiness.md`
 
 Local QA artifacts are stored under `.codex-artifacts` at the repository root.

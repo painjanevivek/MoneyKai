@@ -1,6 +1,6 @@
 # MoneyKai Flutter Completion Audit
 
-Last reviewed: 2026-06-29
+Last reviewed: 2026-06-30
 
 This audit checks the current Flutter app against the requested Android-first, iOS-ready MoneyKai goal. It is not a substitute for the phase docs; it is a requirement-to-evidence map for final readiness decisions.
 
@@ -11,6 +11,7 @@ Status: not complete.
 Reason: the Android MVP implementation, emulator QA, unsigned release artifacts, and iOS-compatible codebase are in place, but the full requested end state still has external gates:
 
 - No production Android upload keystore has been provided, so no Play-ready signed APK/AAB exists.
+- Play Console Data safety, privacy policy URL, and Financial features declaration are still pending.
 - Real TalkBack spoken-output QA is still pending.
 - Physical Android device performance and cold-start QA are still pending.
 - iOS simulator, real-device, archive, IPA, and TestFlight validation require macOS/Xcode and Apple signing.
@@ -91,6 +92,7 @@ The CI workflow mirrors the Android verification loop for Flutter app changes on
 | Android CI verification | Complete | `.github\workflows\moneykai-flutter-android.yml` runs format, analyzer, tests, Android debug/release builds, AAB build, and release audit for Flutter app changes. |
 | iOS static project audit | Complete for non-Xcode checks | `apps\MoneyKai-flutter\tool\audit_ios_project.ps1` verifies bundle id, display name, Flutter version placeholders, storyboard/runtime Info.plist wiring, scene manifest/delegate launch wiring, deployment target, app icons, launch images, no sensitive iOS permission declarations or App Transport Security overrides, and no known Android-only dependencies; CI runs it on Flutter app changes. |
 | Play Store-ready artifact | Not complete | No upload keystore was provided; current release APK/AAB are unsigned inspection artifacts. |
+| Play Store policy readiness | Partially complete | `docs\flutter-play-store-policy-readiness.md` maps the current local MVP to Play User Data, Data safety, sensitive permissions, Financial Services, misrepresentation, and Play Protect guidance. Play Console declarations and the public privacy policy URL remain pending. |
 | Android emulator manual QA | Mostly complete | Fresh install, auth, transactions, budget, insights, export, encrypted backup export/restore, reset, sign out, visual, and hierarchy QA are documented. |
 | TalkBack spoken-output QA | Not complete | Accessibility hierarchy exists, but real spoken-output QA is still pending. |
 | Physical Android device QA | Not complete | No physical Android device is connected; `apps\MoneyKai-flutter\tool\collect_android_runtime_qa.ps1 -RequirePhysical` is ready to fail on `adb` command errors, validate launch success/timing with default `TotalTime <= 5000 ms` and `WaitTime <= 6000 ms` cold-start limits, require MoneyKai hierarchy package evidence, and collect binary PNG screenshot plus device evidence with size/SHA-256 summary metadata once hardware is available. |
@@ -119,8 +121,13 @@ Required before Play Store internal testing:
 
 5. Record the audit output containing SHA-256 artifact hashes plus release APK/AAB signer certificate evidence.
 6. Smoke test the signed artifact.
-7. Run real TalkBack spoken-output QA.
-8. Run physical Android device performance and cold-start QA:
+7. Review `docs\flutter-play-store-policy-readiness.md` against the exact signed build.
+8. Publish/update the public MoneyKai privacy policy URL.
+9. Complete Play Console Data safety.
+10. Complete Play Console Financial features declaration.
+11. Verify the Play listing accurately describes the current app and does not imply loans, investment advice, bank sync, SMS reading, notification capture, or guaranteed outcomes.
+12. Run real TalkBack spoken-output QA.
+13. Run physical Android device performance and cold-start QA:
 
 ```powershell
 cd apps\MoneyKai-flutter
@@ -144,4 +151,4 @@ Required before TestFlight:
 
 ## Completion Decision
 
-The goal should remain active. The current repo proves an Android-first Flutter MVP with strong local/emulator verification and iOS-ready project structure, but it does not yet prove production-store readiness because required signing credentials, physical-device accessibility/performance QA, and macOS/Xcode iOS validation are missing.
+The goal should remain active. The current repo proves an Android-first Flutter MVP with strong local/emulator verification, iOS-ready project structure, and documented Play policy guardrails, but it does not yet prove production-store readiness because required signing credentials, Play Console declarations/privacy policy publication, physical-device accessibility/performance QA, and macOS/Xcode iOS validation are missing.
