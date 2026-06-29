@@ -34,6 +34,8 @@ $isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
     [System.Runtime.InteropServices.OSPlatform]::Windows
 )
 
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
 function Resolve-AndroidBuildTool {
     param([Parameter(Mandatory = $true)][string[]]$Names)
 
@@ -188,6 +190,40 @@ function Assert-NoRestrictedPermissions {
     }
 
     Write-Host "$Label restricted permission audit: passed"
+}
+
+function Assert-AabStructure {
+    param([Parameter(Mandatory = $true)][string]$AabPath)
+
+    $requiredEntries = @(
+        "BundleConfig.pb",
+        "base/manifest/AndroidManifest.xml",
+        "base/resources.pb",
+        "base/dex/classes.dex",
+        "base/assets/flutter_assets/AssetManifest.bin",
+        "base/assets/flutter_assets/FontManifest.json",
+        "base/lib/arm64-v8a/libapp.so",
+        "base/lib/arm64-v8a/libdartjni.so",
+        "base/lib/arm64-v8a/libflutter.so"
+    )
+
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($AabPath)
+    try {
+        foreach ($entryName in $requiredEntries) {
+            $entry = $archive.GetEntry($entryName)
+            if (-not $entry) {
+                throw "Release AAB is missing required entry: $entryName"
+            }
+
+            if ($entry.Length -le 0) {
+                throw "Release AAB required entry is empty: $entryName"
+            }
+        }
+    } finally {
+        $archive.Dispose()
+    }
+
+    Write-Host "Release AAB structure audit: passed"
 }
 
 function Assert-ReleaseManifestHardening {
@@ -422,6 +458,7 @@ Assert-ApkIdentity `
 Assert-NoRestrictedPermissions -Label "Debug APK" -PermissionDump $debugPermissions
 Assert-NoRestrictedPermissions -Label "Release APK" -PermissionDump $releasePermissions
 Assert-ReleaseManifestHardening -ManifestDump $releaseManifest
+Assert-AabStructure -AabPath $releaseAab
 Write-Host ""
 
 $releaseApkSigning = Test-ApkSigned -ApkSigner $apkSigner -ApkPath $releaseApk
