@@ -22,19 +22,19 @@ Required actions:
 
 - Continue/get started.
 - Sign in.
-- Create local account.
+- Create local profile.
 
-### 2. Sign in, sign up, and local auth
+### 2. Local profile and future auth boundary
 
 Purpose:
 
-- Provide a local/mock session boundary while backend auth is deferred.
+- Provide an on-device profile/session boundary while backend auth is deferred.
 - Keep interfaces ready for real auth later.
 
 Required actions:
 
-- Sign in with email/password-style local credentials.
-- Create local account.
+- Create a local profile with name and email.
+- Reopen the local session from saved profile data.
 - Sign out from settings.
 
 Deferred:

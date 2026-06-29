@@ -47,7 +47,7 @@ Unit/repository tests:
 
 Widget tests:
 
-- Splash opens local auth flow.
+- Splash opens local profile flow.
 - App shell renders on compact Android viewport.
 - App shell renders on larger iOS-style viewport.
 - Dashboard category breakdown preview opens Insights.
@@ -57,7 +57,7 @@ Widget tests:
 - Settings local diagnostics review and clear action.
 - Add/edit/delete transaction flow works.
 - Transactions group by month and filter by category.
-- Settings export-to-clipboard, reset confirmation, and confirmed reset-to-auth respond.
+- Settings export-to-clipboard, reset confirmation, and confirmed reset-to-profile-entry respond.
 - Settings encrypted-backup password validation responds.
 - Settings encrypted-backup restore action is visible.
 
@@ -65,7 +65,7 @@ Widget tests:
 
 Implemented:
 
-- Local account/session boundary.
+- Local profile/session boundary.
 - Splash/onboarding entry.
 - Dashboard using local transaction, budget, and category breakdown data.
 - Add transaction with validation.
@@ -158,7 +158,7 @@ Completed on `MoneyKai_API_36`:
 
 - Fresh install.
 - App launch to onboarding screen.
-- Local account creation.
+- Local profile creation.
 - App restart session restore.
 - Add income transaction.
 - Add expense transaction.

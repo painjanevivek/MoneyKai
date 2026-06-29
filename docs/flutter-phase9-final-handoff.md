@@ -17,7 +17,7 @@ The app is Android-first and uses one shared Flutter codebase prepared for iOS. 
 Implemented MVP:
 
 - Splash/onboarding.
-- Local sign in / local account creation boundary.
+- Local profile/session boundary.
 - Dashboard with balance, income, expense, record count, budget progress, category breakdown preview, and recent activity.
 - Add and edit transaction flows for local income and expenses.
 - Transactions list with search, income/expense filters, category filter, month grouping, edit, and delete.

@@ -76,7 +76,7 @@ Rules:
 | Route | Screen |
 | --- | --- |
 | `/splash` | Splash/onboarding |
-| `/auth/sign-in` | Local auth |
+| `/auth/sign-in` | Local profile/session |
 | `/dashboard` | Dashboard tab |
 | `/transactions` | Transactions tab |
 | `/transactions/add` | Add transaction stack route |

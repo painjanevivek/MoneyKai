@@ -17,13 +17,11 @@ class AuthScreen extends ConsumerStatefulWidget {
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _displayNameController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
     _displayNameController.dispose();
     super.dispose();
   }
@@ -33,9 +31,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final authState = ref.watch(authControllerProvider);
 
     return ScreenScaffold(
-      title: 'Local sign in',
+      title: 'Local profile',
       subtitle:
-          'This Flutter MVP starts with a local session boundary. Backend auth will plug in behind this flow later.',
+          'Create an on-device profile for this MVP. Real authentication will plug in behind this flow later.',
       body: Form(
         key: _formKey,
         child: Column(
@@ -55,25 +53,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               textInputAction: TextInputAction.next,
               validator: _emailValidator,
             ),
-            const SizedBox(height: AppSpacing.md),
-            TextFormField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Local password'),
-              obscureText: true,
-              textInputAction: TextInputAction.done,
-              validator: _passwordValidator,
-            ),
             const SizedBox(height: AppSpacing.xl),
             FilledButton(
               onPressed: authState.isLoading ? null : _submit,
               child: authState.isLoading
                   ? const Text('Opening MoneyKai...')
-                  : const Text('Enter MoneyKai'),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton(
-              onPressed: authState.isLoading ? null : _submit,
-              child: const Text('Create local account'),
+                  : const Text('Create local profile'),
             ),
             if (authState.hasError) ...[
               const SizedBox(height: AppSpacing.md),
@@ -101,15 +86,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
 
     return value!.contains('@') ? null : 'Enter a valid email';
-  }
-
-  String? _passwordValidator(String? value) {
-    final requiredError = _required(value, fieldName: 'Password');
-    if (requiredError != null) {
-      return requiredError;
-    }
-
-    return value!.length >= 4 ? null : 'Use at least 4 characters';
   }
 
   Future<void> _submit() async {

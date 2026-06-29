@@ -20,7 +20,7 @@ void main() {
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Local sign in'), findsOneWidget);
+    expect(find.text('Local profile'), findsOneWidget);
   });
 
   testWidgets('MoneyKai shell renders on a compact Android viewport', (
@@ -418,7 +418,7 @@ void main() {
     await tester.tap(find.text('Reset'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Local sign in'), findsOneWidget);
+    expect(find.text('Local profile'), findsOneWidget);
   });
 
   testWidgets('encrypted backup requires a strong password', (tester) async {
@@ -474,8 +474,7 @@ Future<void> _enterDashboard(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.enterText(find.bySemanticsLabel('Name'), 'Akshay');
   await tester.enterText(find.bySemanticsLabel('Email'), 'akshay@example.com');
-  await tester.enterText(find.bySemanticsLabel('Local password'), 'test1234');
-  await tester.tap(find.text('Enter MoneyKai'));
+  await tester.tap(find.text('Create local profile'));
   await tester.pumpAndSettle();
 }
 
