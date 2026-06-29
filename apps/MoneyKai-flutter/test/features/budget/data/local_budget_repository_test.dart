@@ -1,0 +1,29 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:moneykai/core/storage/local_storage_service.dart';
+import 'package:moneykai/features/budget/data/local_budget_repository.dart';
+import 'package:moneykai/features/budget/domain/budget_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  test('saves and restores monthly and category budget limits', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final repository = LocalBudgetRepository(LocalStorageService(preferences));
+
+    expect(repository.readBudget().monthlyLimit, 25000);
+
+    await repository.saveBudget(
+      const BudgetState(
+        monthlyLimit: 42000,
+        categoryLimits: {'Food': 12000, 'Transport': 5000},
+      ),
+    );
+
+    final restored = repository.readBudget();
+    expect(restored.monthlyLimit, 42000);
+    expect(restored.categoryLimits['Food'], 12000);
+
+    await repository.resetBudget();
+    expect(repository.readBudget().monthlyLimit, 25000);
+  });
+}

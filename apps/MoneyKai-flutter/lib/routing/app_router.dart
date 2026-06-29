@@ -41,12 +41,12 @@ GoRouter createAppRouter() {
           GoRoute(
             path: AppRoutes.budget,
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: BudgetScreen()),
+                NoTransitionPage(child: BudgetScreen()),
           ),
           GoRoute(
             path: AppRoutes.insights,
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: InsightsScreen()),
+                NoTransitionPage(child: InsightsScreen()),
           ),
           GoRoute(
             path: AppRoutes.settings,
