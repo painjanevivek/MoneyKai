@@ -161,14 +161,31 @@ cd apps\MoneyKai-flutter
 
 ```powershell
 cd apps\MoneyKai-flutter
-.\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical
+.\tool\collect_android_runtime_qa.ps1 `
+  -Install `
+  -InstallMode Aab `
+  -RequirePhysical `
+  -ClearAppData `
+  -ExpectedAabSha256 239D3B916F840C12127E2F21E208C34E100F1B4D19C1703F88DD6F7585A16C95 `
+  -OutputDir "../../.codex-artifacts/play-preupload/physical"
 ```
 
 6. Run real TalkBack spoken-output QA.
-7. Publish/update the public privacy policy URL.
-8. Complete Play Console Data safety.
-9. Complete Play Console Financial features declaration.
-10. Verify app category, store listing text, screenshots, and declarations match the exact signed AAB.
+7. After Play internal testing upload and opt-in install, run the same collector without side-loading and require Play as the installer:
+
+```powershell
+cd apps\MoneyKai-flutter
+.\tool\collect_android_runtime_qa.ps1 `
+  -RequirePhysical `
+  -ExpectedInstallerPackage com.android.vending `
+  -ExpectedAabSha256 239D3B916F840C12127E2F21E208C34E100F1B4D19C1703F88DD6F7585A16C95 `
+  -OutputDir "../../.codex-artifacts/play-preupload/play-internal"
+```
+
+8. Publish/update the public privacy policy URL.
+9. Complete Play Console Data safety.
+10. Complete Play Console Financial features declaration.
+11. Verify app category, store listing text, screenshots, and declarations match the exact signed AAB.
 
 ## Feature Re-Audit Triggers
 

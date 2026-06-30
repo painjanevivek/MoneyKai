@@ -117,3 +117,31 @@ These items must be ready in the Play Console account before or during upload:
 - Play Console may reject the upload key if `com.moneykai.mobile` has already been uploaded before with a different upload key.
 - Play pre-launch report cannot run locally; it requires uploading the AAB to Play Console.
 - Production access may be blocked by the 12-tester/14-day closed testing requirement depending on the developer account type and status.
+
+## Physical Device Follow-Up Flow
+
+Use this when a real Android phone is connected and the signed AAB above is still the candidate under test:
+
+```powershell
+cd apps\MoneyKai-flutter
+.\tool\collect_android_runtime_qa.ps1 `
+  -Install `
+  -InstallMode Aab `
+  -RequirePhysical `
+  -ClearAppData `
+  -ExpectedAabSha256 239D3B916F840C12127E2F21E208C34E100F1B4D19C1703F88DD6F7585A16C95 `
+  -OutputDir "../../.codex-artifacts/play-preupload/physical"
+```
+
+After the AAB is uploaded to Play internal testing and installed from the tester opt-in link, run the same smoke without side-loading and require the Play installer:
+
+```powershell
+cd apps\MoneyKai-flutter
+.\tool\collect_android_runtime_qa.ps1 `
+  -RequirePhysical `
+  -ExpectedInstallerPackage com.android.vending `
+  -ExpectedAabSha256 239D3B916F840C12127E2F21E208C34E100F1B4D19C1703F88DD6F7585A16C95 `
+  -OutputDir "../../.codex-artifacts/play-preupload/play-internal"
+```
+
+The collector records device metadata, launch timing, installed package/version/installer evidence, focused window evidence, UI hierarchy, screenshot, local AAB/APKS hashes when present, and launch-window logcat crash/ANR checks. It does not replace manual screenshot inspection, TalkBack spoken-output QA, Play pre-launch report review, or Play Console declaration review.

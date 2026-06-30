@@ -118,20 +118,37 @@ The workflow runs formatting, analyzer, tests, the iOS static project audit, And
 
 ## Android Runtime QA
 
-Collect launch timing, a binary PNG screenshot, UI hierarchy, and device properties after connecting an Android device:
+Collect launch timing, a binary PNG screenshot, UI hierarchy, focused-activity evidence, installed-package evidence, launch-window logcat, and device properties after connecting an Android device:
 
 ```powershell
 .\tool\collect_android_runtime_qa.ps1 -Install
 ```
 
-For the required physical-device release gate, use:
+For quick debug APK testing, the default install mode remains APK. For the required signed-AAB physical-device release gate, install bundle-generated splits from the audited AAB:
 
 ```powershell
-.\tool\collect_android_runtime_qa.ps1 -Install -RequirePhysical
+.\tool\collect_android_runtime_qa.ps1 `
+  -Install `
+  -InstallMode Aab `
+  -RequirePhysical `
+  -ClearAppData `
+  -ExpectedAabSha256 239D3B916F840C12127E2F21E208C34E100F1B4D19C1703F88DD6F7585A16C95 `
+  -OutputDir "../../.codex-artifacts/play-preupload/physical"
 ```
 
-The script writes evidence files under the repository root `.codex-artifacts` folder, records size and SHA-256 metadata in the summary, and fails if an `adb` command fails, Android launch status/timing is incomplete, the hierarchy does not include `com.moneykai.mobile`, or the device/PNG screenshot evidence is missing or empty.
+If `bundletool` is not on PATH, pass `-BundletoolPath C:\path\to\bundletool.jar`. To smoke the Play internal-test opt-in install instead of side-loading from bundletool, install the app from the Play opt-in link on the physical device, then run:
+
+```powershell
+.\tool\collect_android_runtime_qa.ps1 `
+  -RequirePhysical `
+  -ExpectedInstallerPackage com.android.vending `
+  -ExpectedAabSha256 239D3B916F840C12127E2F21E208C34E100F1B4D19C1703F88DD6F7585A16C95 `
+  -OutputDir "../../.codex-artifacts/play-preupload/play-internal"
+```
+
+The script writes evidence files under the repository root `.codex-artifacts` folder, records size and SHA-256 metadata in the summary, and fails if an `adb` command fails, Android launch status/timing is incomplete, the installed package does not match `com.moneykai.mobile` and the current Flutter version, the hierarchy does not include `com.moneykai.mobile` or expected text, the focused window is not MoneyKai, launch logcat shows MoneyKai crash/ANR evidence, or the device/PNG screenshot evidence is missing or empty.
 It also enforces cold-start launch timing by default: `TotalTime` must be at most 5000 ms and `WaitTime` must be at most 6000 ms. Override those limits with `-MaxLaunchTotalMs` and `-MaxLaunchWaitMs` only when documenting a deliberately slower test device.
+Use `-MonkeyEvents 250` only when a bounded random-tap smoke is desired for the evidence bundle.
 
 ## Documentation
 
