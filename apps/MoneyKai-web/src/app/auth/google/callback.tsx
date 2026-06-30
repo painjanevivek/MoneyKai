@@ -13,21 +13,41 @@ import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 const normalizeParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
+const googleExchangePromises = new Map<string, ReturnType<typeof exchangeGoogleOAuthCodeGateway>>();
+
+const exchangeGoogleOAuthCodeOnce = (callbackKey: string, code: string) => {
+  const existing = googleExchangePromises.get(callbackKey);
+  if (existing) {
+    return existing;
+  }
+
+  const exchangePromise = exchangeGoogleOAuthCodeGateway(code);
+  googleExchangePromises.set(callbackKey, exchangePromise);
+  return exchangePromise;
+};
+
 const sanitizeReturnPath = (value: string | undefined) => {
   const fallback = '/dashboard';
   const raw = String(value || '').trim();
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    decoded = raw;
+  }
+
   if (
-    !raw ||
-    raw.length > 240 ||
-    !raw.startsWith('/') ||
-    raw.startsWith('//') ||
-    raw.includes('\\') ||
-    /[\u0000-\u001F]/.test(raw)
+    !decoded ||
+    decoded.length > 240 ||
+    !decoded.startsWith('/') ||
+    decoded.startsWith('//') ||
+    decoded.includes('\\') ||
+    /[\u0000-\u001F]/.test(decoded)
   ) {
     return fallback;
   }
 
-  return raw;
+  return decoded;
 };
 
 export default function GoogleOAuthCallbackScreen() {
@@ -42,6 +62,8 @@ export default function GoogleOAuthCallbackScreen() {
     const finishGoogleSignIn = async () => {
       const code = normalizeParam(params.code);
       const oauthError = normalizeParam(params.error);
+      const callbackKey = oauthError ? `error:${oauthError}` : `code:${code ?? ''}`;
+
       if (oauthError) {
         setError(oauthError);
         trackUserEvent('auth_login_failed', { method: 'google' });
@@ -55,7 +77,7 @@ export default function GoogleOAuthCallbackScreen() {
       }
 
       try {
-        const { credentials, returnTo } = await exchangeGoogleOAuthCodeGateway(code);
+        const { credentials, returnTo } = await exchangeGoogleOAuthCodeOnce(callbackKey, code);
         if (!mounted) {
           return;
         }
@@ -70,7 +92,11 @@ export default function GoogleOAuthCallbackScreen() {
         trackUserEvent('auth_login_succeeded', { method: 'google' });
 
         const { syncRemoteState } = await import('@/services/remoteSync');
-        await syncRemoteState();
+        await syncRemoteState().catch((syncError) => {
+          if (__DEV__) {
+            console.warn('[MoneyKai] Google sign-in completed but remote sync failed:', syncError);
+          }
+        });
         router.replace(sanitizeReturnPath(returnTo) as any);
       } catch (err) {
         if (!mounted) {
