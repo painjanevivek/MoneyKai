@@ -199,7 +199,8 @@ export default function RootLayout() {
       <Stack.Screen name="contact" options={{ animation: 'slide_from_right', presentation: 'card' }} />
     </Stack>
   );
-  const showWebsiteSkeleton = (!fontsLoaded && !fontError) || isHydratingSession;
+  const isServerRender = Platform.OS === 'web' && typeof window === 'undefined';
+  const showWebsiteSkeleton = !isServerRender && ((!fontsLoaded && !fontError) || isHydratingSession);
 
   return (
     <AppErrorBoundary colors={colors}>
