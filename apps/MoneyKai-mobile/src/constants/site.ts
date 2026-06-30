@@ -2,9 +2,9 @@ export const SITE = {
   name: 'MoneyKai',
   url: 'https://moneykai.app',
   supportEmail: 'support@moneykai.app',
-  title: 'MoneyKai | SMS parsing for private money records',
+  title: 'MoneyKai | Local-first budget and expense tracker',
   description:
-    'MoneyKai is an SMS parsing app for turning bank and payment alerts into reviewable expenses, income, budgets, shared spending, savings, notes, and private finance reports.',
+    'MoneyKai is a local-first personal finance app for recording expenses, budgets, shared spending, savings, and encrypted backup files on Android.',
 };
 
 export const PUBLIC_ROUTES = [

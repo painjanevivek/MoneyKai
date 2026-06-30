@@ -29,7 +29,7 @@ export const COMPARISON_PAGES: ComparisonPage[] = [
     bestFor: [
       'People who want a guided finance workspace instead of building templates',
       'Users who review expenses and budgets every month',
-      'Households that need shared spending, savings, and portfolio context in one place',
+      'Households that need shared spending, savings, and monthly review in one place',
     ],
     comparisonRows: [
       { label: 'Setup effort', moneykai: 'Guided workspace with app screens already structured', alternative: 'Manual templates, formulas, and category setup' },
@@ -59,12 +59,12 @@ export const COMPARISON_PAGES: ComparisonPage[] = [
     title: 'MoneyKai vs Basic Expense Trackers',
     metaTitle: 'MoneyKai vs Expense Trackers | Budgeting and Review Comparison',
     metaDescription:
-      'Compare MoneyKai with basic expense trackers for budgeting, AI review, monthly reports, shared expenses, savings, and portfolio context.',
+      'Compare MoneyKai with basic expense trackers for budgeting, monthly review, shared expenses, savings, and local backup files.',
     heroTitle: 'MoneyKai vs basic expense trackers',
     heroDescription:
-      'A basic expense tracker records spending. MoneyKai is designed to help users review what the spending means across budgets, reports, groups, savings, and portfolio context.',
+      'A basic expense tracker records spending. MoneyKai is designed to help users review what the spending means across budgets, summaries, groups, and savings.',
     directAnswer:
-      'MoneyKai is better than a basic expense tracker when you want expense records to connect with budgets, monthly review, shared expenses, savings, AI-assisted reports, and portfolio context. A basic tracker may be enough if you only need a list of purchases.',
+      'MoneyKai is better than a basic expense tracker when you want expense records to connect with budgets, monthly review, shared expenses, savings, and local backup files. A basic tracker may be enough if you only need a list of purchases.',
     alternativeName: 'Basic expense trackers',
     bestFor: [
       'Users who want financial review, not only transaction logging',
@@ -74,14 +74,14 @@ export const COMPARISON_PAGES: ComparisonPage[] = [
     comparisonRows: [
       { label: 'Primary job', moneykai: 'Review money decisions across records, budgets, and reports', alternative: 'Record expenses and show a transaction list' },
       { label: 'Dashboard clarity', moneykai: 'Highlights budget, spending, income, net flow, and next action', alternative: 'Often focuses on totals or recent expenses' },
-      { label: 'AI/reporting', moneykai: 'Positions reports around reviewed user-provided data', alternative: 'Usually limited or absent' },
+      { label: 'Monthly summaries', moneykai: 'Keeps user-provided records close to budget and trend views', alternative: 'Usually limited or absent' },
       { label: 'Shared costs', moneykai: 'Includes group and shared expense workflows', alternative: 'Often not supported or separate' },
-      { label: 'Portfolio context', moneykai: 'Connects everyday spending with wealth and holdings context', alternative: 'Typically not included' },
+      { label: 'Backup files', moneykai: 'Supports user-controlled encrypted backup files in the Android release', alternative: 'Varies by product' },
     ],
     faqs: [
       {
         question: 'Is MoneyKai only an expense tracker?',
-        answer: 'No. MoneyKai includes expense tracking, but it also supports budgets, shared expenses, savings, reports, notes, backups, and portfolio context.',
+        answer: 'No. MoneyKai includes expense tracking, but it also supports budgets, shared expenses, savings, summaries, notes, and encrypted backup files.',
       },
       {
         question: 'When is a basic expense tracker enough?',

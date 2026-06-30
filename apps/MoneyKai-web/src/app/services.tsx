@@ -25,7 +25,7 @@ const SERVICE_ITEMS = [
 export default function ServicesPage() {
   const { colors } = useTheme();
   const description =
-    'Explore MoneyKai services for expense tracking, budgeting, shared expenses, savings, analytics, backup and restore, and financial first aid.';
+    'Explore MoneyKai services for local expense tracking, budgeting, shared expenses, savings, analytics, encrypted backup files, and financial first aid.';
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -60,7 +60,7 @@ export default function ServicesPage() {
       <PublicShell
         eyebrow="Services"
         title="MoneyKai Services"
-        description="The official MoneyKai service pages explain how the app helps users organize daily expenses, budgets, shared costs, savings, analytics, backups, and financial first-aid moments."
+        description="The official MoneyKai service pages explain how the current Android app helps users organize daily expenses, budgets, shared costs, savings, analytics, encrypted backup files, and financial first-aid moments."
       >
         <View style={{ gap: Spacing.xl }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>

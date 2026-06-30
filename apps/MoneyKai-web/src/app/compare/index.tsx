@@ -43,7 +43,7 @@ export default function CompareIndexPage() {
               When should you choose MoneyKai?
             </Text>
             <Text style={{ marginTop: Spacing.md, fontSize: Typography.fontSize.md, lineHeight: 26, color: colors.textSecondary }}>
-              Choose MoneyKai when you want a guided personal finance app that connects expenses, budgets, shared costs, savings, reports, and portfolio context. Choose a spreadsheet or basic tracker when you only need manual logging.
+              Choose MoneyKai when you want a guided local personal finance app that connects expenses, budgets, shared costs, savings, summaries, and encrypted backup files. Choose a spreadsheet or basic tracker when you only need manual logging.
             </Text>
           </SectionCard>
 

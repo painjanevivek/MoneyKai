@@ -9,7 +9,7 @@ export const SITE = {
   sameAs: [] as string[],
   title: 'MoneyKai | Official Website',
   description:
-    'Official website of MoneyKai, a personal finance and budget management app for tracking spending, savings, groups, backups, notes, and financial first-aid moments in one calm workspace.',
+    'Official website of MoneyKai, a local-first personal finance app for tracking spending, budgets, shared expenses, savings, and encrypted backup files in one calm workspace.',
 };
 
 const CORE_PUBLIC_ROUTES_BEFORE_COMPARE = [

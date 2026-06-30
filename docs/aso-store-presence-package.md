@@ -1,14 +1,14 @@
 # MoneyKai ASO Store Presence Package
 
-Last updated: 2026-06-16
+Last updated: 2026-06-30
 
 Sources checked: Google Play listings for axio, Wallet, and Spendee; Apple App Store listings for Money Manager, Spendee, PocketGuard, Buddy, Wallet, and Goodbudget; MoneyKai release and Play policy docs in this repo.
 
 ## Strategy
 
-MoneyKai should not compete as another generic "automatic bank sync" app at launch. The sharper lane is:
+MoneyKai should not compete as another generic "automatic bank sync" app at launch. The sharper lane for the current Android release is:
 
-> A calm expense and budget tracker for monthly money reviews, shared expenses, savings, and privacy-aware transaction drafts.
+> A calm local-first expense and budget tracker for monthly money reviews, shared expenses, savings, and user-controlled encrypted backup files.
 
 That gives MoneyKai a practical angle against competitors:
 
@@ -18,7 +18,7 @@ That gives MoneyKai a practical angle against competitors:
 - Money Manager leans into manual control, accounts, calendar, budgets, and statistics.
 - Buddy and Goodbudget lean into shared budgets and household-style planning.
 
-MoneyKai can own the middle ground: easier than spreadsheets, calmer than heavy budget systems, more review-first than automatic trackers, and better for shared expenses than solo-only trackers.
+MoneyKai can own the middle ground: easier than spreadsheets, calmer than heavy budget systems, more local-first than automatic trackers, and better for shared expenses than solo-only trackers.
 
 ## Recommended Store Metadata
 
@@ -78,7 +78,7 @@ Alternative B:
 
 - Title: `MoneyKai Personal Finance`
 - Count: 25/30
-- Short description: `Track monthly money, shared bills, savings, and reviewable expense drafts.`
+- Short description: `Track monthly money, shared bills, savings, and encrypted backup files.`
 - Count: 72/80
 
 ## Full Description
@@ -96,8 +96,8 @@ Why MoneyKai
 - Monthly budget views for spending awareness
 - Savings visibility for goals and emergency-fund habits
 - Shared expense and split-bill records for groups
-- Notes and backups for continuity
-- Reviewable transaction drafts from supported capture flows
+- Notes and encrypted backup files for continuity
+- Local-first Android release with no SMS, notification, Gmail, bank-sync, cloud-backup, AI, or payment claims
 - A calmer personal finance dashboard for everyday decisions
 
 Track expenses without losing context
@@ -116,9 +116,9 @@ Build savings awareness
 
 Keep savings progress visible beside spending and budgets so goals do not disappear after payday.
 
-Review first, confirm later
+Local first, export by choice
 
-Supported capture flows create reviewable drafts instead of silently confirming transactions. You stay in control of what becomes part of your money record.
+MoneyKai keeps the current Android release focused on manual local records. You can export a plaintext snapshot to the clipboard or create a password-encrypted backup file when you choose.
 
 MoneyKai is not financial, investment, tax, or legal advice. It helps you organize and review your own personal finance information.
 
@@ -168,10 +168,10 @@ Use 8 screenshots for the first launch package. Add screenshots 9 and 10 after r
 ### Slot 4: Review Drafts First
 
 - Caption: `Review before it counts`
-- Screen: Auto Capture drafts or manual SMS paste review
+- Screen: encrypted backup or privacy/security settings
 - Layout: phone frame plus small privacy badge
 - Key element: draft state, approve/edit behavior
-- Compliance note: do not imply Play production reads the SMS inbox automatically.
+- Compliance note: do not imply Play production reads SMS, notifications, Gmail, bank data, or cloud backups.
 
 ### Slot 5: Split Bills Without Mess
 
@@ -233,8 +233,8 @@ Use this hierarchy:
 1. Expense tracking and budget tracker: acquisition keywords.
 2. Monthly money review: brand differentiation.
 3. Shared expenses and split bills: conversion differentiator.
-4. Reviewable drafts and privacy-aware capture: trust differentiator.
-5. Savings, notes, backup: retention differentiators.
+4. Local-only privacy boundary and encrypted backup files: trust differentiator.
+5. Savings, notes, backup files: retention differentiators.
 
 Avoid this hierarchy at launch:
 
@@ -253,8 +253,8 @@ MoneyKai 1.0 is ready for first monthly money reviews.
 - Track expenses and categories
 - Review monthly budget health
 - Organize shared expenses and split bills
-- Keep savings, notes, and backups visible
-- Use reviewable capture drafts where supported
+- Keep savings, notes, and encrypted backup files visible
+- Keep unsupported automation out of the current release copy
 
 Thanks for helping shape a calmer personal finance app.
 ```
@@ -262,13 +262,13 @@ Thanks for helping shape a calmer personal finance app.
 ### Google Play Release Notes
 
 ```text
-MoneyKai 1.0 introduces a calmer way to track expenses, budgets, savings, and shared spending. This first release focuses on monthly money review, reviewable transaction drafts, group expenses, notes, and backup-ready finance records.
+MoneyKai 1.0 introduces a calmer way to track expenses, budgets, savings, and shared spending. This first Android release focuses on manual monthly money review, group expenses, notes, local export, and encrypted backup files.
 ```
 
 ### Reviewer Notes
 
 ```text
-MoneyKai is a personal finance app for expense tracking, budgeting, shared expenses, savings visibility, and monthly money review. The Play Store production build does not request restricted SMS inbox permissions. Supported capture flows create reviewable drafts and do not automatically confirm transactions.
+MoneyKai is a personal finance app for local expense tracking, budgeting, shared expenses, savings visibility, encrypted backup files, and monthly money review. The Play Store production build does not request SMS, notification listener, contacts, camera, microphone, location, storage, or cloud-sync permissions.
 ```
 
 ### Launch Taglines
@@ -288,6 +288,6 @@ MoneyKai is a personal finance app for expense tracking, budgeting, shared expen
 
 1. Title test: `Budget Tracker` versus `Expense Tracker`.
 2. Screenshot slot 1: dashboard clarity versus daily expense tracking.
-3. Screenshot slot 4: reviewable drafts/privacy versus shared expenses.
+3. Screenshot slot 4: encrypted backup/privacy versus shared expenses.
 4. Short description: "calm app" angle versus "monthly money reviews" angle.
 5. India localized screenshots with INR/UPI language versus neutral global screenshots.

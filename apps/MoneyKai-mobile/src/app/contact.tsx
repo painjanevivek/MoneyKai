@@ -40,14 +40,14 @@ const CONTACT_OPTIONS: ContactOption[] = [
   {
     icon: 'lifebuoy',
     title: 'Support',
-    description: `Get help with sign-in, account access, backups, capture settings, or product questions through ${SITE.supportEmail}.`,
+    description: `Get help with local data, encrypted backup files, app behavior, or product questions through ${SITE.supportEmail}.`,
     subject: 'MoneyKai Support',
     body: 'What do you need help with?\n\nAccount email, if relevant:\n\nDevice model:\n',
   },
   {
     icon: 'bug-outline',
     title: 'Bug report',
-    description: `Report crashes, freezes, incorrect totals, broken navigation, failed capture, or backup issues to ${SITE.supportEmail}.`,
+    description: `Report crashes, freezes, incorrect totals, broken navigation, or backup-file issues to ${SITE.supportEmail}.`,
     subject: 'MoneyKai Bug Report',
     body: BUG_REPORT_BODY,
   },

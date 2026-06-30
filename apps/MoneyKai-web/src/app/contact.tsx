@@ -11,14 +11,14 @@ const CONTACT_OPTIONS = [
   {
     icon: 'lifebuoy',
     title: 'Support',
-    description: `Reach out for product questions, troubleshooting, or account help at ${SITE.supportEmail}.`,
+    description: `Reach out for product questions, troubleshooting, local data, or backup-file help at ${SITE.supportEmail}.`,
     subject: 'MoneyKai Support',
     body: 'What do you need help with?\n\nAccount email, if relevant:\n\nDevice/browser:\n',
   },
   {
     icon: 'bug-outline',
     title: 'Bug report',
-    description: `Report broken flows, crashes, incorrect totals, failed imports, or confusing behavior to ${SITE.supportEmail}.`,
+    description: `Report broken flows, crashes, incorrect totals, backup-file issues, or confusing behavior to ${SITE.supportEmail}.`,
     subject: 'MoneyKai Bug Report',
     body: [
       'Bug summary:',
@@ -85,7 +85,7 @@ export default function ContactScreen() {
               Main support email
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
-              MoneyKai currently uses a direct email support path for account help, bug reports, feedback, privacy questions,
+              MoneyKai currently uses a direct email support path for product help, bug reports, feedback, privacy questions,
               and security concerns.
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>

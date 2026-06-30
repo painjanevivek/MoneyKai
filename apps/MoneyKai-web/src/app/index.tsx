@@ -32,24 +32,24 @@ const navLinks = [
   { href: '#features', label: 'Features' },
   { href: '/services', label: 'Services' },
   { href: '#privacy', label: 'Privacy' },
-  { href: '/pricing', label: 'Pricing' },
+  { href: '#release', label: 'Release' },
   { href: '#faq', label: 'FAQ' },
 ] as const;
 
-const trustItems = ['India-first money habits', 'No advice overclaims', 'Reviewable drafts', 'Built for private records'] as const;
+const trustItems = ['Local-first Android release', 'No SMS or notification permissions', 'Encrypted backup files', 'No financial advice'] as const;
 
 const problemCards = [
   {
     title: 'Your money records live everywhere',
-    body: 'Expenses, budgets, shared spends, notes, statements, and portfolio context rarely sit in one calm place.',
+    body: 'Expenses, budgets, shared spends, notes, and savings context rarely sit in one calm place.',
   },
   {
     title: 'Reports should not feel like homework',
     body: 'MoneyKai turns reviewed records into plain-language summaries that are easier to scan and revisit.',
   },
   {
-    title: 'AI should wait for your review',
-    body: 'Imported records remain visible as reviewable drafts before they shape a private report.',
+    title: 'A release should match what it ships',
+    body: 'The current Android app is built around manual local records, local insights, and user-controlled backup files.',
   },
 ] as const;
 
@@ -57,12 +57,12 @@ const flowSteps = [
   {
     eyebrow: '01',
     title: 'Bring in the records',
-    body: 'Add transactions, statement details, notes, budgets, shared expenses, and portfolio context as your own reviewed inputs.',
+    body: 'Add transactions, budgets, shared expenses, and savings context as your own local records.',
   },
   {
     eyebrow: '02',
-    title: 'Review the drafts',
-    body: 'Keep imported records legible before they affect reports, budgets, or month-end understanding.',
+    title: 'Review your month',
+    body: 'Use the dashboard, transactions, budgets, and insights to understand what changed without connecting a bank account.',
   },
   {
     eyebrow: '03',
@@ -88,9 +88,9 @@ const featureCards = [
     metric: 'Together',
   },
   {
-    title: 'Portfolio context',
-    body: 'Keep investment context beside spending and savings without presenting it as financial advice.',
-    metric: 'Context',
+    title: 'Backup files',
+    body: 'Create password-encrypted JSON backups and restore from files you select.',
+    metric: 'Local',
   },
 ] as const;
 
@@ -106,8 +106,8 @@ const faqs = [
     answer: 'No. MoneyKai helps organize and summarize user-provided records. It does not provide investment, tax, legal, or financial advice.',
   },
   {
-    question: 'Does every imported record become final automatically?',
-    answer: 'No. The product direction is review-first: records should stay visible as drafts before they influence reports or decisions.',
+    question: 'Does MoneyKai import bank, SMS, Gmail, or notification records automatically?',
+    answer: 'No. The current Android release uses manual local records and does not include bank sync, SMS reading, Gmail sync, notification capture, or automatic imports.',
   },
   {
     question: 'Who is MoneyKai for?',
@@ -290,7 +290,7 @@ function LandingHeader({ compact }: { compact: boolean }) {
             </span>
             <span style={{ display: 'grid', gap: 1 }}>
               <strong style={{ color: palette.text, fontSize: 17, lineHeight: '20px' }}>{SITE.name}</strong>
-              <span style={{ color: palette.faint, fontSize: 12, lineHeight: '16px' }}>Private finance reports</span>
+              <span style={{ color: palette.faint, fontSize: 12, lineHeight: '16px' }}>Local budget tracker</span>
             </span>
           </a>
 
@@ -349,11 +349,11 @@ function LandingHeader({ compact }: { compact: boolean }) {
 
         {visibleNav ? (
           <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', gap: 10 }}>
-            <LinkButton href="/login" fullWidth={compact}>
-              Sign in
+            <LinkButton href="/privacy-policy" fullWidth={compact}>
+              Privacy
             </LinkButton>
             <LinkButton href="/signup" primary fullWidth={compact}>
-              Create account
+              Open app
             </LinkButton>
           </div>
         ) : null}
@@ -431,7 +431,7 @@ function ProductPreview({ compact }: { compact: boolean }) {
 
       <div style={{ display: 'grid', gap: 12, marginTop: 18 }}>
         {[
-          ['Drafts waiting', '12 records need review before reporting.'],
+          ['Transactions logged', 'Review records before month-end decisions.'],
           ['Budget signal', 'Dining is 18% above your usual month.'],
           ['Calm next step', 'Review transfers before updating savings.'],
         ].map(([title, body]) => (
@@ -459,14 +459,14 @@ export default function LandingScreen() {
   const isCompact = width < 760;
   const isWide = width >= 980;
   const description =
-    'Official website of MoneyKai, a calm personal finance workspace for India-first expense tracking, budgets, shared spending, reviewable drafts, and private money reports.';
+    'Official website of MoneyKai, a local-first Android personal finance app for expense tracking, budgets, shared spending, savings, and encrypted backup files.';
   const structuredData = [
     {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
       name: SITE.name,
       applicationCategory: 'FinanceApplication',
-      operatingSystem: 'Web, iOS, Android',
+      operatingSystem: 'Android',
       url: SITE.url,
       description,
       offers: {
@@ -499,7 +499,7 @@ export default function LandingScreen() {
         title={SITE.title}
         description={description}
         path="/"
-        keywords={['personal finance India', 'expense tracker', 'budget app', 'private finance reports', 'shared expenses']}
+        keywords={['personal finance India', 'expense tracker', 'budget app', 'local finance app', 'shared expenses']}
         structuredData={structuredData}
       />
       <div
@@ -537,16 +537,16 @@ export default function LandingScreen() {
               }}
             >
               <div>
-                <span style={badgeStyle}>Private finance reports for money you actually review</span>
+                <span style={badgeStyle}>Local-first Android expense and budget tracking</span>
                 <h1 id="hero-title" style={{ ...headlineStyle(isCompact), marginTop: 22 }}>
                   MoneyKai official website for calmer money clarity.
                 </h1>
                 <p style={{ ...paragraphStyle, fontSize: isCompact ? 17 : 19, lineHeight: isCompact ? '29px' : '32px', marginTop: 22, maxWidth: 650 }}>
-                  This is the official MoneyKai website. MoneyKai helps you review expenses, budgets, shared spending, notes, and portfolio context before turning them into plain private reports.
+                  This is the official MoneyKai website. The current Android release helps you record expenses, review budgets, track shared spending and savings, and export encrypted backup files from your device.
                 </p>
                 <div style={{ display: 'flex', flexDirection: isCompact ? 'column' : 'row', gap: 12, marginTop: 30, maxWidth: isCompact ? '100%' : 430 }}>
                   <LinkButton href="/signup" primary fullWidth={isCompact}>
-                    Create secure account
+                    Open MoneyKai
                   </LinkButton>
                   <LinkButton href="#how-it-works" fullWidth={isCompact}>
                     See how it works
@@ -574,7 +574,7 @@ export default function LandingScreen() {
                     Money tools are loud. Money review should be quiet.
                   </h2>
                   <p style={paragraphStyle}>
-                    The page needs to prove MoneyKai is practical, private, and ready for real everyday finance habits without sounding like investment advice or an AI toy.
+                    The page needs to prove MoneyKai is practical, private, and ready for real everyday finance habits without implying bank sync, SMS reading, cloud backup, or financial advice.
                   </p>
                 </div>
                 <div style={cxGrid(isWide)}>
@@ -618,7 +618,7 @@ export default function LandingScreen() {
                     </h2>
                   </div>
                   <p style={paragraphStyle}>
-                    Every section is modular so the Expo/Vercel site can ship quickly while keeping the story, visuals, and interaction model consistent.
+                    The public copy focuses on what the Android release actually supports: local records, manual tracking, summaries, and encrypted backup files.
                   </p>
                 </div>
                 <div style={{ display: 'grid', gap: 16, gridTemplateColumns: isWide ? 'repeat(4, minmax(0, 1fr))' : isCompact ? '1fr' : 'repeat(2, minmax(0, 1fr))' }}>
@@ -650,11 +650,11 @@ export default function LandingScreen() {
                     Clear privacy language without security theatre.
                   </h2>
                   <p style={paragraphStyle}>
-                    The site should say what MoneyKai does plainly: it organizes user-provided records into private reports. It should not imply unsupported bank access, SMS production capture, or professional financial advice.
+                    The site should say what MoneyKai does plainly: it organizes user-provided records on the device. It should not imply unsupported bank access, SMS capture, cloud sync, AI features, or professional financial advice.
                   </p>
                 </div>
                 <div style={{ display: 'grid', gap: 12 }}>
-                  {['Reviewable drafts before report updates', 'Plain summaries instead of advice claims', 'Support and legal pages linked from every public page', 'Reduced motion and accessible contrast by default'].map((item) => (
+                  {['Local Android storage boundary', 'Plain summaries instead of advice claims', 'Privacy policy linked from every public page', 'No SMS or notification permissions in the release build'].map((item) => (
                     <div key={item} style={{ alignItems: 'center', background: '#FFFFFF', border: `1px solid ${palette.border}`, borderRadius: 14, display: 'flex', gap: 12, padding: 14 }}>
                       <span aria-hidden="true" style={{ background: palette.accent, borderRadius: 999, height: 9, width: 9 }} />
                       <span style={{ color: palette.text, fontSize: 15, fontWeight: 700 }}>{item}</span>
@@ -693,21 +693,21 @@ export default function LandingScreen() {
               </div>
             </Section>
 
-            <Section id="pricing" compact={isCompact} labelledBy="pricing-title">
+            <Section id="release" compact={isCompact} labelledBy="release-title">
               <div style={{ display: 'grid', gap: 24, gridTemplateColumns: isWide ? '0.9fr 1.1fr' : '1fr' }}>
                 <div style={{ display: 'grid', gap: 14 }}>
-                  <span style={badgeStyle}>Pricing</span>
-                  <h2 id="pricing-title" style={sectionTitleStyle(isCompact)}>
-                    Start simple. Upgrade when review becomes routine.
+                  <span style={badgeStyle}>Release scope</span>
+                  <h2 id="release-title" style={sectionTitleStyle(isCompact)}>
+                    Current Android release: local records, no cloud sync.
                   </h2>
                   <p style={paragraphStyle}>
-                    The landing page keeps pricing visible without forcing a hard sell. The detailed pricing page can carry plan limits and checkout details.
+                    MoneyKai 1.0.1 focuses on manual expense tracking, budgets, savings visibility, local diagnostics, local export, and password-encrypted backup files.
                   </p>
                 </div>
                 <div style={{ display: 'grid', gap: 16, gridTemplateColumns: isCompact ? '1fr' : 'repeat(2, minmax(0, 1fr))' }}>
                   {[
-                    ['Starter', 'For personal tracking and light monthly review.', 'Create account'],
-                    ['Kai Plus', 'For deeper reports, shared spends, and advanced review habits.', 'View pricing'],
+                    ['Included now', 'Local transactions, budgets, summaries, settings, diagnostics, and encrypted backup files.', 'Open app'],
+                    ['Not in this release', 'No Firebase cloud backup, SMS capture, Gmail sync, bank sync, Financial AI, ads, or payments.', 'Read privacy'],
                   ].map(([plan, body, cta], index) => (
                     <article
                       key={plan}
@@ -728,7 +728,7 @@ export default function LandingScreen() {
                       <h3 style={{ color: palette.text, fontSize: 24, lineHeight: '30px', margin: 0 }}>{plan}</h3>
                       <p style={{ ...paragraphStyle, marginTop: 10 }}>{body}</p>
                       <div style={{ marginTop: 22 }}>
-                        <LinkButton href={index === 0 ? '/signup' : '/pricing'} primary={index === 0}>
+                        <LinkButton href={index === 0 ? '/signup' : '/privacy-policy'} primary={index === 0}>
                           {cta}
                         </LinkButton>
                       </div>
@@ -786,10 +786,10 @@ export default function LandingScreen() {
                     Build a calmer money review habit today.
                   </h2>
                   <p style={{ ...paragraphStyle, maxWidth: 700 }}>
-                    Create a MoneyKai account, review your own records, and turn everyday money activity into reports you can actually understand.
+                    Open MoneyKai, review your own records, and turn everyday money activity into summaries you can actually understand.
                   </p>
                   <LinkButton href="/signup" primary>
-                    Create secure account
+                    Open MoneyKai
                   </LinkButton>
                 </div>
               </div>
@@ -809,7 +809,7 @@ export default function LandingScreen() {
             }}
           >
             <p style={{ ...paragraphStyle, fontSize: 14 }}>
-              MoneyKai organizes user-provided records into private finance reports. It does not provide investment, tax, legal, or financial advice.
+              MoneyKai organizes user-provided records on the device. It does not provide investment, tax, legal, or financial advice.
             </p>
             <nav aria-label="Footer" style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               {[

@@ -20,10 +20,10 @@ const PROBLEMS = [
 ];
 
 const TRUST_POINTS = [
-  'Secure login',
+  'Local Android storage',
   'User-controlled data',
-  'Cloud backup and restore',
-  'Privacy-first approach',
+  'Encrypted backup files',
+  'No SMS or notification permissions',
   'Clear data handling',
 ];
 
@@ -48,14 +48,14 @@ export default function LandingScreen() {
         title={SITE.title}
         description={SITE.description}
         path="/"
-        keywords={['sms parsing app', 'expense tracker', 'private finance reports', 'shared expense tracker']}
+        keywords={['local expense tracker', 'budget app', 'local finance app', 'shared expense tracker']}
       />
       <PublicShell>
         <View style={{ gap: Spacing.xl }}>
           <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
             <SectionCard style={{ flex: 1.3 }}>
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                SMS PARSING APP
+                LOCAL-FIRST ANDROID APP
               </Text>
               <Text
                 style={{
@@ -66,10 +66,10 @@ export default function LandingScreen() {
                   color: colors.textPrimary,
                 }}
               >
-                Parse SMS alerts into clearer money records
+                Track expenses and budgets on your device
               </Text>
               <Text style={{ marginTop: Spacing.md, fontSize: Typography.fontSize.md, lineHeight: 26, color: colors.textSecondary }}>
-                MoneyKai turns bank and payment alerts into reviewable expenses, income, budgets, shared spending, and private reports.
+                MoneyKai helps you manually record expenses, review budgets, organize shared spending, track savings, and export encrypted backup files.
               </Text>
               <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.sm, marginTop: Spacing.lg }}>
                 <Button
@@ -90,14 +90,14 @@ export default function LandingScreen() {
 
             <SectionCard style={{ flex: 0.9 }}>
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
-                WHY SMS PARSING MATTERS
+                CURRENT RELEASE BOUNDARY
               </Text>
               <View style={{ marginTop: Spacing.md, gap: Spacing.md }}>
                 {[
-                  'Captured SMS records before reports',
-                  'Reviewable drafts before budgets depend on them',
-                  'Trust, privacy, and security context before signup',
-                  'Original Learn content connected to real money habits',
+                  'Local records before cloud sync',
+                  'Manual entries before automation claims',
+                  'Privacy context before Play install',
+                  'Learn content connected to real money habits',
                 ].map((point) => (
                   <View key={point} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                     <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.primary} />
@@ -141,10 +141,10 @@ export default function LandingScreen() {
 
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              MoneyKai turns SMS alerts into a calmer review routine
+              MoneyKai turns manual records into a calmer review routine
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.md, lineHeight: 26, color: colors.textSecondary }}>
-              MoneyKai helps users parse transaction alerts, manage budgets, organize shared money, monitor savings, and understand spending patterns from reviewed records.
+              MoneyKai helps users record transactions, manage budgets, organize shared money, monitor savings, and understand spending patterns from local records.
             </Text>
           </SectionCard>
 
@@ -220,7 +220,7 @@ export default function LandingScreen() {
               Security and trust preview
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-              MoneyKai’s trust layer explains how secure login, clear data handling, backup continuity, and privacy-first thinking fit into the product experience.
+              MoneyKai's trust layer explains how local storage, clear data handling, encrypted backup files, and privacy-first thinking fit into the current Android release.
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg }}>
               {TRUST_POINTS.map((item) => (
@@ -328,7 +328,7 @@ export default function LandingScreen() {
 
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Start parsing money records with clarity
+              Start reviewing money records with clarity
             </Text>
             <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.sm, marginTop: Spacing.lg }}>
               <Button

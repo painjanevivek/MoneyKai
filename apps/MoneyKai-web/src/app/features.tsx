@@ -39,9 +39,9 @@ const FEATURE_CARDS = [
     href: '/features/analytics' as const,
   },
   {
-    title: 'Backup & Restore',
+    title: 'Encrypted Backup Files',
     description:
-      'Protect continuity by keeping important records easier to recover when needed. MoneyKai treats backup and restore as part of trust, not just a technical extra.',
+      'Create password-encrypted JSON backup files and restore from files you select. The current Android release does not use Firebase or cloud backup.',
     href: '/features/backup-restore' as const,
   },
   {
@@ -59,14 +59,14 @@ export default function FeaturesScreen() {
     <>
       <SeoHead
         title="MoneyKai Features | Explore expense tracking, budgeting, savings, analytics, and more"
-        description="Explore MoneyKai features for expense tracking, budgeting, shared expenses, savings, analytics, backup and restore, and financial first aid."
+        description="Explore MoneyKai features for local expense tracking, budgeting, shared expenses, savings, analytics, encrypted backup files, and financial first aid."
         path="/features"
         keywords={['MoneyKai features', 'expense tracking app', 'budgeting app', 'shared expenses app', 'personal finance features']}
       />
       <PublicShell
         eyebrow="Features"
         title="MoneyKai Features"
-        description="Explore the tools MoneyKai gives you to track expenses, manage budgets, organize shared money, monitor savings, and understand your financial habits."
+        description="Explore the tools the current Android release gives you to track expenses, manage budgets, organize shared money, monitor savings, and understand your financial habits locally."
       >
         <View style={{ gap: Spacing.xl }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>

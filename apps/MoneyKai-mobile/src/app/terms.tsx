@@ -5,7 +5,7 @@ import { SeoHead } from '@/components/marketing/SeoHead';
 import { Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
-const LAST_UPDATED = 'June 13, 2026';
+const LAST_UPDATED = 'June 30, 2026';
 
 const TERMS_SECTIONS = [
   {
@@ -17,8 +17,8 @@ const TERMS_SECTIONS = [
     body: 'MoneyKai is intended to help users organize and understand personal finance information such as budgets, transactions, savings progress, and shared expenses.',
   },
   {
-    title: 'Account responsibility',
-    body: 'Users are responsible for helping keep their account access secure and for the information connected to that account.',
+    title: 'Local data responsibility',
+    body: 'The current Android release stores app data locally. Users are responsible for the information they enter and for backup files they export, save, or share.',
   },
   {
     title: 'No professional financial advice',
@@ -30,19 +30,7 @@ const TERMS_SECTIONS = [
   },
   {
     title: 'Data responsibility',
-    body: 'Users are responsible for reviewing the accuracy of information they enter, import, parse, reconcile, or approve before relying on it for important decisions.',
-  },
-  {
-    title: 'Imported financial data',
-    body: 'Gmail metadata sync, PDF statement parsing, wealth monitoring, broker or Account Aggregator integrations, and reconciliation workflows are optional feature-gated capabilities that require user consent and may depend on third-party providers.',
-  },
-  {
-    title: 'AI-assisted features',
-    body: 'AI-assisted classification, parsing support, and wealth insights are review-required product aids. They may be inaccurate or incomplete and must not be treated as professional financial, legal, investment, or tax advice.',
-  },
-  {
-    title: 'Security and deletion controls',
-    body: 'Users may request deletion of imported financial data through available product controls. Some security, consent, deletion, and audit events may be retained to protect account integrity and meet operational requirements.',
+    body: 'Users are responsible for reviewing the accuracy of information they enter, export, back up, or restore before relying on it for important decisions.',
   },
 ];
 
@@ -53,14 +41,14 @@ export default function TermsScreen() {
     <>
       <SeoHead
         title="MoneyKai Terms | Basic terms of use"
-        description="Read the MoneyKai terms covering account responsibility, product limitations, service availability, and professional-advice boundaries."
+        description="Read the MoneyKai terms covering local data responsibility, product limitations, service availability, and professional-advice boundaries."
         path="/terms"
         keywords={['MoneyKai terms', 'terms of use', 'personal finance app terms']}
       />
       <PublicShell
         eyebrow="Terms"
         title="MoneyKai's terms are meant to stay readable and specific."
-        description="This page explains the basic expectations around using the product, account responsibility, service limitations, and the boundary between app functionality and professional advice."
+        description="This page explains the basic expectations around using the product, local data responsibility, service limitations, and the boundary between app functionality and professional advice."
       >
         <View style={{ gap: Spacing.md }}>
           {TERMS_SECTIONS.map((section) => (

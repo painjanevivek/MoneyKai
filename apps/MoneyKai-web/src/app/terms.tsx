@@ -5,7 +5,7 @@ import { SeoHead } from '@/components/marketing/SeoHead';
 import { Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
-const LAST_UPDATED = 'June 7, 2026';
+const LAST_UPDATED = 'June 30, 2026';
 
 const TERMS_SECTIONS = [
   {
@@ -17,8 +17,8 @@ const TERMS_SECTIONS = [
     body: 'MoneyKai is intended to help users organize and understand personal finance information such as budgets, transactions, savings progress, and shared expenses.',
   },
   {
-    title: 'Account responsibility',
-    body: 'Users are responsible for helping keep their account access secure and for the information connected to that account.',
+    title: 'Local data responsibility',
+    body: 'The current Android release stores app data locally. Users are responsible for the information they enter and for backup files they export, save, or share.',
   },
   {
     title: 'No professional financial advice',
@@ -41,14 +41,14 @@ export default function TermsScreen() {
     <>
       <SeoHead
         title="MoneyKai Terms | Basic terms of use"
-        description="Read the MoneyKai terms covering account responsibility, product limitations, service availability, and professional-advice boundaries."
+        description="Read the MoneyKai terms covering local data responsibility, product limitations, service availability, and professional-advice boundaries."
         path="/terms"
         keywords={['MoneyKai terms', 'terms of use', 'personal finance app terms']}
       />
       <PublicShell
         eyebrow="Terms"
         title="MoneyKai's terms are meant to stay readable and specific."
-        description="This page explains the basic expectations around using the product, account responsibility, service limitations, and the boundary between app functionality and professional advice."
+        description="This page explains the basic expectations around using the product, local data responsibility, service limitations, and the boundary between app functionality and professional advice."
       >
         <View style={{ gap: Spacing.md }}>
           {TERMS_SECTIONS.map((section) => (

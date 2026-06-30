@@ -1,16 +1,16 @@
 # MoneyKai App Marketing Context
 
-Last updated: 2026-06-16
+Last updated: 2026-06-30
 
 ## Product
 
-MoneyKai is a personal finance app for expense tracking, monthly budgets, savings visibility, shared expenses, notes, backups, portfolio context, and financial first-aid review.
+MoneyKai is a local-first Android personal finance app for expense tracking, monthly budgets, savings visibility, shared expenses, notes, encrypted backup files, and financial first-aid review.
 
 ## Primary Audience
 
 - India-first Android users who want a clearer monthly money picture without managing a complex spreadsheet.
 - Students, young professionals, couples, roommates, and families who need daily expense tracking, shared-cost records, and budget review.
-- Privacy-conscious users who prefer reviewable financial records over fully automatic money decisions.
+- Privacy-conscious users who prefer manual local financial records over fully automatic money decisions.
 
 ## Secondary Audience
 
@@ -23,11 +23,10 @@ MoneyKai is the calm personal finance workspace for people who want to track exp
 
 ## Core Differentiators
 
-- Review-first capture: notification and manual SMS flows create drafts for review instead of auto-confirming transactions.
 - Shared expenses: group and split-bill workflows support roommates, couples, families, and trips.
 - Monthly clarity: budget health, category review, calendar context, savings, and notes live together.
-- Privacy-aware launch stance: Play builds avoid restricted SMS inbox permissions and keep SMS research separate.
-- Backup and restore: continuity for finance records across sessions where cloud features are configured.
+- Privacy-aware launch stance: the current Flutter Android release requests no SMS, notification listener, contacts, camera, microphone, location, storage, or cloud-sync permissions.
+- Backup and restore: local export and password-encrypted JSON backup files controlled by the user.
 
 ## Competitor Set
 
@@ -54,5 +53,5 @@ MoneyKai is the calm personal finance workspace for people who want to track exp
 
 - Do not imply MoneyKai gives investment, tax, legal, or professional financial advice.
 - Do not show Play Store screenshots that imply native SMS inbox access in the production build.
-- Say "reviewable drafts" for notification/manual SMS capture, not automatic confirmed transactions.
+- Do not mention notification capture, manual SMS capture, Gmail sync, cloud backup, Financial AI, bank sync, portfolio/provider sync, or paid plans in current Android release copy.
 - Avoid exaggerated bank-grade/security claims unless backed by implemented controls and legal review.

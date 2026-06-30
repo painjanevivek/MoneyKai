@@ -24,7 +24,7 @@ export const PUBLIC_FEATURES: PublicFeature[] = [
     heroDescription:
       'MoneyKai makes everyday spending easier to log, review, and understand so users can stay closer to reality instead of relying on guesswork.',
     benefits: [
-      'Capture daily spending in one place',
+      'Record daily spending in one place',
       'Review transaction history without scattered notes',
       'See where money is actually going',
       'Build awareness before overspending becomes a pattern',
@@ -205,41 +205,41 @@ export const PUBLIC_FEATURES: PublicFeature[] = [
   },
   {
     slug: 'backup-restore',
-    title: 'Backup & Restore',
-    shortTitle: 'Protect continuity with backup and restore support',
+    title: 'Encrypted Backup Files',
+    shortTitle: 'Export and restore encrypted backup files',
     description:
-      'Keep important finance records available and reduce the risk of losing continuity across devices or sessions.',
-    category: 'Backup and Restore',
-    heroTitle: 'Backup and restore help a finance record stay useful over time',
+      'Create a password-encrypted backup file when you choose, then restore from a selected file on your device.',
+    category: 'Backup Files',
+    heroTitle: 'Local backup files help a finance record stay useful over time',
     heroDescription:
-      'MoneyKai treats continuity as part of trust. Backup and restore support helps users recover key records and keep moving with less disruption.',
+      'MoneyKai treats continuity as part of trust. The current Android release supports user-controlled local export and encrypted backup files, not cloud sync.',
     benefits: [
-      'Reduce the risk of losing important records',
-      'Support continuity across sessions and devices',
-      'Make recovery easier when users need it',
-      'Strengthen trust in long-term use',
+      'Create a password-encrypted JSON backup file',
+      'Restore from a file you select',
+      'Export a plaintext snapshot to the clipboard when you choose',
+      'Keep control of where backup files are stored or shared',
     ],
     useCases: [
-      'Recovering finance data after disruption',
-      'Continuing from another device where supported',
-      'Keeping long-term tracking more resilient',
-      'Supporting trust for account-based use',
+      'Saving a backup before resetting local data',
+      'Restoring a previously exported encrypted file',
+      'Keeping a manual copy of important finance records',
+      'Understanding the boundary between local data and cloud sync',
     ],
     faqs: [
       {
-        question: 'What does backup and restore do in MoneyKai?',
-        answer: 'It helps preserve supported account data so users can recover it later and continue with less disruption.',
+        question: 'What does encrypted backup do in MoneyKai?',
+        answer: 'It creates a password-protected JSON backup file through device file flows so users can keep or restore a copy they control.',
       },
       {
-        question: 'Why is backup important in a finance app?',
-        answer: 'A finance record becomes more valuable over time, so continuity matters as much as day-to-day features.',
+        question: 'Does the current Android release use cloud backup?',
+        answer: 'No. The current Android release does not sync to Firebase or any MoneyKai cloud backend.',
       },
       {
-        question: 'Can backup and restore help when switching devices?',
-        answer: 'Where supported, yes. The goal is to help users reconnect to saved data and continue more smoothly.',
+        question: 'Can I move data to another device?',
+        answer: 'Only by exporting a backup file yourself and restoring that selected file. MoneyKai does not automatically move data between devices in the current Android release.',
       },
     ],
-    keywords: ['backup restore app', 'finance data backup', 'budget app continuity'],
+    keywords: ['encrypted backup app', 'finance data export', 'local budget app backup'],
   },
 ];
 
@@ -247,7 +247,7 @@ export const HOME_FAQS = [
   {
     question: 'What is MoneyKai?',
     answer:
-      'MoneyKai is an SMS parsing app that helps users turn bank and payment alerts into reviewable income, expense, budget, shared spending, savings, and private report records.',
+      'MoneyKai is a local-first personal finance app that helps users record expenses, manage budgets, organize shared spending, track savings, and review monthly money patterns.',
   },
   {
     question: 'Is MoneyKai free?',
@@ -257,7 +257,7 @@ export const HOME_FAQS = [
   {
     question: 'Can I track expenses with MoneyKai?',
     answer:
-      'Yes. Expense tracking is one of the core product flows, and confirmed SMS records help build the monthly transaction history.',
+      'Yes. Expense tracking is one of the core product flows, and manually recorded transactions help build the monthly transaction history.',
   },
   {
     question: 'Can I manage shared expenses?',
@@ -267,7 +267,7 @@ export const HOME_FAQS = [
   {
     question: 'Is my data secure?',
     answer:
-      'MoneyKai uses secure login, clear data handling explanations, and backup continuity support while avoiding exaggerated security claims.',
+      'The current Android release stores finance records locally on the device, offers user-controlled export and encrypted backup files, and avoids exaggerated security claims.',
   },
   {
     question: 'Does MoneyKai give financial advice?',
@@ -277,15 +277,15 @@ export const HOME_FAQS = [
   {
     question: 'Who is MoneyKai best for?',
     answer:
-      'MoneyKai is best for people who want SMS parsing, expense review, budgets, shared costs, savings, portfolio context, and private reports without a complicated accounting system.',
+      'MoneyKai is best for people who want local expense review, budgets, shared costs, savings, and monthly money summaries without a complicated accounting system.',
   },
   {
     question: 'How is MoneyKai different from a spreadsheet?',
     answer:
-      'A spreadsheet is flexible but manual. MoneyKai is designed around SMS parsing and review: confirming records, reviewing budgets, seeing summaries, and keeping money context easier to revisit.',
+      'A spreadsheet is flexible but manual. MoneyKai is designed around repeated review: adding records, reviewing budgets, seeing summaries, and keeping money context easier to revisit.',
   },
   {
-    question: 'What should I do first after creating a MoneyKai account?',
+    question: 'What should I do first after opening MoneyKai?',
     answer:
       'The best first step is to set a monthly budget or add one real transaction. That gives MoneyKai enough context to make the dashboard and review flow useful.',
   },

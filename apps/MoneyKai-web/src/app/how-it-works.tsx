@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/useTheme';
 const STEPS = [
   {
     title: 'Start with your real money picture',
-    description: 'Create an account, add the basics, and look at the dashboard before trying to optimize everything at once.',
+    description: 'Open the app, add the basics, and look at the dashboard before trying to optimize everything at once.',
     icon: 'compass-outline',
   },
   {
@@ -24,8 +24,8 @@ const STEPS = [
   },
   {
     title: 'Protect continuity',
-    description: 'Use settings, backups, restore, and privacy controls so your financial record stays usable over time.',
-    icon: 'cloud-sync-outline',
+    description: 'Use local export, encrypted backup files, restore, and privacy controls so your financial record stays usable over time.',
+    icon: 'file-lock-outline',
   },
 ];
 
@@ -38,7 +38,7 @@ export default function HowItWorksScreen() {
     <>
       <SeoHead
         title="How MoneyKai Works | A calmer onboarding path for budgeting and personal finance"
-        description="See how MoneyKai helps people begin with visibility, track spending, handle shared expenses, and build recovery habits without overwhelming onboarding."
+        description="See how MoneyKai helps people begin with visibility, track spending, handle shared expenses, and use local backup files without overwhelming onboarding."
         path="/how-it-works"
         keywords={['budget app onboarding', 'how budgeting apps work', 'personal finance workflow']}
       />

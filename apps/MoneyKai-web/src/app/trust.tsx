@@ -14,9 +14,9 @@ const TRUST_PILLARS = [
     icon: 'shield-account-outline',
   },
   {
-    title: 'Backup continuity',
-    body: 'Backup and restore support exists because personal finance data is only useful if you can keep it available over time.',
-    icon: 'cloud-check-outline',
+    title: 'Local backup continuity',
+    body: 'The current Android release supports plaintext local export and password-encrypted backup files that users choose where to keep.',
+    icon: 'file-lock-outline',
   },
   {
     title: 'Financial first aid',
@@ -33,15 +33,15 @@ export default function TrustScreen() {
   return (
     <>
       <SeoHead
-        title="Why MoneyKai can be trusted | Privacy, backups, security, and financial first aid"
-        description="MoneyKai’s trust layer covers privacy, backup continuity, security expectations, and a calmer financial first-aid approach for stressful money moments."
+        title="Why MoneyKai can be trusted | Local privacy, backup files, and financial first aid"
+        description="MoneyKai's trust layer covers local Android privacy, encrypted backup files, security expectations, and a calmer financial first-aid approach for stressful money moments."
         path="/trust"
-        keywords={['finance app trust', 'budget app privacy', 'financial first aid', 'backup restore app']}
+        keywords={['finance app trust', 'budget app privacy', 'financial first aid', 'encrypted backup app']}
       />
       <PublicShell
         eyebrow="Trust layer"
-        title="A money app should explain why it deserves a place in someone’s life."
-        description="Trust is not one page. It is the combination of clear product behavior, visible privacy expectations, continuity planning, and language that respects the user."
+        title="A money app should explain why it deserves a place in someone's life."
+        description="Trust is not one page. It is the combination of clear product behavior, visible privacy expectations, local data boundaries, and language that respects the user."
       >
         <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
           {TRUST_PILLARS.map((pillar) => (
@@ -74,7 +74,7 @@ export default function TrustScreen() {
             {
               href: '/security' as const,
               title: 'Security page',
-              body: 'See how MoneyKai talks about authentication, backups, and account protection expectations.',
+              body: 'See how MoneyKai talks about local storage, encrypted backup files, and Android release boundaries.',
             },
             {
               href: '/privacy-policy' as const,

@@ -8,12 +8,12 @@ import { useTheme } from '@/hooks/useTheme';
 
 const SECURITY_SECTIONS = [
   {
-    title: 'Authentication',
-    body: 'MoneyKai routes email/password sign-in, sign-up, and reset requests through a rate-limited auth gateway before Firebase creates the signed-in session. OAuth sign-in is handled by Firebase and provider protections.',
+    title: 'Local release boundary',
+    body: 'The current Flutter Android release uses a local profile/session and does not include real remote authentication, Firebase sign-in, OAuth, or backend account sync.',
   },
   {
     title: 'Data continuity',
-    body: 'Backup and restore capabilities are part of the trust model. Financial history is useful only when users can retain access to it and recover it intentionally.',
+    body: 'The current Android release supports plaintext local export and password-encrypted JSON backup files through user-started device flows. It does not provide cloud backup.',
   },
   {
     title: 'Practical privacy boundaries',
@@ -31,15 +31,15 @@ export default function SecurityScreen() {
   return (
     <>
       <SeoHead
-        title="MoneyKai Security | Account protection, backup continuity, and clear security expectations"
-        description="Read how MoneyKai approaches authentication, backup continuity, privacy boundaries, and transparent expectations for a personal finance app."
+        title="MoneyKai Security | Local storage, backup files, and clear expectations"
+        description="Read how MoneyKai approaches local Android storage, encrypted backup files, privacy boundaries, and transparent expectations for a personal finance app."
         path="/security"
-        keywords={['MoneyKai security', 'budget app security', 'Firebase auth finance app', 'backup continuity']}
+        keywords={['MoneyKai security', 'budget app security', 'local finance app', 'encrypted backup files']}
       />
       <PublicShell
         eyebrow="Security"
         title="Security communication should be specific, calm, and honest."
-        description="MoneyKai's public security layer focuses on authentication, continuity, and clear boundaries. It avoids making inflated claims and explains what the app is designed to protect."
+        description="MoneyKai's public security layer focuses on local storage, encrypted backup files, and clear boundaries. It avoids inflated claims and explains what the current Android app is designed to protect."
       >
         <View style={{ gap: Spacing.md }}>
           {SECURITY_SECTIONS.map((section) => (

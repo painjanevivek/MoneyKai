@@ -35,7 +35,7 @@ export default function AboutPage() {
               What MoneyKai focuses on
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
-              MoneyKai combines expense tracking, budgeting, shared expense organization, savings visibility, analytics, backup continuity, and financial first aid in one product. The public-facing website is designed to explain that clearly before signup.
+              The current MoneyKai Android release combines local expense tracking, budgeting, shared expense organization, savings visibility, analytics, encrypted backup files, and financial first aid in one product. The public-facing website is designed to explain that clearly before install.
             </Text>
           </SectionCard>
 
@@ -59,7 +59,7 @@ export default function AboutPage() {
               Why the website matters
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
-              A finance product should not force people to sign up before they understand what it does, how it handles trust, or whether it fits their situation. MoneyKai’s public site is meant to be a clear front door, not a thin marketing wrapper.
+              A finance product should not force people to install before they understand what it does, how it handles trust, or whether it fits their situation. The MoneyKai public site is meant to be a clear front door, not a thin marketing wrapper.
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.lg }}>
               {[

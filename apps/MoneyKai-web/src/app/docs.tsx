@@ -22,8 +22,8 @@ const TOP_NAV = [
 const QUICK_START_STEPS = [
   'Confirm the reporting month before reviewing any workspace totals.',
   'Start from Dashboard, then move into the specific section that owns the data you need to correct.',
-  'Use review-first flows for AI output, imports, and parsed statements before they affect records.',
-  'Treat Wealth, Portfolio, and Accounts as capability-gated surfaces until provider paths are configured.',
+  'Use local transactions and budgets as the source of truth for summaries.',
+  'Treat cloud sync, SMS capture, Gmail sync, bank sync, Financial AI, wealth, and provider account features as out of scope for the current Android release.',
 ];
 
 const PageLink = ({ href, label, active = false }: { href: string; label: string; active?: boolean }) => (
@@ -215,7 +215,7 @@ const DocsHeader = ({ compact }: { compact: boolean }) => (
       </View>
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel="Create a MoneyKai account"
+        accessibilityLabel="Open MoneyKai"
         onPress={() => router.push('/signup')}
         style={({ hovered, pressed }: any) => ({
           minHeight: 46,
@@ -326,14 +326,14 @@ export default function MoneyKaiDocsScreen() {
     <>
       <SeoHead
         title="MoneyKai Docs | Product guide for every workspace section"
-        description="MoneyKai Docs explains Dashboard, Transactions, AI Review, Budgets, Goals, Wealth, Portfolio, Reports, and Accounts in a documentation-style layout."
+        description="MoneyKai Docs explains the current local Android release: Dashboard, Transactions, Budgets, Goals, Reports, and encrypted backup boundaries."
         path="/docs"
         keywords={['MoneyKai Docs', 'MoneyKai documentation', 'MoneyKai dashboard guide', 'MoneyKai app sections']}
         structuredData={{
           '@type': 'TechArticle',
           headline: 'MoneyKai Docs',
           description:
-            'Documentation for MoneyKai workspace sections including Dashboard, Transactions, AI Review, Budgets, Goals, Wealth, Portfolio, Reports, and Accounts.',
+            'Documentation for MoneyKai workspace sections in the current local Android release, including Dashboard, Transactions, Budgets, Goals, Reports, and encrypted backup boundaries.',
           author: {
             '@type': 'Organization',
             name: 'MoneyKai',
