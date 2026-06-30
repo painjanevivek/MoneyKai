@@ -13,6 +13,7 @@ import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 const normalizeParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
+const GOOGLE_EXCHANGE_DEDUPE_TTL_MS = 5_000;
 const googleExchangePromises = new Map<string, ReturnType<typeof exchangeGoogleOAuthCodeGateway>>();
 
 const exchangeGoogleOAuthCodeOnce = (callbackKey: string, code: string) => {
@@ -21,7 +22,13 @@ const exchangeGoogleOAuthCodeOnce = (callbackKey: string, code: string) => {
     return existing;
   }
 
-  const exchangePromise = exchangeGoogleOAuthCodeGateway(code);
+  const exchangePromise = exchangeGoogleOAuthCodeGateway(code).finally(() => {
+    setTimeout(() => {
+      if (googleExchangePromises.get(callbackKey) === exchangePromise) {
+        googleExchangePromises.delete(callbackKey);
+      }
+    }, GOOGLE_EXCHANGE_DEDUPE_TTL_MS);
+  });
   googleExchangePromises.set(callbackKey, exchangePromise);
   return exchangePromise;
 };
