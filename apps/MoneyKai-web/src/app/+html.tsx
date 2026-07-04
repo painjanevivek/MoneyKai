@@ -12,7 +12,7 @@ export default function RootHtml({ children }: PropsWithChildren) {
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="theme-color" content="#030303" />
         <meta name="color-scheme" content="light dark" />
-        <meta name="strix-verification" content="strix-verify-0082" />
+        <meta name="strix-verification" content="strix-verify-008269a787b1641e43d32b56bf3eab44" />
         {headNodes}
         <ScrollViewStyleReset />
         <style>{`
