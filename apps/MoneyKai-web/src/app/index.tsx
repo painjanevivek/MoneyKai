@@ -1,465 +1,667 @@
-import React, { type CSSProperties, type ReactNode } from 'react';
+import React, { type ReactNode, useState } from 'react';
 import { Redirect } from 'expo-router';
+import { motion } from 'motion/react';
+import {
+  Archive,
+  BarChart3,
+  Check,
+  ChevronRight,
+  Forward,
+  Inbox,
+  Menu,
+  MoreHorizontal,
+  Paperclip,
+  Reply,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  Trash2,
+  WalletCards,
+} from 'lucide-react';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
-import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { useAuthStore } from '@/stores/useAuthStore';
 
-const palette = {
-  page: '#F7F6F3',
-  pageSoft: '#F1F0EC',
-  surface: '#FFFFFF',
-  surfaceHigh: '#FBFAF7',
-  surfaceWarm: '#FFFFFF',
-  border: 'rgba(28, 25, 23, 0.1)',
-  borderStrong: 'rgba(28, 25, 23, 0.18)',
-  text: '#1F1F1D',
-  muted: '#5F5E59',
-  faint: '#85827A',
-  ink: '#1F1F1D',
-  green: '#2F6F55',
-  greenDeep: '#315F4E',
-  greenSoft: 'rgba(47, 111, 85, 0.08)',
-  accent: '#2F2F2B',
-  accentSoft: 'rgba(31, 31, 29, 0.06)',
-  gold: '#7A5A22',
-  goldSoft: 'rgba(122, 90, 34, 0.08)',
-  redSoft: 'rgba(154, 52, 45, 0.08)',
-};
+const VIDEO_URL =
+  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4';
 
-const navLinks = [
-  { href: '#how-it-works', label: 'How it works' },
-  { href: '#features', label: 'Features' },
-  { href: '/services', label: 'Services' },
-  { href: '#privacy', label: 'Privacy' },
-  { href: '#release', label: 'Release' },
-  { href: '#faq', label: 'FAQ' },
-] as const;
+const navLinks = ['Features', 'Pricing', 'Security', 'Learn', 'Contact'] as const;
 
-const trustItems = ['Local-first Android release', 'No SMS or notification permissions', 'Encrypted backup files', 'No financial advice'] as const;
-
-const problemCards = [
+const moneyItems = [
   {
-    title: 'Your money records live everywhere',
-    body: 'Expenses, budgets, shared spends, notes, and savings context rarely sit in one calm place.',
+    label: 'Transactions',
+    value: '128',
+    icon: Inbox,
+    active: true,
   },
   {
-    title: 'Reports should not feel like homework',
-    body: 'MoneyKai turns reviewed records into plain-language summaries that are easier to scan and revisit.',
+    label: 'Budgets',
+    value: '7',
+    icon: Target,
   },
   {
-    title: 'A release should match what it ships',
-    body: 'The current Android app is built around manual local records, local insights, and user-controlled backup files.',
+    label: 'Savings',
+    value: '4',
+    icon: WalletCards,
+  },
+  {
+    label: 'Reports',
+    value: '',
+    icon: BarChart3,
+  },
+  {
+    label: 'Backups',
+    value: '2',
+    icon: ShieldCheck,
+  },
+  {
+    label: 'Archive',
+    value: '',
+    icon: Archive,
   },
 ] as const;
 
-const flowSteps = [
+const activityRows = [
   {
-    eyebrow: '01',
-    title: 'Bring in the records',
-    body: 'Add transactions, budgets, shared expenses, and savings context as your own local records.',
+    name: 'Groceries',
+    subject: 'Household essentials',
+    preview: 'Big Bazaar, vegetables, and pantry refills...',
+    time: '9:41 PM',
+    unread: true,
+    active: true,
   },
   {
-    eyebrow: '02',
-    title: 'Review your month',
-    body: 'Use the dashboard, transactions, budgets, and insights to understand what changed without connecting a bank account.',
+    name: 'Rent split',
+    subject: 'Shared expense added',
+    preview: 'Rahul and Anika are included in this month...',
+    time: '8:12 PM',
+    unread: true,
   },
   {
-    eyebrow: '03',
-    title: 'Read the pattern',
-    body: 'See where money moved, what changed, and what deserves attention without turning the app into a spreadsheet.',
-  },
-] as const;
-
-const featureCards = [
-  {
-    title: 'Expense clarity',
-    body: 'Track daily spending, categories, notes, and recurring patterns without losing the original context.',
-    metric: 'Daily',
+    name: 'Budget alert',
+    subject: 'Dining reached 82%',
+    preview: 'You still have room, but weekend spends are rising.',
+    time: 'Yesterday',
   },
   {
-    title: 'Budget rhythm',
-    body: 'Keep budgets useful as monthly guardrails instead of rigid accounting rules.',
-    metric: 'Monthly',
+    name: 'Savings goal',
+    subject: 'Emergency fund progress',
+    preview: 'You are 64% of the way to your target.',
+    time: 'Yesterday',
   },
   {
-    title: 'Shared spends',
-    body: 'Make group expenses easier to review for roommates, couples, families, and trips.',
-    metric: 'Together',
+    name: 'Backup file',
+    subject: 'Encrypted export created',
+    preview: 'moneykai-backup-july.json is ready.',
+    time: 'Mon',
   },
   {
-    title: 'Backup files',
-    body: 'Create password-encrypted JSON backups and restore from files you select.',
-    metric: 'Local',
-  },
-] as const;
-
-const comparisonRows = [
-  ['Spreadsheets', 'Flexible but manual, fragile, and hard to revisit on mobile.', 'Guided records, report views, and calmer review loops.'],
-  ['Generic trackers', 'Often optimized for quick entry, not thoughtful month-end review.', 'Built around private summaries and user-reviewed inputs.'],
-  ['One-off notes', 'Great for memory, weak for patterns and shared visibility.', 'Notes sit beside budgets, expenses, and report context.'],
-] as const;
-
-const faqs = [
-  {
-    question: 'Is MoneyKai giving financial advice?',
-    answer: 'No. MoneyKai helps organize and summarize user-provided records. It does not provide investment, tax, legal, or financial advice.',
-  },
-  {
-    question: 'Does MoneyKai import bank, SMS, Gmail, or notification records automatically?',
-    answer: 'No. The current Android release uses manual local records and does not include bank sync, SMS reading, Gmail sync, notification capture, or automatic imports.',
-  },
-  {
-    question: 'Who is MoneyKai for?',
-    answer: 'Students, young professionals, couples, families, and privacy-conscious users who want a calmer way to understand daily money habits.',
-  },
-  {
-    question: 'Can I use it without treating money like accounting homework?',
-    answer: 'Yes. The landing experience and product language are built around simple review, plain reports, and practical money clarity.',
+    name: 'Monthly review',
+    subject: 'June spending summary',
+    preview: 'Subscriptions went down, travel moved up.',
+    time: 'Mon',
   },
 ] as const;
 
-const headlineStyle = (isCompact: boolean): CSSProperties => ({
-  margin: 0,
-  color: palette.text,
-  fontFamily: 'Poppins_600SemiBold, Inter, system-ui, sans-serif',
-  fontSize: isCompact ? 42 : 70,
-  lineHeight: isCompact ? '48px' : '76px',
-  letterSpacing: 0,
-  maxWidth: 780,
-});
+const triageCards = [
+  {
+    title: 'Needs review',
+    count: 4,
+    color: '#ffffff',
+    items: ['Dining budget - 82%', 'Rent split - pending'],
+  },
+  {
+    title: 'Follow-up',
+    count: 7,
+    color: '#e5e5e5',
+    items: ['Trip group - settle', 'Savings goal - adjust'],
+  },
+  {
+    title: 'Updates',
+    count: 18,
+    color: '#a3a3a3',
+    items: ['Backup ready', 'Budget renewed'],
+  },
+  {
+    title: 'Archived',
+    count: 13,
+    color: '#525252',
+    items: ['Receipts', 'Old subscriptions', 'Notes'],
+  },
+] as const;
 
-const sectionTitleStyle = (isCompact: boolean): CSSProperties => ({
-  margin: 0,
-  color: palette.text,
-  fontFamily: 'Poppins_600SemiBold, Inter, system-ui, sans-serif',
-  fontSize: isCompact ? 30 : 46,
-  lineHeight: isCompact ? '38px' : '54px',
-  letterSpacing: 0,
-});
+const logos = ['Students', 'Families', 'Couples', 'Freelancers', 'Roommates', 'Creators', 'Founders', 'Operators'] as const;
 
-const paragraphStyle: CSSProperties = {
-  margin: 0,
-  color: palette.muted,
-  fontSize: 16,
-  lineHeight: '26px',
-};
+const testimonials = [
+  {
+    quote:
+      'MoneyKai made money review feel calm instead of judgmental. I can see what changed without opening five spreadsheets.',
+    name: 'Aarav Mehta',
+    role: 'Product Designer',
+    company: 'BANGALORE',
+  },
+  {
+    quote:
+      'The local-first approach matters. I wanted a practical tracker that did not ask for my bank login to be useful.',
+    name: 'Nisha Rao',
+    role: 'Operations Lead',
+    company: 'PUNE',
+  },
+  {
+    quote:
+      'Shared expenses, budgets, and encrypted backups in one place changed how our family reviews the month.',
+    name: 'Rohan Shah',
+    role: 'Engineering Manager',
+    company: 'MUMBAI',
+  },
+] as const;
 
-const badgeStyle: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 8,
-  border: `1px solid ${palette.border}`,
-  borderRadius: 999,
-  background: '#FFFFFF',
-  color: palette.muted,
-  fontSize: 13,
-  fontWeight: 700,
-  lineHeight: '18px',
-  padding: '9px 13px',
-};
+const plans = [
+  {
+    tier: 'Free',
+    monthly: 'Free',
+    yearly: 'Free',
+    desc: 'For individuals building a calmer daily money habit.',
+    features: [
+      'Manual expense and income tracking',
+      'Budgets, categories, and notes',
+      'Savings and shared spend views',
+      'Local-first Android experience',
+      'Encrypted backup export',
+    ],
+  },
+  {
+    tier: 'Plus',
+    monthly: '₹99/m',
+    yearly: '₹999/y',
+    desc: 'For power users who want deeper review workflows and richer summaries.',
+    features: [
+      'Unlimited budgets and groups',
+      'Advanced monthly review surfaces',
+      'Priority backup and restore flows',
+      'Expanded report history',
+      'Early access to premium tools',
+    ],
+  },
+  {
+    tier: 'Pro',
+    monthly: '₹199/m',
+    yearly: '₹1,999/y',
+    desc: 'For families and teams who need shared money clarity without the noise.',
+    features: [
+      'Family and group workspaces',
+      'Deep spending breakdowns',
+      'AI-assisted review prompts',
+      'Custom categories and reports',
+      'Priority support',
+    ],
+    pro: true,
+  },
+] as const;
 
-const cardStyle: CSSProperties = {
-  border: `1px solid ${palette.border}`,
-  borderRadius: 12,
-  background: palette.surface,
-  boxShadow: '0 14px 34px rgba(28, 25, 23, 0.06)',
-};
-
-function cxGrid(isWide: boolean, min = '260px'): CSSProperties {
-  return {
-    display: 'grid',
-    gridTemplateColumns: isWide ? `repeat(3, minmax(${min}, 1fr))` : '1fr',
-    gap: 16,
-  };
-}
-
-function Section({
-  id,
-  children,
-  compact,
-  labelledBy,
-}: {
-  id?: string;
-  children: ReactNode;
-  compact: boolean;
-  labelledBy?: string;
-}) {
+function LogoMark({ className = 'mk-logo-mark' }: { className?: string }) {
   return (
-    <section
-      id={id}
-      aria-labelledby={labelledBy}
-      style={{
-        background: palette.surface,
-        padding: compact ? '52px 18px' : '84px 24px',
-        borderTop: `1px solid ${palette.border}`,
-      }}
-    >
-      <div style={{ margin: '0 auto', maxWidth: 1180 }}>{children}</div>
-    </section>
+    <svg viewBox="0 0 256 256" className={className} aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M 0 128 C 70.692 128 128 185.308 128 256 L 64 256 C 64 220.654 35.346 192 0 192 Z M 256 192 C 220.654 192 192 220.654 192 256 L 128 256 C 128 185.308 185.308 128 256 128 Z M 128 0 C 128 70.692 70.692 128 0 128 L 0 64 C 35.346 64 64 35.346 64 0 Z M 192 0 C 192 35.346 220.654 64 256 64 L 256 128 C 185.308 128 128 70.692 128 0 Z"
+      />
+    </svg>
   );
 }
 
-function LinkButton({
-  href,
-  children,
-  primary = false,
-  fullWidth = false,
-}: {
-  href: string;
-  children: ReactNode;
-  primary?: boolean;
-  fullWidth?: boolean;
-}) {
+function AppButton({ label = 'Open MoneyKai', full = false }: { label?: string; full?: boolean }) {
   return (
-    <a
-      href={href}
-      style={{
-        alignItems: 'center',
-        background: primary ? palette.accent : '#FFFFFF',
-        border: `1px solid ${primary ? palette.accent : palette.borderStrong}`,
-        borderRadius: 8,
-        boxSizing: 'border-box',
-        color: primary ? '#FFFFFF' : palette.text,
-        display: 'inline-flex',
-        fontSize: 15,
-        fontWeight: 800,
-        justifyContent: 'center',
-        lineHeight: '20px',
-        minHeight: 52,
-        padding: '0 20px',
-        textDecoration: 'none',
-        width: fullWidth ? '100%' : 'auto',
-      }}
-    >
-      {children}
+    <a className={`mk-app-button ${full ? 'mk-app-button-full' : ''}`} href="/signup">
+      <span>{label}</span>
+      <ChevronRight className="mk-button-chevron" size={16} strokeWidth={2.2} />
     </a>
   );
 }
 
-function LandingHeader({ compact }: { compact: boolean }) {
-  const [open, setOpen] = React.useState(false);
-  const visibleNav = !compact || open;
-
+function SectionEyebrow({ label, tag }: { label: string; tag?: string }) {
   return (
-    <header
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-        backdropFilter: 'blur(18px)',
-        background: 'rgba(255, 255, 255, 0.92)',
-        borderBottom: `1px solid ${palette.border}`,
-      }}
-    >
-      <div
-        style={{
-          alignItems: compact ? 'stretch' : 'center',
-          display: 'flex',
-          flexDirection: compact ? 'column' : 'row',
-          gap: compact ? 12 : 18,
-          justifyContent: 'space-between',
-          margin: '0 auto',
-          maxWidth: 1180,
-          padding: compact ? '12px 18px' : '14px 24px',
-        }}
-      >
-        <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', gap: 14 }}>
-          <a
-            href="/"
-            style={{ alignItems: 'center', color: palette.text, display: 'inline-flex', gap: 12, textDecoration: 'none' }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                alignItems: 'center',
-                background: '#FFFFFF',
-                borderRadius: 8,
-                display: 'inline-flex',
-                height: 40,
-                justifyContent: 'center',
-                overflow: 'hidden',
-                width: 40,
-              }}
-            >
-              <img
-                alt=""
-                src="/brand/moneykai-mark-96.png"
-                style={{ display: 'block', height: 32, objectFit: 'contain', width: 32 }}
-              />
-            </span>
-            <span style={{ display: 'grid', gap: 1 }}>
-              <strong style={{ color: palette.text, fontSize: 17, lineHeight: '20px' }}>{SITE.name}</strong>
-              <span style={{ color: palette.faint, fontSize: 12, lineHeight: '16px' }}>Local budget tracker</span>
-            </span>
-          </a>
-
-          {compact ? (
-            <button
-              type="button"
-              aria-expanded={open}
-              aria-controls="site-navigation"
-              onClick={() => setOpen((value) => !value)}
-              style={{
-                background: '#FFFFFF',
-                border: `1px solid ${palette.borderStrong}`,
-                borderRadius: 8,
-                color: palette.text,
-                cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: 800,
-                minHeight: 40,
-                padding: '0 14px',
-              }}
-            >
-              {open ? 'Close' : 'Menu'}
-            </button>
-          ) : null}
-        </div>
-
-        {visibleNav ? (
-          <nav
-            id="site-navigation"
-            aria-label="Primary"
-            style={{
-              alignItems: compact ? 'stretch' : 'center',
-              display: 'flex',
-              flexDirection: compact ? 'column' : 'row',
-              gap: compact ? 6 : 4,
-            }}
-          >
-            {navLinks.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                style={{
-                  borderRadius: 8,
-                  color: palette.muted,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  padding: compact ? '12px 10px' : '10px 12px',
-                  textDecoration: 'none',
-                }}
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-        ) : null}
-
-        {visibleNav ? (
-          <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', gap: 10 }}>
-            <LinkButton href="/privacy-policy" fullWidth={compact}>
-              Privacy
-            </LinkButton>
-            <LinkButton href="/signup" primary fullWidth={compact}>
-              Open app
-            </LinkButton>
-          </div>
-        ) : null}
-      </div>
-    </header>
+    <div className="mk-eyebrow">
+      <span className="mk-eyebrow-dot" />
+      <span>{label}</span>
+      {tag ? <span className="mk-eyebrow-tag">{tag}</span> : null}
+    </div>
   );
 }
 
-function ProductPreview({ compact }: { compact: boolean }) {
+function RootNoiseFilter() {
   return (
-    <aside
-      aria-label="MoneyKai private report preview"
-      style={{
-        ...cardStyle,
-        background: `linear-gradient(180deg, ${palette.surfaceWarm}, ${palette.surfaceHigh})`,
-        color: palette.ink,
-        minHeight: compact ? 380 : 500,
-        overflow: 'hidden',
-        padding: compact ? 18 : 24,
-        position: 'relative',
-      }}
-    >
-      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <div>
-          <p style={{ color: '#64736A', fontSize: 12, fontWeight: 800, margin: 0, textTransform: 'uppercase' }}>Monthly review</p>
-          <h2 style={{ color: palette.ink, fontSize: compact ? 26 : 34, lineHeight: compact ? '32px' : '40px', margin: '6px 0 0' }}>
-            June money report
-          </h2>
-        </div>
-        <div
-          style={{
-            alignItems: 'center',
-            background: palette.accent,
-            borderRadius: 8,
-            color: '#FFFFFF',
-            display: 'flex',
-            fontWeight: 900,
-            height: 52,
-            justifyContent: 'center',
-            width: 52,
-          }}
-        >
-          84
-        </div>
-      </div>
+    <svg className="mk-noise-svg" aria-hidden="true">
+      <filter id="c3-noise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
+        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0" />
+        <feComposite in2="SourceGraphic" operator="in" result="noise" />
+        <feBlend in="SourceGraphic" in2="noise" mode="multiply" />
+      </filter>
+    </svg>
+  );
+}
 
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.86)',
-          border: '1px solid rgba(21, 35, 30, 0.1)',
-          borderRadius: 8,
-          boxShadow: '0 20px 50px rgba(21,35,30,0.14)',
-          display: 'grid',
-          gap: 18,
-          marginTop: 24,
-          padding: 18,
-        }}
-      >
-        {[
-          ['Reviewed income', 'Rs. 82,400', 78],
-          ['Tracked spending', 'Rs. 46,120', 54],
-          ['Shared expenses', 'Rs. 8,940', 33],
-        ].map(([label, value, width]) => (
-          <div key={label as string}>
-            <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-              <span style={{ color: '#52667A', fontSize: 13, fontWeight: 700 }}>{label}</span>
-              <strong style={{ color: palette.ink, fontSize: 16 }}>{value}</strong>
-            </div>
-            <div style={{ background: '#E3ECFA', borderRadius: 999, height: 8, marginTop: 10, overflow: 'hidden' }}>
-              <div style={{ background: label === 'Tracked spending' ? palette.gold : palette.greenDeep, borderRadius: 999, height: '100%', width: `${width}%` }} />
-            </div>
-          </div>
+function Navbar() {
+  return (
+    <motion.nav
+      className="mk-navbar"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+      aria-label="Primary"
+    >
+      <a href="/" aria-label="MoneyKai home" className="mk-logo-link">
+        <LogoMark />
+      </a>
+      <div className="mk-nav-links">
+        {navLinks.map((item, index) => (
+          <motion.a
+            key={item}
+            href={item === 'Pricing' ? '#pricing' : item === 'Contact' ? '/contact' : `#${item.toLowerCase()}`}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + index * 0.05, duration: 0.4, ease: 'easeOut' }}
+          >
+            {item}
+          </motion.a>
         ))}
       </div>
+      <div className="mk-nav-action">
+        <AppButton />
+      </div>
+      <button className="mk-menu-button" aria-label="Open menu">
+        <Menu size={18} />
+      </button>
+    </motion.nav>
+  );
+}
 
-      <div style={{ display: 'grid', gap: 12, marginTop: 18 }}>
-        {[
-          ['Transactions logged', 'Review records before month-end decisions.'],
-          ['Budget signal', 'Dining is 18% above your usual month.'],
-          ['Calm next step', 'Review transfers before updating savings.'],
-        ].map(([title, body]) => (
-          <article
-            key={title}
-            style={{
-              background: 'rgba(255,255,255,0.66)',
-              border: '1px solid rgba(21, 35, 30, 0.1)',
-              borderRadius: 8,
-              padding: 14,
-            }}
+function Hero() {
+  return (
+    <section className="mk-hero" aria-labelledby="hero-title">
+      <motion.h1
+        id="hero-title"
+        className="mk-hero-title"
+        initial={{ opacity: 0, y: 22 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <span>Your money.</span>
+        <span className="mk-shiny-text animate-shiny">Revitalized</span>
+      </motion.h1>
+      <motion.p
+        className="mk-hero-copy"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.6, ease: 'easeOut' }}
+      >
+        MoneyKai is the calm personal finance platform for the current era. It organizes expenses, budgets, shared
+        spending, savings, and encrypted backup files into total clarity.
+      </motion.p>
+      <motion.div
+        className="mk-hero-actions"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7, duration: 0.6, ease: 'easeOut' }}
+      >
+        <AppButton />
+        <span>Android release now available</span>
+      </motion.div>
+    </section>
+  );
+}
+
+function MenuBar() {
+  const items = ['Expenses', 'Budgets', 'Savings', 'Backups'] as const;
+
+  return (
+    <motion.div
+      className="mk-menu-strip"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.9, duration: 0.55, ease: 'easeOut' }}
+    >
+      <div className="mk-menu-inner">
+        <div className="mk-menu-left">
+          <LogoMark className="mk-menu-logo" />
+          <strong>MoneyKai</strong>
+          <span className="mk-strip-caption">Private money review, organized locally.</span>
+        </div>
+        <div className="mk-menu-right">
+          {items.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function MoneyMockup() {
+  return (
+    <section className="mk-mockup-section" aria-label="MoneyKai app preview">
+      <motion.div
+        className="mk-window"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ delay: 0.1, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="mk-titlebar">
+          <div className="mk-traffic">
+            <span style={{ background: '#ff5f57' }} />
+            <span style={{ background: '#febc2e' }} />
+            <span style={{ background: '#28c840' }} />
+          </div>
+          <span>MoneyKai - Review</span>
+        </div>
+        <div className="mk-window-body">
+          <aside className="mk-sidebar">
+            <button className="mk-compose-button">
+              <Sparkles size={14} />
+              Review with MoneyKai
+            </button>
+            <nav className="mk-side-nav" aria-label="MoneyKai sections">
+              {moneyItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <a
+                    key={item.label}
+                    className={'active' in item && item.active ? 'active' : undefined}
+                    href="#features"
+                  >
+                    <Icon size={15} />
+                    <span>{item.label}</span>
+                    {item.value ? <em>{item.value}</em> : null}
+                  </a>
+                );
+              })}
+            </nav>
+            <div className="mk-labels">
+              <span>Labels</span>
+              {[
+                ['Bills', '#00d2ff'],
+                ['Family', '#A4F4FD'],
+                ['Travel', '#f59e0b'],
+                ['Savings', '#10b981'],
+              ].map(([label, color]) => (
+                <div key={label}>
+                  <i style={{ background: color }} />
+                  {label}
+                </div>
+              ))}
+            </div>
+          </aside>
+          <div className="mk-message-list">
+            <div className="mk-search-box">
+              <Search size={15} />
+              <span>Search money records</span>
+            </div>
+            {activityRows.map((row) => (
+              <article key={row.subject} className={'active' in row && row.active ? 'active' : undefined}>
+                <div>
+                  <strong>{row.name}</strong>
+                  <span>{row.time}</span>
+                </div>
+                <h3>{row.subject}</h3>
+                <p>{row.preview}</p>
+                {'unread' in row && row.unread ? <i /> : null}
+              </article>
+            ))}
+          </div>
+          <div className="mk-reader">
+            <div className="mk-toolbar">
+              {[Reply, Forward, Archive, Trash2].map((Icon, index) => (
+                <button key={index} aria-label={['Reply', 'Forward', 'Archive', 'Delete'][index]}>
+                  <Icon size={15} />
+                </button>
+              ))}
+              <button aria-label="More options" className="mk-toolbar-more">
+                <MoreHorizontal size={15} />
+              </button>
+            </div>
+            <div className="mk-reader-content">
+              <h2>Monthly money digest</h2>
+              <div className="mk-sender-row">
+                <span className="mk-avatar">M</span>
+                <div>
+                  <strong>MoneyKai</strong>
+                  <span>to me - 9:41 PM</span>
+                </div>
+                <em>Review</em>
+              </div>
+              <div className="mk-summary-card">
+                <Sparkles size={16} color="#A4F4FD" />
+                <div>
+                  <strong>Summary by MoneyKai</strong>
+                  <p>
+                    You logged 128 transactions, kept 5 budgets on track, and moved 18% more into savings. Dining
+                    needs review. No bank connection required.
+                  </p>
+                </div>
+              </div>
+              <div className="mk-reader-copy">
+                <p>Hi Vivek,</p>
+                <p>
+                  Here is your monthly digest across expenses, budgets, savings, and shared spending. This was a
+                  steadier month with fewer surprise purchases.
+                </p>
+                <p>
+                  Grocery and rent stayed predictable, subscriptions moved down, and weekend dining increased. Your
+                  emergency fund continued to climb.
+                </p>
+                <p>Use this as a review, not advice. MoneyKai organizes the records you provide.</p>
+                <p className="muted">- The MoneyKai team</p>
+              </div>
+              <div className="mk-attachment">
+                <Paperclip size={15} />
+                moneykai-review-july.pdf
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+function FeatureTriage() {
+  return (
+    <section id="features" className="mk-feature-grid">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+      >
+        <SectionEyebrow label="Review" tag="Local-first" />
+        <h2>
+          Clear your money picture
+          <br />
+          in a single pass.
+        </h2>
+        <p>
+          MoneyKai reads the records you create, understands your categories, and routes the noise away from the
+          signal. Focus on what moves your month forward. The rest becomes easier to review.
+        </p>
+        <div className="mk-chip-row">
+          {['Auto-categorize', 'Budget guardrails', 'Shared spends', 'Encrypted backup'].map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      </motion.div>
+      <motion.div
+        className="liquid-glass mk-triage-card"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+      >
+        <div className="mk-triage-head">Today - 42 records reviewed</div>
+        {triageCards.map((card) => (
+          <div className="liquid-glass mk-triage-row" key={card.title}>
+            <div>
+              <span style={{ background: card.color }} />
+              <strong>
+                {card.title} ({card.count})
+              </strong>
+            </div>
+            <p>{card.items.join(' - ')}</p>
+          </div>
+        ))}
+      </motion.div>
+    </section>
+  );
+}
+
+function LogoCloud() {
+  return (
+    <section className="mk-logo-cloud" aria-label="MoneyKai audiences">
+      <p>Trusted by thoughtful money reviewers</p>
+      <div>
+        {logos.map((logo, index) => (
+          <motion.span
+            key={logo}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: index * 0.05, duration: 0.45, ease: 'easeOut' }}
           >
-            <h3 style={{ color: palette.ink, fontSize: 15, lineHeight: '20px', margin: 0 }}>{title}</h3>
-            <p style={{ color: '#5B6D65', fontSize: 13, lineHeight: '20px', margin: '5px 0 0' }}>{body}</p>
+            {logo}
+          </motion.span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Testimonials() {
+  return (
+    <section className="mk-testimonials">
+      {testimonials.map((item) => (
+        <figure className="liquid-glass" key={item.name}>
+          <blockquote>{item.quote}</blockquote>
+          <figcaption>
+            <strong>{item.name}</strong>
+            <span>{item.role}</span>
+            <em>{item.company}</em>
+          </figcaption>
+        </figure>
+      ))}
+    </section>
+  );
+}
+
+function Pricing() {
+  const [yearly, setYearly] = useState(true);
+
+  return (
+    <section id="pricing" className="c3-pricing-section">
+      <svg className="mk-noise-svg" aria-hidden="true">
+        <filter id="c3-noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" stitchTiles="stitch" />
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="0.075" />
+          </feComponentTransfer>
+          <feComposite in2="SourceGraphic" operator="in" result="noise" />
+          <feBlend in="SourceGraphic" in2="noise" mode="overlay" />
+        </filter>
+      </svg>
+      <div className="c3-watermark-container">
+        <div className="c3-watermark-main">
+          <span className="c3-watermark-line-1">Your money.</span>
+          <span className="c3-watermark-line-2">Revitalized</span>
+        </div>
+      </div>
+      <div className="c3-grid">
+        {plans.map((plan) => (
+          <article className={`c3-card ${'pro' in plan && plan.pro ? 'c3-card-pro' : ''}`} key={plan.tier}>
+            <span className="c3-tier-small">{plan.tier}</span>
+            <strong className="c3-tier-large">{yearly ? plan.yearly : plan.monthly}</strong>
+            <p className="c3-desc">{plan.desc}</p>
+            <ul className="c3-list">
+              {plan.features.map((feature) => (
+                <li key={feature}>
+                  <span className="c3-check">
+                    <Check size={14} strokeWidth={2.4} />
+                  </span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <a className="c3-btn" href="/signup">
+              Choose Plan
+            </a>
           </article>
         ))}
       </div>
-    </aside>
+      <div className="c3-toggle-wrap">
+        <span>Yearly</span>
+        <button
+          type="button"
+          aria-label="Toggle yearly pricing"
+          aria-pressed={yearly}
+          className={`c3-toggle ${yearly ? 'active' : ''}`}
+          onClick={() => setYearly((value) => !value)}
+        >
+          <span className="c3-toggle-knob" />
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function FinalCTA() {
+  return (
+    <section className="mk-final-cta">
+      <motion.div
+        className="liquid-glass"
+        initial={{ opacity: 0, y: 26 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+      >
+        <div className="mk-final-glow" />
+        <h2>
+          Close the tabs.
+          <br />
+          Open your month.
+        </h2>
+        <p>
+          Join people who treat money review like a useful habit, not an obligation. MoneyKai keeps the flow private,
+          practical, and calm.
+        </p>
+        <div>
+          <AppButton label="Open MoneyKai" />
+          <a href="/contact" className="mk-sales-button">
+            Talk to sales <ChevronRight size={16} />
+          </a>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+function BackgroundFrame({ children }: { children: ReactNode }) {
+  return (
+    <div className="mk-page-shell">
+      <RootNoiseFilter />
+      <div className="mk-video-bg" aria-hidden="true">
+        <video autoPlay loop muted playsInline className="mk-video" src={VIDEO_URL} />
+      </div>
+      <div className="mk-guide mk-guide-left" />
+      <div className="mk-guide mk-guide-right" />
+      <div className="mk-page-content">{children}</div>
+    </div>
   );
 }
 
 export default function LandingScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const width = useHydratedViewportWidth();
-  const isCompact = width < 760;
-  const isWide = width >= 980;
   const description =
-    'Official website of MoneyKai, a local-first Android personal finance app for expense tracking, budgets, shared spending, savings, and encrypted backup files.';
+    'MoneyKai is a premium local-first personal finance app for expense tracking, budgets, shared spending, savings, and encrypted backup files.';
   const structuredData = [
     {
       '@context': 'https://schema.org',
@@ -472,20 +674,8 @@ export default function LandingScreen() {
       offers: {
         '@type': 'Offer',
         price: '0',
-        priceCurrency: 'USD',
+        priceCurrency: 'INR',
       },
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: faqs.map((item) => ({
-        '@type': 'Question',
-        name: item.question,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: item.answer,
-        },
-      })),
     },
   ];
 
@@ -499,333 +689,22 @@ export default function LandingScreen() {
         title={SITE.title}
         description={description}
         path="/"
-        keywords={['personal finance India', 'expense tracker', 'budget app', 'local finance app', 'shared expenses']}
+        keywords={['MoneyKai', 'personal finance app', 'expense tracker', 'budget app', 'money review']}
         structuredData={structuredData}
       />
-      <div
-        style={{
-          background: palette.page,
-          color: palette.text,
-          colorScheme: 'light',
-          fontFamily: 'Inter, Poppins_400Regular, system-ui, sans-serif',
-          minHeight: '100vh',
-        }}
-      >
-        <LandingHeader compact={isCompact} />
-
-        <main
-          id="main-content"
-          style={{
-            background: palette.page,
-          }}
-        >
-          <section
-            aria-labelledby="hero-title"
-            style={{
-              background: palette.page,
-              padding: isCompact ? '48px 18px 52px' : '82px 24px 88px',
-            }}
-          >
-            <div
-              style={{
-                alignItems: 'center',
-                display: 'grid',
-                gap: isCompact ? 32 : 56,
-                gridTemplateColumns: isWide ? '1.05fr 0.95fr' : '1fr',
-                margin: '0 auto',
-                maxWidth: 1180,
-              }}
-            >
-              <div>
-                <span style={badgeStyle}>Local-first Android expense and budget tracking</span>
-                <h1 id="hero-title" style={{ ...headlineStyle(isCompact), marginTop: 22 }}>
-                  MoneyKai official website for calmer money clarity.
-                </h1>
-                <p style={{ ...paragraphStyle, fontSize: isCompact ? 17 : 19, lineHeight: isCompact ? '29px' : '32px', marginTop: 22, maxWidth: 650 }}>
-                  This is the official MoneyKai website. The current Android release helps you record expenses, review budgets, track shared spending and savings, and export encrypted backup files from your device.
-                </p>
-                <div style={{ display: 'flex', flexDirection: isCompact ? 'column' : 'row', gap: 12, marginTop: 30, maxWidth: isCompact ? '100%' : 430 }}>
-                  <LinkButton href="/signup" primary fullWidth={isCompact}>
-                    Open MoneyKai
-                  </LinkButton>
-                  <LinkButton href="#how-it-works" fullWidth={isCompact}>
-                    See how it works
-                  </LinkButton>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 26 }}>
-                  {trustItems.map((item) => (
-                    <span key={item} style={{ ...badgeStyle, fontSize: 12, padding: '8px 11px' }}>
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <ProductPreview compact={isCompact} />
-            </div>
-          </section>
-
-          <>
-            <Section compact={isCompact} labelledBy="problem-title">
-              <div style={{ display: 'grid', gap: 28 }}>
-                <div style={{ display: 'grid', gap: 14, maxWidth: 760 }}>
-                  <span style={badgeStyle}>The problem</span>
-                  <h2 id="problem-title" style={sectionTitleStyle(isCompact)}>
-                    Money tools are loud. Money review should be quiet.
-                  </h2>
-                  <p style={paragraphStyle}>
-                    The page needs to prove MoneyKai is practical, private, and ready for real everyday finance habits without implying bank sync, SMS reading, cloud backup, or financial advice.
-                  </p>
-                </div>
-                <div style={cxGrid(isWide)}>
-                  {problemCards.map((item) => (
-                    <article key={item.title} style={{ ...cardStyle, padding: 22 }}>
-                      <h3 style={{ color: palette.text, fontSize: 21, lineHeight: '28px', margin: 0 }}>{item.title}</h3>
-                      <p style={{ ...paragraphStyle, marginTop: 10 }}>{item.body}</p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </Section>
-
-            <Section id="how-it-works" compact={isCompact} labelledBy="flow-title">
-              <div style={{ display: 'grid', gap: 28 }}>
-                <div style={{ display: 'grid', gap: 14, maxWidth: 760 }}>
-                  <span style={badgeStyle}>How it works</span>
-                  <h2 id="flow-title" style={sectionTitleStyle(isCompact)}>
-                    A review-first flow for everyday money.
-                  </h2>
-                </div>
-                <div style={cxGrid(isWide)}>
-                  {flowSteps.map((step) => (
-                    <article key={step.title} style={{ ...cardStyle, padding: 22 }}>
-                      <span style={{ color: palette.accent, fontSize: 13, fontWeight: 900 }}>{step.eyebrow}</span>
-                      <h3 style={{ color: palette.text, fontSize: 22, lineHeight: '28px', margin: '12px 0 0' }}>{step.title}</h3>
-                      <p style={{ ...paragraphStyle, marginTop: 10 }}>{step.body}</p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </Section>
-
-            <Section id="features" compact={isCompact} labelledBy="feature-title">
-              <div style={{ display: 'grid', gap: 28 }}>
-                <div style={{ alignItems: isWide ? 'end' : 'start', display: 'grid', gap: 18, gridTemplateColumns: isWide ? '1fr 0.6fr' : '1fr' }}>
-                  <div style={{ display: 'grid', gap: 14 }}>
-                    <span style={badgeStyle}>Product surface</span>
-                    <h2 id="feature-title" style={sectionTitleStyle(isCompact)}>
-                      Built for budgets, spends, families, and month-end review.
-                    </h2>
-                  </div>
-                  <p style={paragraphStyle}>
-                    The public copy focuses on what the Android release actually supports: local records, manual tracking, summaries, and encrypted backup files.
-                  </p>
-                </div>
-                <div style={{ display: 'grid', gap: 16, gridTemplateColumns: isWide ? 'repeat(4, minmax(0, 1fr))' : isCompact ? '1fr' : 'repeat(2, minmax(0, 1fr))' }}>
-                  {featureCards.map((item) => (
-                    <article key={item.title} style={{ ...cardStyle, minHeight: isCompact ? 'auto' : 196, padding: 20 }}>
-                      <span style={{ color: palette.gold, fontSize: 12, fontWeight: 900 }}>{item.metric}</span>
-                      <h3 style={{ color: palette.text, fontSize: 21, lineHeight: '27px', margin: '28px 0 0' }}>{item.title}</h3>
-                      <p style={{ ...paragraphStyle, fontSize: 14, lineHeight: '23px', marginTop: 10 }}>{item.body}</p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </Section>
-
-            <Section id="privacy" compact={isCompact} labelledBy="privacy-title">
-              <div
-                style={{
-                  ...cardStyle,
-                  background: palette.surface,
-                  display: 'grid',
-                  gap: isCompact ? 24 : 36,
-                  gridTemplateColumns: isWide ? '0.9fr 1.1fr' : '1fr',
-                  padding: isCompact ? 22 : 34,
-                }}
-              >
-                <div style={{ display: 'grid', gap: 14 }}>
-                  <span style={badgeStyle}>Trust boundary</span>
-                  <h2 id="privacy-title" style={sectionTitleStyle(isCompact)}>
-                    Clear privacy language without security theatre.
-                  </h2>
-                  <p style={paragraphStyle}>
-                    The site should say what MoneyKai does plainly: it organizes user-provided records on the device. It should not imply unsupported bank access, SMS capture, cloud sync, AI features, or professional financial advice.
-                  </p>
-                </div>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  {['Local Android storage boundary', 'Plain summaries instead of advice claims', 'Privacy policy linked from every public page', 'No SMS or notification permissions in the release build'].map((item) => (
-                    <div key={item} style={{ alignItems: 'center', background: '#FFFFFF', border: `1px solid ${palette.border}`, borderRadius: 14, display: 'flex', gap: 12, padding: 14 }}>
-                      <span aria-hidden="true" style={{ background: palette.accent, borderRadius: 999, height: 9, width: 9 }} />
-                      <span style={{ color: palette.text, fontSize: 15, fontWeight: 700 }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Section>
-
-            <Section compact={isCompact} labelledBy="compare-title">
-              <div style={{ display: 'grid', gap: 24 }}>
-                <div style={{ display: 'grid', gap: 14, maxWidth: 760 }}>
-                  <span style={badgeStyle}>Comparison</span>
-                  <h2 id="compare-title" style={sectionTitleStyle(isCompact)}>
-                    Better than scattered tracking.
-                  </h2>
-                </div>
-                <div style={{ ...cardStyle, overflow: 'hidden' }}>
-                  {comparisonRows.map(([tool, before, after], index) => (
-                    <div
-                      key={tool}
-                      style={{
-                        borderTop: index === 0 ? 0 : `1px solid ${palette.border}`,
-                        display: 'grid',
-                        gap: 14,
-                        gridTemplateColumns: isWide ? '0.5fr 1fr 1fr' : '1fr',
-                        padding: 18,
-                      }}
-                    >
-                      <strong style={{ color: palette.text, fontSize: 16 }}>{tool}</strong>
-                      <p style={{ ...paragraphStyle, fontSize: 14, lineHeight: '23px' }}>{before}</p>
-                      <p style={{ ...paragraphStyle, color: palette.text, fontSize: 14, lineHeight: '23px' }}>{after}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Section>
-
-            <Section id="release" compact={isCompact} labelledBy="release-title">
-              <div style={{ display: 'grid', gap: 24, gridTemplateColumns: isWide ? '0.9fr 1.1fr' : '1fr' }}>
-                <div style={{ display: 'grid', gap: 14 }}>
-                  <span style={badgeStyle}>Release scope</span>
-                  <h2 id="release-title" style={sectionTitleStyle(isCompact)}>
-                    Current Android release: local records, no cloud sync.
-                  </h2>
-                  <p style={paragraphStyle}>
-                    MoneyKai 1.0.1 focuses on manual expense tracking, budgets, savings visibility, local diagnostics, local export, and password-encrypted backup files.
-                  </p>
-                </div>
-                <div style={{ display: 'grid', gap: 16, gridTemplateColumns: isCompact ? '1fr' : 'repeat(2, minmax(0, 1fr))' }}>
-                  {[
-                    ['Included now', 'Local transactions, budgets, summaries, settings, diagnostics, and encrypted backup files.', 'Open app'],
-                    ['Not in this release', 'No Firebase cloud backup, SMS capture, Gmail sync, bank sync, Financial AI, ads, or payments.', 'Read privacy'],
-                  ].map(([plan, body, cta], index) => (
-                    <article
-                      key={plan}
-                      style={{
-                        ...cardStyle,
-                        background:
-                          index === 1
-                            ? palette.surfaceHigh
-                            : cardStyle.background,
-                        border: index === 1 ? `1px solid ${palette.borderStrong}` : cardStyle.border,
-                        boxShadow:
-                          index === 1
-                            ? '0 16px 38px rgba(28, 25, 23, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.92)'
-                            : cardStyle.boxShadow,
-                        padding: 22,
-                      }}
-                    >
-                      <h3 style={{ color: palette.text, fontSize: 24, lineHeight: '30px', margin: 0 }}>{plan}</h3>
-                      <p style={{ ...paragraphStyle, marginTop: 10 }}>{body}</p>
-                      <div style={{ marginTop: 22 }}>
-                        <LinkButton href={index === 0 ? '/signup' : '/privacy-policy'} primary={index === 0}>
-                          {cta}
-                        </LinkButton>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </Section>
-
-            <Section id="faq" compact={isCompact} labelledBy="faq-title">
-              <div style={{ display: 'grid', gap: 24 }}>
-                <div style={{ display: 'grid', gap: 14, maxWidth: 760 }}>
-                  <span style={badgeStyle}>FAQ</span>
-                  <h2 id="faq-title" style={sectionTitleStyle(isCompact)}>
-                    Honest answers for a finance landing page.
-                  </h2>
-                </div>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  {faqs.map((item) => (
-                    <details key={item.question} style={{ ...cardStyle, padding: 18 }}>
-                      <summary style={{ color: palette.text, cursor: 'pointer', fontSize: 17, fontWeight: 800, lineHeight: '24px' }}>{item.question}</summary>
-                      <p style={{ ...paragraphStyle, marginTop: 12 }}>{item.answer}</p>
-                    </details>
-                  ))}
-                </div>
-              </div>
-            </Section>
-
-            <section
-              aria-labelledby="final-cta-title"
-              style={{
-                background: palette.surfaceHigh,
-                padding: isCompact ? '54px 18px 72px' : '84px 24px 104px',
-              }}
-            >
-              <div
-                style={{
-                  margin: '0 auto',
-                  maxWidth: 1180,
-                }}
-              >
-                <div
-                  style={{
-                    ...cardStyle,
-                    alignItems: 'center',
-                    background: palette.surface,
-                    display: 'grid',
-                    gap: 22,
-                    justifyItems: 'center',
-                    padding: isCompact ? 24 : 42,
-                    textAlign: 'center',
-                  }}
-                >
-                  <h2 id="final-cta-title" style={{ ...sectionTitleStyle(isCompact), maxWidth: 820 }}>
-                    Build a calmer money review habit today.
-                  </h2>
-                  <p style={{ ...paragraphStyle, maxWidth: 700 }}>
-                    Open MoneyKai, review your own records, and turn everyday money activity into summaries you can actually understand.
-                  </p>
-                  <LinkButton href="/signup" primary>
-                    Open MoneyKai
-                  </LinkButton>
-                </div>
-              </div>
-            </section>
-          </>
+      <BackgroundFrame>
+        <Navbar />
+        <main id="main-content">
+          <Hero />
+          <MenuBar />
+          <MoneyMockup />
+          <FeatureTriage />
+          <LogoCloud />
+          <Testimonials />
+          <Pricing />
+          <FinalCTA />
         </main>
-
-        <footer style={{ background: '#FFFFFF', borderTop: `1px solid ${palette.border}`, padding: isCompact ? '28px 18px' : '32px 24px' }}>
-          <div
-            style={{
-              alignItems: isWide ? 'center' : 'start',
-              display: 'grid',
-              gap: 18,
-              gridTemplateColumns: isWide ? '1fr auto' : '1fr',
-              margin: '0 auto',
-              maxWidth: 1180,
-            }}
-          >
-            <p style={{ ...paragraphStyle, fontSize: 14 }}>
-              MoneyKai organizes user-provided records on the device. It does not provide investment, tax, legal, or financial advice.
-            </p>
-            <nav aria-label="Footer" style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-              {[
-                ['/privacy-policy', 'Privacy'],
-                ['/security', 'Security'],
-                ['/terms', 'Terms'],
-                ['/contact', 'Contact'],
-              ].map(([href, label]) => (
-                <a key={href} href={href} style={{ color: palette.muted, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                  {label}
-                </a>
-              ))}
-            </nav>
-          </div>
-        </footer>
-      </div>
+      </BackgroundFrame>
     </>
   );
 }
