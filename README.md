@@ -43,3 +43,7 @@ Before a release candidate goes out, verify these items in order:
 5. Set `EXPO_PUBLIC_BACKEND_BASE_URL` to the deployed FastAPI backend.
 6. Optionally add `EXPO_PUBLIC_APP_STORE_URL` and `EXPO_PUBLIC_PLAY_STORE_URL` so the Settings `Rate the App` action opens the final listing. Until those URLs exist, the action shows a launch-safe fallback message instead of opening store search results.
 7. Re-run `npm run typecheck`, `npm run lint`, and a real login/backup/restore smoke test before publishing.
+
+## License
+
+This project is licensed under the Apache License 2.0.
