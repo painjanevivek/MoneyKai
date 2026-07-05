@@ -28,6 +28,10 @@ class AuthGatewayError extends Error {
 
 const backendBaseUrl = getBackendBaseUrl();
 const AUTH_GATEWAY_TIMEOUT_MS = 5_000;
+const AUTH_GATEWAY_ROUTE_MISSING_MESSAGE =
+  'MoneyKai could not reach the authentication service. Check the web API deployment, then try again.';
+const AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE =
+  'Authentication service returned an invalid response. Check the auth gateway deployment, then try again.';
 
 const withApiPrefix = (path: string): string =>
   path.startsWith('/api/') ? path : `/api${path}`;
@@ -55,17 +59,48 @@ const getAuthGatewayUrls = (path: string): string[] => {
   return urls;
 };
 
-const parseErrorMessage = async (response: Response, fallback: string) => {
+const readMessage = (value: unknown): string | null => {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return readMessage(record.message) ?? readMessage(record.error);
+  }
+
+  return null;
+};
+
+const isMissingRouteResponse = (response: Response, message: string): boolean =>
+  [404, 405].includes(response.status) &&
+  /the page could not be found|not_found|method not allowed|cannot post|not found/i.test(message);
+
+const parseErrorMessage = async (response: Response, fallback: string): Promise<string> => {
   const text = await response.text().catch(() => '');
   if (!text) {
-    return fallback;
+    return [404, 405].includes(response.status) ? AUTH_GATEWAY_ROUTE_MISSING_MESSAGE : fallback;
   }
 
   try {
-    const payload = JSON.parse(text);
-    return payload.error || payload.message || fallback;
+    const payload = JSON.parse(text) as unknown;
+    const message = readMessage(payload) ?? fallback;
+    return isMissingRouteResponse(response, message) ? AUTH_GATEWAY_ROUTE_MISSING_MESSAGE : message;
   } catch {
-    return fallback;
+    return isMissingRouteResponse(response, text) ? AUTH_GATEWAY_ROUTE_MISSING_MESSAGE : fallback;
+  }
+};
+
+const parseSuccessResponse = async <T,>(response: Response): Promise<T | null> => {
+  const text = await response.text().catch(() => '');
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
   }
 };
 
@@ -95,6 +130,7 @@ const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T>
   const urls = getAuthGatewayUrls(path);
   let lastResponse: Response | null = null;
   let lastNetworkError: unknown = null;
+  let lastGatewayError: AuthGatewayError | null = null;
 
   for (const url of urls) {
     try {
@@ -102,7 +138,12 @@ const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T>
       lastResponse = response;
 
       if (response.ok) {
-        return (await response.json()) as T;
+        const payload = await parseSuccessResponse<T>(response);
+        if (payload) {
+          return payload;
+        }
+        lastGatewayError = new AuthGatewayError(AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE, 502);
+        continue;
       }
 
       if (![404, 405].includes(response.status)) {
@@ -111,6 +152,10 @@ const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T>
     } catch (error) {
       lastNetworkError = error;
     }
+  }
+
+  if (lastGatewayError) {
+    throw lastGatewayError;
   }
 
   if (lastResponse) {
@@ -185,6 +230,24 @@ export const exchangeGoogleOAuthCodeGateway = async (
     credentials: await signInWithGatewayToken(response),
     returnTo: response.returnTo || '/dashboard',
   };
+};
+
+export const isRecoverableGoogleAuthGatewayError = (error: unknown): boolean => {
+  const status = error instanceof AuthGatewayError ? error.status : null;
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+
+  return (
+    status === 0 ||
+    status === 404 ||
+    status === 405 ||
+    message.includes('failed to fetch') ||
+    message.includes('network request failed') ||
+    message.includes('unreachable') ||
+    message.includes('aborted') ||
+    message.includes('the page could not be found') ||
+    message.includes('authentication service returned an invalid response') ||
+    message.includes('could not reach the authentication service')
+  );
 };
 
 export { AuthGatewayError };

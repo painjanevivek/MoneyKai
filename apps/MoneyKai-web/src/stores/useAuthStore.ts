@@ -171,8 +171,36 @@ export const useAuthStore = create<AuthState>()(
           }
 
           await consumeAuthAttempt('google-sign-in', 'google');
-          const { startGoogleOAuthGateway } = await import('@/services/authGateway');
-          const authorizationUrl = await startGoogleOAuthGateway('/dashboard');
+          const authGateway = await import('@/services/authGateway');
+          let authorizationUrl: string | null = null;
+
+          try {
+            authorizationUrl = await authGateway.startGoogleOAuthGateway('/dashboard');
+          } catch (gatewayError) {
+            if (!authGateway.isRecoverableGoogleAuthGatewayError(gatewayError)) {
+              throw gatewayError;
+            }
+
+            const { signInWithGoogleFirebase } = await import('@/services/googleWebAuth');
+            const credentials = await signInWithGoogleFirebase();
+
+            if (!credentials) {
+              set({ isLoading: false });
+              return;
+            }
+
+            await clearAuthRateLimit('google-sign-in', 'google');
+            set({
+              user: toAppUser(credentials.user),
+              isAuthenticated: true,
+              isLoading: false,
+            });
+
+            const { syncRemoteState } = await import('@/services/remoteSync');
+            await syncRemoteState();
+            return;
+          }
+
           set({ isLoading: false });
 
           if (typeof window === 'undefined') {

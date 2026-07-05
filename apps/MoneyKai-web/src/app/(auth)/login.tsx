@@ -28,6 +28,21 @@ const getFriendlyAuthMessage = (error: unknown) => {
   if (lower.includes('not configured')) {
     return 'Sign in is unavailable because authentication is not configured for this deployment.';
   }
+  if (lower.includes('cancelled') || lower.includes('rejected') || lower.includes('popup-closed-by-user')) {
+    return 'Google sign-in was cancelled. Try again, or use email login.';
+  }
+  if (lower.includes('google sign-in is not configured') || lower.includes('oauth')) {
+    return 'Google sign-in is not configured for this deployment yet. Check the backend OAuth settings, then try again.';
+  }
+  if (
+    lower.includes('unauthorized-domain') ||
+    lower.includes('operation-not-allowed') ||
+    lower.includes('provider-disabled') ||
+    lower.includes('app-not-authorized') ||
+    lower.includes('auth-domain-config-required')
+  ) {
+    return 'Google sign-in is not configured for this deployment yet. Check the Firebase Google provider and authorized domains, then try again.';
+  }
   if (lower.includes('invalid') || lower.includes('wrong') || lower.includes('user-not-found')) {
     return 'The email or password does not match a MoneyKai account. Check the details and try again.';
   }
@@ -41,15 +56,12 @@ const getFriendlyAuthMessage = (error: unknown) => {
     lower.includes('aborted') ||
     lower.includes('aborterror') ||
     lower.includes('authentication request failed with 404') ||
-    lower.includes('authentication request failed with 405')
+    lower.includes('authentication request failed with 405') ||
+    lower.includes('authentication route was not found') ||
+    lower.includes('the page could not be found') ||
+    lower.includes('invalid response')
   ) {
     return 'MoneyKai could not reach the authentication service. Check the web API deployment, then try again.';
-  }
-  if (lower.includes('cancelled') || lower.includes('rejected')) {
-    return 'Google sign-in was cancelled. Try again, or use email login.';
-  }
-  if (lower.includes('google sign-in is not configured') || lower.includes('oauth')) {
-    return 'Google sign-in is not configured for this deployment yet. Check the backend OAuth settings, then try again.';
   }
   if (lower.includes('content security policy') || lower.includes('script-src')) {
     return 'Google sign-in is blocked by the website security policy. Redeploy MoneyKai with the updated CSP and try again.';

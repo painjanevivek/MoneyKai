@@ -26,18 +26,53 @@ class AuthGatewayError extends Error {
 }
 
 const backendBaseUrl = getBackendBaseUrl();
+const AUTH_GATEWAY_ROUTE_MISSING_MESSAGE =
+  'MoneyKai could not reach the authentication service. Check the API deployment, then try again.';
+const AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE =
+  'Authentication service returned an invalid response. Check the auth gateway deployment, then try again.';
 
 const parseErrorMessage = async (response: Response, fallback: string): Promise<string> => {
   const text = await response.text().catch(() => '');
   if (!text) {
-    return fallback;
+    return [404, 405].includes(response.status) ? AUTH_GATEWAY_ROUTE_MISSING_MESSAGE : fallback;
   }
 
   try {
-    const payload = JSON.parse(text);
-    return payload.error || payload.message || fallback;
+    const payload = JSON.parse(text) as unknown;
+    const message = readMessage(payload) ?? fallback;
+    return isMissingRouteResponse(response, message) ? AUTH_GATEWAY_ROUTE_MISSING_MESSAGE : message;
   } catch {
-    return fallback;
+    return isMissingRouteResponse(response, text) ? AUTH_GATEWAY_ROUTE_MISSING_MESSAGE : fallback;
+  }
+};
+
+const readMessage = (value: unknown): string | null => {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return readMessage(record.message) ?? readMessage(record.error);
+  }
+
+  return null;
+};
+
+const isMissingRouteResponse = (response: Response, message: string): boolean =>
+  [404, 405].includes(response.status) &&
+  /the page could not be found|not_found|method not allowed|cannot post|not found/i.test(message);
+
+const parseSuccessResponse = async <T,>(response: Response): Promise<T> => {
+  const text = await response.text().catch(() => '');
+  if (!text) {
+    throw new AuthGatewayError(AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE, 502);
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new AuthGatewayError(AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE, 502);
   }
 };
 
@@ -63,7 +98,7 @@ const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T>
     throw new AuthGatewayError(message, response.status);
   }
 
-  return (await response.json()) as T;
+  return parseSuccessResponse<T>(response);
 };
 
 export const signInWithEmailGateway = async (email: string, password: string): Promise<AuthGatewayResponse> =>

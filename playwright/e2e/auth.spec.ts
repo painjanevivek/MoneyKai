@@ -169,6 +169,50 @@ test.describe('MoneyKai auth journeys', () => {
     expect(legacyBackendCalls).toEqual([]);
   });
 
+  test('Google login falls back to Firebase popup when the gateway route is missing', async ({ page }) => {
+    const firebaseAuthCalls: string[] = [];
+
+    await page.route('**/api/v1/auth/google/start', async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: '404', message: 'The page could not be found' } }),
+      });
+    });
+
+    await page.route('http://localhost:8000/v1/auth/google/start', async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: '404', message: 'The page could not be found' } }),
+      });
+    });
+
+    await page.route('https://identitytoolkit.googleapis.com/**', async (route) => {
+      firebaseAuthCalls.push(route.request().url());
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            code: 400,
+            message: 'OPERATION_NOT_ALLOWED',
+            errors: [{ message: 'OPERATION_NOT_ALLOWED' }],
+          },
+        }),
+      });
+    });
+
+    await page.goto('/login');
+    await page.getByTestId('login-google').click();
+
+    await expect(page.getByRole('alert')).toContainText(
+      'Google sign-in is not configured for this deployment yet. Check the Firebase Google provider and authorized domains, then try again.'
+    );
+    expect(firebaseAuthCalls.some((url) => url.includes('accounts:createAuthUri'))).toBe(true);
+    await expect(page.getByText('Please check your details and try again.')).toBeHidden();
+  });
+
   test('Google callback shows provider errors without exchanging a code', async ({ page }) => {
     const exchangeRequests: string[] = [];
 

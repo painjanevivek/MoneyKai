@@ -1,7 +1,13 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
   getAuth,
+  indexedDBLocalPersistence,
+  initializeAuth,
+  inMemoryPersistence,
   onAuthStateChanged,
+  type Auth,
   type User,
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -61,7 +67,23 @@ export const isFirebaseConfigured = (): boolean =>
   isRealValue(firebaseConfig.appId);
 
 const firebaseApp = getApps().length > 0 ? getApp() : initializeApp(normalizedConfig);
-export const firebaseAuth = getAuth(firebaseApp);
+
+const getFirebaseAuth = (): Auth => {
+  if (typeof window === 'undefined') {
+    return getAuth(firebaseApp);
+  }
+
+  try {
+    return initializeAuth(firebaseApp, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence],
+      popupRedirectResolver: browserPopupRedirectResolver,
+    });
+  } catch {
+    return getAuth(firebaseApp);
+  }
+};
+
+export const firebaseAuth = getFirebaseAuth();
 export const firebaseDb = getFirestore(firebaseApp);
 
 export const waitForAuthState = (): Promise<User | null> =>
