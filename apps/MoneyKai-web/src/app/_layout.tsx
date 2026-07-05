@@ -1,17 +1,14 @@
-import React, { Suspense, lazy, useEffect } from 'react';
-import { Stack, router } from 'expo-router';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, TouchableOpacity, LogBox, Platform } from 'react-native';
-import { useFonts } from 'expo-font';
+import { FontDisplay, useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
-import { AnalyticsRouteTracker } from '@/components/analytics/AnalyticsRouteTracker';
-import { VercelSpeedInsights } from '@/components/analytics/VercelSpeedInsights';
-import { CookieConsentBanner } from '@/components/privacy/CookieConsentBanner';
 import { WebsiteSkeleton } from '@/components/skeletons/WebsiteSkeleton';
 import { captureSentryException, identifySentryUser } from '@/services/sentry';
 
@@ -26,6 +23,72 @@ const BudgetResetCoordinator = lazy(() =>
     default: module.BudgetResetCoordinator,
   }))
 );
+
+const AnalyticsRouteTracker = lazy(() =>
+  import('@/components/analytics/AnalyticsRouteTracker').then((module) => ({
+    default: module.AnalyticsRouteTracker,
+  }))
+);
+
+const VercelSpeedInsights = lazy(() =>
+  import('@/components/analytics/VercelSpeedInsights').then((module) => ({
+    default: module.VercelSpeedInsights,
+  }))
+);
+
+const CookieConsentBanner = lazy(() =>
+  import('@/components/privacy/CookieConsentBanner').then((module) => ({
+    default: module.CookieConsentBanner,
+  }))
+);
+
+const appShellRoutePrefixes = [
+  '/accounts',
+  '/ai-review',
+  '/auth',
+  '/budgets',
+  '/categories',
+  '/dashboard',
+  '/goals',
+  '/groups',
+  '/learn-center',
+  '/login',
+  '/notes',
+  '/notifications',
+  '/portfolio',
+  '/profile-edit',
+  '/reports',
+  '/savings',
+  '/settings',
+  '/signup',
+  '/subscriptions',
+  '/transactions',
+  '/wealth',
+] as const;
+
+const shouldBlockForAppShellHydration = (pathname: string) =>
+  appShellRoutePrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+
+const fontWithSwap = (uri: number) => ({
+  uri,
+  display: FontDisplay.SWAP,
+});
+
+const scheduleAfterFirstPaint = (callback: () => void) => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    callback();
+    return () => undefined;
+  }
+
+  const idleCallback = window.requestIdleCallback;
+  if (idleCallback) {
+    const handle = idleCallback(callback, { timeout: 2500 });
+    return () => window.cancelIdleCallback?.(handle);
+  }
+
+  const handle = window.setTimeout(callback, 1200);
+  return () => window.clearTimeout(handle);
+};
 
 // Suppress known web warnings from react-native-gifted-charts passing RN props to DOM elements
 LogBox.ignoreLogs([
@@ -96,6 +159,7 @@ class AppErrorBoundary extends React.Component<
 }
 
 export default function RootLayout() {
+  const pathname = usePathname();
   const theme = useSettingsStore((s) => s.theme);
   const darkModeEnabled = useSettingsStore((s) => s.darkModeEnabled);
   const currencyRenderToken = useSettingsStore((s) => `${s.currency}:${s.currencySymbol}:${s.exchangeRatesUpdatedAt ?? ''}`);
@@ -106,12 +170,13 @@ export default function RootLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
   const user = useAuthStore((s) => s.user);
+  const [nonCriticalUiReady, setNonCriticalUiReady] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
+    Poppins_400Regular: fontWithSwap(Poppins_400Regular),
+    Poppins_500Medium: fontWithSwap(Poppins_500Medium),
+    Poppins_600SemiBold: fontWithSwap(Poppins_600SemiBold),
+    Poppins_700Bold: fontWithSwap(Poppins_700Bold),
   });
 
   useEffect(() => {
@@ -136,6 +201,8 @@ export default function RootLayout() {
     });
   }, [hydrateSession]);
 
+  useEffect(() => scheduleAfterFirstPaint(() => setNonCriticalUiReady(true)), []);
+
   useEffect(() => {
     void identifySentryUser(user);
   }, [user]);
@@ -149,7 +216,7 @@ export default function RootLayout() {
   }, [currencyRenderToken, isAuthenticated, refreshExchangeRates]);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (Platform.OS === 'web' || fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
@@ -200,7 +267,8 @@ export default function RootLayout() {
     </Stack>
   );
   const isServerRender = Platform.OS === 'web' && typeof window === 'undefined';
-  const showWebsiteSkeleton = !isServerRender && ((!fontsLoaded && !fontError) || isHydratingSession);
+  const showWebsiteSkeleton =
+    !isServerRender && shouldBlockForAppShellHydration(pathname) && isHydratingSession;
 
   return (
     <AppErrorBoundary colors={colors}>
@@ -211,12 +279,20 @@ export default function RootLayout() {
           <BudgetResetCoordinator />
         </Suspense>
       ) : null}
-      <AnalyticsRouteTracker />
-      <VercelSpeedInsights />
+      {nonCriticalUiReady ? (
+        <Suspense fallback={null}>
+          <AnalyticsRouteTracker />
+          <VercelSpeedInsights />
+        </Suspense>
+      ) : null}
       <View key={currencyRenderToken} style={{ flex: 1, backgroundColor: colors.background }}>
         <WebsiteSkeleton loading={showWebsiteSkeleton}>{content}</WebsiteSkeleton>
       </View>
-      <CookieConsentBanner />
+      {nonCriticalUiReady ? (
+        <Suspense fallback={null}>
+          <CookieConsentBanner />
+        </Suspense>
+      ) : null}
     </AppErrorBoundary>
   );
 }

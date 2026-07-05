@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   Modal,
   PanResponder,
@@ -44,29 +45,95 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   contentStyle,
 }) => {
   const { colors } = useTheme();
-  const [translateY] = useState(() => new Animated.Value(24));
+  const [isMounted, setIsMounted] = useState(visible);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [translateY] = useState(() => new Animated.Value(32));
+  const [backdropOpacity] = useState(() => new Animated.Value(0));
   const closeButtonRef = useRef<any>(null);
 
   const animateIn = useCallback(() => {
-    Animated.spring(translateY, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 70,
-      friction: 10,
-    }).start();
-  }, [translateY]);
+    translateY.setValue(reduceMotion ? 0 : 32);
+    backdropOpacity.setValue(reduceMotion ? 1 : 0);
 
-  useEffect(() => {
-    if (visible) {
-      translateY.setValue(24);
-      requestAnimationFrame(() => {
-        animateIn();
-        if (closeButtonRef.current?.focus) {
-          closeButtonRef.current.focus();
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: reduceMotion ? 1 : 220,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 70,
+        friction: 10,
+      }),
+    ]).start();
+  }, [backdropOpacity, reduceMotion, translateY]);
+
+  const animateOut = useCallback(
+    (onComplete: () => void) => {
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: reduceMotion ? 1 : 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: reduceMotion ? 0 : 96,
+          duration: reduceMotion ? 1 : 150,
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) {
+          onComplete();
         }
       });
+    },
+    [backdropOpacity, reduceMotion, translateY]
+  );
+
+  useEffect(() => {
+    let isActive = true;
+
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((isEnabled) => {
+        if (isActive) {
+          setReduceMotion(isEnabled);
+        }
+      })
+      .catch(() => undefined);
+
+    const subscription = AccessibilityInfo.addEventListener?.('reduceMotionChanged', setReduceMotion);
+
+    return () => {
+      isActive = false;
+      subscription?.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (visible && !isMounted) {
+      const animationFrame = requestAnimationFrame(() => setIsMounted(true));
+      return () => cancelAnimationFrame(animationFrame);
     }
-  }, [visible, translateY, animateIn]);
+
+    if (!visible && isMounted) {
+      animateOut(() => setIsMounted(false));
+    }
+  }, [visible, isMounted, animateOut]);
+
+  useEffect(() => {
+    if (!visible || !isMounted) return;
+
+    const animationFrame = requestAnimationFrame(() => {
+      animateIn();
+      if (closeButtonRef.current?.focus) {
+        closeButtonRef.current.focus();
+      }
+    });
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [visible, isMounted, animateIn]);
 
   useEffect(() => {
     if (!visible) return;
@@ -110,21 +177,27 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   return (
     <Modal
       transparent
-      visible={visible}
-      animationType="fade"
+      visible={isMounted}
+      animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
     >
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close modal"
-          onPress={onClose}
+        <Animated.View
+          pointerEvents={visible ? 'auto' : 'none'}
           style={{
             ...StyleSheet.absoluteFill,
             backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            opacity: backdropOpacity,
           }}
-        />
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close modal"
+            onPress={onClose}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
 
         <Animated.View
           style={[
