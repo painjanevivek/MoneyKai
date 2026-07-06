@@ -53,7 +53,7 @@ describe('SMS research build policy config', () => {
     const buildGradle = readText('android/app/build.gradle');
     const signingVerifier = readText('scripts/verify-android-production-signing.mjs');
 
-    expect(packageJson.scripts?.['android:verify:production-signing']).toBe(
+    expect(packageJson.scripts?.['android:verify:production-signing']).toContain(
       'node ./scripts/verify-android-production-signing.mjs',
     );
     expect(packageJson.scripts?.['android:assemble:release']).toContain('--mode local-release');

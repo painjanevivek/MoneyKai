@@ -231,7 +231,7 @@ export const buildInternalTestingReport = (input: InternalTestingReportInput): I
     .map(summarizeDiagnosticEvent),
 });
 
-const formatMap = (values: Record<string, unknown>) =>
+const formatMap = (values: object) =>
   Object.entries(values)
     .map(([key, value]) => `${key}: ${value === null || value === undefined ? 'unknown' : String(value)}`)
     .join('\n');
