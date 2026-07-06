@@ -41,7 +41,7 @@ export function WorkspaceHeader({
   const { width } = useWindowDimensions();
   const isCompact = width < 760;
   const isConstrainedDesktop = width < 1180;
-  const headerBg = isDark ? withAlpha(colors.primaryDark, 0.9) : colors.primary;
+  const headerBg = isDark ? colors.glassBg : colors.primary;
   const isQuiet = variant === 'quiet';
 
   const resolveMetricColor = (tone: WorkspaceMetric['tone']) => {
@@ -65,17 +65,40 @@ export function WorkspaceHeader({
       style={{
         borderRadius: isCompact ? BorderRadius.md : BorderRadius.lg,
         padding: isCompact ? Spacing.base : Spacing.lg,
-        backgroundColor: isQuiet ? colors.surface : headerBg,
+        backgroundColor: isQuiet ? colors.glassBg : headerBg,
         borderWidth: 1,
-        borderColor: isQuiet ? colors.borderLight : withAlpha(colors.primaryLight, isDark ? 0.34 : 0.28),
+        borderColor: isQuiet ? colors.glassBorder : withAlpha(colors.primaryLight, isDark ? 0.3 : 0.28),
         gap: isCompact ? Spacing.md : Spacing.base,
         minWidth: 0,
         overflow: 'hidden',
-        ...(isQuiet ? Shadows.sm : Shadows.xl),
+        ...(isQuiet ? Shadows.md : Shadows.xl),
         shadowColor: colors.shadowColor,
-        ...(isQuiet ? {} : (strongGlassBackdropStyle ?? {})),
+        ...(strongGlassBackdropStyle ?? {}),
       }}
     >
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: -120,
+          right: -84,
+          width: 240,
+          height: 240,
+          borderRadius: 999,
+          backgroundColor: withAlpha(colors.accent, isDark ? 0.12 : 0.07),
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 1,
+          backgroundColor: withAlpha(colors.primaryLight, isDark ? 0.14 : 0.1),
+        }}
+      />
       {!isQuiet ? (
         <View
           pointerEvents="none"
@@ -117,12 +140,12 @@ export function WorkspaceHeader({
               borderRadius: BorderRadius.md,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: isQuiet ? colors.primaryBg : withAlpha(colors.primary, 0.2),
+              backgroundColor: isQuiet ? colors.primaryBg : withAlpha(colors.primary, 0.16),
               borderWidth: 1,
-              borderColor: isQuiet ? colors.borderLight : withAlpha(colors.primaryLight, 0.34),
+              borderColor: isQuiet ? colors.glassBorder : withAlpha(colors.primaryLight, 0.34),
             }}
           >
-            <MaterialCommunityIcons name={icon} size={isCompact ? 22 : 24} color={isQuiet ? colors.primary : '#FFFFFF'} />
+            <MaterialCommunityIcons name={icon} size={isCompact ? 22 : 24} color={isQuiet ? colors.primary : colors.primaryLight} />
           </View>
           <View style={{ flex: 1, minWidth: 0, maxWidth: 900 }}>
             <Text numberOfLines={1} style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: isQuiet ? colors.textTertiary : 'rgba(255, 255, 255, 0.68)' }}>
@@ -167,9 +190,9 @@ export function WorkspaceHeader({
                 minWidth: isCompact ? 136 : 160,
                 padding: isQuiet ? Spacing.sm : Spacing.md,
                 borderRadius: BorderRadius.md,
-                backgroundColor: isQuiet ? colors.surfaceElevated : 'rgba(255, 255, 255, 0.11)',
+                backgroundColor: isQuiet ? colors.surfaceElevated : 'rgba(255, 255, 255, 0.08)',
                 borderWidth: 1,
-                borderColor: isQuiet ? colors.borderLight : withAlpha(metric.tone === 'warning' ? colors.warning : metric.tone === 'danger' ? colors.error : colors.primaryLight, 0.18),
+                borderColor: isQuiet ? colors.glassBorder : withAlpha(metric.tone === 'warning' ? colors.warning : metric.tone === 'danger' ? colors.error : colors.primaryLight, 0.2),
               }}
             >
               <Text style={{ fontSize: Typography.fontSize.xs, color: isQuiet ? colors.textSecondary : 'rgba(255, 255, 255, 0.64)' }}>{metric.label}</Text>
@@ -193,9 +216,9 @@ export function WorkspaceHeader({
                 paddingHorizontal: Spacing.sm,
                 paddingVertical: 7,
                 borderRadius: BorderRadius.full,
-                backgroundColor: isQuiet ? colors.surfaceElevated : 'rgba(255, 255, 255, 0.12)',
+                backgroundColor: isQuiet ? colors.surfaceElevated : 'rgba(255, 255, 255, 0.08)',
                 borderWidth: 1,
-                borderColor: isQuiet ? colors.borderLight : withAlpha(colors.primaryLight, 0.18),
+                borderColor: isQuiet ? colors.glassBorder : withAlpha(colors.primaryLight, 0.2),
               }}
             >
               <MaterialCommunityIcons name={chip.icon} size={14} color={isQuiet ? colors.textSecondary : 'rgba(255, 255, 255, 0.82)'} />

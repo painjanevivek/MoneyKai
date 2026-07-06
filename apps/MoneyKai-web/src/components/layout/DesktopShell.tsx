@@ -299,7 +299,31 @@ export function DesktopShell({ children }: PropsWithChildren) {
   if (isCompact) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: -160,
+              right: -120,
+              width: 320,
+              height: 320,
+              borderRadius: 999,
+              backgroundColor: withAlpha(colors.accent, 0.12),
+            }}
+          />
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              bottom: -180,
+              left: -120,
+              width: 300,
+              height: 300,
+              borderRadius: 999,
+              backgroundColor: withAlpha(colors.primary, 0.08),
+            }}
+          />
           {showMonthMenu ? (
             <Pressable
               onPress={() => setShowMonthMenu(false)}
@@ -501,16 +525,40 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flex: 1, backgroundColor: colors.background, flexDirection: 'row' }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, flexDirection: 'row', overflow: 'hidden' }}>
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -240,
+            right: -180,
+            width: 520,
+            height: 520,
+            borderRadius: 999,
+            backgroundColor: withAlpha(colors.accent, 0.1),
+          }}
+        />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            bottom: -260,
+            left: 180,
+            width: 460,
+            height: 460,
+            borderRadius: 999,
+            backgroundColor: withAlpha(colors.primary, 0.065),
+          }}
+        />
         <View
           style={{
             width: sidebarWidth,
             margin: Spacing.base,
             marginRight: 0,
             borderWidth: 1,
-            borderColor: colors.borderLight,
+            borderColor: colors.glassBorder,
             borderRadius: BorderRadius['2xl'],
-            backgroundColor: colors.surface,
+            backgroundColor: colors.glassBg,
             height: sidebarHeight,
             maxHeight: sidebarHeight,
             paddingVertical: Spacing.base,
@@ -573,11 +621,11 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
             <View
               style={{
-                backgroundColor: colors.surfaceElevated,
+                backgroundColor: colors.glassBg,
                 borderRadius: BorderRadius.lg,
                 padding: Spacing.md,
                 borderWidth: 1,
-                borderColor: colors.borderLight,
+                borderColor: colors.glassBorder,
                 ...Shadows.md,
                 shadowColor: colors.shadowColor,
                 ...(glassBackdropStyle ?? {}),
@@ -820,9 +868,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
               marginRight: Spacing.base,
               marginLeft: Spacing.base,
               borderWidth: 1,
-              borderColor: colors.borderLight,
+              borderColor: colors.glassBorder,
               borderRadius: BorderRadius['2xl'],
-              backgroundColor: colors.surface,
+              backgroundColor: colors.glassBg,
               position: 'relative',
               zIndex: 40,
               overflow: 'visible',

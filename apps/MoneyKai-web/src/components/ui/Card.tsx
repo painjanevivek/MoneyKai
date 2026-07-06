@@ -70,10 +70,24 @@ export const Card: React.FC<CardProps> = ({
           top: 0,
           left: 0,
           right: 0,
-          height: tone === 'default' ? 0 : 3,
-          backgroundColor: withAlpha(toneColor, 0.82),
+          height: tone === 'default' && isGlass ? 1 : tone === 'default' ? 0 : 3,
+          backgroundColor: tone === 'default' ? withAlpha(colors.primaryLight, isDark ? 0.18 : 0.12) : withAlpha(toneColor, 0.82),
         }}
       />
+      {tone === 'default' && isGlass ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -82,
+            right: -72,
+            width: 148,
+            height: 148,
+            borderRadius: 999,
+            backgroundColor: withAlpha(colors.accent, isDark ? 0.08 : 0.05),
+          }}
+        />
+      ) : null}
       {tone === 'default' ? null : (
         <View
           pointerEvents="none"
