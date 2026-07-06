@@ -35,6 +35,15 @@ const getRequestHostOrigin = (req) => {
   return `${proto}://${host.split(',')[0].trim()}`;
 };
 
+const logGoogleOAuthError = (error) => {
+  console.error('google_oauth_start_failed', {
+    name: error?.name,
+    code: error?.code,
+    status: error?.status,
+    message: error?.message,
+  });
+};
+
 module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'POST')) {
     return;
@@ -59,6 +68,7 @@ module.exports = async (req, res) => {
 
     sendJson(res, 200, result);
   } catch (error) {
+    logGoogleOAuthError(error);
     const safe = getPublicGoogleOAuthError(error);
     sendJson(res, safe.status, { error: safe.message });
   }
