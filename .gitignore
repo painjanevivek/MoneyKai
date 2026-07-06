@@ -137,3 +137,6 @@ device-*.png
 window.xml
 LOGO.jpeg
 imp/
+
+.vercel
+.env*.local
