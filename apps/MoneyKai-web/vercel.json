@@ -82,6 +82,32 @@
       ]
     },
     {
+      "source": "/__/auth/:path*",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self' https://moneykai.firebaseapp.com https://apis.google.com https://www.gstatic.com https://www.google.com; frame-ancestors 'self' https://moneykai.com https://www.moneykai.com https://smartpaisa.vercel.app; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://www.google.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com https://*.firebaseauth.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:; object-src 'none'; base-uri 'self'"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
+      ]
+    },
+    {
+      "source": "/__/auth",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self' https://moneykai.firebaseapp.com https://apis.google.com https://www.gstatic.com https://www.google.com; frame-ancestors 'self' https://moneykai.com https://www.moneykai.com https://smartpaisa.vercel.app; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://www.google.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com https://*.firebaseauth.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:; object-src 'none'; base-uri 'self'"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
+      ]
+    },
+    {
       "source": "/_expo/static/(.*)",
       "headers": [
         {
