@@ -13,6 +13,13 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 const EXCHANGE_CODE_TTL_MS = 5 * 60 * 1000;
 const MAX_RETURN_PATH_LENGTH = 240;
 const MOBILE_REDIRECT_URI = 'moneykai-mobile://auth/google';
+const DEFAULT_TRUSTED_WEB_APP_HOSTS = new Set([
+  'moneykai.com',
+  'www.moneykai.com',
+  'smartpaisa.vercel.app',
+  'moneykai-web-vivek-painjanes-projects.vercel.app',
+  'moneykai-web-git-main-vivek-painjanes-projects.vercel.app',
+]);
 
 let jwksCache = {
   expiresAt: 0,
@@ -94,7 +101,7 @@ const getBackendGoogleRedirectUri = (candidateOrigin) => {
     return configured.trim();
   }
 
-  if (candidateOrigin && isLocalWebAppUrl(candidateOrigin)) {
+  if (candidateOrigin && isTrustedWebAppUrl(candidateOrigin)) {
     return `${normalizeWebAppUrl(candidateOrigin)}/api/v1/auth/google/callback`;
   }
 
@@ -138,8 +145,53 @@ const normalizeWebAppUrl = (value) => {
   return parsed.toString().replace(/\/$/, '');
 };
 
+const getTrustedWebAppHosts = () => {
+  const hosts = new Set(DEFAULT_TRUSTED_WEB_APP_HOSTS);
+  const addHost = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return;
+    }
+
+    try {
+      hosts.add(new URL(raw).hostname.toLowerCase());
+    } catch {
+      hosts.add(raw.toLowerCase());
+    }
+  };
+
+  for (const value of [
+    process.env.MONEYKAI_SITE_URL,
+    process.env.PUBLIC_SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.MONEYKAI_ALLOWED_APP_HOSTS,
+    process.env.MONEYKAI_ALLOWED_APP_ORIGINS,
+  ]) {
+    String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .forEach(addHost);
+  }
+
+  return hosts;
+};
+
+const isTrustedWebAppUrl = (value) => {
+  if (isLocalWebAppUrl(value)) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' && getTrustedWebAppHosts().has(parsed.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+};
+
 const resolveWebAppUrl = (candidate) => {
-  if (candidate && isLocalWebAppUrl(candidate)) {
+  if (candidate && isTrustedWebAppUrl(candidate)) {
     return normalizeWebAppUrl(candidate);
   }
 
