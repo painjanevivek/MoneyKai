@@ -1,4 +1,10 @@
-# The frontend deploy is a static Expo export. Runtime feature APIs live on the
-# MoneyKai backend, so do not package the disabled/duplicate v1 API shims as
-# Vercel Functions in this deployment.
+# The frontend deploy is a static Expo export. Most runtime feature APIs live on
+# the MoneyKai backend, so do not package disabled/duplicate v1 API shims here.
 api/v1/**
+
+# Google sign-in intentionally falls back to same-origin Vercel Functions when
+# the external auth gateway is unavailable. Keep this route family deployable.
+!api/v1/
+!api/v1/auth/
+!api/v1/auth/google/
+!api/v1/auth/google/**

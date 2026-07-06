@@ -16,11 +16,29 @@ const hashFile = (path) =>
     .digest('hex');
 
 const mismatches = mirroredFiles.filter(([source, copy]) => hashFile(source) !== hashFile(copy));
+const vercelIgnore = readFileSync('.vercelignore', 'utf8');
+const requiredVercelIgnoreRules = [
+  '!api/v1/',
+  '!api/v1/auth/',
+  '!api/v1/auth/google/',
+  '!api/v1/auth/google/**',
+];
+const missingVercelIgnoreRules = requiredVercelIgnoreRules.filter(
+  (rule) => !vercelIgnore.split(/\r?\n/).includes(rule)
+);
 
 if (mismatches.length > 0) {
   console.error('Web app API mirror files are out of sync:');
   for (const [source, copy] of mismatches) {
     console.error(`- ${copy} must match ${source}`);
+  }
+  process.exit(1);
+}
+
+if (missingVercelIgnoreRules.length > 0) {
+  console.error('Google auth API routes are still hidden from the Vercel deployment:');
+  for (const rule of missingVercelIgnoreRules) {
+    console.error(`- .vercelignore must include ${rule}`);
   }
   process.exit(1);
 }
