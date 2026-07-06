@@ -240,10 +240,16 @@ export const isRecoverableGoogleAuthGatewayError = (error: unknown): boolean => 
     status === 0 ||
     status === 404 ||
     status === 405 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504 ||
     message.includes('failed to fetch') ||
     message.includes('network request failed') ||
     message.includes('unreachable') ||
     message.includes('aborted') ||
+    message.includes('google oauth') ||
+    message.includes('google sign-in failed') ||
     message.includes('the page could not be found') ||
     message.includes('authentication service returned an invalid response') ||
     message.includes('could not reach the authentication service')
