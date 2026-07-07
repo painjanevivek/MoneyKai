@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, TextInput, Platform, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, TextInput, Platform, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
@@ -54,8 +54,21 @@ type FilterValue = 'all' | string;
 const getCaptureSourceLabel = (source?: TransactionCaptureSource) =>
   CAPTURE_SOURCE_OPTIONS.find((option) => option.id === source)?.label;
 
+const getTransactionReviewStatus = (transaction: Transaction) => {
+  if (transaction.category === 'others' || transaction.category === 'other_income') {
+    return { label: 'Needs review', icon: 'alert-circle-outline' as const, tone: 'warning' as const };
+  }
+
+  if (transaction.captureSource && transaction.captureSource !== 'manual') {
+    return { label: 'Imported', icon: 'source-branch-check' as const, tone: 'primary' as const };
+  }
+
+  return { label: 'Reviewed', icon: 'check-circle-outline' as const, tone: 'success' as const };
+};
+
 export default function TransactionsScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const { addTransaction, updateTransaction, deleteTransaction, setFilter } = useTransactionStore();
@@ -224,6 +237,7 @@ export default function TransactionsScreen() {
     Number(dateFilter !== 'all');
   const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest First';
   const netFlow = totalIncome - totalSpent;
+  const isLedgerWide = width >= 980;
 
   const displayTransactions = useMemo(() => {
     const now = new Date();
@@ -296,6 +310,12 @@ export default function TransactionsScreen() {
     const category = getCategoryById(txn.category);
     const isExpense = txn.type === 'expense';
     const captureSourceLabel = getCaptureSourceLabel(txn.captureSource);
+    const reviewStatus = getTransactionReviewStatus(txn);
+    const reviewStatusColor = reviewStatus.tone === 'warning'
+      ? colors.warning
+      : reviewStatus.tone === 'primary'
+        ? colors.primary
+        : colors.success;
 
     return (
       <TouchableOpacity
@@ -310,6 +330,11 @@ export default function TransactionsScreen() {
           paddingVertical: Spacing.md,
         }}
       >
+        {isLedgerWide ? (
+          <Text style={{ width: 92, fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+            {formatDate(txn.transaction_date, 'dd MMM yyyy')}
+          </Text>
+        ) : null}
         <View
           style={{
             width: 44,
@@ -325,7 +350,7 @@ export default function TransactionsScreen() {
         >
           <MaterialCommunityIcons name={(category?.icon || 'help-circle-outline') as any} size={22} color={category?.color || '#6B7280'} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: isLedgerWide ? 1.6 : 1, minWidth: 0 }}>
           <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>{txn.description}</Text>
           <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary }}>
             {category?.name} • {formatRelativeDate(txn.transaction_date)} • {PAYMENT_METHODS.find((p) => p.id === txn.payment_method)?.name || txn.payment_method}
@@ -350,6 +375,34 @@ export default function TransactionsScreen() {
               ) : null}
             </View>
           ) : null}
+        </View>
+        {isLedgerWide ? (
+          <View style={{ width: 126, alignItems: 'flex-start', marginLeft: Spacing.md }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }} numberOfLines={1}>
+              {txn.captureAccountLabel ?? txn.captureBankLabel ?? 'Primary ledger'}
+            </Text>
+            <Text style={{ marginTop: 3, fontSize: 10, color: colors.textTertiary }} numberOfLines={1}>
+              {PAYMENT_METHODS.find((p) => p.id === txn.payment_method)?.name || txn.payment_method}
+            </Text>
+          </View>
+        ) : null}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 5,
+            minWidth: isLedgerWide ? 124 : undefined,
+            marginLeft: Spacing.md,
+            paddingHorizontal: Spacing.sm,
+            paddingVertical: 5,
+            borderRadius: BorderRadius.full,
+            backgroundColor: `${reviewStatusColor}14`,
+          }}
+        >
+          <MaterialCommunityIcons name={reviewStatus.icon} size={13} color={reviewStatusColor} />
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: reviewStatusColor }} numberOfLines={1}>
+            {reviewStatus.label}
+          </Text>
         </View>
         <Text
           style={{
@@ -533,11 +586,41 @@ export default function TransactionsScreen() {
 
         <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md }}>
           {displayTransactions.length > 0 ? (
-            displayTransactions.map((transaction) => (
-              <React.Fragment key={transaction.id}>
-                {renderTransaction({ item: transaction })}
-              </React.Fragment>
-            ))
+            <>
+              {isLedgerWide ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.borderLight,
+                    paddingBottom: Spacing.sm,
+                  }}
+                >
+                  <Text style={{ width: 92, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                    DATE
+                  </Text>
+                  <Text style={{ flex: 1.6, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                    MERCHANT / CATEGORY
+                  </Text>
+                  <Text style={{ width: 126, marginLeft: Spacing.md, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                    ACCOUNT
+                  </Text>
+                  <Text style={{ minWidth: 124, marginLeft: Spacing.md, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                    REVIEW
+                  </Text>
+                  <Text style={{ minWidth: 108, marginLeft: Spacing.md, textAlign: 'right', fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                    AMOUNT
+                  </Text>
+                  <View style={{ width: 88, marginLeft: Spacing.md }} />
+                </View>
+              ) : null}
+              {displayTransactions.map((transaction) => (
+                <React.Fragment key={transaction.id}>
+                  {renderTransaction({ item: transaction })}
+                </React.Fragment>
+              ))}
+            </>
           ) : (
             <EmptyState icon="receipt" title="No Transactions" message="Start tracking by adding your first transaction." />
           )}
