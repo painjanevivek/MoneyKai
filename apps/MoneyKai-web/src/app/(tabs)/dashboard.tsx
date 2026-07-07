@@ -20,7 +20,6 @@ import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { QuickNotes } from '@/components/dashboard/QuickNotes';
 import { NoteModal } from '@/components/dashboard/NoteModal';
 import { AiAssistantPanel } from '@/components/dashboard/AiAssistantPanel';
-import { EmergencyWidget } from '@/components/dashboard/EmergencyWidget';
 import { LinkedAccountsSnapshot } from '@/components/accounts/LinkedAccountsSnapshot';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
@@ -435,8 +434,6 @@ export default function DashboardScreen() {
         </View>
 
         <View style={{ flex: 1, gap: Spacing.xl, minWidth: isWide ? 380 : '100%' as any }}>
-          <EmergencyWidget />
-
           <LinkedAccountsSnapshot />
 
           <Card>

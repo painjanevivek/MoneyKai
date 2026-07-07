@@ -33,7 +33,7 @@ export default function FinancialFirstAidScreen() {
   return (
     <>
       <SeoHead
-        title="MoneyKai Financial First Aid | A calmer alternative to SOS-style money messaging"
+        title="MoneyKai Financial First Aid | Practical money support"
         description="MoneyKai reframes emergency money support into financial first aid: practical steps for clarity, essentials, continuity, and recovery."
         path="/financial-first-aid"
         keywords={['financial first aid', 'money emergency help', 'budget recovery plan', 'cash flow triage']}
@@ -41,7 +41,7 @@ export default function FinancialFirstAidScreen() {
       <PublicShell
         eyebrow="Financial first aid"
         title="Money stress needs practical support, not alarm-heavy branding."
-        description="MoneyKai reframes SOS-style language into financial first aid: a calmer way to handle urgent money moments, protect essentials, and take the next clear step."
+        description="MoneyKai frames financial first aid as a calmer way to handle urgent money moments, protect essentials, and take the next clear step."
       >
         <SectionCard>
           <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>

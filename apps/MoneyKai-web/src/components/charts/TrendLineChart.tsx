@@ -496,7 +496,7 @@ function FilterDropdown({
         borderRadius: BorderRadius.md,
         backgroundColor: hovered ? colors.surfaceElevated : colors.surface,
         borderWidth: 1,
-        borderColor: colors.glassBorder,
+        borderColor: colors.borderLight,
       })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1, minWidth: 0 }}>
@@ -639,7 +639,7 @@ export const TrendLineChart: React.FC = () => {
       </Card>
 
       <Modal transparent animationType="fade" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg, backgroundColor: colors.overlay }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg, backgroundColor: colors.background }}>
           <Pressable
             accessibilityLabel="Close trend graph"
             onPress={() => {
@@ -655,9 +655,9 @@ export const TrendLineChart: React.FC = () => {
               maxWidth: 1220,
               maxHeight: modalMaxHeight,
               borderRadius: BorderRadius['2xl'],
-              backgroundColor: colors.glassBg,
+              backgroundColor: colors.background,
               borderWidth: 1,
-              borderColor: colors.glassBorder,
+              borderColor: colors.borderLight,
               padding: modalWide ? Spacing.xl : Spacing.base,
               gap: Spacing.lg,
               overflow: 'hidden',
@@ -687,9 +687,9 @@ export const TrendLineChart: React.FC = () => {
                   borderRadius: 22,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
+                  backgroundColor: hovered ? colors.surfaceElevated : colors.surface,
                   borderWidth: 1,
-                  borderColor: colors.glassBorder,
+                  borderColor: colors.borderLight,
                 })}
               >
                 <MaterialCommunityIcons name="close" size={22} color={colors.textPrimary} />
@@ -714,8 +714,8 @@ export const TrendLineChart: React.FC = () => {
                     overflow: 'hidden',
                     borderRadius: BorderRadius.xl,
                     borderWidth: 1,
-                    borderColor: colors.glassBorder,
-                    backgroundColor: 'rgba(0,0,0,0.04)',
+                    borderColor: colors.borderLight,
+                    backgroundColor: colors.surface,
                   }}
                 >
                   <TrendSvgChart
@@ -737,8 +737,8 @@ export const TrendLineChart: React.FC = () => {
                   padding: Spacing.md,
                   borderRadius: BorderRadius.xl,
                   borderWidth: 1,
-                  borderColor: colors.glassBorder,
-                  backgroundColor: colors.glassBg,
+                  borderColor: colors.borderLight,
+                  backgroundColor: colors.surface,
                   alignSelf: modalWide ? 'stretch' : 'auto',
                   position: 'relative',
                   zIndex: 10,
@@ -770,7 +770,7 @@ export const TrendLineChart: React.FC = () => {
                             borderRadius: BorderRadius.md,
                             backgroundColor: active ? colors.primary : hovered ? `${colors.primary}12` : colors.surface,
                             borderWidth: 1,
-                            borderColor: active ? colors.primary : colors.glassBorder,
+                            borderColor: active ? colors.primary : colors.borderLight,
                           })}
                         >
                           <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: active ? colors.textInverse : colors.textPrimary }}>
@@ -802,7 +802,7 @@ export const TrendLineChart: React.FC = () => {
                         borderRadius: BorderRadius.md,
                         backgroundColor: colors.surface,
                         borderWidth: 1,
-                        borderColor: colors.glassBorder,
+                        borderColor: colors.borderLight,
                         padding: Spacing.xs,
                         gap: 4,
                       }}
@@ -862,7 +862,7 @@ export const TrendLineChart: React.FC = () => {
                         borderRadius: BorderRadius.md,
                         backgroundColor: colors.surface,
                         borderWidth: 1,
-                        borderColor: colors.glassBorder,
+                        borderColor: colors.borderLight,
                         padding: Spacing.xs,
                         gap: 4,
                       }}

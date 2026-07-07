@@ -9,18 +9,16 @@ import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { SavingsAnalyticsSnapshot } from '@/components/charts/SavingsAnalyticsSnapshot';
 import { getCategoryById } from '@/constants/categories';
 import { CHALLENGE_TEMPLATES } from '@/types/challenge';
-import { calculateSavingsProjection, calculateEmergencyBudget } from '@/utils/savingsEngine';
-import { getDaysLeftInMonth } from '@/utils/dateUtils';
+import { calculateSavingsProjection } from '@/utils/savingsEngine';
 import { convertFromInrForDisplay, formatCurrency } from '@/utils/formatCurrency';
-import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import type { CategoryReduction } from '@/types/budget';
 
-const TABS = ['Savings Predictor', 'Challenges', 'Emergency'] as const;
+const TABS = ['Savings Predictor', 'Challenges'] as const;
 
 export default function SavingsScreen() {
   const { colors, isDark } = useTheme();
@@ -28,8 +26,7 @@ export default function SavingsScreen() {
   const { width } = useWindowDimensions();
   const isWide = width > 900;
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
-  const totalSpent = useTransactionStore((s) => s.getTotalSpent());
-  const { settings, isEmergencyMode, toggleEmergencyMode } = useBudgetStore();
+  const { settings } = useBudgetStore();
   const { startChallenge, getActiveChallenges, getDeactivatedChallenges, deactivateChallenge, reactivateChallenge, getDailyMotivation, totalXP } = useChallengeStore();
   const activeChallenges = getActiveChallenges();
   const deactivatedChallenges = getDeactivatedChallenges();
@@ -51,8 +48,6 @@ export default function SavingsScreen() {
     () => calculateSavingsProjection(settings.monthly_allowance, categoryTotals, categoryReductions),
     [settings.monthly_allowance, categoryTotals, categoryReductions]
   );
-
-  const emergencyBudget = calculateEmergencyBudget(settings.monthly_allowance - totalSpent, getDaysLeftInMonth());
 
   const comparisonData = React.useMemo(
     () => [
@@ -378,71 +373,11 @@ export default function SavingsScreen() {
     </>
   );
 
-  const renderEmergency = () => (
-    <>
-      <Card style={{ marginBottom: Spacing.md, borderWidth: isEmergencyMode ? 2 : 0, borderColor: colors.emergency }}>
-        <View style={{ alignItems: 'center', paddingVertical: Spacing.lg }}>
-          <TouchableOpacity
-            onPress={toggleEmergencyMode}
-            style={{
-              width: 100,
-              height: 100,
-              borderRadius: 50,
-              backgroundColor: isEmergencyMode ? colors.emergency : `${colors.emergency}15`,
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...(isEmergencyMode ? Shadows.glow(colors.emergency) : {}),
-              marginBottom: Spacing.md,
-            }}
-          >
-            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.bold, color: isEmergencyMode ? colors.textInverse : colors.emergency }}>SOS</Text>
-          </TouchableOpacity>
-          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.bold, color: isEmergencyMode ? colors.emergency : colors.textPrimary }}>
-            {isEmergencyMode ? 'Emergency Mode Active' : 'Emergency Mode'}
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginTop: 4 }}>
-            {isEmergencyMode ? 'Your spending is restricted to essentials only' : 'Tap SOS to activate survival budget mode'}
-          </Text>
-        </View>
-      </Card>
-
-      {isEmergencyMode && (
-        <>
-          <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md }}>
-            <Card style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Daily Limit</Text>
-              <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.emergency }}>{formatCurrency(emergencyBudget.dailyLimit)}</Text>
-            </Card>
-            <Card style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Essential Budget</Text>
-              <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.bold, color: colors.primary }}>{formatCurrency(emergencyBudget.essentialBudget)}</Text>
-            </Card>
-          </View>
-
-          <Card style={{ marginBottom: Spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.md }}>
-              <MaterialCommunityIcons name="shield-check-outline" size={20} color={colors.primary} />
-              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>Survival Suggestions</Text>
-            </View>
-            {emergencyBudget.suggestions.map((s, i) => (
-              <View key={i} style={{ flexDirection: 'row', gap: 8, paddingVertical: 6, borderTopWidth: i > 0 ? 1 : 0, borderTopColor: colors.borderLight }}>
-                <MaterialCommunityIcons name="check-circle" size={16} color={colors.primary} style={{ marginTop: 2 }} />
-                <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>{s}</Text>
-              </View>
-            ))}
-          </Card>
-
-          <Button title="Deactivate Emergency Mode" onPress={toggleEmergencyMode} variant="outline" fullWidth icon="shield-off-outline" />
-        </>
-      )}
-    </>
-  );
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
         <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Savings & Challenges</Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Predict savings, take challenges, handle emergencies</Text>
+        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Predict savings and take practical budget challenges.</Text>
       </View>
 
       <View
@@ -495,9 +430,7 @@ export default function SavingsScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={true}>
         {activeTab === 'Savings Predictor' && renderSavingsPredictor()}
         {activeTab === 'Challenges' && renderChallenges()}
-        {activeTab === 'Emergency' && renderEmergency()}
       </ScrollView>
     </SafeAreaView>
   );
 }
-

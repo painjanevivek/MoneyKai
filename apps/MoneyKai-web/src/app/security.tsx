@@ -1,73 +1,228 @@
 import React from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, View } from 'react-native';
+import { Text, View, useWindowDimensions } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
-import { Spacing, Typography } from '@/constants/theme';
+import { SITE } from '@/constants/site';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
-const SECURITY_SECTIONS = [
+type SecurityItem = {
+  title: string;
+  body: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+};
+
+type DetailSection = {
+  title: string;
+  body: string;
+  points: string[];
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+};
+
+const SECURITY_SUMMARY: SecurityItem[] = [
   {
-    title: 'Local release boundary',
-    body: 'The current Flutter Android release uses a local profile/session and does not include real remote authentication, Firebase sign-in, OAuth, or backend account sync.',
+    title: 'Protected web surface',
+    body: 'MoneyKai deploys security headers that limit framing, MIME sniffing, referrer leakage, and unnecessary browser capabilities.',
+    icon: 'shield-lock-outline',
   },
   {
-    title: 'Data continuity',
-    body: 'The current Android release supports plaintext local export and password-encrypted JSON backup files through user-started device flows. It does not provide cloud backup.',
+    title: 'Controlled sign-in flow',
+    body: 'Authentication requests go through a gateway flow with bounded request timeouts and clear failure handling.',
+    icon: 'account-lock-outline',
   },
   {
-    title: 'Practical privacy boundaries',
-    body: 'MoneyKai does not position itself as a bank. It is a budgeting and personal finance application, which means security communication should stay precise about what the product does and does not handle.',
+    title: 'User-controlled backups',
+    body: 'Backup and restore flows are explicit user actions, with encrypted backup files available where supported.',
+    icon: 'file-lock-outline',
+  },
+];
+
+const SECURITY_DETAILS: DetailSection[] = [
+  {
+    title: 'Transport and browser protections',
+    body: 'The website is configured with defensive browser policies so the public surface is harder to embed, spoof, or misuse from another origin.',
+    icon: 'web',
+    points: [
+      'HTTPS hardening with HSTS on production responses.',
+      'Content Security Policy boundaries for scripts, frames, images, and network connections.',
+      'Clickjacking and content-type protections with frame and MIME sniffing controls.',
+    ],
   },
   {
-    title: 'Visible expectations',
-    body: 'The public website now surfaces privacy, support contact, trust explanations, and financial first-aid guidance so the product feels accountable before signup.',
+    title: 'Account access safeguards',
+    body: 'MoneyKai keeps account access flows narrow and predictable, with explicit authentication requests and user-facing error handling.',
+    icon: 'account-key-outline',
+    points: [
+      'Email and Google sign-in are routed through the web authentication gateway.',
+      'Client-side attempt throttling helps reduce repeated sign-in and password reset abuse.',
+      'Authentication responses are validated before a session is accepted by the app.',
+    ],
   },
+  {
+    title: 'Data and backup boundaries',
+    body: 'MoneyKai avoids vague security claims. The product explains where financial records live and which actions the user controls.',
+    icon: 'database-lock-outline',
+    points: [
+      'Finance records are handled inside authenticated app flows.',
+      'Backup files are created or restored only when the user starts that action.',
+      'Encrypted backup files are positioned as user-controlled continuity, not a hidden cloud sync promise.',
+    ],
+  },
+  {
+    title: 'Operational care',
+    body: 'Security is also about reducing accidental exposure and keeping sensitive workflows conservative by default.',
+    icon: 'clipboard-check-outline',
+    points: [
+      'API helpers apply response security headers and request body limits.',
+      'Sensitive capabilities such as camera, microphone, geolocation, payment, USB, and Bluetooth are restricted by policy on the public site.',
+      'Security and privacy questions can be sent to the published support channel.',
+    ],
+  },
+];
+
+const DISCLOSURE_POINTS = [
+  'MoneyKai is a personal finance workspace, not a bank or regulated financial custodian.',
+  'No software can promise absolute security, so the product avoids blanket guarantees.',
+  'Do not send passwords, full card numbers, or sensitive document contents by email.',
 ];
 
 export default function SecurityScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 920;
 
   return (
     <>
       <SeoHead
-        title="MoneyKai Security | Local storage, backup files, and clear expectations"
-        description="Read how MoneyKai approaches local Android storage, encrypted backup files, privacy boundaries, and transparent expectations for a personal finance app."
+        title="MoneyKai Security | Account, browser, and backup protections"
+        description="Learn how MoneyKai approaches website security, account access, browser protections, backup boundaries, and responsible disclosure."
         path="/security"
-        keywords={['MoneyKai security', 'budget app security', 'local finance app', 'encrypted backup files']}
+        keywords={['MoneyKai security', 'budget app security', 'finance app privacy', 'encrypted backup files']}
       />
       <PublicShell
         eyebrow="Security"
-        title="Security communication should be specific, calm, and honest."
-        description="MoneyKai's public security layer focuses on local storage, encrypted backup files, and clear boundaries. It avoids inflated claims and explains what the current Android app is designed to protect."
+        title="Security built around clear boundaries and careful defaults."
+        description="MoneyKai keeps security communication specific: protect the website surface, keep sign-in flows controlled, and explain data and backup boundaries without inflated claims."
       >
-        <View style={{ gap: Spacing.md }}>
-          {SECURITY_SECTIONS.map((section) => (
-            <SectionCard key={section.title}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md }}>
+        <View style={{ gap: Spacing['2xl'] }}>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.lg }}>
+            {SECURITY_SUMMARY.map((item, index) => (
+              <View
+                key={item.title}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  paddingLeft: isWide && index > 0 ? Spacing.lg : 0,
+                  borderLeftWidth: isWide && index > 0 ? 1 : 0,
+                  borderLeftColor: colors.borderLight,
+                  gap: Spacing.sm,
+                }}
+              >
                 <View
                   style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 16,
+                    width: 44,
+                    height: 44,
+                    borderRadius: BorderRadius.md,
                     backgroundColor: colors.primaryBg,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <MaterialCommunityIcons name="lock-check-outline" size={22} color={colors.primary} />
+                  <MaterialCommunityIcons name={item.icon} size={22} color={colors.primary} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                    {section.title}
-                  </Text>
-                  <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-                    {section.body}
-                  </Text>
-                </View>
+                <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  {item.title}
+                </Text>
+                <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                  {item.body}
+                </Text>
               </View>
-            </SectionCard>
-          ))}
+            ))}
+          </View>
+
+          <View style={{ gap: Spacing.lg }}>
+            <View style={{ gap: Spacing.xs }}>
+              <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+                What MoneyKai protects
+              </Text>
+              <Text style={{ maxWidth: 760, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                These are the practical controls worth surfacing publicly. The page intentionally avoids listing every internal setting.
+              </Text>
+            </View>
+
+            <View style={{ gap: Spacing.md }}>
+              {SECURITY_DETAILS.map((section) => (
+                <SectionCard key={section.title}>
+                  <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.lg }}>
+                    <View
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: BorderRadius.md,
+                        backgroundColor: colors.primaryBg,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <MaterialCommunityIcons name={section.icon} size={23} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                        {section.title}
+                      </Text>
+                      <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                        {section.body}
+                      </Text>
+                      <View style={{ marginTop: Spacing.md, gap: Spacing.sm }}>
+                        {section.points.map((point) => (
+                          <View key={point} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+                            <MaterialCommunityIcons name="check-circle-outline" size={17} color={colors.primary} style={{ marginTop: 2 }} />
+                            <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                              {point}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                </SectionCard>
+              ))}
+            </View>
+          </View>
+
+          <SectionCard variant="outlined">
+            <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.lg, alignItems: isWide ? 'flex-start' : 'stretch' }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  Responsible security expectations
+                </Text>
+                <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                  Security communication should help users understand risk without turning into a checklist of internal controls.
+                </Text>
+              </View>
+              <View style={{ flex: 1.2, minWidth: 0, gap: Spacing.sm }}>
+                {DISCLOSURE_POINTS.map((point) => (
+                  <View key={point} style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' }}>
+                    <MaterialCommunityIcons name="information-outline" size={17} color={colors.textSecondary} style={{ marginTop: 2 }} />
+                    <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                      {point}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </SectionCard>
+
+          <View style={{ paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+              For security, privacy, or data-related questions, contact{' '}
+              <Text style={{ fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                {SITE.supportEmail}
+              </Text>
+              .
+            </Text>
+          </View>
         </View>
       </PublicShell>
     </>

@@ -20,7 +20,7 @@ const TRUST_PILLARS = [
   },
   {
     title: 'Financial first aid',
-    body: 'The former SOS framing becomes a calmer, more practical layer for handling money stress, disruption, and urgent decisions.',
+    body: 'MoneyKai uses calmer, practical guidance for handling money stress, disruption, and urgent decisions.',
     icon: 'lifebuoy',
   },
 ];

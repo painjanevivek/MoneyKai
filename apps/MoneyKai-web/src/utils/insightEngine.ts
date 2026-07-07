@@ -91,10 +91,10 @@ export const generateInsights = (
     insights.push({
       id: 'budget_warning',
       icon: 'alert-circle-outline',
-      message: "You've spent 80% of your budget with days remaining. Consider Emergency Mode.",
+      message: "You've spent 80% of your budget with days remaining. Review the largest categories before adding new expenses.",
       type: 'warning',
       priority: 1,
-      actionLabel: 'Activate SOS',
+      actionLabel: 'Review spending',
     });
   }
 

@@ -120,40 +120,6 @@ export const calculateBudgetHealth = (
   if (score >= 80) return { score, level: 'excellent', label: 'Excellent', color: BUDGET_HEALTH_FALLBACK_COLORS.excellent, message: "You're in a great spot this month." };
   if (score >= 60) return { score, level: 'good', label: 'Good', color: BUDGET_HEALTH_FALLBACK_COLORS.good, message: 'Things are on track. Keep going.' };
   if (score >= 40) return { score, level: 'fair', label: 'Fair', color: BUDGET_HEALTH_FALLBACK_COLORS.fair, message: 'Spending is a little high. A few small cuts could help.' };
-  if (score >= 20) return { score, level: 'poor', label: 'Poor', color: BUDGET_HEALTH_FALLBACK_COLORS.poor, message: 'Spending is rising fast. Emergency mode may help.' };
-  return { score, level: 'critical', label: 'Critical', color: BUDGET_HEALTH_FALLBACK_COLORS.critical, message: 'You have gone past budget. Emergency mode is a good next step.' };
-};
-
-/**
- * Calculate emergency mode budget
- */
-export const calculateEmergencyBudget = (
-  remainingBalance: number,
-  daysLeft: number
-): {
-  dailyLimit: number;
-  essentialBudget: number;
-  suggestions: string[];
-} => {
-  const dailyLimit = Math.max(0, Math.round(remainingBalance / Math.max(1, daysLeft)));
-  const essentialBudget = Math.round(dailyLimit * 0.7);
-
-  const suggestions: string[] = [];
-
-  if (dailyLimit < 200) {
-    suggestions.push('Cook at home instead of ordering food.');
-    suggestions.push('Use public transport instead of cabs.');
-    suggestions.push('Pause any non-essential purchases for now.');
-  } else if (dailyLimit < 500) {
-    suggestions.push('Cut food delivery back to once or twice a week.');
-    suggestions.push('Walk or cycle for short distances.');
-    suggestions.push('Hold off on shopping until next month.');
-  } else {
-    suggestions.push('You have a comfortable daily budget. Stick to it.');
-    suggestions.push('Avoid impulsive spending on weekends.');
-  }
-
-  suggestions.push('Track every expense, even the small ones.');
-
-  return { dailyLimit, essentialBudget, suggestions };
+  if (score >= 20) return { score, level: 'poor', label: 'Poor', color: BUDGET_HEALTH_FALLBACK_COLORS.poor, message: 'Spending is rising fast. Review optional categories and slow the pace.' };
+  return { score, level: 'critical', label: 'Critical', color: BUDGET_HEALTH_FALLBACK_COLORS.critical, message: 'You have gone past budget. Review recent spending and adjust the rest of the month.' };
 };

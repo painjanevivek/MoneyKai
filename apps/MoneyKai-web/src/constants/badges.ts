@@ -56,17 +56,6 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     tier: 'silver',
   },
   {
-    id: 'emergency_survivor',
-    name: 'Emergency Survivor',
-    description: 'Successfully navigate emergency mode',
-    icon: 'lifebuoy',
-    color: '#111111',
-    glowColor: 'rgba(17, 17, 17, 0.25)',
-    requirement: 'Activate and complete emergency mode within budget',
-    xpReward: 350,
-    tier: 'silver',
-  },
-  {
     id: 'smart_investor',
     name: 'Smart Investor',
     description: 'Save more than 40% of your monthly budget',

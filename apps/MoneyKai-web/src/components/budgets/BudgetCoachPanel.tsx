@@ -17,7 +17,6 @@ const buildLocalBudgetCoachCards = ({
   daysElapsed,
   daysRemaining,
   categoryTotals,
-  emergencyMode,
 }: AiBudgetCoachRequest): AiInsightCard[] => {
   if (monthlyAllowance <= 0) {
     return [
@@ -50,18 +49,6 @@ const buildLocalBudgetCoachCards = ({
   const remaining = Math.max(0, monthlyAllowance - totalSpent);
   const dailyRoom = daysRemaining > 0 ? remaining / daysRemaining : remaining;
   const cards: AiInsightCard[] = [];
-
-  if (emergencyMode) {
-    cards.push({
-      id: 'local-emergency-mode',
-      tone: 'warning',
-      title: 'Emergency mode is on',
-      body: 'Prioritize essentials, pause optional spending, and review every new record before acting on the numbers.',
-      actionLabel: null,
-      metricLabel: 'Mode',
-      metricValue: 'Conserve',
-    });
-  }
 
   cards.push({
     id: 'local-budget-pace',
@@ -107,7 +94,7 @@ const buildLocalBudgetCoachCards = ({
 
 export const BudgetCoachPanel: React.FC = () => {
   const { colors } = useTheme();
-  const { settings, isEmergencyMode } = useBudgetStore();
+  const { settings } = useBudgetStore();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
 
@@ -129,7 +116,6 @@ export const BudgetCoachPanel: React.FC = () => {
       count: item.count,
       percentage: item.percentage,
     })),
-    emergencyMode: isEmergencyMode,
     context: {
       surface: 'budgets',
     },
@@ -137,7 +123,6 @@ export const BudgetCoachPanel: React.FC = () => {
     categoryTotals,
     daysElapsed,
     daysRemaining,
-    isEmergencyMode,
     month,
     settings.currency,
     settings.monthly_allowance,
