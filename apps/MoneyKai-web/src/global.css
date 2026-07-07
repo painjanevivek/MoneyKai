@@ -110,7 +110,8 @@ body {
 .mk-logo-mark {
   width: 32px;
   height: 32px;
-  color: #fff;
+  display: block;
+  object-fit: contain;
 }
 
 .mk-nav-links {
@@ -297,7 +298,8 @@ body {
 .mk-menu-logo {
   width: 18px;
   height: 18px;
-  color: #fff;
+  display: block;
+  object-fit: contain;
 }
 
 .mk-strip-caption {

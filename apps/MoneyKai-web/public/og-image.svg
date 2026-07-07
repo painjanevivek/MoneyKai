@@ -3,8 +3,7 @@
   <circle cx="170" cy="90" r="210" fill="#7DD3C7" fill-opacity="0.14"/>
   <circle cx="1030" cy="120" r="240" fill="#DAB35D" fill-opacity="0.12"/>
   <rect x="70" y="70" width="1060" height="490" rx="26" fill="#101D18" stroke="#D2E2DA" stroke-opacity="0.18" stroke-width="2"/>
-  <rect x="106" y="106" width="70" height="70" rx="16" fill="#7DD3C7"/>
-  <text x="141" y="150" text-anchor="middle" fill="#06211B" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900">MK</text>
+  <image x="106" y="106" width="70" height="70" href="/brand/moneykai-mark-96.png" preserveAspectRatio="xMidYMid meet"/>
   <text x="206" y="135" fill="#F5FBF8" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800">MoneyKai</text>
   <text x="206" y="168" fill="#B9CCC4" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600">Private finance reports for records you review</text>
   <text x="106" y="286" fill="#F5FBF8" font-family="Inter, Arial, sans-serif" font-size="66" font-weight="900">Calm money clarity</text>

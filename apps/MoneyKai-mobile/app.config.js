@@ -32,6 +32,18 @@ const config = {
   version: '1.0.1',
   scheme: 'moneykai-mobile',
   orientation: 'portrait',
+  icon: './assets/images/icon.png',
+  android: {
+    adaptiveIcon: {
+      backgroundColor: '#000000',
+      foregroundImage: './assets/images/android-icon-foreground.png',
+      backgroundImage: './assets/images/android-icon-background.png',
+      monochromeImage: './assets/images/android-icon-monochrome.png',
+    },
+  },
+  web: {
+    favicon: './assets/images/favicon.png',
+  },
   ...baseExpoConfig,
 };
 
