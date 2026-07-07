@@ -7,7 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 
 const iconByType: Record<string, string> = {
   budget: 'wallet-outline',
@@ -64,17 +64,15 @@ export default function NotificationsScreen() {
                 }
               }}
               style={{
-                backgroundColor: colors.card,
-                borderRadius: BorderRadius.lg,
-                padding: Spacing.base,
-                marginBottom: Spacing.md,
+                backgroundColor: index === 0 ? colors.primaryBg : 'transparent',
+                borderRadius: index === 0 ? BorderRadius.sm : 0,
+                paddingVertical: Spacing.base,
+                paddingHorizontal: index === 0 ? Spacing.sm : 0,
                 flexDirection: 'row',
                 alignItems: 'flex-start',
                 gap: Spacing.md,
-                ...Shadows.sm,
-                shadowColor: colors.shadowColor,
-                borderLeftWidth: 3,
-                borderLeftColor: index === 0 ? colors.primary : 'transparent',
+                borderBottomWidth: 1,
+                borderBottomColor: colors.borderLight,
               }}
             >
               <View style={{

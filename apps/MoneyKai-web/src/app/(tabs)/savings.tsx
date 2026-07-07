@@ -245,7 +245,7 @@ export default function SavingsScreen() {
         <>
           <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>Active Challenges</Text>
           {activeChallenges.map((ch) => (
-            <Card key={ch.id} style={{ marginBottom: Spacing.md }}>
+            <Card key={ch.id} style={{ marginBottom: Spacing.sm, backgroundColor: colors.primaryBg, borderRadius: BorderRadius.sm, borderWidth: 0 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
                 <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{ch.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
@@ -304,7 +304,7 @@ export default function SavingsScreen() {
             Deactivated Challenges
           </Text>
           {deactivatedChallenges.map((ch) => (
-            <Card key={ch.id} style={{ marginBottom: Spacing.md, opacity: 0.92 }}>
+            <Card key={ch.id} style={{ borderBottomWidth: 1, borderBottomColor: colors.borderLight, borderRadius: 0, paddingHorizontal: 0, opacity: 0.92 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
                 <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{ch.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -339,7 +339,7 @@ export default function SavingsScreen() {
 
       <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md, marginTop: Spacing.sm }}>Start a Challenge</Text>
       {CHALLENGE_TEMPLATES.map((template) => (
-        <Card key={template.id} style={{ marginBottom: Spacing.sm }}>
+        <Card key={template.id} style={{ borderBottomWidth: 1, borderBottomColor: colors.borderLight, borderRadius: 0, paddingHorizontal: 0 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
             <View
               style={{
@@ -500,5 +500,4 @@ export default function SavingsScreen() {
     </SafeAreaView>
   );
 }
-
 

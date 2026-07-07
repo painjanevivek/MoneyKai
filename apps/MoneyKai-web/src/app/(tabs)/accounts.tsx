@@ -131,15 +131,14 @@ function AccountCard({
       activeOpacity={0.82}
       onPress={onSelect}
       style={{
-        flex: 1,
+        width: '100%',
         minWidth: 300,
-        padding: Spacing.base,
-        borderRadius: BorderRadius.md,
-        backgroundColor: selected ? colors.primaryBg : colors.card,
-        borderWidth: 1,
+        paddingVertical: Spacing.base,
+        paddingHorizontal: selected ? Spacing.md : 0,
+        borderRadius: selected ? BorderRadius.sm : 0,
+        backgroundColor: selected ? colors.primaryBg : 'transparent',
+        borderBottomWidth: 1,
         borderColor: selected ? colors.primary : colors.borderLight,
-        ...Shadows.sm,
-        shadowColor: colors.shadowColor,
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md }}>
@@ -491,7 +490,7 @@ export default function AccountsScreen() {
                 <Button title="Transactions" icon="swap-horizontal" onPress={() => router.push('/transactions' as any)} variant="outline" />
               </View>
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
+              <View style={{ gap: Spacing.sm }}>
                 {activeAccounts.map((account) => (
                   <AccountCard
                     key={account.id}

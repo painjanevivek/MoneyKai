@@ -22,10 +22,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { UserAvatar } from '@/components/ui/UserAvatar';
-import { withAlpha } from '@/utils/glassStyle';
 
 export default function ProfileEditScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { user, updateProfile, isAuthenticated, isHydratingSession } = useAuthStore();
 
   const [fullName, setFullName] = useState(user?.full_name ?? '');
@@ -117,18 +116,6 @@ export default function ProfileEditScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: -170,
-          right: -120,
-          width: 360,
-          height: 360,
-          borderRadius: 999,
-          backgroundColor: withAlpha(colors.primary, isDark ? 0.14 : 0.1),
-        }}
-      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -137,8 +124,8 @@ export default function ProfileEditScreen() {
         <View style={{
           flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
           paddingHorizontal: Spacing.base, paddingVertical: Spacing.md,
-          borderBottomWidth: 1, borderBottomColor: colors.glassBorder,
-          backgroundColor: colors.glassBg,
+          borderBottomWidth: 1, borderBottomColor: colors.borderLight,
+          backgroundColor: colors.surface,
         }}>
           <TouchableOpacity onPress={() => router.back()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
@@ -244,7 +231,7 @@ export default function ProfileEditScreen() {
             {/* Auth provider badge */}
             <View style={{
               flexDirection: 'row', alignItems: 'center', gap: 8,
-              backgroundColor: withAlpha(colors.primary, isDark ? 0.12 : 0.08), borderRadius: BorderRadius.md,
+              backgroundColor: colors.primaryBg, borderRadius: BorderRadius.md,
               padding: Spacing.md, marginBottom: Spacing.lg,
               borderWidth: 1,
               borderColor: colors.glassBorder,

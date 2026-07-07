@@ -12,7 +12,6 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
-import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
 import { Typography, Spacing } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/dateUtils';
@@ -24,7 +23,6 @@ export default function BudgetsScreen() {
   const { settings, adjustments } = useBudgetStore();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const allowance = settings.monthly_allowance;
-  const remaining = allowance - totalSpent;
   const usage = allowance > 0 ? Math.min(100, (totalSpent / allowance) * 100) : 0;
   const recentAdjustments = useMemo(() => adjustments.slice(0, 6), [adjustments]);
   const isWide = width >= 1100;
@@ -36,23 +34,6 @@ export default function BudgetsScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + Spacing['4xl'] }}
       >
         <View style={{ gap: Spacing.xl }}>
-          <WorkspaceHeader
-            icon="wallet-outline"
-            eyebrow="BUDGET CONTROL"
-            title="Monthly guardrails"
-            description="Review the allowance currently driving MoneyKai, see spending pressure, and keep reset behavior visible."
-            metrics={[
-              { label: 'Monthly budget', value: formatCurrency(allowance) },
-              { label: 'Spent', value: formatCurrency(totalSpent), tone: 'warning' },
-              { label: remaining < 0 ? 'Over by' : 'Remaining', value: formatCurrency(Math.abs(remaining)), tone: remaining < 0 ? 'danger' : 'positive' },
-            ]}
-            chips={[
-              { icon: 'progress-check', label: `${Math.round(usage)}% used` },
-              { icon: 'shield-check-outline', label: 'User-owned budget settings' },
-            ]}
-            actions={<Button title="Open Settings" onPress={() => router.push('/settings' as any)} icon="cog-outline" variant="outline" tone="onDark" />}
-          />
-
           <Card>
             <ProgressBar progress={usage} showLabel label="Budget usage" height={10} />
           </Card>

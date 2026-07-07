@@ -13,6 +13,7 @@ type AuthGatewayResponse = {
 
 type GoogleOAuthStartResponse = {
   authorizationUrl: string;
+  redirectUri?: string;
 };
 
 class AuthGatewayError extends Error {
@@ -30,6 +31,22 @@ const AUTH_GATEWAY_ROUTE_MISSING_MESSAGE =
   'MoneyKai could not reach the authentication service. Check the API deployment, then try again.';
 const AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE =
   'Authentication service returned an invalid response. Check the auth gateway deployment, then try again.';
+
+const withApiPrefix = (path: string): string =>
+  path.startsWith('/api/') ? path : `/api${path}`;
+
+const appendUnique = (values: string[], value: string) => {
+  if (value && !values.includes(value)) {
+    values.push(value);
+  }
+};
+
+const getAuthGatewayUrls = (path: string): string[] => {
+  const urls: string[] = [];
+  appendUnique(urls, `${backendBaseUrl}${path}`);
+  appendUnique(urls, `${backendBaseUrl}${withApiPrefix(path)}`);
+  return urls;
+};
 
 const parseErrorMessage = async (response: Response, fallback: string): Promise<string> => {
   const text = await response.text().catch(() => '');
@@ -77,28 +94,40 @@ const parseSuccessResponse = async <T,>(response: Response): Promise<T> => {
 };
 
 const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T> => {
-  const response = await fetchWithRetry(
-    `${backendBaseUrl}${path}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(payload),
+  const requestInit: RequestInit = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
     },
-    {
+    body: JSON.stringify(payload),
+  };
+  const urls = getAuthGatewayUrls(path);
+  let lastResponse: Response | null = null;
+
+  for (const url of urls) {
+    const response = await fetchWithRetry(url, requestInit, {
       retries: 0,
       timeoutMs: 20_000,
-    }
-  );
+    });
 
-  if (!response.ok) {
-    const message = await parseErrorMessage(response, `Authentication request failed with ${response.status}.`);
-    throw new AuthGatewayError(message, response.status);
+    lastResponse = response;
+
+    if (response.ok) {
+      return parseSuccessResponse<T>(response);
+    }
+
+    if (![404, 405].includes(response.status)) {
+      break;
+    }
   }
 
-  return parseSuccessResponse<T>(response);
+  if (!lastResponse) {
+    throw new AuthGatewayError('Authentication service is unreachable.', 0);
+  }
+
+  const message = await parseErrorMessage(lastResponse, `Authentication request failed with ${lastResponse.status}.`);
+  throw new AuthGatewayError(message, lastResponse.status);
 };
 
 export const signInWithEmailGateway = async (email: string, password: string): Promise<AuthGatewayResponse> =>

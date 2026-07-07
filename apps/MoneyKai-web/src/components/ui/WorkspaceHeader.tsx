@@ -1,9 +1,9 @@
 import React, { type ReactNode } from 'react';
 import { Text, View, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
-import { strongGlassBackdropStyle, withAlpha } from '@/utils/glassStyle';
+import { withAlpha } from '@/utils/glassStyle';
 
 type WorkspaceMetric = {
   label: string;
@@ -35,26 +35,17 @@ export function WorkspaceHeader({
   icon,
   metrics = [],
   title,
-  variant = 'brand',
 }: WorkspaceHeaderProps) {
   const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const isCompact = width < 760;
   const isConstrainedDesktop = width < 1180;
-  const headerBg = isDark ? colors.glassBg : colors.primary;
-  const isQuiet = variant === 'quiet';
 
   const resolveMetricColor = (tone: WorkspaceMetric['tone']) => {
-    if (isQuiet) {
-      if (tone === 'positive') return colors.success;
-      if (tone === 'danger') return colors.error;
-      if (tone === 'warning') return colors.warning;
-      return colors.textPrimary;
-    }
-    if (tone === 'positive') return '#D9FFF2';
-    if (tone === 'danger') return colors.emergency;
-    if (tone === 'warning') return '#FFF4CC';
-    return '#FFFFFF';
+    if (tone === 'positive') return colors.success;
+    if (tone === 'danger') return colors.error;
+    if (tone === 'warning') return colors.warning;
+    return colors.textPrimary;
   };
 
   const resolveMetricTone = (metric: WorkspaceMetric) =>
@@ -63,31 +54,17 @@ export function WorkspaceHeader({
   return (
     <View
       style={{
-        borderRadius: isCompact ? BorderRadius.md : BorderRadius.lg,
-        padding: isCompact ? Spacing.base : Spacing.lg,
-        backgroundColor: isQuiet ? colors.glassBg : headerBg,
-        borderWidth: 1,
-        borderColor: isQuiet ? colors.glassBorder : withAlpha(colors.primaryLight, isDark ? 0.3 : 0.28),
+        paddingVertical: isCompact ? Spacing.sm : Spacing.md,
+        paddingBottom: Spacing.lg,
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+        borderBottomWidth: 1,
+        borderColor: 'transparent',
+        borderBottomColor: colors.borderLight,
         gap: isCompact ? Spacing.md : Spacing.base,
         minWidth: 0,
-        overflow: 'hidden',
-        ...(isQuiet ? Shadows.md : Shadows.xl),
-        shadowColor: colors.shadowColor,
-        ...(strongGlassBackdropStyle ?? {}),
       }}
     >
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: -120,
-          right: -84,
-          width: 240,
-          height: 240,
-          borderRadius: 999,
-          backgroundColor: withAlpha(colors.accent, isDark ? 0.12 : 0.07),
-        }}
-      />
       <View
         pointerEvents="none"
         style={{
@@ -96,22 +73,9 @@ export function WorkspaceHeader({
           right: 0,
           bottom: 0,
           height: 1,
-          backgroundColor: withAlpha(colors.primaryLight, isDark ? 0.14 : 0.1),
+          backgroundColor: colors.borderLight,
         }}
       />
-      {!isQuiet ? (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 1,
-            backgroundColor: 'rgba(255, 255, 255, 0.24)',
-          }}
-        />
-      ) : null}
       <View
         style={{
           flexDirection: isCompact ? 'column' : 'row',
@@ -140,21 +104,20 @@ export function WorkspaceHeader({
               borderRadius: BorderRadius.md,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: isQuiet ? colors.primaryBg : withAlpha(colors.primary, 0.16),
-              borderWidth: 1,
-              borderColor: isQuiet ? colors.glassBorder : withAlpha(colors.primaryLight, 0.34),
+              backgroundColor: colors.primaryBg,
+              borderWidth: 0,
             }}
           >
-            <MaterialCommunityIcons name={icon} size={isCompact ? 22 : 24} color={isQuiet ? colors.primary : colors.primaryLight} />
+            <MaterialCommunityIcons name={icon} size={isCompact ? 22 : 24} color={colors.primary} />
           </View>
           <View style={{ flex: 1, minWidth: 0, maxWidth: 900 }}>
-            <Text numberOfLines={1} style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: isQuiet ? colors.textTertiary : 'rgba(255, 255, 255, 0.68)' }}>
+            <Text numberOfLines={1} style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
               {eyebrow}
             </Text>
-            <Text style={{ marginTop: 4, fontSize: isCompact ? Typography.fontSize['2xl'] : Typography.fontSize['3xl'], lineHeight: isCompact ? Typography.lineHeight['2xl'] : Typography.lineHeight['3xl'], fontFamily: Typography.fontFamily.display, color: isQuiet ? colors.textPrimary : '#FFFFFF' }}>
+            <Text style={{ marginTop: 4, fontSize: isCompact ? Typography.fontSize['2xl'] : Typography.fontSize['3xl'], lineHeight: isCompact ? Typography.lineHeight['2xl'] : Typography.lineHeight['3xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
               {title}
             </Text>
-            <Text style={{ marginTop: 8, maxWidth: 780, fontSize: Typography.fontSize.sm, lineHeight: 22, color: isQuiet ? colors.textSecondary : 'rgba(255, 255, 255, 0.74)' }}>
+            <Text style={{ marginTop: 8, maxWidth: 780, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
               {description}
             </Text>
           </View>
@@ -162,8 +125,8 @@ export function WorkspaceHeader({
         {actions ? (
           <View
             style={{
-              flexDirection: isCompact ? 'column' : 'row',
-              flexWrap: isCompact ? 'nowrap' : 'wrap',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
               justifyContent: isCompact ? 'flex-start' : 'flex-end',
               alignItems: 'stretch',
               alignSelf: isCompact || isConstrainedDesktop ? 'stretch' : 'flex-start',
@@ -181,22 +144,34 @@ export function WorkspaceHeader({
       </View>
 
       {metrics.length > 0 ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-          {metrics.map((metric) => (
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 0,
+            borderTopWidth: 1,
+            borderTopColor: colors.borderLight,
+            paddingTop: Spacing.sm,
+          }}
+        >
+          {metrics.map((metric, index) => (
             <View
               key={metric.label}
               style={{
                 flex: 1,
                 minWidth: isCompact ? 136 : 160,
-                padding: isQuiet ? Spacing.sm : Spacing.md,
-                borderRadius: BorderRadius.md,
-                backgroundColor: isQuiet ? colors.surfaceElevated : 'rgba(255, 255, 255, 0.08)',
-                borderWidth: 1,
-                borderColor: isQuiet ? colors.glassBorder : withAlpha(metric.tone === 'warning' ? colors.warning : metric.tone === 'danger' ? colors.error : colors.primaryLight, 0.2),
+                paddingVertical: Spacing.sm,
+                paddingHorizontal: isCompact ? 0 : index === 0 ? 0 : Spacing.md,
+                borderRadius: 0,
+                backgroundColor: 'transparent',
+                borderWidth: 0,
+                borderRightWidth: !isCompact && index < metrics.length - 1 ? 1 : 0,
+                borderBottomWidth: isCompact && index < metrics.length - 1 ? 1 : 0,
+                borderColor: colors.borderLight,
               }}
             >
-              <Text style={{ fontSize: Typography.fontSize.xs, color: isQuiet ? colors.textSecondary : 'rgba(255, 255, 255, 0.64)' }}>{metric.label}</Text>
-              <Text style={{ marginTop: 4, fontSize: isQuiet ? Typography.fontSize.lg : Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: resolveMetricColor(resolveMetricTone(metric)) }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>{metric.label}</Text>
+              <Text style={{ marginTop: 4, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: resolveMetricColor(resolveMetricTone(metric)) }}>
                 {metric.value}
               </Text>
             </View>
@@ -216,13 +191,13 @@ export function WorkspaceHeader({
                 paddingHorizontal: Spacing.sm,
                 paddingVertical: 7,
                 borderRadius: BorderRadius.full,
-                backgroundColor: isQuiet ? colors.surfaceElevated : 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: withAlpha(colors.primary, isDark ? 0.1 : 0.05),
                 borderWidth: 1,
-                borderColor: isQuiet ? colors.glassBorder : withAlpha(colors.primaryLight, 0.2),
+                borderColor: colors.borderLight,
               }}
             >
-              <MaterialCommunityIcons name={chip.icon} size={14} color={isQuiet ? colors.textSecondary : 'rgba(255, 255, 255, 0.82)'} />
-              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: isQuiet ? colors.textSecondary : 'rgba(255, 255, 255, 0.82)' }}>
+              <MaterialCommunityIcons name={chip.icon} size={14} color={colors.textSecondary} />
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
                 {chip.label}
               </Text>
             </View>

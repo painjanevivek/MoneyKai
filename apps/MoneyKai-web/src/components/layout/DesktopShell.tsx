@@ -42,17 +42,22 @@ const NAV_ITEMS: NavItem[] = [
 
 const MOBILE_APK_DOWNLOAD_URL: string | null = null;
 
-const ROUTE_META: { href: string; title: string; subtitle: string }[] = [
+const ROUTE_META: { href: string; title: string; subtitle: string; icon?: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
   { href: '/dashboard', title: 'Dashboard', subtitle: 'A clear overview of your money' },
   { href: '/transactions', title: 'Transactions', subtitle: 'Track income, expenses, and history' },
   { href: '/ai-review', title: 'AI Review', subtitle: 'Review receipt and image analysis before using it' },
-  { href: '/budgets', title: 'Budgets', subtitle: 'Review monthly limits and budget health' },
+  { href: '/budgets', title: 'Budgets', subtitle: 'Review monthly limits and budget health', icon: 'wallet-outline' },
   { href: '/goals', title: 'Goals', subtitle: 'Stay focused on savings progress' },
   { href: '/wealth', title: 'Wealth', subtitle: 'Net worth, allocation, and AI portfolio review' },
   { href: '/portfolio', title: 'Portfolio', subtitle: 'Manual holdings and provider placeholders' },
   { href: '/reports', title: 'Reports', subtitle: 'Spot patterns in your spending' },
   { href: '/accounts', title: 'Accounts', subtitle: 'Linked balances, sync health, and account controls' },
   { href: '/categories', title: 'Categories', subtitle: 'See where money goes by category' },
+  { href: '/groups', title: 'Groups', subtitle: 'Shared spending, settlements, and family context' },
+  { href: '/learn-center', title: 'Learn Center', subtitle: 'Practical money guides for calmer decisions' },
+  { href: '/notes', title: 'Notes', subtitle: 'Keep review context beside your records' },
+  { href: '/notifications', title: 'Notifications', subtitle: 'Review alerts, reminders, and app updates' },
+  { href: '/savings', title: 'Savings', subtitle: 'Track goals, streaks, and emergency buffers' },
   { href: '/subscriptions', title: 'Subscriptions', subtitle: '' },
   { href: '/settings', title: 'Settings', subtitle: 'Profile, privacy, and backups' },
 ];
@@ -80,7 +85,7 @@ const isRouteActive = (pathname: string, href: string) => {
 function SlidingNavItems({ pathname, orientation }: { pathname: string; orientation: 'horizontal' | 'vertical' }) {
   const { colors } = useTheme();
   const [navLayouts, setNavLayouts] = useState<Record<string, NavLayout>>({});
-  const activeItem = NAV_ITEMS.find((item) => isRouteActive(pathname, item.href)) ?? NAV_ITEMS[0];
+  const activeItem = NAV_ITEMS.find((item) => isRouteActive(pathname, item.href));
   const isHorizontal = orientation === 'horizontal';
   const indicatorX = useSharedValue(0);
   const indicatorY = useSharedValue(0);
@@ -89,6 +94,11 @@ function SlidingNavItems({ pathname, orientation }: { pathname: string; orientat
   const indicatorOpacity = useSharedValue(0);
 
   useEffect(() => {
+    if (!activeItem) {
+      indicatorOpacity.value = withTiming(0, { duration: 120 });
+      return;
+    }
+
     const layout = navLayouts[activeItem.href];
     if (!layout) return;
 
@@ -102,7 +112,7 @@ function SlidingNavItems({ pathname, orientation }: { pathname: string; orientat
     indicatorWidth.value = withTiming(layout.width, config);
     indicatorHeight.value = withTiming(layout.height, config);
     indicatorOpacity.value = withTiming(1, { duration: 120 });
-  }, [activeItem.href, indicatorHeight, indicatorOpacity, indicatorWidth, indicatorX, indicatorY, navLayouts]);
+  }, [activeItem, indicatorHeight, indicatorOpacity, indicatorWidth, indicatorX, indicatorY, navLayouts]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
     opacity: indicatorOpacity.value,
@@ -166,7 +176,7 @@ function SlidingNavItems({ pathname, orientation }: { pathname: string; orientat
       />
 
       {NAV_ITEMS.map((item) => {
-        const active = item.href === activeItem.href;
+        const active = item.href === activeItem?.href;
         return (
           <Pressable
             key={`${item.href}-${item.label}`}
@@ -300,30 +310,6 @@ export function DesktopShell({ children }: PropsWithChildren) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <View style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              top: -160,
-              right: -120,
-              width: 320,
-              height: 320,
-              borderRadius: 999,
-              backgroundColor: withAlpha(colors.accent, 0.12),
-            }}
-          />
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              bottom: -180,
-              left: -120,
-              width: 300,
-              height: 300,
-              borderRadius: 999,
-              backgroundColor: withAlpha(colors.primary, 0.08),
-            }}
-          />
           {showMonthMenu ? (
             <Pressable
               onPress={() => setShowMonthMenu(false)}
@@ -341,17 +327,14 @@ export function DesktopShell({ children }: PropsWithChildren) {
           <View
             style={{
               borderBottomWidth: 1,
-              borderBottomColor: colors.glassBorder,
-              backgroundColor: colors.glassBg,
+              borderBottomColor: colors.borderLight,
+              backgroundColor: colors.background,
               paddingHorizontal: Spacing.base,
               paddingTop: Spacing.sm,
               paddingBottom: Spacing.md,
               gap: Spacing.md,
               position: 'relative',
               zIndex: 40,
-              ...Shadows.lg,
-              shadowColor: colors.shadowColor,
-              ...(glassBackdropStyle ?? {}),
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
@@ -416,9 +399,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     borderRadius: 20,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
-                    borderWidth: 1,
-                    borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
+                    backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
+                    borderWidth: 0,
                     transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                   })}
                 >
@@ -435,9 +417,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     borderRadius: 20,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
-                    borderWidth: 1,
-                    borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
+                    backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
+                    borderWidth: 0,
                     transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                   })}
                 >
@@ -457,9 +438,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: Spacing.sm,
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
+                  backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
                   borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}38` : colors.glassBorder,
+                  borderColor: hovered ? `${colors.primary}38` : colors.borderLight,
                   borderRadius: BorderRadius.md,
                   paddingHorizontal: Spacing.md,
                   paddingVertical: 11,
@@ -530,24 +511,22 @@ export function DesktopShell({ children }: PropsWithChildren) {
           pointerEvents="none"
           style={{
             position: 'absolute',
-            top: -240,
-            right: -180,
-            width: 520,
-            height: 520,
-            borderRadius: 999,
-            backgroundColor: withAlpha(colors.accent, 0.1),
+            top: 0,
+            bottom: 0,
+            left: sidebarWidth + Spacing.base,
+            width: 1,
+            backgroundColor: withAlpha(colors.primaryLight, 0.08),
           }}
         />
         <View
           pointerEvents="none"
           style={{
             position: 'absolute',
-            bottom: -260,
-            left: 180,
-            width: 460,
-            height: 460,
-            borderRadius: 999,
-            backgroundColor: withAlpha(colors.primary, 0.065),
+            top: 0,
+            bottom: 0,
+            right: Spacing.base,
+            width: 1,
+            backgroundColor: withAlpha(colors.primaryLight, 0.06),
           }}
         />
         <View
@@ -564,7 +543,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
             paddingVertical: Spacing.base,
             paddingHorizontal: Spacing.base,
             overflow: 'hidden',
-            ...Shadows.md,
+            ...Shadows.sm,
             shadowColor: colors.shadowColor,
             ...(glassBackdropStyle ?? {}),
           }}
@@ -867,10 +846,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
               marginTop: Spacing.base,
               marginRight: Spacing.base,
               marginLeft: Spacing.base,
-              borderWidth: 1,
-              borderColor: colors.glassBorder,
-              borderRadius: BorderRadius['2xl'],
-              backgroundColor: colors.glassBg,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderLight,
+              backgroundColor: 'transparent',
               position: 'relative',
               zIndex: 40,
               overflow: 'visible',
@@ -880,20 +858,35 @@ export function DesktopShell({ children }: PropsWithChildren) {
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: Spacing.lg,
-              ...Shadows.lg,
-              shadowColor: colors.shadowColor,
-              ...(glassBackdropStyle ?? {}),
             }}
           >
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-                {activeMeta.title}
-              </Text>
-              {activeMeta.subtitle ? (
-                <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-                  {activeMeta.subtitle}
-                </Text>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.md, minWidth: 0 }}>
+              {activeMeta.icon ? (
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: BorderRadius.lg,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: colors.surfaceElevated,
+                    borderWidth: 1,
+                    borderColor: colors.borderLight,
+                  }}
+                >
+                  <MaterialCommunityIcons name={activeMeta.icon} size={27} color={colors.textPrimary} />
+                </View>
               ) : null}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }} numberOfLines={1}>
+                  {activeMeta.title}
+                </Text>
+                {activeMeta.subtitle ? (
+                  <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, color: colors.textSecondary }} numberOfLines={1}>
+                    {activeMeta.subtitle}
+                  </Text>
+                ) : null}
+              </View>
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, position: 'relative', zIndex: 60, overflow: 'visible' }}>
@@ -906,9 +899,9 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 8,
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
+                  backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
                   borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}38` : colors.glassBorder,
+                  borderColor: hovered ? `${colors.primary}38` : colors.borderLight,
                   borderRadius: BorderRadius.md,
                   paddingHorizontal: Spacing.md,
                   paddingVertical: 10,
@@ -932,9 +925,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   borderRadius: 21,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
-                  borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
+                  backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
+                  borderWidth: 0,
                   transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                 })}
               >
@@ -950,9 +942,8 @@ export function DesktopShell({ children }: PropsWithChildren) {
                   borderRadius: 21,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
-                  borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
+                  backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
+                  borderWidth: 0,
                   transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                 })}
               >

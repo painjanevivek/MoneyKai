@@ -67,7 +67,7 @@ export default function GoalsScreen() {
               {activeChallenges.map((challenge) => {
                 const progress = (challenge.current_streak / Math.max(1, challenge.duration_days)) * 100;
                 return (
-                  <Card key={challenge.id}>
+                  <Card key={challenge.id} style={{ backgroundColor: colors.primaryBg, borderRadius: BorderRadius.sm, borderWidth: 0 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.md }}>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>

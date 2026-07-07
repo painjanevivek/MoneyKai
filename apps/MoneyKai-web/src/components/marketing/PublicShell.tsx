@@ -502,16 +502,18 @@ export function SectionCard({
     <View
       style={[
         {
-          backgroundColor: variant === 'elevated' ? colors.surfaceElevated : colors.card,
-          borderRadius: BorderRadius[borderRadius],
+          backgroundColor: variant === 'elevated' ? colors.surfaceElevated : 'transparent',
+          borderRadius: variant === 'default' ? 0 : BorderRadius[borderRadius],
           padding: Spacing.lg,
           overflow: 'hidden',
-          ...(variant === 'outlined'
-            ? { borderWidth: 1, borderColor: colors.borderLight }
+          ...(variant === 'default'
+            ? { borderTopWidth: 1, borderTopColor: colors.borderLight }
+            : variant === 'outlined'
+            ? { borderWidth: 1, borderColor: colors.borderLight, backgroundColor: 'transparent' }
             : {
                 borderWidth: 1,
                 borderColor: colors.borderLight,
-                ...(variant === 'elevated' ? { ...Shadows.lg } : { ...Shadows.md }),
+                ...Shadows.sm,
                 shadowColor: colors.shadowColor,
               }),
         },

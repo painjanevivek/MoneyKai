@@ -34,7 +34,7 @@ export default function LearnIndexScreen() {
         description="MoneyKai Learn avoids scraped content and filler. It focuses on budgeting, expense tracking, saving, shared money, and the small decisions that actually show up in real life."
       >
         <View style={{ gap: Spacing['2xl'] }}>
-          <SectionCard variant="elevated" borderRadius="2xl" style={{ gap: Spacing.sm }}>
+          <SectionCard style={{ gap: Spacing.sm }}>
             <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               Featured articles
             </Text>

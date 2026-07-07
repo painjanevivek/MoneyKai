@@ -46,6 +46,7 @@ const CookieConsentBanner = lazy(() =>
 const appShellRoutePrefixes = [
   '/accounts',
   '/ai-review',
+  '/analytics',
   '/auth',
   '/budgets',
   '/categories',

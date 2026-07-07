@@ -13,6 +13,7 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 const EXCHANGE_CODE_TTL_MS = 5 * 60 * 1000;
 const MAX_RETURN_PATH_LENGTH = 240;
 const MOBILE_REDIRECT_URI = 'moneykai-mobile://auth/google';
+const GOOGLE_OAUTH_CALLBACK_PATH = '/api/v1/auth/google/callback';
 const DEFAULT_TRUSTED_WEB_APP_HOSTS = new Set([
   'moneykai.com',
   'www.moneykai.com',
@@ -95,17 +96,51 @@ const getOAuthSigningSecret = () => {
   return value.trim();
 };
 
+const normalizeGoogleRedirectUri = (value) => {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new GoogleOAuthError('Google OAuth redirect URI is not a valid URL.', {
+      code: 'GOOGLE_REDIRECT_URI_INVALID',
+      status: 503,
+    });
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new GoogleOAuthError('Google OAuth redirect URI must use HTTP or HTTPS.', {
+      code: 'GOOGLE_REDIRECT_URI_INVALID',
+      status: 503,
+    });
+  }
+
+  if (parsed.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname)) {
+    throw new GoogleOAuthError('Google OAuth redirect URI must use HTTPS outside local development.', {
+      code: 'GOOGLE_REDIRECT_URI_INSECURE',
+      status: 503,
+    });
+  }
+
+  parsed.username = '';
+  parsed.password = '';
+  parsed.hash = '';
+  return parsed.toString();
+};
+
+const buildGoogleCallbackUrl = (origin) =>
+  new URL(GOOGLE_OAUTH_CALLBACK_PATH, `${normalizeWebAppUrl(origin)}/`).toString();
+
 const getBackendGoogleRedirectUri = (candidateOrigin) => {
   const configured = process.env.GOOGLE_OAUTH_REDIRECT_URI || '';
   if (configured.trim()) {
-    return configured.trim();
+    return normalizeGoogleRedirectUri(configured.trim());
   }
 
-  if (candidateOrigin && isTrustedWebAppUrl(candidateOrigin)) {
-    return `${normalizeWebAppUrl(candidateOrigin)}/api/v1/auth/google/callback`;
+  if (candidateOrigin && isLocalWebAppUrl(candidateOrigin)) {
+    return buildGoogleCallbackUrl(candidateOrigin);
   }
 
-  return `${getAppUrl().replace(/\/$/, '')}/api/v1/auth/google/callback`;
+  return buildGoogleCallbackUrl(getAppUrl());
 };
 
 const isLocalWebAppUrl = (value) => {
@@ -319,6 +354,7 @@ const buildGoogleAuthorizationUrl = ({ platform, returnTo, requestOrigin, reques
 
   return {
     authorizationUrl: url.toString(),
+    redirectUri,
   };
 };
 
@@ -537,6 +573,7 @@ module.exports = {
   buildGoogleAuthorizationUrl,
   completeGoogleOAuthCallback,
   consumeExchangeCode,
+  getBackendGoogleRedirectUri,
   getPublicGoogleOAuthError,
   getWebCallbackUrl,
   sanitizeReturnPath,

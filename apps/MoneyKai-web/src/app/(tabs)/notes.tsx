@@ -8,7 +8,7 @@ import { NoteModal } from '@/components/dashboard/NoteModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatRelativeDate } from '@/utils/dateUtils';
 import { confirmDestructive } from '@/utils/confirmDestructive';
-import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import type { Note } from '@/types/note';
 
 export default function NotesScreen() {
@@ -151,17 +151,15 @@ export default function NotesScreen() {
             <View
               key={note.id}
               style={{
-                backgroundColor: colors.card,
-                borderRadius: BorderRadius.lg,
-                padding: Spacing.base,
-                marginBottom: Spacing.md,
-                ...Shadows.sm,
-                shadowColor: colors.shadowColor,
-                borderWidth: 1,
+                backgroundColor: note.is_pinned ? colors.primaryBg : 'transparent',
+                borderRadius: note.is_pinned ? BorderRadius.sm : 0,
+                paddingVertical: Spacing.base,
+                paddingHorizontal: note.is_pinned ? Spacing.sm : 0,
+                borderBottomWidth: 1,
                 borderColor: pendingNoteIds.includes(note.id)
                   ? colors.primary
                   : note.is_pinned
-                    ? colors.textSecondary
+                    ? colors.primaryBg
                     : colors.borderLight,
                 opacity: pendingNoteIds.includes(note.id) ? 0.82 : 1,
               }}

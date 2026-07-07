@@ -343,7 +343,7 @@ export default function GroupsScreen() {
 
           return (
             <TouchableOpacity key={group.id} onPress={() => setSelectedGroup(group.id)} activeOpacity={0.7}>
-              <Card style={{ marginBottom: Spacing.md }}>
+              <Card style={{ borderBottomWidth: 1, borderBottomColor: colors.borderLight, borderRadius: 0, paddingHorizontal: 0 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
                   <View
                     style={{
@@ -390,7 +390,7 @@ export default function GroupsScreen() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         borderWidth: 2,
-                        borderColor: colors.card,
+                        borderColor: colors.background,
                         marginLeft: index > 0 ? -8 : 0,
                         zIndex: 10 - index,
                       }}

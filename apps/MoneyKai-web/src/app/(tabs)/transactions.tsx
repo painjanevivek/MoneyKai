@@ -15,7 +15,7 @@ import { getCategoryById, EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate, formatRelativeDate } from '@/utils/dateUtils';
 import { confirmDestructive } from '@/utils/confirmDestructive';
-import { Typography, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import type { Transaction, TransactionCaptureSource } from '@/types/transaction';
 
 const FILTER_TABS = ['All', 'Expense', 'Income'] as const;
@@ -304,12 +304,10 @@ export default function TransactionsScreen() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: colors.card,
-          borderRadius: BorderRadius.md,
-          padding: Spacing.md,
-          marginBottom: Spacing.sm,
-          ...Shadows.sm,
-          shadowColor: colors.shadowColor,
+          backgroundColor: 'transparent',
+          borderBottomWidth: 1,
+          borderBottomColor: colors.borderLight,
+          paddingVertical: Spacing.md,
         }}
       >
         <View
@@ -317,10 +315,12 @@ export default function TransactionsScreen() {
             width: 44,
             height: 44,
             borderRadius: BorderRadius.sm,
-            backgroundColor: category?.colorLight || '#F3F4F6',
+            backgroundColor: category?.colorLight || colors.surfaceElevated,
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: Spacing.md,
+            borderWidth: 1,
+            borderColor: colors.borderLight,
           }}
         >
           <MaterialCommunityIcons name={(category?.icon || 'help-circle-outline') as any} size={22} color={category?.color || '#6B7280'} />
@@ -341,7 +341,7 @@ export default function TransactionsScreen() {
                 </View>
               ) : null}
               {captureSourceLabel ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: BorderRadius.full, backgroundColor: colors.surface }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: BorderRadius.full, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.borderLight }}>
                   <MaterialCommunityIcons name="source-branch" size={12} color={colors.textSecondary} />
                   <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
                     {captureSourceLabel}
@@ -357,6 +357,8 @@ export default function TransactionsScreen() {
             fontFamily: Typography.fontFamily.semiBold,
             color: isExpense ? colors.emergency : colors.primaryLight,
             marginLeft: Spacing.md,
+            minWidth: 108,
+            textAlign: 'right',
           }}
         >
           {isExpense ? '-' : '+'}{formatCurrency(txn.amount)}
@@ -373,7 +375,7 @@ export default function TransactionsScreen() {
               justifyContent: 'center',
               backgroundColor: colors.surface,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: colors.borderLight,
             }}
           >
             <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.textSecondary} />
@@ -389,7 +391,7 @@ export default function TransactionsScreen() {
               justifyContent: 'center',
               backgroundColor: colors.emergencyBg,
               borderWidth: 1,
-              borderColor: colors.emergency,
+              borderColor: `${colors.emergency}38`,
             }}
           >
             <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.emergency} />

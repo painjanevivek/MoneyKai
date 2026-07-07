@@ -14,6 +14,7 @@ type AuthGatewayResponse = {
 
 type GoogleOAuthStartResponse = {
   authorizationUrl: string;
+  redirectUri?: string;
 };
 
 class AuthGatewayError extends Error {

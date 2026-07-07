@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ScrollView, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/ui/Card';
+import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { LEARN_ARTICLES } from '@/content/learn';
@@ -41,73 +42,71 @@ export default function LearnCenterScreen() {
           paddingBottom: 160,
         }}
       >
-        <View style={{ gap: Spacing.sm, marginBottom: Spacing.lg }}>
-          <Text
-            style={{
-              fontSize: Typography.fontSize.xl,
-              fontFamily: Typography.fontFamily.display,
-              color: colors.textPrimary,
-            }}
-          >
-            Learn
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20, maxWidth: 620 }}>
-            Short, useful guidance for budgeting, shared expenses, and calm money routines. Built for real people, not filler.
-          </Text>
-        </View>
+        <WorkspaceHeader
+          icon="school-outline"
+          eyebrow="LEARN CENTER"
+          title="Calmer money guidance"
+          description="Short, useful guidance for budgeting, shared expenses, and everyday money routines."
+          variant="quiet"
+          chips={[
+            { icon: 'wallet-outline', label: 'Budgeting' },
+            { icon: 'account-group-outline', label: 'Shared costs' },
+            { icon: 'shield-alert-outline', label: 'First aid' },
+          ]}
+        />
 
-        <Card variant="elevated" borderRadius="2xl" style={{ marginBottom: Spacing.lg, padding: Spacing.lg }}>
-          <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.sm }}>
-            {learnHighlights.map((item) => (
-              <View
-                key={item.title}
-                style={{
-                  flexGrow: 1,
-                  flexBasis: isWide ? 220 : '100%',
-                  gap: Spacing.sm,
-                  padding: Spacing.md,
-                  borderRadius: BorderRadius.lg,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  minHeight: 132,
-                }}
-              >
-                <View style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: BorderRadius.md,
-                  backgroundColor: colors.primaryBg,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <MaterialCommunityIcons name={item.icon as any} size={20} color={colors.primary} />
-                </View>
-                <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                  {item.title}
-                </Text>
-                <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-                  {item.copy}
-                </Text>
+        <View style={{ flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap', gap: Spacing.lg, marginVertical: Spacing.xl }}>
+          {learnHighlights.map((item, index) => (
+            <View
+              key={item.title}
+              style={{
+                flexGrow: 1,
+                flexBasis: isWide ? 220 : '100%',
+                gap: Spacing.sm,
+                paddingLeft: isWide && index > 0 ? Spacing.lg : 0,
+                borderLeftWidth: isWide && index > 0 ? 1 : 0,
+                borderLeftColor: colors.borderLight,
+                minHeight: 120,
+              }}
+            >
+              <View style={{
+                width: 38,
+                height: 38,
+                borderRadius: BorderRadius.md,
+                backgroundColor: colors.primaryBg,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}>
+                <MaterialCommunityIcons name={item.icon as any} size={20} color={colors.primary} />
               </View>
-            ))}
-          </View>
-        </Card>
+              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                {item.title}
+              </Text>
+              <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
+                {item.copy}
+              </Text>
+            </View>
+          ))}
+        </View>
 
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>
           Featured articles
         </Text>
 
-        <View style={{ gap: Spacing.md }}>
-          {LEARN_ARTICLES.map((article, index) => (
+        <View>
+          {LEARN_ARTICLES.map((article) => (
             <Link key={article.slug} href={`/learn/${article.slug}` as any} asChild>
               <TouchableOpacity activeOpacity={0.85}>
                 <Card
-                  variant={index === 0 ? 'elevated' : 'default'}
-                  borderRadius="2xl"
                   style={{
                     gap: Spacing.sm,
                     overflow: 'hidden',
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.borderLight,
+                    borderRadius: 0,
+                    paddingHorizontal: 0,
                   }}
                 >
                   <View style={{ flexDirection: isWide ? 'row' : 'column', justifyContent: 'space-between', gap: Spacing.md }}>

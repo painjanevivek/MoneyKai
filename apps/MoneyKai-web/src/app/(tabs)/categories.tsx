@@ -49,11 +49,11 @@ export default function CategoriesScreen() {
                     <View
                       key={item.category}
                       style={{
-                        backgroundColor: colors.surface,
-                        borderRadius: BorderRadius.md,
-                        borderWidth: 1,
+                        backgroundColor: 'transparent',
+                        borderRadius: 0,
+                        borderBottomWidth: 1,
                         borderColor: colors.borderLight,
-                        padding: Spacing.md,
+                        paddingVertical: Spacing.md,
                       }}
                     >
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: Spacing.sm }}>

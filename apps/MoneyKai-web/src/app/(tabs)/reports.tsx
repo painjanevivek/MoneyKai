@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
-import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { AIInsights } from '@/components/dashboard/AIInsights';
 import { getCategoryById } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -30,7 +30,7 @@ const getConfidenceTone = (confidence: number) => {
 };
 
 export default function ReportsScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? 'local');
   const transactions = useTransactionStore((state) => state.transactions);
@@ -223,14 +223,13 @@ export default function ReportsScreen() {
         style={{
           flex: 1,
           minWidth: 180,
-          backgroundColor: colors.card,
-          borderRadius: BorderRadius.md,
-          borderWidth: 1,
+          backgroundColor: 'transparent',
+          borderRightWidth: isWide ? 1 : 0,
+          borderBottomWidth: isWide ? 0 : 1,
           borderColor: colors.borderLight,
-          padding: Spacing.base,
+          paddingVertical: Spacing.md,
+          paddingHorizontal: isWide ? Spacing.base : 0,
           gap: Spacing.sm,
-          ...Shadows.sm,
-          shadowColor: colors.shadowColor,
         }}
       >
         <View
@@ -261,11 +260,11 @@ export default function ReportsScreen() {
       <View
         key={result.fileName}
         style={{
-          backgroundColor: colors.card,
-          borderRadius: BorderRadius.md,
-          borderWidth: 1,
+          backgroundColor: 'transparent',
+          borderRadius: 0,
+          borderBottomWidth: 1,
           borderColor: colors.borderLight,
-          padding: Spacing.base,
+          paddingVertical: Spacing.base,
           gap: Spacing.sm,
         }}
       >
@@ -319,11 +318,12 @@ export default function ReportsScreen() {
           flexDirection: isWide ? 'row' : 'column',
           alignItems: isWide ? 'center' : 'stretch',
           gap: Spacing.md,
-          backgroundColor: selected && !duplicate ? `${colors.primary}0D` : colors.card,
-          borderRadius: BorderRadius.md,
-          borderWidth: 1,
-          borderColor: duplicate ? `${colors.warning}55` : selected ? `${colors.primary}70` : colors.borderLight,
-          padding: Spacing.base,
+          backgroundColor: selected && !duplicate ? `${colors.primary}0A` : 'transparent',
+          borderRadius: BorderRadius.sm,
+          borderBottomWidth: 1,
+          borderColor: duplicate ? `${colors.warning}55` : colors.borderLight,
+          paddingVertical: Spacing.base,
+          paddingHorizontal: selected && !duplicate ? Spacing.sm : 0,
           opacity: duplicate ? 0.72 : 1,
           transform: hovered && !pressed && !duplicate ? [{ translateY: -1 }] : [{ translateY: 0 }],
         })}
@@ -403,14 +403,11 @@ export default function ReportsScreen() {
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={true}>
         <View
           style={{
-            backgroundColor: isDark ? colors.surface : colors.card,
-            borderRadius: BorderRadius.lg,
-            borderWidth: 1,
-            borderColor: colors.borderLight,
-            padding: Spacing.xl,
+            backgroundColor: 'transparent',
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderLight,
+            paddingVertical: Spacing.xl,
             gap: Spacing.lg,
-            ...Shadows.sm,
-            shadowColor: colors.shadowColor,
           }}
         >
           <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.lg, alignItems: isWide ? 'center' : 'stretch' }}>
@@ -488,7 +485,7 @@ export default function ReportsScreen() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.md }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: Spacing.md }}>
           {renderMetric('Synced mobile/web history', String(transactions.length), 'database-sync-outline', 'primary')}
           {renderMetric('Rows awaiting import', String(allDrafts.length), 'file-search-outline', 'warning')}
           {renderMetric('Statement expenses', formatCurrency(pendingSummary.expense), 'arrow-up-circle-outline', 'neutral')}
@@ -509,8 +506,8 @@ export default function ReportsScreen() {
               <View
                 style={{
                   width: isWide ? 360 : '100%',
-                  backgroundColor: colors.card,
-                  borderRadius: BorderRadius.md,
+                  backgroundColor: colors.surface,
+                  borderRadius: BorderRadius.sm,
                   borderWidth: 1,
                   borderColor: colors.borderLight,
                   padding: Spacing.base,

@@ -60,9 +60,9 @@ export const Button: React.FC<ButtonProps> = ({
         danger: { bg: 'rgba(255, 225, 229, 0.94)', text: '#7F1D1D', hoverBg: '#FFFFFF', hoverBorder: 'rgba(255, 255, 255, 0.6)' },
       }
     : {
-    primary: { bg: colors.primary, text: colors.textInverse, hoverBg: colors.primaryDark, hoverBorder: colors.primaryDark },
-    secondary: { bg: colors.primaryBg, text: colors.primaryDark, hoverBg: withAlpha(colors.primary, isDark ? 0.22 : 0.16), hoverBorder: withAlpha(colors.primary, 0.34) },
-    outline: { bg: colors.glassBg, text: colors.primary, border: colors.glassBorder, hoverBg: withAlpha(colors.accent, isDark ? 0.18 : 0.1), hoverBorder: colors.accent },
+    primary: { bg: colors.primary, text: colors.textInverse, hoverBg: colors.primaryDark, hoverBorder: withAlpha(colors.primaryLight, isDark ? 0.7 : 0.32) },
+    secondary: { bg: colors.primaryBg, text: colors.primaryDark, hoverBg: withAlpha(colors.primary, isDark ? 0.2 : 0.12), hoverBorder: withAlpha(colors.primary, 0.28) },
+    outline: { bg: colors.surface, text: colors.textPrimary, border: colors.borderLight, hoverBg: colors.surfaceElevated, hoverBorder: withAlpha(colors.primary, 0.34) },
     ghost: { bg: 'transparent', text: colors.textSecondary, hoverBg: withAlpha(colors.primary, 0.1), hoverBorder: withAlpha(colors.primary, 0.2) },
     danger: { bg: colors.emergency, text: colors.textInverse, hoverBg: `${colors.emergency}E6`, hoverBorder: colors.emergency },
   };
@@ -89,11 +89,11 @@ export const Button: React.FC<ButtonProps> = ({
           minWidth: 0,
           maxWidth: '100%',
           paddingHorizontal: s.paddingHorizontal,
-          borderRadius: BorderRadius.md,
+          borderRadius: BorderRadius.full,
           opacity: isUnavailable ? ComponentTokens.disabledOpacity : 1,
           gap: 8,
           transform: pressed ? [{ scale: ComponentTokens.pressedScale }] : !isUnavailable && hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
-          borderWidth: 1.5,
+          borderWidth: 1,
           borderColor: isUnavailable
             ? colors.borderLight
             : focused
@@ -102,7 +102,7 @@ export const Button: React.FC<ButtonProps> = ({
                 ? (v.hoverBorder ?? 'transparent')
                 : (v.border ?? 'transparent'),
           ...(variant === 'primary' && !isUnavailable
-            ? { ...Shadows.md, shadowColor: isDark ? colors.primary : colors.shadowColor }
+            ? { ...Shadows.sm, shadowColor: isDark ? colors.primary : colors.shadowColor }
             : {}),
           ...(fullWidth ? { width: '100%' } : {}),
         },

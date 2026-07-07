@@ -2,7 +2,7 @@ import React from 'react';
 import { View, type ViewStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, Shadows, Spacing } from '../../constants/theme';
-import { softGlassBackdropStyle, withAlpha } from '@/utils/glassStyle';
+import { withAlpha } from '@/utils/glassStyle';
 
 interface CardProps {
   children: React.ReactNode;
@@ -22,7 +22,7 @@ export const Card: React.FC<CardProps> = ({
   borderRadius = 'lg',
 }) => {
   const { colors, isDark } = useTheme();
-  const isGlass = variant === 'default' || variant === 'glass';
+  const isToned = tone !== 'default';
   const toneColor = {
     default: colors.primary,
     primary: colors.primary,
@@ -32,8 +32,10 @@ export const Card: React.FC<CardProps> = ({
     danger: colors.error,
     info: colors.info,
   }[tone];
-  const surfaceColor = isGlass
-    ? colors.glassBg
+  const surfaceColor = variant === 'default'
+    ? 'transparent'
+    : variant === 'glass'
+      ? colors.surface
     : variant === 'elevated'
       ? colors.surfaceElevated
       : colors.card;
@@ -45,18 +47,18 @@ export const Card: React.FC<CardProps> = ({
     minWidth: 0,
     maxWidth: '100%',
     overflow: 'hidden',
-    ...(variant === 'outlined'
-      ? { borderWidth: 1, borderColor: colors.borderLight }
+    ...(variant === 'default'
+      ? {
+          borderWidth: isToned ? 1 : 0,
+          borderColor: isToned ? withAlpha(toneColor, isDark ? 0.28 : 0.2) : 'transparent',
+        }
+      : variant === 'outlined'
+      ? { borderWidth: 1, borderColor: colors.borderLight, backgroundColor: 'transparent' }
       : variant === 'elevated'
-        ? { borderWidth: 1, borderColor: colors.borderLight, ...Shadows.lg, shadowColor: colors.shadowColor }
+        ? { borderWidth: 1, borderColor: colors.borderLight, ...Shadows.sm, shadowColor: colors.shadowColor }
         : {
             borderWidth: 1,
-            borderColor: tone === 'default'
-              ? (isGlass ? colors.glassBorder : colors.borderLight)
-              : withAlpha(toneColor, isDark ? 0.34 : 0.24),
-            ...Shadows.md,
-            shadowColor: colors.shadowColor,
-            ...(softGlassBackdropStyle ?? {}),
+            borderColor: isToned ? withAlpha(toneColor, isDark ? 0.34 : 0.24) : colors.borderLight,
           }
     ),
   };
@@ -70,38 +72,10 @@ export const Card: React.FC<CardProps> = ({
           top: 0,
           left: 0,
           right: 0,
-          height: tone === 'default' && isGlass ? 1 : tone === 'default' ? 0 : 3,
-          backgroundColor: tone === 'default' ? withAlpha(colors.primaryLight, isDark ? 0.18 : 0.12) : withAlpha(toneColor, 0.82),
+          height: isToned ? 2 : 0,
+          backgroundColor: withAlpha(toneColor, 0.82),
         }}
       />
-      {tone === 'default' && isGlass ? (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: -82,
-            right: -72,
-            width: 148,
-            height: 148,
-            borderRadius: 999,
-            backgroundColor: withAlpha(colors.accent, isDark ? 0.08 : 0.05),
-          }}
-        />
-      ) : null}
-      {tone === 'default' ? null : (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: -72,
-            right: -58,
-            width: 132,
-            height: 132,
-            borderRadius: 999,
-            backgroundColor: withAlpha(toneColor, isDark ? 0.1 : 0.06),
-          }}
-        />
-      )}
       {children}
     </View>
   );
