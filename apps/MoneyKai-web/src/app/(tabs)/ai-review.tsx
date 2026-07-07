@@ -234,6 +234,30 @@ export default function AiReviewScreen() {
     return items;
   }, [analyzeState.data, receiptDraft, reviewDecision, selectedAsset, selectedTaskOption.icon, selectedTaskOption.title, transactions.length]);
   const selectedReviewItem = reviewQueueItems.find((item) => item.id === selectedReviewId) ?? reviewQueueItems[0];
+  const orchestrationEvidence = [
+    {
+      label: 'Source',
+      value: selectedAsset?.filename ?? 'No attachment selected',
+      icon: 'file-eye-outline',
+    },
+    {
+      label: 'Workflow',
+      value: selectedTaskOption.title,
+      icon: selectedTaskOption.icon,
+    },
+    {
+      label: 'Model state',
+      value: attachmentsReady ? 'Vision provider ready' : 'Setup required',
+      icon: attachmentsReady ? 'cloud-check-outline' : 'cloud-alert-outline',
+    },
+    {
+      label: 'Uncertainty',
+      value: analyzeState.data?.warnings.length
+        ? `${analyzeState.data.warnings.length} warning${analyzeState.data.warnings.length === 1 ? '' : 's'}`
+        : 'No warnings returned',
+      icon: analyzeState.data?.warnings.length ? 'alert-circle-outline' : 'shield-check-outline',
+    },
+  ] as const;
 
   React.useEffect(() => {
     return () => {
@@ -707,6 +731,32 @@ export default function AiReviewScreen() {
             <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
               Review required before using any of these details.
             </Text>
+          </View>
+
+          <View style={{ borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: colors.borderLight, overflow: 'hidden' }}>
+            {orchestrationEvidence.map((item, index) => (
+              <View
+                key={item.label}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: Spacing.sm,
+                  padding: Spacing.md,
+                  borderTopWidth: index > 0 ? 1 : 0,
+                  borderTopColor: colors.borderLight,
+                }}
+              >
+                <MaterialCommunityIcons name={item.icon} size={17} color={colors.textSecondary} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                    {item.label}
+                  </Text>
+                  <Text style={{ marginTop: 2, fontSize: Typography.fontSize.sm, color: colors.textPrimary }} numberOfLines={1}>
+                    {item.value}
+                  </Text>
+                </View>
+              </View>
+            ))}
           </View>
 
           {analyzeState.data.warnings.length > 0 ? (
