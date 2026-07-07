@@ -120,12 +120,15 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
   const isCompact = width < 640;
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const lightMode = tone === 'light';
-  const shellColors = lightMode ? Colors.light : tone === 'dark' ? Colors.dark : colors;
-  const navBackground = lightMode ? 'rgba(255, 255, 255, 0.94)' : shellColors.surface;
-  const navBorder = lightMode ? shellColors.glassBorder : withAlpha(shellColors.primary, 0.2);
-  const navText = lightMode ? shellColors.textPrimary : '#FFFFFF';
-  const navMuted = lightMode ? shellColors.textSecondary : 'rgba(255, 255, 255, 0.68)';
-  const navHover = lightMode ? withAlpha(shellColors.primary, 0.1) : withAlpha(shellColors.primary, 0.14);
+  const darkMode = tone === 'dark';
+  const shellColors = lightMode ? Colors.light : darkMode ? Colors.dark : colors;
+  const navLightMode = !darkMode;
+  const navColors = navLightMode ? Colors.light : shellColors;
+  const navBackground = navLightMode ? 'rgba(255, 255, 255, 0.96)' : shellColors.surface;
+  const navBorder = navLightMode ? navColors.borderLight : withAlpha(shellColors.primary, 0.2);
+  const navText = navLightMode ? navColors.textPrimary : '#FFFFFF';
+  const navMuted = navLightMode ? navColors.textSecondary : 'rgba(255, 255, 255, 0.68)';
+  const navHover = navLightMode ? withAlpha(navColors.primary, 0.1) : withAlpha(shellColors.primary, 0.14);
   const showMobileMenu = !isCompact || mobileMenuOpen;
   const isNavItemActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -203,7 +206,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                       transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                     })}
                   >
-                    <BrandMark colors={shellColors} lightMode={lightMode} />
+                    <BrandMark colors={navColors} lightMode={navLightMode} />
                     <View>
                       <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: navText }}>
                         {SITE.name}
@@ -226,9 +229,9 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                         justifyContent: 'center',
                         paddingHorizontal: Spacing.base,
                         borderRadius: BorderRadius.sm,
-                        backgroundColor: hovered ? navHover : lightMode ? shellColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)',
+                        backgroundColor: hovered ? navHover : navLightMode ? navColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)',
                         borderWidth: 1,
-                        borderColor: lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.12)',
+                        borderColor: navLightMode ? navColors.borderLight : 'rgba(255, 255, 255, 0.12)',
                         transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                       })}
                     >
@@ -248,9 +251,9 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                       rowGap: Spacing.xs,
                       padding: 6,
                       borderRadius: BorderRadius.full,
-          backgroundColor: lightMode ? 'rgba(255, 255, 255, 0.72)' : 'rgba(255, 255, 255, 0.055)',
-          borderWidth: 1,
-          borderColor: lightMode ? shellColors.glassBorder : withAlpha(shellColors.primary, 0.18),
+                      backgroundColor: navLightMode ? 'rgba(255, 255, 255, 0.78)' : 'rgba(255, 255, 255, 0.055)',
+                      borderWidth: 1,
+                      borderColor: navLightMode ? navColors.borderLight : withAlpha(shellColors.primary, 0.18),
                     }}
                   >
                     {PRIMARY_LINKS.map((item) => {
@@ -271,11 +274,11 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                                 paddingVertical: 8,
                                 borderRadius: BorderRadius.full,
                                 backgroundColor: highlighted
-                                  ? (lightMode ? '#FFFFFF' : withAlpha(shellColors.primary, 0.16))
+                                  ? (navLightMode ? '#FFFFFF' : withAlpha(shellColors.primary, 0.16))
                                   : 'transparent',
                                 borderWidth: 1,
                                 borderColor: highlighted
-                                  ? (lightMode ? shellColors.glassBorder : withAlpha(shellColors.primaryLight, 0.24))
+                                  ? (navLightMode ? navColors.borderLight : withAlpha(shellColors.primaryLight, 0.24))
                                   : 'transparent',
                                 transform: pressed ? [{ scale: 0.98 }] : hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
                               };
@@ -284,7 +287,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                             <Text
                               numberOfLines={1}
                               style={{
-                                color: active ? navText : lightMode ? shellColors.textSecondary : 'rgba(255, 255, 255, 0.82)',
+                                color: active ? navText : navLightMode ? navColors.textSecondary : 'rgba(255, 255, 255, 0.82)',
                                 fontFamily: active ? Typography.fontFamily.semiBold : Typography.fontFamily.medium,
                                 fontSize: Typography.fontSize.sm,
                                 lineHeight: 18,
@@ -310,21 +313,21 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                     <ShellAction
                       title="Sign in"
                       href="/login"
-                      colors={shellColors}
-                      lightMode={lightMode}
+                      colors={navColors}
+                      lightMode={navLightMode}
                       fullWidth={isCompact}
                     />
                     <ShellAction
                       title="Create secure account"
                       href="/signup"
-                      colors={shellColors}
-                      lightMode={lightMode}
+                      colors={navColors}
+                      lightMode={navLightMode}
                       primary
                       fullWidth={isCompact}
                     />
                   </View>
                 ) : showMobileMenu ? (
-                  <ShellAction title="Open app" href="/dashboard" colors={shellColors} lightMode={lightMode} primary />
+                  <ShellAction title="Open app" href="/dashboard" colors={navColors} lightMode={navLightMode} primary />
                 ) : null}
 
                 {isCompact && showMobileMenu ? (
@@ -347,12 +350,12 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                             paddingVertical: 11,
                             borderRadius: BorderRadius.sm,
                             backgroundColor: hovered
-                              ? (lightMode ? '#FFFFFF' : 'rgba(234, 246, 240, 0.12)')
-                              : (lightMode ? shellColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)'),
+                              ? (navLightMode ? '#FFFFFF' : 'rgba(234, 246, 240, 0.12)')
+                              : (navLightMode ? navColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)'),
                             borderWidth: 1,
                             borderColor: hovered
-                              ? (lightMode ? shellColors.border : 'rgba(234, 246, 240, 0.18)')
-                              : (lightMode ? shellColors.borderLight : 'rgba(255, 255, 255, 0.08)'),
+                              ? (navLightMode ? navColors.border : 'rgba(234, 246, 240, 0.18)')
+                              : (navLightMode ? navColors.borderLight : 'rgba(255, 255, 255, 0.08)'),
                             transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                           })}
                         >
