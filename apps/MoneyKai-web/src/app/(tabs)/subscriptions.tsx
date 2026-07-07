@@ -4,9 +4,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Shadows, Spacing, Typography, type ColorScheme } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { billingApi, type BillingStatus } from '@/services/billingApi';
+import { withAlpha } from '@/utils/glassStyle';
 
 type SubscriptionPlan = {
   key: 'free' | 'plus' | 'premium';
@@ -56,8 +57,63 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   },
 ];
 
+const PREMIUM_GOLD = '#F8D774';
+const PAID_TEXT_LIGHT = '#FFFFFF';
+const PAID_MUTED_LIGHT = 'rgba(255, 255, 255, 0.76)';
+const PAID_SUBTLE_LIGHT = 'rgba(255, 255, 255, 0.58)';
+
+const getPlanVisual = (plan: SubscriptionPlan, colors: ColorScheme, isDark: boolean) => {
+  const isPaid = plan.key !== 'free';
+
+  if (!isPaid) {
+    return {
+      surface: colors.glassBg,
+      border: colors.glassBorder,
+      iconBg: colors.primaryBg,
+      iconBorder: colors.glassBorder,
+      badgeBg: colors.primaryBg,
+      badgeBorder: colors.glassBorder,
+      accent: colors.primary,
+      check: colors.success,
+      title: colors.textPrimary,
+      price: colors.textPrimary,
+      muted: colors.textSecondary,
+      subtle: colors.textTertiary,
+      shadowColor: colors.shadowColor,
+      shadowOpacity: 0.05,
+    };
+  }
+
+  const isPremium = plan.key === 'premium';
+  const accent = isPremium ? (isDark ? colors.primary : PREMIUM_GOLD) : colors.warning;
+  const surface = isDark
+    ? isPremium
+      ? colors.card
+      : colors.surfaceElevated
+    : isPremium
+      ? colors.primary
+      : colors.primaryDark;
+
+  return {
+    surface,
+    border: withAlpha(accent, isDark ? 0.46 : 0.58),
+    iconBg: withAlpha(accent, isDark ? 0.16 : 0.18),
+    iconBorder: withAlpha(accent, isDark ? 0.34 : 0.44),
+    badgeBg: withAlpha(accent, isDark ? 0.14 : 0.16),
+    badgeBorder: withAlpha(accent, isDark ? 0.38 : 0.48),
+    accent,
+    check: accent,
+    title: isDark ? colors.textPrimary : PAID_TEXT_LIGHT,
+    price: isDark ? colors.textPrimary : PAID_TEXT_LIGHT,
+    muted: isDark ? colors.textSecondary : PAID_MUTED_LIGHT,
+    subtle: isDark ? colors.textTertiary : PAID_SUBTLE_LIGHT,
+    shadowColor: accent,
+    shadowOpacity: isDark ? 0.12 : 0.2,
+  };
+};
+
 export default function SubscriptionsScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 1080;
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
@@ -93,9 +149,10 @@ export default function SubscriptionsScreen() {
 
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: Spacing.xl }} showsVerticalScrollIndicator={false}>
-      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.base, alignItems: 'stretch' }}>
+      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: isWide ? Spacing.lg : Spacing.base, alignItems: 'stretch' }}>
         {SUBSCRIPTION_PLANS.map((plan) => {
-          const isGold = plan.tone === 'gold';
+          const isPaid = plan.key !== 'free';
+          const visual = getPlanVisual(plan, colors, isDark);
           const isPremiumActive = billingStatus?.status === 'active' && billingStatus.plan !== 'free';
           const isCurrent =
             plan.key === 'free'
@@ -109,8 +166,12 @@ export default function SubscriptionsScreen() {
                 flex: 1,
                 minWidth: isWide ? 0 : undefined,
                 gap: Spacing.lg,
-                borderColor: isGold ? 'rgba(245, 197, 90, 0.44)' : colors.glassBorder,
-                backgroundColor: isGold ? 'rgba(60, 52, 28, 0.74)' : colors.glassBg,
+                borderWidth: 1,
+                borderColor: visual.border,
+                backgroundColor: visual.surface,
+                ...Shadows.sm,
+                shadowColor: visual.shadowColor,
+                shadowOpacity: visual.shadowOpacity,
               }}
               borderRadius="xl"
               padding="xl"
@@ -121,14 +182,14 @@ export default function SubscriptionsScreen() {
                     width: 48,
                     height: 48,
                     borderRadius: BorderRadius.lg,
-                    backgroundColor: isGold ? 'rgba(245, 197, 90, 0.18)' : colors.primaryBg,
+                    backgroundColor: visual.iconBg,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderWidth: 1,
-                    borderColor: isGold ? 'rgba(245, 197, 90, 0.36)' : colors.glassBorder,
+                    borderColor: visual.iconBorder,
                   }}
                 >
-                  <MaterialCommunityIcons name={plan.icon} size={23} color={isGold ? '#F5C55A' : colors.primary} />
+                  <MaterialCommunityIcons name={plan.icon} size={23} color={visual.accent} />
                 </View>
                 {plan.badge ? (
                   <View
@@ -136,14 +197,14 @@ export default function SubscriptionsScreen() {
                       borderRadius: BorderRadius.full,
                       paddingHorizontal: Spacing.sm,
                       paddingVertical: 6,
-                      backgroundColor: isGold ? 'rgba(245, 197, 90, 0.14)' : colors.primaryBg,
+                      backgroundColor: visual.badgeBg,
                       borderWidth: 1,
-                      borderColor: isGold ? 'rgba(245, 197, 90, 0.34)' : colors.glassBorder,
+                      borderColor: visual.badgeBorder,
                     }}
                   >
                     <Text
                       style={{
-                        color: isGold ? '#F5C55A' : colors.primary,
+                        color: isPaid ? visual.accent : colors.primary,
                         fontFamily: Typography.fontFamily.bold,
                         fontSize: Typography.fontSize.xs,
                       }}
@@ -155,18 +216,18 @@ export default function SubscriptionsScreen() {
               </View>
 
               <View style={{ gap: Spacing.xs }}>
-                <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize['2xl'] }}>
+                <Text style={{ color: visual.title, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize['2xl'] }}>
                   {plan.name}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
-                  <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.display, fontSize: 38, lineHeight: 44 }}>
+                  <Text style={{ color: visual.price, fontFamily: Typography.fontFamily.display, fontSize: 38, lineHeight: 44 }}>
                     {plan.price}
                   </Text>
-                  <Text style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm, paddingBottom: 7 }}>
+                  <Text style={{ color: visual.subtle, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm, paddingBottom: 7 }}>
                     {plan.label}
                   </Text>
                 </View>
-                <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: 21 }}>
+                <Text style={{ color: visual.muted, fontSize: Typography.fontSize.sm, lineHeight: 21 }}>
                   {plan.description}
                 </Text>
               </View>
@@ -174,8 +235,8 @@ export default function SubscriptionsScreen() {
               <View style={{ gap: Spacing.sm }}>
                 {plan.inclusions.map((item) => (
                   <View key={item} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-                    <MaterialCommunityIcons name="check-circle-outline" size={18} color={isGold ? '#F5C55A' : colors.success} />
-                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: 20 }}>
+                    <MaterialCommunityIcons name="check-circle-outline" size={18} color={visual.check} />
+                    <Text style={{ flex: 1, color: visual.muted, fontSize: Typography.fontSize.sm, lineHeight: 20 }}>
                       {item}
                     </Text>
                   </View>
@@ -185,7 +246,8 @@ export default function SubscriptionsScreen() {
               <Button
                 title={isCurrent ? 'Current plan' : plan.key === 'free' ? 'Continue Free' : `Choose ${plan.name}`}
                 onPress={() => handlePlanPress(plan)}
-                variant={isGold ? 'primary' : 'outline'}
+                variant={isPaid ? 'primary' : 'outline'}
+                tone={isPaid && !isDark ? 'onDark' : 'default'}
                 icon={isCurrent ? 'check-circle-outline' : plan.key === 'free' ? 'arrow-left' : 'arrow-right'}
                 iconPosition={isCurrent || plan.key === 'free' ? 'left' : 'right'}
                 fullWidth
