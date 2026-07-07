@@ -424,7 +424,7 @@ export default function TransactionsScreen() {
               { icon: 'filter-variant', label: `${activeFilterCount} active filters` },
               { icon: 'sort', label: sortLabel },
             ]}
-            actions={<Button title="Add Transaction" icon="plus" onPress={handleOpenAddModal} variant="outline" tone="onDark" />}
+            actions={<Button title="Add Transaction" icon="plus" onPress={handleOpenAddModal} variant="outline" />}
           />
         </View>
 

@@ -406,12 +406,12 @@ export default function AccountsScreen() {
             ]}
             actions={
               <>
-                <Button title="Connect live bank" icon="bank-plus" onPress={handleConnectLiveBank} loading={isProviderActionPending} variant="outline" tone="onDark" />
-                <Button title="Add Manual Account" icon="plus" onPress={() => setShowManualModal(true)} variant="outline" tone="onDark" />
+                <Button title="Connect live bank" icon="bank-plus" onPress={handleConnectLiveBank} loading={isProviderActionPending} variant="outline" />
+                <Button title="Add Manual Account" icon="plus" onPress={() => setShowManualModal(true)} variant="outline" />
                 {demoDataEnabled ? (
-                  <Button title="Load demo data" icon="database-import-outline" onPress={handleLoadDemoData} variant="outline" tone="onDark" />
+                  <Button title="Load demo data" icon="database-import-outline" onPress={handleLoadDemoData} variant="outline" />
                 ) : null}
-                <Button title="Sync All" icon="sync" onPress={handleSyncAllAccounts} variant="outline" tone="onDark" />
+                <Button title="Sync All" icon="sync" onPress={handleSyncAllAccounts} variant="outline" />
               </>
             }
           />

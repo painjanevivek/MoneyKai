@@ -92,10 +92,10 @@ export default function PortfolioScreen() {
           ]}
           actions={
             <>
-              <Button title="Refresh" icon="refresh" onPress={refreshPortfolio} loading={busy === 'refresh'} size="sm" variant="outline" tone="onDark" />
-              <Button title="Add Holding" icon="plus" onPress={() => setShowManualEntry(true)} size="sm" variant="outline" tone="onDark" />
-              <Button title="Snapshot" icon="camera-outline" onPress={handleSnapshot} loading={busy === 'snapshot'} size="sm" variant="outline" tone="onDark" />
-              <Button title="Wealth" icon="chart-line" onPress={() => router.push('/wealth')} size="sm" variant="outline" tone="onDark" />
+              <Button title="Refresh" icon="refresh" onPress={refreshPortfolio} loading={busy === 'refresh'} size="sm" variant="outline" />
+              <Button title="Add Holding" icon="plus" onPress={() => setShowManualEntry(true)} size="sm" variant="outline" />
+              <Button title="Snapshot" icon="camera-outline" onPress={handleSnapshot} loading={busy === 'snapshot'} size="sm" variant="outline" />
+              <Button title="Wealth" icon="chart-line" onPress={() => router.push('/wealth')} size="sm" variant="outline" />
             </>
           }
         />
