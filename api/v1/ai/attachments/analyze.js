@@ -1,3 +1,4 @@
+const { enforceCooldown } = require('../../../_lib/cooldown');
 const { verifyFirebaseIdToken } = require('../../../_lib/firebase-auth');
 const { applyRateLimit, getBearerToken, readJsonBody, requireMethod, sendJson } = require('../../../_lib/http');
 const { analyzeInlineImages } = require('../../../_lib/ai-runtime');
@@ -12,7 +13,17 @@ module.exports = async (req, res) => {
 
   try {
     const token = getBearerToken(req);
-    await verifyFirebaseIdToken(token);
+    const user = await verifyFirebaseIdToken(token);
+
+    if (!(await enforceCooldown(res, {
+      action: 'ai-attachment-analysis',
+      identifierType: 'uid',
+      identifier: user.uid,
+      ttlSeconds: 30,
+      message: 'Please wait a moment before requesting another attachment analysis.',
+    }))) {
+      return;
+    }
 
     const payload = await readJsonBody(req, { limitBytes: 6 * 1024 * 1024 });
     if (!Array.isArray(payload.inlineAttachments) || payload.inlineAttachments.length === 0) {
