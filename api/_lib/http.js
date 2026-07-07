@@ -9,6 +9,7 @@ const {
 const DEFAULT_BODY_LIMIT_BYTES = 1024 * 1024;
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const DEFAULT_RATE_LIMIT_MAX = 60;
+const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const RATE_LIMIT_SCRIPT = `
 local current = redis.call("INCR", KEYS[1])
 if current == 1 then
@@ -242,7 +243,7 @@ const applyRateLimitForKey = async (res, clientKey, options = {}) => {
 
 const requireMethod = (req, res, method) => {
   if (req.method === method) {
-    return true;
+    return !UNSAFE_METHODS.has(method) || requireTrustedOrigin(req, res);
   }
 
   res.setHeader('Allow', method);
@@ -254,6 +255,100 @@ const getBearerToken = (req) => {
   const header = req.headers.authorization || '';
   const [scheme, token] = header.split(' ');
   return scheme?.toLowerCase() === 'bearer' && token ? token : '';
+};
+
+const normalizeOrigin = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (!['https:', 'http:'].includes(parsed.protocol)) {
+      return '';
+    }
+    if (parsed.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname)) {
+      return '';
+    }
+    return parsed.origin.toLowerCase();
+  } catch {
+    return '';
+  }
+};
+
+const getTrustedRequestOrigins = () => {
+  const origins = new Set();
+  const addOrigin = (value) => {
+    const normalized = normalizeOrigin(value);
+    if (normalized) {
+      origins.add(normalized);
+    }
+  };
+
+  for (const value of [
+    process.env.MONEYKAI_SITE_URL,
+    process.env.PUBLIC_SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.MONEYKAI_ALLOWED_APP_ORIGINS,
+  ]) {
+    String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .forEach(addOrigin);
+  }
+
+  if (process.env.VERCEL_URL) {
+    addOrigin(`https://${process.env.VERCEL_URL}`);
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    addOrigin('http://localhost:8081');
+    addOrigin('http://localhost:8084');
+    addOrigin('http://localhost:8085');
+    addOrigin('http://127.0.0.1:8081');
+    addOrigin('http://127.0.0.1:8084');
+    addOrigin('http://127.0.0.1:8085');
+  }
+
+  return origins;
+};
+
+const getHeaderValue = (req, name) => {
+  const value = req.headers[name];
+  return Array.isArray(value) ? value[0] : value;
+};
+
+const getRequestOrigin = (req) => {
+  const origin = normalizeOrigin(getHeaderValue(req, 'origin'));
+  if (origin) {
+    return origin;
+  }
+
+  const referer = getHeaderValue(req, 'referer');
+  if (!referer) {
+    return '';
+  }
+
+  try {
+    return normalizeOrigin(new URL(referer).origin);
+  } catch {
+    return '';
+  }
+};
+
+const requireTrustedOrigin = (req, res) => {
+  const requestOrigin = getRequestOrigin(req);
+  if (!requestOrigin) {
+    return true;
+  }
+
+  if (getTrustedRequestOrigins().has(requestOrigin)) {
+    return true;
+  }
+
+  sendJson(res, 403, { error: 'Request origin is not trusted.' });
+  return false;
 };
 
 const normalizeTrustedAppUrl = (value) => {
@@ -300,6 +395,7 @@ module.exports = {
   applySecurityHeaders,
   getAppUrl,
   getBearerToken,
+  requireTrustedOrigin,
   readJsonBody,
   readRawBody,
   readRawBodyBuffer,

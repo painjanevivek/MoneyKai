@@ -3,6 +3,7 @@ import { Alert, Linking, Text, TextInput, TouchableOpacity, View } from 'react-n
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
+import { SITE } from '@/constants/site';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -51,6 +52,11 @@ const buildGitHubIssueUrl = (title: string, body: string) => {
   return `${GITHUB_ISSUE_URL}?${params.toString()}`;
 };
 
+const buildMailtoUrl = (subject: string, body: string) => {
+  const params = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return `mailto:${SITE.supportEmail}?${params}`;
+};
+
 export default function ContactScreen() {
   const { colors } = useTheme();
   const [feedbackName, setFeedbackName] = useState('');
@@ -60,6 +66,12 @@ export default function ContactScreen() {
     const url = buildGitHubIssueUrl(title, body);
     Linking.openURL(url).catch(() => {
       Linking.openURL('https://github.com/painjanevivek/MoneyKai/issues').catch(() => undefined);
+    });
+  };
+
+  const openMail = (subject: string, body: string) => {
+    Linking.openURL(buildMailtoUrl(subject, body)).catch(() => {
+      Linking.openURL(`mailto:${SITE.supportEmail}`).catch(() => undefined);
     });
   };
 
@@ -94,20 +106,58 @@ export default function ContactScreen() {
       <PublicShell
         eyebrow="Contact"
         title="Contact MoneyKai without hunting for the right route."
-        description="Use GitHub Issues for support, bug reports, feedback, and privacy or security-related questions while email hosting is not enabled."
+        description={`Use ${SITE.supportEmail} or GitHub Issues for support, bug reports, feedback, and privacy or security-related questions.`}
       >
         <View style={{ gap: Spacing.md }}>
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              GitHub issue support
+              Help and support
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
-              MoneyKai has not enabled email hosting yet. Product support, bug reports, feedback, privacy questions,
-              and security-related requests should be opened through GitHub Issues.
+              Email support or report a bug with enough context for MoneyKai to investigate safely. Do not include
+              passwords, full card numbers, secrets, or sensitive document contents.
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
-              github.com/painjanevivek/MoneyKai/issues
+              {SITE.supportEmail}
             </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md }}>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                onPress={() => openMail('MoneyKai Support', 'What do you need help with?\n\nDevice/browser:\n\nScreenshots or links, if useful:\n')}
+                accessibilityRole="button"
+                accessibilityLabel="Email MoneyKai support"
+                style={{
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: 12,
+                  borderRadius: BorderRadius.full,
+                  backgroundColor: colors.primary,
+                  borderWidth: 1,
+                  borderColor: colors.primary,
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
+                  Email support
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                onPress={() => openMail('MoneyKai Bug Report', CONTACT_OPTIONS[1].issueBody)}
+                accessibilityRole="button"
+                accessibilityLabel="Email a MoneyKai bug report"
+                style={{
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: 12,
+                  borderRadius: BorderRadius.full,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  Bug report
+                </Text>
+              </TouchableOpacity>
+            </View>
           </SectionCard>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>

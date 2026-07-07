@@ -113,6 +113,19 @@ check(
   'API helper should enforce body limits and rate limiting'
 );
 
+check(
+  'API browser-origin guard for unsafe methods',
+  containsAll(apiHttp, [
+    'UNSAFE_METHODS',
+    'requireTrustedOrigin',
+    'getRequestOrigin',
+    'MONEYKAI_ALLOWED_APP_ORIGINS',
+    'Request origin is not trusted.',
+    '!UNSAFE_METHODS.has(method) || requireTrustedOrigin(req, res)',
+  ]),
+  'State-changing API requests with browser Origin or Referer headers should be restricted to trusted app origins'
+);
+
 const highCostRoutes = [
   'api/billing/checkout.js',
   'api/billing/portal.js',
@@ -129,6 +142,7 @@ for (const route of highCostRoutes) {
 }
 
 const aiAttachmentAnalysisRoute = readText('api/v1/ai/attachments/analyze.js');
+const aiRuntime = readText('api/_lib/ai-runtime.js');
 check(
   'AI attachment analysis requires Firebase auth',
   containsAll(aiAttachmentAnalysisRoute, [
@@ -139,6 +153,21 @@ check(
     aiAttachmentAnalysisRoute.indexOf('await verifyFirebaseIdToken(token)') <
       aiAttachmentAnalysisRoute.indexOf('const payload = await readJsonBody'),
   'AI attachment analysis must verify the signed-in Firebase user before parsing uploads or calling the AI provider'
+);
+
+check(
+  'AI inline attachment upload validates image content',
+  containsAll(aiRuntime, [
+    'ALLOWED_INLINE_IMAGE_TYPES',
+    'hasImageMagicBytes',
+    "mimeType === 'image/png'",
+    "mimeType === 'image/webp'",
+    "mimeType === 'image/gif'",
+    "mimeType === 'image/jpeg'",
+    'Buffer.from(base64, \'base64\')',
+    '!hasImageMagicBytes(mimeType, buffer)',
+  ]),
+  'Inline image analysis should validate MIME allowlist, base64 payload, size, and image magic bytes server-side'
 );
 
 const webRootLayout = readText('apps/MoneyKai-web/src/app/_layout.tsx');

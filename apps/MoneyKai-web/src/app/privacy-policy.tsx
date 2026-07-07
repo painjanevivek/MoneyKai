@@ -50,8 +50,12 @@ const policySections = [
     body: 'The current Android release does not request SMS, notification listener, contacts, camera, microphone, location, storage, all-files access, accessibility service, package visibility, or install-package permissions.',
   },
   {
-    title: 'Website storage',
-    body: 'This public website may use necessary browser storage for page behavior and preferences. The current Android app release does not use web cookies.',
+    title: 'Cookies and local storage',
+    body: 'This public website may use necessary browser storage for sign-in, preferences, security, and page behavior. The current Android app release does not use web cookies.',
+  },
+  {
+    title: 'Optional diagnostics and performance telemetry',
+    body: 'Optional diagnostics and performance telemetry run only after you accept analytics consent on the website. MoneyKai uses this information to find broken routes, performance regressions, and product issues without collecting financial document contents.',
   },
   {
     title: 'Retention and deletion',

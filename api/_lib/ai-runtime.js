@@ -2,6 +2,7 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_VISION_MODEL = 'google/gemini-2.0-flash-001';
 const DEFAULT_TEXT_MODEL = 'google/gemini-2.0-flash-001';
 const MAX_INLINE_IMAGE_BYTES = 4 * 1024 * 1024;
+const ALLOWED_INLINE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 const getConfig = () => {
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.MONEYKAI_OPENROUTER_API_KEY || '';
@@ -42,9 +43,50 @@ const providerStatus = () => {
   };
 };
 
-const estimateDataUrlBytes = (dataUrl) => {
-  const [, base64 = ''] = dataUrl.split(',');
-  return Math.floor((base64.length * 3) / 4);
+const hasImageMagicBytes = (mimeType, buffer) => {
+  if (mimeType === 'image/jpeg') {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+
+  if (mimeType === 'image/png') {
+    return buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  }
+
+  if (mimeType === 'image/gif') {
+    return buffer.length >= 6 && ['GIF87a', 'GIF89a'].includes(buffer.subarray(0, 6).toString('ascii'));
+  }
+
+  if (mimeType === 'image/webp') {
+    return buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+  }
+
+  return false;
+};
+
+const decodeInlineImageDataUrl = (attachment) => {
+  const mimeType = typeof attachment?.mimeType === 'string' ? attachment.mimeType.toLowerCase() : '';
+  const dataUrl = typeof attachment?.dataUrl === 'string' ? attachment.dataUrl : '';
+  const prefix = `data:${mimeType};base64,`;
+
+  if (!ALLOWED_INLINE_IMAGE_TYPES.has(mimeType) || !dataUrl.startsWith(prefix)) {
+    return null;
+  }
+
+  const base64 = dataUrl.slice(prefix.length);
+  if (!base64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+    return null;
+  }
+
+  const buffer = Buffer.from(base64, 'base64');
+  if (buffer.length === 0 || buffer.length > MAX_INLINE_IMAGE_BYTES || !hasImageMagicBytes(mimeType, buffer)) {
+    return null;
+  }
+
+  return {
+    filename: typeof attachment?.filename === 'string' ? attachment.filename.slice(0, 160) : 'attachment',
+    mimeType,
+    dataUrl,
+  };
 };
 
 const normalizeInlineImages = (attachments) => {
@@ -53,20 +95,8 @@ const normalizeInlineImages = (attachments) => {
   }
 
   return attachments
-    .map((attachment) => ({
-      filename: typeof attachment?.filename === 'string' ? attachment.filename.slice(0, 160) : 'attachment',
-      mimeType: typeof attachment?.mimeType === 'string' ? attachment.mimeType : '',
-      dataUrl: typeof attachment?.dataUrl === 'string' ? attachment.dataUrl : '',
-    }))
-    .filter((attachment) => {
-      if (!attachment.mimeType.startsWith('image/')) {
-        return false;
-      }
-      if (!attachment.dataUrl.startsWith(`data:${attachment.mimeType};base64,`)) {
-        return false;
-      }
-      return estimateDataUrlBytes(attachment.dataUrl) <= MAX_INLINE_IMAGE_BYTES;
-    })
+    .map(decodeInlineImageDataUrl)
+    .filter(Boolean)
     .slice(0, 3);
 };
 
