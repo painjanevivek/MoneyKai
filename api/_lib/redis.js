@@ -19,6 +19,45 @@ const logRedisWarningOnce = (code, message, metadata = {}) => {
   console.warn(`[redis] ${message}`, metadata);
 };
 
+const sanitizeLogValue = (value) => {
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return sanitizeOperationName(value);
+  }
+
+  return undefined;
+};
+
+const logRedisEvent = (eventName, metadata = {}) => {
+  const safeMetadata = Object.entries(metadata).reduce((safe, [key, value]) => {
+    const safeValue = sanitizeLogValue(value);
+    if (safeValue !== undefined) {
+      safe[sanitizeOperationName(key)] = safeValue;
+    }
+    return safe;
+  }, {});
+
+  console.info(`[redis] ${sanitizeOperationName(eventName)}`, safeMetadata);
+};
+
+const describeRedisKey = (key) => {
+  const [namespace, purpose, scope] = String(key || '').split(':');
+  if (namespace !== REDIS_KEY_PREFIX || !purpose) {
+    return {
+      purpose: 'unknown',
+      scope: 'unknown',
+    };
+  }
+
+  return {
+    purpose: sanitizeOperationName(purpose),
+    scope: scope ? sanitizeOperationName(scope) : 'unknown',
+  };
+};
+
 const readRedisConfig = () => {
   const url = process.env.UPSTASH_REDIS_REST_URL || '';
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || '';
@@ -204,6 +243,8 @@ module.exports = {
   hashRedisIdentifier,
   hashSensitiveKeyPart,
   isRedisConfigured,
+  describeRedisKey,
+  logRedisEvent,
   normalizeRedisTtlMs,
   normalizeRedisTtlSeconds,
   safeRedisCall,

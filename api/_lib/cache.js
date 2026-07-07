@@ -1,4 +1,6 @@
 const {
+  describeRedisKey,
+  logRedisEvent,
   normalizeRedisTtlSeconds,
   safeRedisCall,
 } = require('./redis');
@@ -62,12 +64,14 @@ const getOrSetJsonCache = async ({ key, ttlSeconds, fetchFresh }) => {
 
   const cached = await readCachedJson(cacheKey);
   if (cached.hit) {
+    logRedisEvent('redis_cache_hit', describeRedisKey(cacheKey));
     return {
       value: cached.value,
       cacheStatus: 'hit',
     };
   }
 
+  logRedisEvent('redis_cache_miss', describeRedisKey(cacheKey));
   const fresh = await fetchFresh();
   if (fresh !== undefined) {
     await writeCachedJson(cacheKey, fresh, ttl);

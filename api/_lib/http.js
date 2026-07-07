@@ -1,6 +1,7 @@
 const {
   buildRateLimitKey,
   hashSensitiveKeyPart,
+  logRedisEvent,
   normalizeRedisTtlMs,
   safeRedisCall,
 } = require('./redis');
@@ -176,6 +177,11 @@ const applyLocalRateLimitForKey = (res, rateLimitKey, options) => {
   }
 
   const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+  logRedisEvent('redis_rate_limit_blocked', {
+    backend: 'local',
+    key_type: 'rate_limit',
+    retry_after: retryAfterSeconds,
+  });
   res.setHeader('Retry-After', String(retryAfterSeconds));
   sendJson(res, 429, {
     error: options.message || 'Too many requests. Please wait a moment and try again.',
@@ -210,6 +216,10 @@ const applyRateLimitForKey = async (res, clientKey, options = {}) => {
   );
 
   if (!redisResult.ok || !redisResult.value || !Number.isFinite(redisResult.value.count)) {
+    logRedisEvent('redis_rate_limit_fallback', {
+      backend: 'local',
+      key_type: 'rate_limit',
+    });
     return applyLocalRateLimitForKey(res, rateLimitKey, { ...options, windowMs, max });
   }
 
@@ -218,6 +228,11 @@ const applyRateLimitForKey = async (res, clientKey, options = {}) => {
   }
 
   const retryAfterSeconds = Math.max(1, Math.ceil(redisResult.value.ttlMs / 1000));
+  logRedisEvent('redis_rate_limit_blocked', {
+    backend: 'redis',
+    key_type: 'rate_limit',
+    retry_after: retryAfterSeconds,
+  });
   res.setHeader('Retry-After', String(retryAfterSeconds));
   sendJson(res, 429, {
     error: options.message || 'Too many requests. Please wait a moment and try again.',
