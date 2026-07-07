@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
@@ -27,6 +28,19 @@ export default function GoalsScreen() {
     () => challenges.filter((challenge) => challenge.status === 'deactivated'),
     [challenges]
   );
+  const goalReview = activeChallenges.length > 0
+    ? {
+        label: 'Active plan',
+        body: `${activeChallenges.length} active goal${activeChallenges.length === 1 ? '' : 's'} need regular progress review before the timeline slips.`,
+        icon: 'target-account' as const,
+        tone: colors.primary,
+      }
+    : {
+        label: 'No active plan',
+        body: 'Start from Savings when you have a clear target, timeline, and category to change.',
+        icon: 'target-variant' as const,
+        tone: colors.warning,
+      };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -61,6 +75,26 @@ export default function GoalsScreen() {
               </Text>
             </Card>
           </View>
+
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+              <View style={{ width: 40, height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: `${goalReview.tone}14` }}>
+                <MaterialCommunityIcons name={goalReview.icon} size={20} color={goalReview.tone} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                  GOAL REVIEW
+                </Text>
+                <Text style={{ marginTop: 3, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  {goalReview.label}
+                </Text>
+                <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, lineHeight: 21, color: colors.textSecondary }}>
+                  {goalReview.body}
+                </Text>
+              </View>
+              <Button title={activeChallenges.length > 0 ? 'Review Goals' : 'Open Savings'} size="sm" variant="outline" icon="arrow-right" iconPosition="right" onPress={() => router.push(activeChallenges.length > 0 ? '/goals' as any : '/savings' as any)} />
+            </View>
+          </Card>
 
           {activeChallenges.length > 0 ? (
             <View style={{ gap: Spacing.md }}>

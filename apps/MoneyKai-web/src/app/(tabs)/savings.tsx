@@ -56,6 +56,26 @@ export default function SavingsScreen() {
     ],
     [projection, colors]
   );
+  const savingsReview = projection.projectedSavings > projection.currentSavings
+    ? {
+        label: 'Opportunity found',
+        body: `The current sliders show ${formatCurrency(Math.max(0, projection.improvement))} possible savings improvement.`,
+        icon: 'lightbulb-on-outline' as const,
+        tone: colors.primary,
+      }
+    : projection.currentSavings > 0
+      ? {
+          label: 'Stable path',
+          body: `${formatCurrency(Math.max(0, projection.currentSavings))} is available on the current trajectory. Review category changes before starting a challenge.`,
+          icon: 'shield-check-outline' as const,
+          tone: colors.primary,
+        }
+      : {
+          label: 'Needs review',
+          body: 'Current spending does not leave a savings buffer. Review categories or start a focused challenge.',
+          icon: 'alert-circle-outline' as const,
+          tone: colors.warning,
+        };
 
   const renderSavingsPredictor = () => (
     <>
@@ -123,6 +143,25 @@ export default function SavingsScreen() {
 
         <SavingsAnalyticsSnapshot />
       </View>
+
+      <Card style={{ marginBottom: Spacing.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+          <View style={{ width: 40, height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: `${savingsReview.tone}14` }}>
+            <MaterialCommunityIcons name={savingsReview.icon} size={20} color={savingsReview.tone} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+              SAVINGS REVIEW
+            </Text>
+            <Text style={{ marginTop: 3, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              {savingsReview.label}
+            </Text>
+            <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, lineHeight: 21, color: colors.textSecondary }}>
+              {savingsReview.body}
+            </Text>
+          </View>
+        </View>
+      </Card>
 
       <Card style={{ marginBottom: Spacing.md }}>
         <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: 4 }}>

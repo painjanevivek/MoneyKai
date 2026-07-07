@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
@@ -12,7 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
-import { Typography, Spacing } from '@/constants/theme';
+import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/dateUtils';
 
@@ -23,9 +24,41 @@ export default function BudgetsScreen() {
   const { settings, adjustments } = useBudgetStore();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const allowance = settings.monthly_allowance;
+  const remaining = allowance - totalSpent;
   const usage = allowance > 0 ? Math.min(100, (totalSpent / allowance) * 100) : 0;
   const recentAdjustments = useMemo(() => adjustments.slice(0, 6), [adjustments]);
   const isWide = width >= 1100;
+  const budgetReview = allowance <= 0
+    ? {
+        label: 'Needs setup',
+        tone: colors.warning,
+        icon: 'alert-circle-outline' as const,
+        body: 'Set a monthly limit before MoneyKai can judge budget pressure.',
+        action: 'Open Settings',
+      }
+    : remaining < 0
+      ? {
+          label: 'Over limit',
+          tone: colors.emergency,
+          icon: 'alert-octagon-outline' as const,
+          body: `${formatCurrency(Math.abs(remaining))} above the current monthly budget. Review recent transactions before adjusting the limit.`,
+          action: 'Review Transactions',
+        }
+      : usage >= 80
+        ? {
+            label: 'Watch closely',
+            tone: colors.warning,
+            icon: 'alert-circle-outline' as const,
+            body: `${Math.round(usage)}% of the monthly budget is used. Check categories before approving more spend.`,
+            action: 'Review Transactions',
+          }
+        : {
+            label: 'On track',
+            tone: colors.primary,
+            icon: 'shield-check-outline' as const,
+            body: `${formatCurrency(Math.max(0, remaining))} remains. Keep the current plan unless new records change the picture.`,
+            action: 'Open Transactions',
+          };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -36,6 +69,26 @@ export default function BudgetsScreen() {
         <View style={{ gap: Spacing.xl }}>
           <Card>
             <ProgressBar progress={usage} showLabel label="Budget usage" height={10} />
+          </Card>
+
+          <Card style={{ gap: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+              <View style={{ width: 40, height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: `${budgetReview.tone}14` }}>
+                <MaterialCommunityIcons name={budgetReview.icon} size={20} color={budgetReview.tone} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                  BUDGET REVIEW
+                </Text>
+                <Text style={{ marginTop: 3, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  {budgetReview.label}
+                </Text>
+                <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, lineHeight: 21, color: colors.textSecondary }}>
+                  {budgetReview.body}
+                </Text>
+              </View>
+              <Button title={budgetReview.action} size="sm" variant="outline" icon="arrow-right" iconPosition="right" onPress={() => router.push(budgetReview.action.includes('Settings') ? '/settings' as any : '/transactions' as any)} />
+            </View>
           </Card>
 
           <View style={{ gap: Spacing.xl }}>
