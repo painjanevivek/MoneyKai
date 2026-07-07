@@ -234,6 +234,7 @@ export default function AiReviewScreen() {
     return items;
   }, [analyzeState.data, receiptDraft, reviewDecision, selectedAsset, selectedTaskOption.icon, selectedTaskOption.title, transactions.length]);
   const selectedReviewItem = reviewQueueItems.find((item) => item.id === selectedReviewId) ?? reviewQueueItems[0];
+  const canSaveReceiptDraft = reviewDecision === 'approved';
   const orchestrationEvidence = [
     {
       label: 'Source',
@@ -388,6 +389,11 @@ export default function AiReviewScreen() {
 
   const handleSaveTransaction = () => {
     if (!receiptDraft) {
+      return;
+    }
+
+    if (!canSaveReceiptDraft) {
+      setSaveMessage('Approve the reviewed draft before saving it to your transaction history.');
       return;
     }
 
@@ -777,6 +783,51 @@ export default function AiReviewScreen() {
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
                 Receipt review
               </Text>
+              <View style={{ borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: colors.borderLight, overflow: 'hidden' }}>
+                {[
+                  {
+                    label: 'Draft prepared',
+                    done: Boolean(receiptDraft),
+                    detail: 'AI extracted fields for review.',
+                  },
+                  {
+                    label: 'Human approved',
+                    done: canSaveReceiptDraft,
+                    detail: canSaveReceiptDraft ? 'Ready to save.' : 'Approve after checking the fields.',
+                  },
+                  {
+                    label: 'Saved record',
+                    done: saveMessage === 'Reviewed receipt added to your transaction history.',
+                    detail: 'Only saved records enter the ledger.',
+                  },
+                ].map((item, index) => (
+                  <View
+                    key={item.label}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: Spacing.sm,
+                      padding: Spacing.md,
+                      borderTopWidth: index > 0 ? 1 : 0,
+                      borderTopColor: colors.borderLight,
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name={item.done ? 'check-circle-outline' : 'circle-outline'}
+                      size={17}
+                      color={item.done ? colors.success : colors.textTertiary}
+                    />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                        {item.label}
+                      </Text>
+                      <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                        {item.detail}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
               <Input
                 label="Description"
                 value={receiptDraft.description}
