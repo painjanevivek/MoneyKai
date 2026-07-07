@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { ProgressFlow } from '@/components/ui/ProgressFlow';
 import { AiModelConsole } from '@/components/ai/AiModelConsole';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
-import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Colors, Spacing, Typography } from '@/constants/theme';
 import {
   buildDefaultAttachmentPrompt,
   createReceiptReviewDraft,
@@ -34,6 +34,19 @@ type SelectedAsset = {
   filename: string;
   mimeType: string;
   sizeBytes: number;
+};
+
+type ReviewDecision = 'new' | 'needs_review' | 'suggested' | 'approved' | 'edited' | 'dismissed';
+type ReviewQueueId = 'source' | 'budget' | 'digest' | 'privacy' | 'result' | 'receipt-draft';
+
+type ReviewQueueItem = {
+  id: ReviewQueueId;
+  title: string;
+  body: string;
+  meta: string;
+  status: ReviewDecision;
+  active: boolean;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
 };
 
 const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024;
@@ -64,7 +77,7 @@ const AI_REVIEW_PROGRESS_STEPS: ProgressFlowStep[] = [
   {
     id: 'upload',
     label: 'Uploading for analysis',
-    detail: 'Sending the selected file to the backend AI route.',
+    detail: 'Sending the selected file for analysis.',
     targetProgress: 48,
   },
   {
@@ -88,10 +101,13 @@ export default function AiReviewScreen() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isHydratingSession = useAuthStore((state) => state.isHydratingSession);
   const addTransaction = useTransactionStore((state) => state.addTransaction);
+  const transactions = useTransactionStore((state) => state.transactions);
   const [task, setTask] = React.useState<AiAttachmentAnalyzeTask>('receipt_extract');
   const [prompt, setPrompt] = React.useState(() => buildDefaultAttachmentPrompt('receipt_extract'));
   const [selectedAsset, setSelectedAsset] = React.useState<SelectedAsset | null>(null);
   const [receiptDraft, setReceiptDraft] = React.useState<ReceiptReviewDraft | null>(null);
+  const [selectedReviewId, setSelectedReviewId] = React.useState<ReviewQueueId>('source');
+  const [reviewDecision, setReviewDecision] = React.useState<ReviewDecision>('new');
   const [saveMessage, setSaveMessage] = React.useState<string | null>(null);
   const [pickerError, setPickerError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -110,7 +126,114 @@ export default function AiReviewScreen() {
   const analysisPending = analyzeState.loading;
   const analysisError = analyzeState.error;
   const canAnalyze = Boolean(selectedAsset) && attachmentsReady && !requiresSignIn && !analysisPending;
-  const isWide = width >= 1120;
+  const deskWide = width >= 1180;
+  const deskColors = Colors.jetLuxuryDark;
+  const deskBorder = 'rgba(164, 244, 253, 0.16)';
+  const selectedTaskOption = TASK_OPTIONS.find((option) => option.id === task) ?? TASK_OPTIONS[0];
+  const decisionMeta: Record<ReviewDecision, { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string }> = {
+    new: { label: 'New', icon: 'circle-outline', color: deskColors.textTertiary },
+    needs_review: { label: 'Needs review', icon: 'alert-circle-outline', color: deskColors.warning },
+    suggested: { label: 'Suggested', icon: 'brain', color: deskColors.primary },
+    approved: { label: 'Approved', icon: 'check-circle-outline', color: deskColors.success },
+    edited: { label: 'Edited', icon: 'pencil-circle-outline', color: deskColors.info },
+    dismissed: { label: 'Dismissed', icon: 'close-circle-outline', color: deskColors.error },
+  };
+  const orchestrationItems = [
+    {
+      label: 'Capture',
+      value: selectedAsset ? 'Ready' : 'Waiting',
+      icon: 'tray-arrow-down',
+      active: Boolean(selectedAsset),
+    },
+    {
+      label: 'Classify',
+      value: receiptDraft ? 'Drafted' : analysisPending ? 'Reading' : 'Review',
+      icon: 'shape-outline',
+      active: Boolean(receiptDraft) || analysisPending,
+    },
+    {
+      label: 'Budget',
+      value: transactions.length ? 'Signals' : 'No data',
+      icon: 'target',
+      active: transactions.length > 0,
+    },
+    {
+      label: 'Approve',
+      value: receiptDraft ? 'Needed' : 'Human gate',
+      icon: 'account-check-outline',
+      active: Boolean(receiptDraft),
+    },
+  ] as const;
+  const reviewQueueItems = React.useMemo<ReviewQueueItem[]>(() => {
+    const items: ReviewQueueItem[] = [
+      {
+        id: 'source',
+        title: selectedTaskOption.title,
+        body: selectedAsset ? selectedAsset.filename : 'Add a receipt or screenshot to begin.',
+        meta: selectedAsset ? 'Ready for analysis' : 'Waiting for file',
+        status: selectedAsset ? 'needs_review' : 'new',
+        active: true,
+        icon: selectedTaskOption.icon,
+      },
+    ];
+
+    if (analyzeState.data) {
+      items.push({
+        id: 'result',
+        title: 'AI finding',
+        body: 'Review the model explanation, warnings, and source context before using it.',
+        meta: 'Draft only',
+        status: reviewDecision,
+        active: true,
+        icon: 'brain',
+      });
+    }
+
+    if (receiptDraft) {
+      items.push({
+        id: 'receipt-draft',
+        title: 'Receipt draft',
+        body: `${receiptDraft.description || 'Receipt purchase'} - Rs ${receiptDraft.amount || '0'}`,
+        meta: 'Human gate',
+        status: reviewDecision,
+        active: true,
+        icon: 'receipt-text-check-outline',
+      });
+    }
+
+    items.push(
+      {
+        id: 'budget',
+        title: 'Budget pressure',
+        body: transactions.length ? 'MoneyKai can compare this month against your allowance.' : 'Add transactions before budget signals appear.',
+        meta: transactions.length ? 'Signals available' : 'No records',
+        status: transactions.length ? 'suggested' : 'new',
+        active: false,
+        icon: 'chart-timeline-variant',
+      },
+      {
+        id: 'digest',
+        title: 'Monthly digest',
+        body: 'Reports should summarize what changed, why it matters, and what needs review.',
+        meta: 'Report agent',
+        status: 'new',
+        active: false,
+        icon: 'file-chart-outline',
+      },
+      {
+        id: 'privacy',
+        title: 'Privacy check',
+        body: 'Show source data and privacy mode for every review.',
+        meta: 'Trust layer',
+        status: 'needs_review',
+        active: false,
+        icon: 'shield-check-outline',
+      }
+    );
+
+    return items;
+  }, [analyzeState.data, receiptDraft, reviewDecision, selectedAsset, selectedTaskOption.icon, selectedTaskOption.title, transactions.length]);
+  const selectedReviewItem = reviewQueueItems.find((item) => item.id === selectedReviewId) ?? reviewQueueItems[0];
 
   React.useEffect(() => {
     return () => {
@@ -122,6 +245,7 @@ export default function AiReviewScreen() {
 
   const resetReviewState = React.useCallback((nextTask?: AiAttachmentAnalyzeTask) => {
     setReceiptDraft(null);
+    setReviewDecision('new');
     setSaveMessage(null);
     setPickerError(null);
     analyzeState.reset();
@@ -206,12 +330,36 @@ export default function AiReviewScreen() {
       });
 
       setSaveMessage(null);
-      setReceiptDraft(task === 'receipt_extract' ? createReceiptReviewDraft(response) : null);
+      const nextReceiptDraft = task === 'receipt_extract' ? createReceiptReviewDraft(response) : null;
+      setReceiptDraft(nextReceiptDraft);
+      setReviewDecision(nextReceiptDraft ? 'suggested' : 'needs_review');
+      setSelectedReviewId(nextReceiptDraft ? 'receipt-draft' : 'result');
       analysisProgress.succeed();
     } catch {
       setReceiptDraft(null);
+      setReviewDecision('needs_review');
       analysisProgress.fail();
     }
+  };
+
+  const handleApproveReview = () => {
+    if (!receiptDraft) {
+      return;
+    }
+
+    const validationError = validateReceiptReviewDraft(receiptDraft);
+    if (validationError) {
+      setSaveMessage(validationError);
+      return;
+    }
+
+    setReviewDecision('approved');
+    setSaveMessage('Receipt draft approved. Save it when you are ready to add the record.');
+  };
+
+  const handleDismissReview = () => {
+    setReviewDecision('dismissed');
+    setSaveMessage('Suggestion dismissed. No transaction was saved.');
   };
 
   const handleSaveTransaction = () => {
@@ -235,11 +383,14 @@ export default function AiReviewScreen() {
       transaction_date: receiptDraft.transactionDate,
     });
 
+    setReviewDecision('approved');
     setSaveMessage('Reviewed receipt added to your transaction history.');
   };
 
   const updateReceiptDraft = <K extends keyof ReceiptReviewDraft>(key: K, value: ReceiptReviewDraft[K]) => {
     setReceiptDraft((current) => (current ? { ...current, [key]: value } : current));
+    setReviewDecision('edited');
+    setSaveMessage(null);
   };
 
   return (
@@ -252,193 +403,282 @@ export default function AiReviewScreen() {
         style={{ display: 'none' }}
       />
 
-      <Card style={{ gap: Spacing.md, padding: Spacing.md }}>
-        <View style={{ flexDirection: isWide ? 'row' : 'column', alignItems: isWide ? 'center' : 'stretch', justifyContent: 'space-between', gap: Spacing.md }}>
-          <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-            <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-              AI review workspace
-            </Text>
-            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-              Ask a question, upload an image, then review every AI result before using it.
-            </Text>
-          </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-            <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: colors.glassBorder }}>
-              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                {loadingProviderStatus
-                  ? 'Checking AI status'
-                  : attachmentsReady
-                    ? 'Analysis ready'
-                    : 'Analysis unavailable'}
+      <View
+        style={{
+          backgroundColor: deskColors.background,
+          borderColor: deskBorder,
+          borderRadius: BorderRadius.lg,
+          borderWidth: 1,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            borderBottomWidth: 1,
+            borderBottomColor: deskColors.borderLight,
+            padding: Spacing.lg,
+            gap: Spacing.sm,
+          }}
+        >
+          <View style={{ flexDirection: deskWide ? 'row' : 'column', justifyContent: 'space-between', gap: Spacing.md }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textTertiary }}>
+                FINANCIAL REVIEW DESK
+              </Text>
+              <Text style={{ marginTop: 4, fontSize: deskWide ? 34 : 28, lineHeight: deskWide ? 40 : 34, fontFamily: Typography.fontFamily.display, color: deskColors.textPrimary }}>
+                Financial review desk
               </Text>
             </View>
-            {providerStatus?.defaultVisionModelConfigured ? (
-              <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight }}>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                  Vision ready
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+              <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: attachmentsReady ? 'rgba(110, 231, 183, 0.12)' : 'rgba(248, 215, 116, 0.12)', borderWidth: 1, borderColor: attachmentsReady ? 'rgba(110, 231, 183, 0.28)' : 'rgba(248, 215, 116, 0.28)' }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: attachmentsReady ? deskColors.success : deskColors.warning }}>
+                  {loadingProviderStatus ? 'Checking AI' : attachmentsReady ? 'AI ready' : 'Setup needed'}
                 </Text>
               </View>
-            ) : null}
-          </View>
-        </View>
-        {providerError ? (
-          <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-            {providerError}
-          </Text>
-        ) : providerStatus?.error ? (
-          <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-            {providerStatus.error}
-          </Text>
-        ) : !providerStatus?.defaultVisionModelConfigured ? (
-          <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-            Vision analysis stays capability-gated. If the backend has no vision model configured, image analysis will remain unavailable.
-          </Text>
-        ) : null}
-      </Card>
-
-      <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.xl, alignItems: 'stretch' }}>
-        <AiModelConsole
-          providerStatus={providerStatus}
-          requiresSignIn={requiresSignIn}
-          containerStyle={{ flex: isWide ? 0.86 : undefined, minWidth: 0 }}
-        />
-
-        <Card style={{ flex: isWide ? 1.14 : undefined, minWidth: 0, gap: Spacing.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.md }}>
-            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                Image review
-              </Text>
-              <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-                Add an image, choose a review mode, adjust the prompt, then analyse.
-              </Text>
+              <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, backgroundColor: 'rgba(164, 244, 253, 0.08)', borderWidth: 1, borderColor: deskBorder }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: deskColors.textSecondary }}>
+                  {transactions.length} records in scope
+                </Text>
+              </View>
             </View>
-            <Button title={selectedAsset ? 'Replace' : 'Pick image'} icon="image-plus" size="sm" variant="outline" onPress={handlePickImage} />
           </View>
+          <Text style={{ maxWidth: 820, fontSize: Typography.fontSize.sm, lineHeight: 22, color: deskColors.textSecondary }}>
+            Capture, classify, summarize, then approve.
+          </Text>
+          {providerError || providerStatus?.error || !providerStatus?.defaultVisionModelConfigured ? (
+            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: deskColors.textTertiary }}>
+              {providerError || providerStatus?.error || 'Vision analysis is not configured yet.'}
+            </Text>
+          ) : null}
+        </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-            {TASK_OPTIONS.map((option) => {
-              const active = task === option.id;
-              return (
-                <TouchableOpacity
-                  key={option.id}
-                  activeOpacity={0.85}
-                  onPress={() => handleSelectTask(option.id)}
-                  style={{
-                    flex: 1,
-                    minWidth: 180,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: Spacing.sm,
-                    borderRadius: BorderRadius.md,
-                    borderWidth: 1,
-                    borderColor: active ? colors.primary : colors.glassBorder,
-                    backgroundColor: active ? colors.primaryBg : colors.surface,
-                    padding: Spacing.sm,
-                  }}
-                >
-                  <View style={{ width: 34, height: 34, borderRadius: BorderRadius.md, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
-                    <MaterialCommunityIcons name={option.icon} size={18} color={active ? colors.primary : colors.textSecondary} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
-                      {option.title}
-                    </Text>
-                    <Text style={{ marginTop: 1, fontSize: 11, lineHeight: 15, color: colors.textSecondary }} numberOfLines={2}>
+        <View style={{ flexDirection: deskWide ? 'row' : 'column', minHeight: deskWide ? 680 : undefined }}>
+          <View style={{ width: deskWide ? 260 : '100%', borderRightWidth: deskWide ? 1 : 0, borderBottomWidth: deskWide ? 0 : 1, borderColor: deskColors.borderLight, padding: Spacing.lg, gap: Spacing.lg }}>
+            <Button title={selectedAsset ? 'Replace image' : 'Add image'} icon="image-plus" onPress={handlePickImage} />
+
+            <View style={{ gap: Spacing.sm }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textTertiary }}>
+                WORKFLOWS
+              </Text>
+              {TASK_OPTIONS.map((option) => {
+                const active = task === option.id;
+                return (
+                  <TouchableOpacity
+                    key={option.id}
+                    activeOpacity={0.86}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    onPress={() => handleSelectTask(option.id)}
+                    style={{
+                      borderRadius: BorderRadius.md,
+                      borderWidth: 1,
+                      borderColor: active ? 'rgba(164, 244, 253, 0.42)' : 'transparent',
+                      backgroundColor: active ? 'rgba(164, 244, 253, 0.1)' : 'transparent',
+                      padding: Spacing.md,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                      <MaterialCommunityIcons name={option.icon} size={18} color={active ? deskColors.primary : deskColors.textTertiary} />
+                      <Text style={{ flex: 1, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: active ? deskColors.textPrimary : deskColors.textSecondary }}>
+                        {option.title}
+                      </Text>
+                    </View>
+                    <Text style={{ marginTop: 6, fontSize: Typography.fontSize.xs, lineHeight: 17, color: deskColors.textTertiary }}>
                       {option.subtitle}
                     </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={{ gap: Spacing.sm }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textTertiary }}>
+                ORCHESTRATION
+              </Text>
+              {orchestrationItems.map((item) => (
+                <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                  <View style={{ width: 30, height: 30, borderRadius: BorderRadius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: item.active ? 'rgba(164, 244, 253, 0.12)' : deskColors.surface }}>
+                    <MaterialCommunityIcons name={item.icon} size={15} color={item.active ? deskColors.primary : deskColors.textTertiary} />
                   </View>
-                </TouchableOpacity>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textSecondary }}>
+                      {item.label}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: deskColors.textTertiary }} numberOfLines={1}>
+                      {item.value}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={{ flex: 1, minWidth: 0, borderRightWidth: deskWide ? 1 : 0, borderBottomWidth: deskWide ? 0 : 1, borderColor: deskColors.borderLight }}>
+            <View style={{ minHeight: 70, borderBottomWidth: 1, borderBottomColor: deskColors.borderLight, paddingHorizontal: Spacing.lg, justifyContent: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                <MaterialCommunityIcons name="magnify" size={18} color={deskColors.textTertiary} />
+                <Text style={{ fontSize: Typography.fontSize.md, color: deskColors.textTertiary }}>
+                  Search review queue
+                </Text>
+              </View>
+            </View>
+
+            {reviewQueueItems.map((item) => {
+              const selected = selectedReviewItem.id === item.id;
+              const status = decisionMeta[item.status];
+              return (
+              <TouchableOpacity
+                key={item.title}
+                activeOpacity={0.86}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`Review ${item.title}, ${status.label}`}
+                onPress={() => setSelectedReviewId(item.id)}
+                style={{
+                  borderBottomWidth: 1,
+                  borderBottomColor: deskColors.borderLight,
+                  backgroundColor: selected ? 'rgba(255, 255, 255, 0.08)' : item.active ? 'rgba(255, 255, 255, 0.035)' : 'transparent',
+                  padding: Spacing.lg,
+                }}
+              >
+                <View style={{ flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' }}>
+                  <View style={{ width: 34, height: 34, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: selected ? 'rgba(164, 244, 253, 0.12)' : deskColors.surface }}>
+                    <MaterialCommunityIcons name={item.icon} size={19} color={selected || item.active ? deskColors.primary : deskColors.textTertiary} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.sm }}>
+                      <Text style={{ flex: 1, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textPrimary }} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <MaterialCommunityIcons name={status.icon} size={13} color={status.color} />
+                        <Text style={{ fontSize: Typography.fontSize.xs, color: status.color }} numberOfLines={1}>
+                          {status.label}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={{ marginTop: 6, fontSize: Typography.fontSize.sm, lineHeight: 21, color: deskColors.textSecondary }} numberOfLines={2}>
+                      {item.body}
+                    </Text>
+                    <Text style={{ marginTop: 5, fontSize: 11, color: deskColors.textTertiary }} numberOfLines={1}>
+                      {item.meta}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
               );
             })}
           </View>
 
-          {selectedAsset ? (
-            <View style={{ gap: Spacing.sm }}>
-              <Image
-                source={selectedAsset.previewUri}
-                contentFit="cover"
-                style={{ width: '100%', height: isWide ? 220 : 260, borderRadius: BorderRadius.lg, backgroundColor: colors.surface }}
-              />
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.sm }}>
-                <Text style={{ flex: 1, minWidth: 180, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
-                  {selectedAsset.filename}
+          <View style={{ width: deskWide ? 460 : '100%', padding: Spacing.lg, gap: Spacing.md }}>
+            <View style={{ gap: 4 }}>
+              <Text style={{ fontSize: Typography.fontSize['2xl'], lineHeight: Typography.lineHeight['2xl'], fontFamily: Typography.fontFamily.display, color: deskColors.textPrimary }}>
+                {selectedReviewItem.title}
+              </Text>
+              <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: deskColors.textSecondary }}>
+                {selectedReviewItem.body}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: `${decisionMeta[selectedReviewItem.status].color}44`, backgroundColor: `${decisionMeta[selectedReviewItem.status].color}18` }}>
+                <MaterialCommunityIcons name={decisionMeta[selectedReviewItem.status].icon} size={14} color={decisionMeta[selectedReviewItem.status].color} />
+                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: decisionMeta[selectedReviewItem.status].color }}>
+                  {decisionMeta[selectedReviewItem.status].label}
                 </Text>
-                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-                  {selectedAsset.mimeType} | {formatBytes(selectedAsset.sizeBytes)}
+              </View>
+              <View style={{ paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: deskBorder, backgroundColor: 'rgba(255, 255, 255, 0.035)' }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: deskColors.textSecondary }}>
+                  {selectedReviewItem.meta}
                 </Text>
               </View>
             </View>
-          ) : (
-            <TouchableOpacity
-              activeOpacity={0.86}
-              onPress={handlePickImage}
-              style={{
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: isWide ? 220 : 260,
-                borderRadius: BorderRadius.lg,
-                borderWidth: 1.5,
-                borderStyle: 'dashed',
-                borderColor: colors.glassBorder,
-                backgroundColor: colors.surface,
-                padding: Spacing.xl,
-                gap: Spacing.sm,
-              }}
-            >
-              <View style={{ width: 52, height: 52, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
-                <MaterialCommunityIcons name="image-plus" size={24} color={colors.primary} />
+
+            {selectedAsset ? (
+              <View style={{ gap: Spacing.sm }}>
+                <Image
+                  source={selectedAsset.previewUri}
+                  contentFit="cover"
+                  style={{ width: '100%', height: 220, borderRadius: BorderRadius.md, backgroundColor: deskColors.surface }}
+                />
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.sm }}>
+                  <Text style={{ flex: 1, minWidth: 180, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textPrimary }} numberOfLines={1}>
+                    {selectedAsset.filename}
+                  </Text>
+                  <Text style={{ fontSize: Typography.fontSize.xs, color: deskColors.textTertiary }}>
+                    {formatBytes(selectedAsset.sizeBytes)}
+                  </Text>
+                </View>
               </View>
-              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                Add image
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.86}
+                accessibilityRole="button"
+                onPress={handlePickImage}
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 220,
+                  borderRadius: BorderRadius.md,
+                  borderWidth: 1,
+                  borderStyle: 'dashed',
+                  borderColor: deskBorder,
+                  backgroundColor: 'rgba(255, 255, 255, 0.035)',
+                  padding: Spacing.xl,
+                  gap: Spacing.sm,
+                }}
+              >
+                <MaterialCommunityIcons name="image-plus" size={28} color={deskColors.primary} />
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textPrimary }}>
+                  Add review source
+                </Text>
+                <Text style={{ textAlign: 'center', fontSize: Typography.fontSize.xs, lineHeight: 18, color: deskColors.textTertiary }}>
+                  Choose a receipt or screenshot. Results stay draft-only until approved.
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {pickerError ? (
+              <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: deskColors.warning }}>
+                {pickerError}
               </Text>
-              <Text style={{ maxWidth: 320, textAlign: 'center', fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-                Choose a receipt or screenshot. Results stay review-only until you save them.
-              </Text>
-            </TouchableOpacity>
-          )}
+            ) : null}
 
-          {pickerError ? (
-            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-              {pickerError}
-            </Text>
-          ) : null}
+            <Input
+              label="Review prompt"
+              value={prompt}
+              onChangeText={setPrompt}
+              multiline
+              numberOfLines={3}
+              autoCapitalize="sentences"
+              placeholder={buildDefaultAttachmentPrompt(task)}
+              style={{ marginBottom: 0 }}
+            />
 
-          <Input
-            label="Prompt"
-            value={prompt}
-            onChangeText={setPrompt}
-            multiline
-            numberOfLines={3}
-            autoCapitalize="sentences"
-            placeholder={buildDefaultAttachmentPrompt(task)}
-            style={{ marginBottom: 0 }}
-          />
-
-          <Button
-            title="Analyse"
-            icon="brain"
-            loading={analysisPending}
-            disabled={!canAnalyze}
-            onPress={analyzeSelectedAsset}
-          />
-          <ProgressFlow
-            activeStepIndex={analysisProgress.activeStepIndex}
-            errorMessage={analysisError}
-            onRetry={selectedAsset && attachmentsReady && !requiresSignIn ? analyzeSelectedAsset : undefined}
-            progress={analysisProgress.progress}
-            retryLabel="Try analysis again"
-            status={analysisProgress.status}
-            steps={analysisProgress.steps}
-            successMessage="Analysis is ready for human review."
-            title="Analysing attachment"
-          />
-          {!attachmentsReady ? (
-            <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
-              Analyse will run through the backend vision provider. If credentials are missing, MoneyKai will show the setup issue instead of silently doing nothing.
-            </Text>
-          ) : null}
-        </Card>
+            <Button
+              title="Analyze for review"
+              icon="brain"
+              loading={analysisPending}
+              disabled={!canAnalyze}
+              onPress={analyzeSelectedAsset}
+            />
+            <ProgressFlow
+              activeStepIndex={analysisProgress.activeStepIndex}
+              errorMessage={analysisError}
+              onRetry={selectedAsset && attachmentsReady && !requiresSignIn ? analyzeSelectedAsset : undefined}
+              progress={analysisProgress.progress}
+              retryLabel="Try analysis again"
+              status={analysisProgress.status}
+              steps={analysisProgress.steps}
+              successMessage="Analysis is ready for approval."
+              title="Review pipeline"
+            />
+            <AiModelConsole
+              providerStatus={providerStatus}
+              requiresSignIn={requiresSignIn}
+              containerStyle={{ minWidth: 0 }}
+            />
+          </View>
+        </View>
       </View>
 
       {analyzeState.data ? (
@@ -447,9 +687,17 @@ export default function AiReviewScreen() {
             <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               AI review
             </Text>
-            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-              Review the result before using it.
-            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.sm }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                Review the result before using it.
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: BorderRadius.full, backgroundColor: `${decisionMeta[reviewDecision].color}18` }}>
+                <MaterialCommunityIcons name={decisionMeta[reviewDecision].icon} size={13} color={decisionMeta[reviewDecision].color} />
+                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: decisionMeta[reviewDecision].color }}>
+                  {decisionMeta[reviewDecision].label}
+                </Text>
+              </View>
+            </View>
           </View>
 
           <View style={{ borderRadius: BorderRadius.lg, backgroundColor: colors.surface, padding: Spacing.md, gap: Spacing.sm }}>
@@ -570,7 +818,31 @@ export default function AiReviewScreen() {
                 </View>
               </View>
 
-              <Button title="Add reviewed transaction" icon="check" onPress={handleSaveTransaction} />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+                <Button
+                  title={reviewDecision === 'approved' ? 'Approved' : 'Approve'}
+                  icon="check-circle-outline"
+                  variant={reviewDecision === 'approved' ? 'secondary' : 'primary'}
+                  onPress={handleApproveReview}
+                  style={{ flexGrow: 1, flexShrink: 1, flexBasis: 140 }}
+                />
+                <Button
+                  title="Dismiss"
+                  icon="close-circle-outline"
+                  variant="outline"
+                  disabled={reviewDecision === 'dismissed'}
+                  onPress={handleDismissReview}
+                  style={{ flexGrow: 1, flexShrink: 1, flexBasis: 120 }}
+                />
+                <Button
+                  title="Save record"
+                  icon="content-save-check-outline"
+                  variant="secondary"
+                  disabled={reviewDecision === 'dismissed'}
+                  onPress={handleSaveTransaction}
+                  style={{ flexGrow: 1, flexShrink: 1, flexBasis: 150 }}
+                />
+              </View>
               {saveMessage ? (
                 <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
                   {saveMessage}
