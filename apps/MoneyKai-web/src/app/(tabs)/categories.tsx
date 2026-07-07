@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
 import { getCategoryById } from '@/constants/categories';
-import { Typography, Spacing, BorderRadius } from '@/constants/theme';
+import { Typography, Spacing } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 export default function CategoriesScreen() {

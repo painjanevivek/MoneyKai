@@ -106,6 +106,10 @@ apps/*/artifacts/**
 .gradle-project-cache/
 apps/*/credentials/
 
+# local app snapshots not ready for public release
+apps/Aura-landing/
+apps/MoneyKai-android/
+
 # editors
 .idea/
 
