@@ -6,6 +6,18 @@ Date: 2026-07-08
 
 Reviewed the MoneyKai web app, public pages, API routes, auth flows, billing/webhook helpers, AI attachment analysis, deployment headers, privacy/support surfaces, and production security gate.
 
+## Website route coverage
+
+Route inventory checked from `apps/MoneyKai-web/src/app`:
+
+- Shell/runtime: `_layout`, `+html`
+- Public pages: `/`, `/about`, `/contact`, `/docs`, `/faq`, `/features`, `/financial-first-aid`, `/how-it-works`, `/news`, `/pricing`, `/privacy-policy`, `/security`, `/services`, `/terms`, `/trust`
+- Feature subpages: `/features/analytics`, `/features/backup-restore`, `/features/budgeting`, `/features/expense-tracking`, `/features/groups`, `/features/savings`
+- Learn subpages: `/learn`, `/learn/[slug]`, `/learn/budgeting`, `/learn/expense-tracking`, `/learn/personal-finance`, `/learn/saving-money`
+- Compare subpages: `/compare`, `/compare/[slug]`
+- Auth pages: `/login`, `/signup`, `/forgot-password`, `/auth/google/callback`
+- Authenticated app pages: `/accounts`, `/ai-review`, `/analytics`, `/budgets`, `/categories`, `/dashboard`, `/goals`, `/groups`, `/learn-center`, `/notes`, `/notifications`, `/portfolio`, `/reports`, `/savings`, `/settings`, `/subscriptions`, `/transactions`, `/wealth`, `/profile-edit`
+
 ## Current security posture
 
 MoneyKai is already cautious in several important areas:
