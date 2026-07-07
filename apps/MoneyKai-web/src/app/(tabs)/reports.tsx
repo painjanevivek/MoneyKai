@@ -85,6 +85,33 @@ export default function ReportsScreen() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
   }, [importedSummary.categoryTotals, pendingSummary.categoryTotals]);
+  const completedReports = useMemo(() => [
+    {
+      title: 'Monthly money digest',
+      body: transactions.length > 0
+        ? `${transactions.length} synced records summarize ${formatCurrency(importedSummary.expense)} spending and ${formatCurrency(importedSummary.income)} income.`
+        : 'No finalized transaction history yet. Import or add records before saving a digest.',
+      meta: transactions.length > 0 ? 'Ready record' : 'Waiting for records',
+      icon: 'calendar-month-outline' as const,
+      tone: transactions.length > 0 ? 'primary' as const : 'neutral' as const,
+    },
+    {
+      title: 'Statement import review',
+      body: allDrafts.length > 0
+        ? `${selectedImportDrafts.length} selected rows, ${duplicateKeys.size} duplicates locked, ${allDrafts.length} total rows reviewed.`
+        : 'Upload a statement to create an import review summary.',
+      meta: allDrafts.length > 0 ? 'Review history' : 'No upload yet',
+      icon: 'text-box-search-outline' as const,
+      tone: allDrafts.length > 0 ? 'warning' as const : 'neutral' as const,
+    },
+    {
+      title: 'Export history',
+      body: 'Reports keep finalized summaries separate from AI drafts so exports have a clear source trail.',
+      meta: 'Export ready',
+      icon: 'tray-arrow-up' as const,
+      tone: 'primary' as const,
+    },
+  ], [allDrafts.length, duplicateKeys.size, importedSummary.expense, importedSummary.income, selectedImportDrafts.length, transactions.length]);
 
   const handleFiles = async (files: any[]) => {
     if (files.length === 0) return;
@@ -494,6 +521,50 @@ export default function ReportsScreen() {
 
         <View style={{ marginTop: Spacing.md }}>
           <AIInsights showFooterLink={false} surface="reports" />
+        </View>
+
+        <View style={{ marginTop: Spacing.md, gap: Spacing.sm }}>
+          <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+            Finished reports
+          </Text>
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            {completedReports.map((report, index) => {
+              const toneColor = report.tone === 'warning' ? colors.warning : report.tone === 'primary' ? colors.primary : colors.textTertiary;
+              return (
+                <View
+                  key={report.title}
+                  style={{
+                    flexDirection: isWide ? 'row' : 'column',
+                    alignItems: isWide ? 'center' : 'stretch',
+                    gap: Spacing.md,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.borderLight,
+                    paddingVertical: Spacing.md,
+                    paddingTop: index === 0 ? Spacing.md : Spacing.md,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1, minWidth: 0 }}>
+                    <View style={{ width: 38, height: 38, borderRadius: BorderRadius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: `${toneColor}14` }}>
+                      <MaterialCommunityIcons name={report.icon} size={19} color={toneColor} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                        {report.title}
+                      </Text>
+                      <Text style={{ marginTop: 3, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                        {report.body}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ alignSelf: isWide ? 'center' : 'flex-start', borderRadius: BorderRadius.full, backgroundColor: `${toneColor}14`, paddingHorizontal: 10, paddingVertical: 6 }}>
+                    <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: toneColor }}>
+                      {report.meta}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </View>
 
         {results.length > 0 ? (
