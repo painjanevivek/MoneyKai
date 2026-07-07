@@ -317,6 +317,120 @@ export default function TransactionsScreen() {
         ? colors.primary
         : colors.success;
 
+    if (!isLedgerWide) {
+      return (
+        <TouchableOpacity
+          onPress={() => handleOpenEditModal(txn)}
+          activeOpacity={0.76}
+          style={{
+            backgroundColor: 'transparent',
+            borderBottomWidth: 1,
+            borderBottomColor: colors.borderLight,
+            paddingVertical: Spacing.md,
+            gap: Spacing.sm,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm }}>
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: BorderRadius.sm,
+                backgroundColor: category?.colorLight || colors.surfaceElevated,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}
+            >
+              <MaterialCommunityIcons name={(category?.icon || 'help-circle-outline') as any} size={21} color={category?.color || '#6B7280'} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }} numberOfLines={1}>
+                {txn.description}
+              </Text>
+              <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary }} numberOfLines={2}>
+                {category?.name} | {formatRelativeDate(txn.transaction_date)} | {PAYMENT_METHODS.find((p) => p.id === txn.payment_method)?.name || txn.payment_method}
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: Typography.fontSize.md,
+                fontFamily: Typography.fontFamily.semiBold,
+                color: isExpense ? colors.emergency : colors.primaryLight,
+                textAlign: 'right',
+              }}
+            >
+              {isExpense ? '-' : '+'}{formatCurrency(txn.amount)}
+            </Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1, minWidth: 180 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  paddingHorizontal: Spacing.sm,
+                  paddingVertical: 5,
+                  borderRadius: BorderRadius.full,
+                  backgroundColor: `${reviewStatusColor}14`,
+                }}
+              >
+                <MaterialCommunityIcons name={reviewStatus.icon} size={13} color={reviewStatusColor} />
+                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: reviewStatusColor }} numberOfLines={1}>
+                  {reviewStatus.label}
+                </Text>
+              </View>
+              {(txn.captureAccountLabel || captureSourceLabel) ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: BorderRadius.full, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.borderLight }}>
+                  <MaterialCommunityIcons name={txn.captureAccountLabel ? 'bank-outline' : 'source-branch'} size={12} color={colors.textSecondary} />
+                  <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }} numberOfLines={1}>
+                    {txn.captureAccountLabel ?? captureSourceLabel}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+              <TouchableOpacity
+                onPress={() => handleOpenEditModal(txn)}
+                hitSlop={8}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: BorderRadius.full,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                }}
+              >
+                <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleDelete(txn.id)}
+                hitSlop={8}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: BorderRadius.full,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: colors.emergencyBg,
+                  borderWidth: 1,
+                  borderColor: `${colors.emergency}38`,
+                }}
+              >
+                <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.emergency} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
     return (
       <TouchableOpacity
         onPress={() => handleOpenEditModal(txn)}

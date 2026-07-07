@@ -127,6 +127,7 @@ export default function AiReviewScreen() {
   const analysisError = analyzeState.error;
   const canAnalyze = Boolean(selectedAsset) && attachmentsReady && !requiresSignIn && !analysisPending;
   const deskWide = width >= 1180;
+  const deskCompact = width < 760;
   const deskColors = Colors.jetLuxuryDark;
   const deskBorder = 'rgba(164, 244, 253, 0.16)';
   const selectedTaskOption = TASK_OPTIONS.find((option) => option.id === task) ?? TASK_OPTIONS[0];
@@ -437,7 +438,7 @@ export default function AiReviewScreen() {
         style={{
           backgroundColor: deskColors.background,
           borderColor: deskBorder,
-          borderRadius: BorderRadius.lg,
+          borderRadius: deskCompact ? 0 : BorderRadius.lg,
           borderWidth: 1,
           overflow: 'hidden',
         }}
@@ -446,7 +447,7 @@ export default function AiReviewScreen() {
           style={{
             borderBottomWidth: 1,
             borderBottomColor: deskColors.borderLight,
-            padding: Spacing.lg,
+            padding: deskCompact ? Spacing.md : Spacing.lg,
             gap: Spacing.sm,
           }}
         >
@@ -455,7 +456,7 @@ export default function AiReviewScreen() {
               <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textTertiary }}>
                 FINANCIAL REVIEW DESK
               </Text>
-              <Text style={{ marginTop: 4, fontSize: deskWide ? 34 : 28, lineHeight: deskWide ? 40 : 34, fontFamily: Typography.fontFamily.display, color: deskColors.textPrimary }}>
+              <Text style={{ marginTop: 4, fontSize: deskCompact ? 24 : deskWide ? 34 : 28, lineHeight: deskCompact ? 30 : deskWide ? 40 : 34, fontFamily: Typography.fontFamily.display, color: deskColors.textPrimary }}>
                 Financial review desk
               </Text>
             </View>
@@ -483,7 +484,7 @@ export default function AiReviewScreen() {
         </View>
 
         <View style={{ flexDirection: deskWide ? 'row' : 'column', minHeight: deskWide ? 680 : undefined }}>
-          <View style={{ width: deskWide ? 260 : '100%', borderRightWidth: deskWide ? 1 : 0, borderBottomWidth: deskWide ? 0 : 1, borderColor: deskColors.borderLight, padding: Spacing.lg, gap: Spacing.lg }}>
+          <View style={{ width: deskWide ? 260 : '100%', borderRightWidth: deskWide ? 1 : 0, borderBottomWidth: deskWide ? 0 : 1, borderColor: deskColors.borderLight, padding: deskCompact ? Spacing.md : Spacing.lg, gap: deskCompact ? Spacing.md : Spacing.lg }}>
             <Button title={selectedAsset ? 'Replace image' : 'Add image'} icon="image-plus" onPress={handlePickImage} />
 
             <View style={{ gap: Spacing.sm }}>
@@ -504,7 +505,7 @@ export default function AiReviewScreen() {
                       borderWidth: 1,
                       borderColor: active ? 'rgba(164, 244, 253, 0.42)' : 'transparent',
                       backgroundColor: active ? 'rgba(164, 244, 253, 0.1)' : 'transparent',
-                      padding: Spacing.md,
+                      padding: deskCompact ? Spacing.sm : Spacing.md,
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
@@ -544,7 +545,7 @@ export default function AiReviewScreen() {
           </View>
 
           <View style={{ flex: 1, minWidth: 0, borderRightWidth: deskWide ? 1 : 0, borderBottomWidth: deskWide ? 0 : 1, borderColor: deskColors.borderLight }}>
-            <View style={{ minHeight: 70, borderBottomWidth: 1, borderBottomColor: deskColors.borderLight, paddingHorizontal: Spacing.lg, justifyContent: 'center' }}>
+            <View style={{ minHeight: deskCompact ? 56 : 70, borderBottomWidth: 1, borderBottomColor: deskColors.borderLight, paddingHorizontal: deskCompact ? Spacing.md : Spacing.lg, justifyContent: 'center' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
                 <MaterialCommunityIcons name="magnify" size={18} color={deskColors.textTertiary} />
                 <Text style={{ fontSize: Typography.fontSize.md, color: deskColors.textTertiary }}>
@@ -568,7 +569,7 @@ export default function AiReviewScreen() {
                   borderBottomWidth: 1,
                   borderBottomColor: deskColors.borderLight,
                   backgroundColor: selected ? 'rgba(255, 255, 255, 0.08)' : item.active ? 'rgba(255, 255, 255, 0.035)' : 'transparent',
-                  padding: Spacing.lg,
+                  padding: deskCompact ? Spacing.md : Spacing.lg,
                 }}
               >
                 <View style={{ flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' }}>
@@ -576,7 +577,7 @@ export default function AiReviewScreen() {
                     <MaterialCommunityIcons name={item.icon} size={19} color={selected || item.active ? deskColors.primary : deskColors.textTertiary} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.sm }}>
+                    <View style={{ flexDirection: deskCompact ? 'column' : 'row', justifyContent: 'space-between', gap: deskCompact ? 6 : Spacing.sm }}>
                       <Text style={{ flex: 1, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textPrimary }} numberOfLines={1}>
                         {item.title}
                       </Text>
@@ -600,9 +601,9 @@ export default function AiReviewScreen() {
             })}
           </View>
 
-          <View style={{ width: deskWide ? 460 : '100%', padding: Spacing.lg, gap: Spacing.md }}>
+          <View style={{ width: deskWide ? 460 : '100%', padding: deskCompact ? Spacing.md : Spacing.lg, gap: Spacing.md }}>
             <View style={{ gap: 4 }}>
-              <Text style={{ fontSize: Typography.fontSize['2xl'], lineHeight: Typography.lineHeight['2xl'], fontFamily: Typography.fontFamily.display, color: deskColors.textPrimary }}>
+              <Text style={{ fontSize: deskCompact ? Typography.fontSize.xl : Typography.fontSize['2xl'], lineHeight: deskCompact ? Typography.lineHeight.xl : Typography.lineHeight['2xl'], fontFamily: Typography.fontFamily.display, color: deskColors.textPrimary }}>
                 {selectedReviewItem.title}
               </Text>
               <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: deskColors.textSecondary }}>
@@ -628,7 +629,7 @@ export default function AiReviewScreen() {
                 <Image
                   source={selectedAsset.previewUri}
                   contentFit="cover"
-                  style={{ width: '100%', height: 220, borderRadius: BorderRadius.md, backgroundColor: deskColors.surface }}
+                  style={{ width: '100%', height: deskCompact ? 180 : 220, borderRadius: BorderRadius.md, backgroundColor: deskColors.surface }}
                 />
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.sm }}>
                   <Text style={{ flex: 1, minWidth: 180, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: deskColors.textPrimary }} numberOfLines={1}>
@@ -647,7 +648,7 @@ export default function AiReviewScreen() {
                 style={{
                   alignItems: 'center',
                   justifyContent: 'center',
-                  minHeight: 220,
+                  minHeight: deskCompact ? 180 : 220,
                   borderRadius: BorderRadius.md,
                   borderWidth: 1,
                   borderStyle: 'dashed',
