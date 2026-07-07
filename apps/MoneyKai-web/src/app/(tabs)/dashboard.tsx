@@ -198,6 +198,79 @@ function SpendingSnapshot({
   );
 }
 
+type ReviewQueueItem = {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  title: string;
+  body: string;
+  status: string;
+  tone: 'primary' | 'warning' | 'success' | 'neutral';
+  href: string;
+};
+
+function ReviewQueuePanel({ items }: { items: ReviewQueueItem[] }) {
+  const { colors } = useTheme();
+  const toneColor = (tone: ReviewQueueItem['tone']) => {
+    if (tone === 'warning') return colors.warning;
+    if (tone === 'success') return colors.success;
+    if (tone === 'primary') return colors.primary;
+    return colors.textTertiary;
+  };
+
+  return (
+    <Card style={{ gap: Spacing.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+            REVIEW QUEUE
+          </Text>
+          <Text style={{ marginTop: 4, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+            What needs attention
+          </Text>
+        </View>
+        <Button title="Open Review" icon="arrow-right" iconPosition="right" size="sm" onPress={() => router.push('/ai-review' as any)} />
+      </View>
+
+      <View style={{ borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+        {items.map((item, index) => {
+          const color = toneColor(item.tone);
+          return (
+            <TouchableOpacity
+              key={item.title}
+              activeOpacity={0.86}
+              accessibilityRole="link"
+              accessibilityLabel={`Open ${item.title}`}
+              onPress={() => router.push(item.href as any)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing.md,
+                paddingVertical: Spacing.md,
+                borderTopWidth: index > 0 ? 1 : 0,
+                borderTopColor: colors.borderLight,
+              }}
+            >
+              <View style={{ width: 38, height: 38, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: `${color}14` }}>
+                <MaterialCommunityIcons name={item.icon} size={19} color={color} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={{ marginTop: 3, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }} numberOfLines={2}>
+                  {item.body}
+                </Text>
+              </View>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color }}>
+                {item.status}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </Card>
+  );
+}
+
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -231,6 +304,44 @@ export default function DashboardScreen() {
   const activeGroups = groups.filter((group) => !group.archived).length;
   const firstName = user?.full_name?.split(' ')?.[0] ?? 'there';
   const netFlow = totalIncome - totalSpent;
+  const reviewQueueItems: ReviewQueueItem[] = [
+    {
+      icon: 'brain',
+      title: 'AI review desk',
+      body: 'Review receipts, findings, and draft actions.',
+      status: 'Open',
+      tone: 'primary',
+      href: '/ai-review',
+    },
+    {
+      icon: budgetUsage > 80 || remaining < 0 ? 'alert-circle-outline' : 'shield-check-outline',
+      title: 'Budget pressure',
+      body: allowance > 0
+        ? `${Math.round(budgetUsage)}% of the monthly budget is used.`
+        : 'Set a monthly budget before MoneyKai can judge pressure.',
+      status: remaining < 0 ? 'Over' : budgetUsage > 80 ? 'Watch' : 'OK',
+      tone: remaining < 0 || budgetUsage > 80 ? 'warning' : 'success',
+      href: '/budgets',
+    },
+    {
+      icon: 'swap-horizontal',
+      title: 'Money records',
+      body: allTransactions.length > 0
+        ? `${allTransactions.length} records feed reports, categories, and AI summaries.`
+        : 'Add records before review signals appear.',
+      status: allTransactions.length > 0 ? 'Ready' : 'Start',
+      tone: allTransactions.length > 0 ? 'success' : 'neutral',
+      href: '/transactions',
+    },
+    {
+      icon: 'file-chart-outline',
+      title: 'Monthly digest',
+      body: 'Use Reports for summaries, imports, and export-ready review history.',
+      status: 'Reports',
+      tone: 'neutral',
+      href: '/reports',
+    },
+  ];
   const activationSteps: ActivationStep[] = [
     {
       done: allowance > 0,
@@ -348,6 +459,8 @@ export default function DashboardScreen() {
       />
 
       <ActivationPanel steps={activationSteps} />
+
+      <ReviewQueuePanel items={reviewQueueItems} />
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md }}>
         {summaryCards.map((card) => (

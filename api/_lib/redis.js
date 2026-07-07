@@ -1,6 +1,9 @@
+const crypto = require('node:crypto');
 const { Redis } = require('@upstash/redis');
 
 const REQUIRED_ENV = ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'];
+const REDIS_KEY_PREFIX = 'mk';
+const REDIS_KEY_PURPOSES = new Set(['rl', 'cache', 'cooldown', 'dedupe']);
 
 let redisClient = null;
 let redisClientConfigKey = '';
@@ -72,6 +75,62 @@ const sanitizeOperationName = (operationName) => {
   return normalized || 'operation';
 };
 
+const sanitizeRedisKeyPart = (part) => {
+  if (typeof part !== 'string' && typeof part !== 'number') {
+    throw new Error('Redis key parts must be strings or numbers.');
+  }
+
+  const normalized = String(part).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  const compact = normalized.replace(/-+/g, '-').replace(/^-|-$/g, '');
+  if (!compact) {
+    throw new Error('Redis key parts cannot be empty.');
+  }
+
+  return compact.slice(0, 96);
+};
+
+const hashSensitiveKeyPart = (value) => {
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    throw new Error('Sensitive Redis key parts must be strings or numbers.');
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (!normalized) {
+    throw new Error('Sensitive Redis key parts cannot be empty.');
+  }
+
+  const secret = process.env.REDIS_KEY_HASH_SECRET || '';
+  const hash = secret
+    ? crypto.createHmac('sha256', secret).update(normalized).digest('hex')
+    : crypto.createHash('sha256').update(normalized).digest('hex');
+
+  return hash.slice(0, 32);
+};
+
+const hashRedisIdentifier = (type, value) =>
+  `${sanitizeRedisKeyPart(type)}:${hashSensitiveKeyPart(value)}`;
+
+const expandRedisKeyPart = (part) =>
+  String(part).split(':').map(sanitizeRedisKeyPart);
+
+const buildRedisKey = (purpose, ...parts) => {
+  const safePurpose = sanitizeRedisKeyPart(purpose);
+  if (!REDIS_KEY_PURPOSES.has(safePurpose)) {
+    throw new Error(`Unsupported Redis key purpose: ${safePurpose}`);
+  }
+
+  if (parts.length === 0) {
+    throw new Error('Redis keys require at least one purpose-specific part.');
+  }
+
+  return [REDIS_KEY_PREFIX, safePurpose, ...parts.flatMap(expandRedisKeyPart)].join(':');
+};
+
+const buildRateLimitKey = (...parts) => buildRedisKey('rl', ...parts);
+const buildCacheKey = (...parts) => buildRedisKey('cache', ...parts);
+const buildCooldownKey = (...parts) => buildRedisKey('cooldown', ...parts);
+const buildDedupeKey = (...parts) => buildRedisKey('dedupe', ...parts);
+
 const safeRedisCall = async (operationName, callback, fallbackValue = undefined) => {
   const redis = getRedisClient();
   if (!redis) {
@@ -104,8 +163,16 @@ const safeRedisCall = async (operationName, callback, fallbackValue = undefined)
 };
 
 module.exports = {
+  buildCacheKey,
+  buildCooldownKey,
+  buildDedupeKey,
+  buildRateLimitKey,
+  buildRedisKey,
   getRedisClient,
   getRedisConfigStatus,
+  hashRedisIdentifier,
+  hashSensitiveKeyPart,
   isRedisConfigured,
   safeRedisCall,
+  sanitizeRedisKeyPart,
 };
