@@ -19,11 +19,11 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (!applyRateLimit(req, res, {
+  if (!(await applyRateLimit(req, res, {
     keyPrefix: 'auth:google-exchange:ip',
     max: 30,
     windowMs: 15 * 60 * 1000,
-  })) {
+  }))) {
     return;
   }
 
@@ -31,10 +31,10 @@ module.exports = async (req, res) => {
     const payload = await readJsonBody(req, { limitBytes: 8 * 1024 });
     const code = String(payload.code || '');
 
-    if (!applyRateLimitForKey(res, `auth:google-exchange:code:${hashIdentifier(code)}`, {
+    if (!(await applyRateLimitForKey(res, `auth:google-exchange:code:${hashIdentifier(code)}`, {
       max: 3,
       windowMs: 5 * 60 * 1000,
-    })) {
+    }))) {
       return;
     }
 

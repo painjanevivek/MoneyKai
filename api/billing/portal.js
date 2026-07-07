@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'POST')) {
     return;
   }
-  if (!applyRateLimit(req, res, { keyPrefix: 'billing:portal', max: 15, windowMs: 60 * 1000 })) {
+  if (!(await applyRateLimit(req, res, { keyPrefix: 'billing:portal', max: 15, windowMs: 60 * 1000 }))) {
     return;
   }
 

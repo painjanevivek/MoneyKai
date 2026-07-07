@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'GET')) {
     return;
   }
-  if (!applyRateLimit(req, res, { keyPrefix: 'billing:status', max: 60, windowMs: 60 * 1000 })) {
+  if (!(await applyRateLimit(req, res, { keyPrefix: 'billing:status', max: 60, windowMs: 60 * 1000 }))) {
     return;
   }
 

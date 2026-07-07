@@ -38,11 +38,11 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (!applyRateLimit(req, res, {
+  if (!(await applyRateLimit(req, res, {
     keyPrefix: 'auth:google-callback:ip',
     max: 30,
     windowMs: 15 * 60 * 1000,
-  })) {
+  }))) {
     return;
   }
 

@@ -75,11 +75,11 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (!applyRateLimit(req, res, {
+  if (!(await applyRateLimit(req, res, {
     keyPrefix: 'analytics:events',
     max: 120,
     windowMs: 60 * 1000,
-  })) {
+  }))) {
     return;
   }
 

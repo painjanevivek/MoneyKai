@@ -1,6 +1,20 @@
+const {
+  buildRateLimitKey,
+  hashSensitiveKeyPart,
+  safeRedisCall,
+} = require('./redis');
+
 const DEFAULT_BODY_LIMIT_BYTES = 1024 * 1024;
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const DEFAULT_RATE_LIMIT_MAX = 60;
+const RATE_LIMIT_SCRIPT = `
+local current = redis.call("INCR", KEYS[1])
+if current == 1 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[1])
+end
+local ttl = redis.call("PTTL", KEYS[1])
+return { current, ttl }
+`;
 
 const rateLimitBuckets =
   globalThis.__moneykaiRateLimitBuckets ||
@@ -132,22 +146,22 @@ const getClientAddress = (req) => {
   );
 };
 
-const applyRateLimit = (req, res, options = {}) => {
+const applyRateLimit = async (req, res, options = {}) => {
   const windowMs = options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS;
   const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
   const keyPrefix = options.keyPrefix ?? req.url ?? 'default';
-  const clientKey = `${keyPrefix}:${getClientAddress(req)}`;
+  const clientKey = `${keyPrefix}:ip:${hashSensitiveKeyPart(getClientAddress(req))}`;
   return applyRateLimitForKey(res, clientKey, { ...options, windowMs, max });
 };
 
-const applyRateLimitForKey = (res, clientKey, options = {}) => {
+const applyLocalRateLimitForKey = (res, rateLimitKey, options) => {
   const windowMs = options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS;
   const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
   const now = Date.now();
-  const existing = rateLimitBuckets.get(clientKey);
+  const existing = rateLimitBuckets.get(rateLimitKey);
 
   if (!existing || existing.resetAt <= now) {
-    rateLimitBuckets.set(clientKey, {
+    rateLimitBuckets.set(rateLimitKey, {
       count: 1,
       resetAt: now + windowMs,
     });
@@ -174,6 +188,39 @@ const applyRateLimitForKey = (res, clientKey, options = {}) => {
     }
   }
 
+  return false;
+};
+
+const applyRateLimitForKey = async (res, clientKey, options = {}) => {
+  const windowMs = options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS;
+  const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
+  const rateLimitKey = buildRateLimitKey(clientKey);
+  const redisResult = await safeRedisCall(
+    'rate_limit',
+    async (redis) => {
+      const result = await redis.eval(RATE_LIMIT_SCRIPT, [rateLimitKey], [String(windowMs)]);
+      const [count, ttlMs] = Array.isArray(result) ? result : [Number(result), windowMs];
+      return {
+        count: Number(count),
+        ttlMs: Number(ttlMs) > 0 ? Number(ttlMs) : windowMs,
+      };
+    },
+    null
+  );
+
+  if (!redisResult.ok || !redisResult.value || !Number.isFinite(redisResult.value.count)) {
+    return applyLocalRateLimitForKey(res, rateLimitKey, { ...options, windowMs, max });
+  }
+
+  if (redisResult.value.count <= max) {
+    return true;
+  }
+
+  const retryAfterSeconds = Math.max(1, Math.ceil(redisResult.value.ttlMs / 1000));
+  res.setHeader('Retry-After', String(retryAfterSeconds));
+  sendJson(res, 429, {
+    error: options.message || 'Too many requests. Please wait a moment and try again.',
+  });
   return false;
 };
 

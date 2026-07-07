@@ -17,11 +17,11 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (!applyRateLimit(req, res, {
+  if (!(await applyRateLimit(req, res, {
     keyPrefix: 'auth:email-sign-up:ip',
     max: 12,
     windowMs: 60 * 60 * 1000,
-  })) {
+  }))) {
     return;
   }
 
@@ -29,10 +29,10 @@ module.exports = async (req, res) => {
     const payload = await readJsonBody(req, { limitBytes: 4 * 1024 });
     const email = normalizeEmail(payload.email);
 
-    if (!applyRateLimitForKey(res, `auth:email-sign-up:email:${hashIdentifier(email)}`, {
+    if (!(await applyRateLimitForKey(res, `auth:email-sign-up:email:${hashIdentifier(email)}`, {
       max: 3,
       windowMs: 24 * 60 * 60 * 1000,
-    })) {
+    }))) {
       return;
     }
 
