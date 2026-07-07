@@ -1,5 +1,6 @@
 import React from 'react';
 import { Alert, Linking, ScrollView, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AssetAllocationChart } from '@/components/portfolio/AssetAllocationChart';
@@ -8,12 +9,14 @@ import { ManualHoldingSheet } from '@/components/portfolio/ManualHoldingSheet';
 import { PortfolioSummaryCard } from '@/components/portfolio/PortfolioSummaryCard';
 import { ProviderConnectionCard } from '@/components/portfolio/ProviderConnectionCard';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
-import { Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { usePortfolioWorkspace } from '@/features/wealth/usePortfolioWorkspace';
 import { useTheme } from '@/hooks/useTheme';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 const isHttpsUrl = (url: string) => {
   try {
@@ -59,6 +62,28 @@ export default function PortfolioScreen() {
     handleCompleteZerodha,
     handleExploreAa,
   } = usePortfolioWorkspace();
+  const portfolioReview = React.useMemo(() => {
+    const totalValue = holdings.reduce((sum, holding) => sum + Math.max(holding.currentValue, 0), 0);
+    const largestHolding = [...holdings].sort((a, b) => b.currentValue - a.currentValue)[0];
+    const concentrationPercent = largestHolding && totalValue > 0 ? (largestHolding.currentValue / totalValue) * 100 : 0;
+    const allocationCount = overview.allocation.length;
+    const performancePositive = overview.snapshot.totalPnl >= 0;
+    const needsConcentrationReview = concentrationPercent >= 50;
+
+    return {
+      title: holdings.length === 0 ? 'No holdings ready' : needsConcentrationReview ? 'Concentration needs review' : 'Holdings review is ready',
+      tone: needsConcentrationReview ? colors.warning : holdings.length > 0 ? colors.success : colors.textSecondary,
+      body: holdings.length === 0
+        ? 'Add holdings or sync a provider before MoneyKai can compare allocation, performance, and concentration.'
+        : `${largestHolding?.name ?? 'Top holding'} represents ${concentrationPercent.toFixed(0)}% of tracked portfolio value. This is a review note, not investment advice.`,
+      rows: [
+        ['Holdings', String(holdings.length)],
+        ['Allocation groups', String(allocationCount)],
+        ['Total P/L', `${performancePositive ? '+' : ''}${formatCurrency(overview.snapshot.totalPnl, currencySymbol)}`],
+        ['Top exposure', largestHolding ? `${concentrationPercent.toFixed(0)}%` : 'None'],
+      ],
+    };
+  }, [colors.success, colors.textSecondary, colors.warning, currencySymbol, holdings, overview.allocation.length, overview.snapshot.totalPnl]);
 
   React.useEffect(() => {
     if (!enabled) {
@@ -101,6 +126,34 @@ export default function PortfolioScreen() {
         />
 
         <PortfolioSummaryCard snapshot={overview.snapshot} currencySymbol={currencySymbol} />
+        <Card style={{ gap: Spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm }}>
+            <View style={{ width: 38, height: 38, borderRadius: BorderRadius.sm, backgroundColor: `${portfolioReview.tone}16`, alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialCommunityIcons name="chart-donut" size={19} color={portfolioReview.tone} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                PORTFOLIO REVIEW
+              </Text>
+              <Text style={{ marginTop: 3, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                {portfolioReview.title}
+              </Text>
+              <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
+                {portfolioReview.body}
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+            {portfolioReview.rows.map(([label, value]) => (
+              <View key={label} style={{ flex: 1, minWidth: 135, paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>{label}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: 2, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  {value}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Card>
         <ProviderConnectionCard
           accounts={accounts}
           busyAccountId={busyAccountId}

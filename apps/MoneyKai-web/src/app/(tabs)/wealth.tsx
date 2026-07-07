@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AssetAllocationChart } from '@/components/portfolio/AssetAllocationChart';
@@ -7,9 +8,11 @@ import { HoldingsList } from '@/components/portfolio/HoldingsList';
 import { PortfolioInsightCard } from '@/components/portfolio/PortfolioInsightCard';
 import { PortfolioSummaryCard } from '@/components/portfolio/PortfolioSummaryCard';
 import { Button } from '@/components/ui/Button';
-import { Spacing, Typography } from '@/constants/theme';
+import { Card } from '@/components/ui/Card';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { usePortfolioWorkspace } from '@/features/wealth/usePortfolioWorkspace';
 import { useTheme } from '@/hooks/useTheme';
+import { formatCurrency } from '@/utils/formatCurrency';
 
 export default function WealthScreen() {
   const { colors } = useTheme();
@@ -25,6 +28,24 @@ export default function WealthScreen() {
     handleSnapshot,
     handleGenerateAiInsights,
   } = usePortfolioWorkspace();
+  const wealthReview = React.useMemo(() => {
+    const hasLiabilities = overview.snapshot.totalLiabilities > 0;
+    const hasHoldings = holdings.length > 0;
+
+    return {
+      title: hasHoldings ? 'Position ready for review' : 'Add holdings to build position',
+      tone: hasLiabilities ? colors.warning : hasHoldings ? colors.success : colors.textSecondary,
+      body: hasHoldings
+        ? 'MoneyKai is summarizing assets, liabilities, and investment value from tracked holdings. Treat AI notes as review prompts before making financial decisions.'
+        : 'Connect a provider or add manual holdings so Wealth can show your larger financial position.',
+      rows: [
+        ['Net worth', formatCurrency(overview.snapshot.netWorth, currencySymbol)],
+        ['Assets', formatCurrency(overview.snapshot.totalAssets, currencySymbol)],
+        ['Liabilities', formatCurrency(overview.snapshot.totalLiabilities, currencySymbol)],
+        ['Sources', `${overview.snapshot.sourceAccountCount} account${overview.snapshot.sourceAccountCount === 1 ? '' : 's'}`],
+      ],
+    };
+  }, [colors.success, colors.textSecondary, colors.warning, currencySymbol, holdings.length, overview.snapshot]);
 
   React.useEffect(() => {
     if (!enabled) {
@@ -60,6 +81,34 @@ export default function WealthScreen() {
         </View>
 
         <PortfolioSummaryCard snapshot={overview.snapshot} currencySymbol={currencySymbol} />
+        <Card style={{ gap: Spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm }}>
+            <View style={{ width: 38, height: 38, borderRadius: BorderRadius.sm, backgroundColor: `${wealthReview.tone}16`, alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialCommunityIcons name="scale-balance" size={19} color={wealthReview.tone} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                WEALTH REVIEW
+              </Text>
+              <Text style={{ marginTop: 3, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                {wealthReview.title}
+              </Text>
+              <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
+                {wealthReview.body}
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+            {wealthReview.rows.map(([label, value]) => (
+              <View key={label} style={{ flex: 1, minWidth: 135, paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>{label}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: 2, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  {value}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Card>
         <AssetAllocationChart allocation={overview.allocation} currencySymbol={currencySymbol} />
         <HoldingsList holdings={overview.topHoldings} currencySymbol={currencySymbol} />
         {holdings.length > overview.topHoldings.length ? (

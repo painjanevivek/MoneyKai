@@ -274,6 +274,32 @@ export default function AccountsScreen() {
   const providerSetupRequired = providerStatus?.manualSetupRequired?.length
     ? providerStatus.manualSetupRequired
     : ['Provider credentials', 'Consent callback endpoint', 'Webhook signature verification'];
+  const accountReview = useMemo(() => {
+    const unsyncedAccounts = activeAccounts.filter((account) => {
+      if (!account.lastSyncedAt) return true;
+      const syncedAt = new Date(account.lastSyncedAt).getTime();
+      return !Number.isFinite(syncedAt);
+    }).length;
+    const needsAttention = summary.attentionAccounts + unsyncedAccounts;
+
+    return {
+      title: activeAccounts.length === 0
+        ? 'No account sources connected'
+        : needsAttention > 0
+          ? 'Account sources need review'
+          : 'Account sources look current',
+      tone: needsAttention > 0 ? colors.warning : activeAccounts.length > 0 ? colors.success : colors.textSecondary,
+      body: activeAccounts.length === 0
+        ? 'Add a manual account or connect a provider so MoneyKai can explain where money is held.'
+        : 'Balances, sync health, and linked transaction records stay visible before account data affects budgets or net worth.',
+      rows: [
+        ['Held across', `${activeAccounts.length} account${activeAccounts.length === 1 ? '' : 's'}`],
+        ['Connected', `${summary.connectedAccounts}/${summary.totalAccounts}`],
+        ['Unsynced', String(unsyncedAccounts)],
+        ['Linked records', selectedAccount ? String(selectedTransactions.length) : 'Select account'],
+      ],
+    };
+  }, [activeAccounts, colors.success, colors.textSecondary, colors.warning, selectedAccount, selectedTransactions.length, summary.attentionAccounts, summary.connectedAccounts, summary.totalAccounts]);
 
   useEffect(() => {
     if (!demoDataEnabled && accounts.some((account) => account.provider === 'sandbox')) {
@@ -475,6 +501,35 @@ export default function AccountsScreen() {
               );
             })}
           </View>
+
+          <Card style={{ gap: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm }}>
+              <View style={{ width: 38, height: 38, borderRadius: BorderRadius.sm, backgroundColor: `${accountReview.tone}16`, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="bank-check" size={19} color={accountReview.tone} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+                  ACCOUNT REVIEW
+                </Text>
+                <Text style={{ marginTop: 3, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  {accountReview.title}
+                </Text>
+                <Text style={{ marginTop: 4, fontSize: Typography.fontSize.sm, lineHeight: 20, color: colors.textSecondary }}>
+                  {accountReview.body}
+                </Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+              {accountReview.rows.map(([label, value]) => (
+                <View key={label} style={{ flex: 1, minWidth: 135, paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+                  <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>{label}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit style={{ marginTop: 2, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    {value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Card>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xl, alignItems: 'flex-start' }}>
             <View style={{ flex: 2, minWidth: 320, gap: Spacing.md }}>
