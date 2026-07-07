@@ -131,6 +131,15 @@ export default function AiReviewScreen() {
   const deskColors = Colors.jetLuxuryDark;
   const deskBorder = 'rgba(164, 244, 253, 0.16)';
   const selectedTaskOption = TASK_OPTIONS.find((option) => option.id === task) ?? TASK_OPTIONS[0];
+  const setupMessage = requiresSignIn
+    ? 'Sign in to check AI review availability.'
+    : providerError
+      ? 'MoneyKai could not check AI review availability. Try again after the connection is restored.'
+      : providerStatus?.error
+        ? 'AI review is not available in this environment yet.'
+        : !loadingProviderStatus && providerStatus && !providerStatus.defaultVisionModelConfigured
+          ? 'Vision review needs a configured model before attachments can be analyzed.'
+          : null;
   const decisionMeta: Record<ReviewDecision, { label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap; color: string }> = {
     new: { label: 'New', icon: 'circle-outline', color: deskColors.textTertiary },
     needs_review: { label: 'Needs review', icon: 'alert-circle-outline', color: deskColors.warning },
@@ -476,9 +485,9 @@ export default function AiReviewScreen() {
           <Text style={{ maxWidth: 820, fontSize: Typography.fontSize.sm, lineHeight: 22, color: deskColors.textSecondary }}>
             Capture, classify, summarize, then approve.
           </Text>
-          {providerError || providerStatus?.error || !providerStatus?.defaultVisionModelConfigured ? (
+          {setupMessage ? (
             <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: deskColors.textTertiary }}>
-              {providerError || providerStatus?.error || 'Vision analysis is not configured yet.'}
+              {setupMessage}
             </Text>
           ) : null}
         </View>
@@ -967,13 +976,21 @@ export default function AiReviewScreen() {
       ) : null}
 
       {analysisError ? (
-        <Card style={{ gap: Spacing.sm }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            Analysis unavailable
-          </Text>
-          <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-            {analysisError}
-          </Text>
+        <Card style={{ gap: Spacing.md, borderColor: `${colors.warning}44` }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm }}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.warning} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Analysis could not finish
+              </Text>
+              <Text style={{ marginTop: 3, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                MoneyKai kept this as a draft. Check the image, provider setup, or connection, then try the review again.
+              </Text>
+            </View>
+          </View>
+          {selectedAsset && attachmentsReady && !requiresSignIn ? (
+            <Button title="Try analysis again" icon="refresh" variant="outline" onPress={analyzeSelectedAsset} />
+          ) : null}
         </Card>
       ) : null}
     </ScrollView>

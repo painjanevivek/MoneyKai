@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { AIInsights } from '@/components/dashboard/AIInsights';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { getCategoryById } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/dateUtils';
@@ -41,9 +42,11 @@ export default function ReportsScreen() {
   const [isDragActive, setIsDragActive] = useState(false);
   const [results, setResults] = useState<StatementImportResult[]>([]);
   const [selectedDrafts, setSelectedDrafts] = useState<Record<string, boolean>>({});
+  const [importError, setImportError] = useState<string | null>(null);
 
   const isWide = width >= 980;
   const allDrafts = useMemo(() => results.flatMap((result) => result.drafts), [results]);
+  const hasFinishedReportData = transactions.length > 0 || allDrafts.length > 0;
   const duplicateKeys = useMemo(() => {
     const keys = new Set<string>();
     allDrafts.forEach((draft) => {
@@ -116,6 +119,7 @@ export default function ReportsScreen() {
   const handleFiles = async (files: any[]) => {
     if (files.length === 0) return;
     setIsProcessing(true);
+    setImportError(null);
     dragDepthRef.current = 0;
     setIsDragActive(false);
 
@@ -129,8 +133,10 @@ export default function ReportsScreen() {
         nextSelected[key] = !isLikelyDuplicate(draft, transactions);
       });
       setSelectedDrafts(nextSelected);
-    } catch (error) {
-      Alert.alert('Statement import failed', error instanceof Error ? error.message : 'Could not read the selected document.');
+    } catch {
+      const message = 'MoneyKai could not read that statement. Try a selectable PDF, CSV, spreadsheet, or text export.';
+      setImportError(message);
+      Alert.alert('Statement import failed', message);
     } finally {
       setIsProcessing(false);
       if (fileInputRef.current) {
@@ -512,6 +518,49 @@ export default function ReportsScreen() {
           </View>
         </View>
 
+        {importError ? (
+          <View
+            style={{
+              marginTop: Spacing.md,
+              borderRadius: BorderRadius.md,
+              borderWidth: 1,
+              borderColor: `${colors.warning}44`,
+              backgroundColor: `${colors.warning}12`,
+              padding: Spacing.base,
+              flexDirection: isWide ? 'row' : 'column',
+              gap: Spacing.md,
+              alignItems: isWide ? 'center' : 'stretch',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, flex: 1 }}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.warning} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                  Import needs another file
+                </Text>
+                <Text style={{ marginTop: 3, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}>
+                  {importError}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={handlePickFiles}
+              style={({ hovered }: any) => ({
+                minHeight: 40,
+                borderRadius: BorderRadius.md,
+                backgroundColor: hovered ? colors.primaryLight : colors.primary,
+                paddingHorizontal: Spacing.md,
+                alignItems: 'center',
+                justifyContent: 'center',
+              })}
+            >
+              <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
+                Choose another file
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: Spacing.md }}>
           {renderMetric('Synced mobile/web history', String(transactions.length), 'database-sync-outline', 'primary')}
           {renderMetric('Rows awaiting import', String(allDrafts.length), 'file-search-outline', 'warning')}
@@ -527,8 +576,9 @@ export default function ReportsScreen() {
           <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
             Finished reports
           </Text>
-          <View style={{ borderTopWidth: 1, borderTopColor: colors.borderLight }}>
-            {completedReports.map((report, index) => {
+          {hasFinishedReportData ? (
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+              {completedReports.map((report, index) => {
               const toneColor = report.tone === 'warning' ? colors.warning : report.tone === 'primary' ? colors.primary : colors.textTertiary;
               return (
                 <View
@@ -563,8 +613,33 @@ export default function ReportsScreen() {
                   </View>
                 </View>
               );
-            })}
-          </View>
+              })}
+            </View>
+          ) : (
+            <EmptyState
+              icon="file-chart-outline"
+              title="No finished reports yet"
+              message="Import a statement or add transactions first. Final reports will appear here after there is reviewed money history."
+              action={
+                <Pressable
+                  onPress={handlePickFiles}
+                  style={({ hovered }: any) => ({
+                    minHeight: 42,
+                    borderRadius: BorderRadius.md,
+                    backgroundColor: hovered ? colors.primaryLight : colors.primary,
+                    paddingHorizontal: Spacing.md,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  })}
+                >
+                  <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
+                    Upload statement
+                  </Text>
+                </Pressable>
+              }
+              style={{ backgroundColor: colors.card }}
+            />
+          )}
         </View>
 
         {results.length > 0 ? (
@@ -665,7 +740,32 @@ export default function ReportsScreen() {
                 </Text>
                 {allDrafts.map(renderDraft)}
               </View>
-            ) : null}
+            ) : (
+              <EmptyState
+                icon="text-box-remove-outline"
+                title="No importable rows found"
+                message="The file was read, but MoneyKai did not find transaction rows it can prepare for review."
+                action={
+                  <Pressable
+                    onPress={handlePickFiles}
+                    style={({ hovered }: any) => ({
+                      minHeight: 42,
+                      borderRadius: BorderRadius.md,
+                      backgroundColor: hovered ? colors.surfaceElevated : colors.surface,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      paddingHorizontal: Spacing.md,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    })}
+                  >
+                    <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                      Try another file
+                    </Text>
+                  </Pressable>
+                }
+              />
+            )}
           </View>
         ) : null}
 
