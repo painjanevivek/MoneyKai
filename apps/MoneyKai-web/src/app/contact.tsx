@@ -1,9 +1,8 @@
-import React from 'react';
-import { Linking, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Linking, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
-import { SITE } from '@/constants/site';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -11,16 +10,16 @@ const CONTACT_OPTIONS = [
   {
     icon: 'lifebuoy',
     title: 'Support',
-    description: `Reach out for product questions, troubleshooting, local data, or backup-file help at ${SITE.supportEmail}.`,
-    subject: 'MoneyKai Support',
-    body: 'What do you need help with?\n\nAccount email, if relevant:\n\nDevice/browser:\n',
+    description: 'Open a GitHub issue for product questions, troubleshooting, local data, or backup-file help.',
+    issueTitle: 'Support request: ',
+    issueBody: 'What do you need help with?\n\nDevice/browser:\n\nScreenshots or links, if useful:\n',
   },
   {
     icon: 'bug-outline',
     title: 'Bug report',
-    description: `Report broken flows, crashes, incorrect totals, backup-file issues, or confusing behavior to ${SITE.supportEmail}.`,
-    subject: 'MoneyKai Bug Report',
-    body: [
+    description: 'Report broken flows, crashes, incorrect totals, backup-file issues, or confusing behavior with a GitHub issue.',
+    issueTitle: 'Bug report: ',
+    issueBody: [
       'Bug summary:',
       '',
       'Steps to reproduce:',
@@ -37,59 +36,77 @@ const CONTACT_OPTIONS = [
     ].join('\n'),
   },
   {
-    icon: 'message-text-outline',
-    title: 'Feedback',
-    description: `Share ideas, suggestions, or improvements you would like to see in MoneyKai at ${SITE.supportEmail}.`,
-    subject: 'MoneyKai Feedback',
-    body: 'Feedback or idea:\n\nWhat problem would this solve for you?\n',
-  },
-  {
     icon: 'shield-lock-outline',
     title: 'Security and privacy',
-    description: `Use ${SITE.supportEmail} for privacy questions, security concerns, or data-related requests.`,
-    subject: 'MoneyKai Security and Privacy',
-    body: 'Privacy, security, or data request:\n\nPlease avoid sending passwords, full card numbers, or sensitive document contents by email.\n',
+    description: 'Open a GitHub issue for privacy questions or data-related requests. Do not include secrets or sensitive document contents.',
+    issueTitle: 'Security or privacy request: ',
+    issueBody: 'Privacy, security, or data request:\n\nPlease do not include passwords, full card numbers, secrets, or sensitive document contents.\n',
   },
 ];
 
+const GITHUB_ISSUE_URL = 'https://github.com/painjanevivek/MoneyKai/issues/new';
+
+const buildGitHubIssueUrl = (title: string, body: string) => {
+  const params = new URLSearchParams({ title, body });
+  return `${GITHUB_ISSUE_URL}?${params.toString()}`;
+};
+
 export default function ContactScreen() {
   const { colors } = useTheme();
+  const [feedbackName, setFeedbackName] = useState('');
+  const [feedbackText, setFeedbackText] = useState('');
 
-  const openMail = (subject: string, body?: string) => {
-    const params = new URLSearchParams({ subject });
-    if (body) {
-      params.set('body', body);
-    }
-    const url = `mailto:${SITE.supportEmail}?${params.toString()}`;
+  const openGitHubIssue = (title: string, body: string) => {
+    const url = buildGitHubIssueUrl(title, body);
     Linking.openURL(url).catch(() => {
-      Linking.openURL(`mailto:${SITE.supportEmail}`).catch(() => undefined);
+      Linking.openURL('https://github.com/painjanevivek/MoneyKai/issues').catch(() => undefined);
     });
+  };
+
+  const handleSubmitFeedback = () => {
+    const name = feedbackName.trim();
+    const feedback = feedbackText.trim();
+
+    if (!name || !feedback) {
+      Alert.alert('Feedback needs a name and message', 'Add your name and feedback before submitting.');
+      return;
+    }
+
+    openGitHubIssue(
+      `Feedback: ${name}`,
+      [
+        `Name: ${name}`,
+        '',
+        'Feedback:',
+        feedback,
+      ].join('\n')
+    );
   };
 
   return (
     <>
       <SeoHead
-        title="Contact MoneyKai | Support, feedback, and privacy questions"
-        description="Contact MoneyKai for support, bug reports, product feedback, privacy questions, and security or data-related requests."
+        title="Contact MoneyKai | GitHub support, feedback, and privacy questions"
+        description="Contact MoneyKai through GitHub Issues for support, bug reports, product feedback, privacy questions, and security or data-related requests."
         path="/contact"
         keywords={['MoneyKai contact', 'MoneyKai support', 'MoneyKai bug report', 'privacy support', 'budget app support']}
       />
       <PublicShell
         eyebrow="Contact"
         title="Contact MoneyKai without hunting for the right route."
-        description={`Use ${SITE.supportEmail} for support, bug reports, product feedback, and privacy or security-related questions.`}
+        description="Use GitHub Issues for support, bug reports, feedback, and privacy or security-related questions while email hosting is not enabled."
       >
         <View style={{ gap: Spacing.md }}>
           <SectionCard>
             <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-              Main support email
+              GitHub issue support
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
-              MoneyKai currently uses a direct email support path for product help, bug reports, feedback, privacy questions,
-              and security concerns.
+              MoneyKai has not enabled email hosting yet. Product support, bug reports, feedback, privacy questions,
+              and security-related requests should be opened through GitHub Issues.
             </Text>
             <Text style={{ marginTop: 10, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
-              {SITE.supportEmail}
+              github.com/painjanevivek/MoneyKai/issues
             </Text>
           </SectionCard>
 
@@ -117,9 +134,9 @@ export default function ContactScreen() {
                 </Text>
                 <TouchableOpacity
                   activeOpacity={0.82}
-                  onPress={() => openMail(option.subject, option.body)}
+                  onPress={() => openGitHubIssue(option.issueTitle, option.issueBody)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Email MoneyKai about ${option.title.toLowerCase()}`}
+                  accessibilityLabel={`Open a GitHub issue about ${option.title.toLowerCase()}`}
                   style={{
                     alignSelf: 'flex-start',
                     marginTop: Spacing.md,
@@ -132,12 +149,94 @@ export default function ContactScreen() {
                   }}
                 >
                   <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                    Email about {option.title.toLowerCase()}
+                    Open GitHub issue
                   </Text>
                 </TouchableOpacity>
               </SectionCard>
             ))}
           </View>
+
+          <SectionCard>
+            <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+              Feedback
+            </Text>
+            <Text style={{ marginTop: 10, fontSize: Typography.fontSize.sm, lineHeight: 24, color: colors.textSecondary }}>
+              Share product feedback without email. Submitting this form opens a prefilled GitHub issue for review.
+            </Text>
+
+            <View style={{ marginTop: Spacing.md, gap: Spacing.md }}>
+              <View>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: 8 }}>
+                  Name
+                </Text>
+                <TextInput
+                  value={feedbackName}
+                  onChangeText={setFeedbackName}
+                  placeholder="Your name"
+                  placeholderTextColor={colors.textTertiary}
+                  autoCapitalize="words"
+                  style={{
+                    minHeight: 48,
+                    borderRadius: BorderRadius.md,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                    paddingHorizontal: Spacing.md,
+                    color: colors.textPrimary,
+                    fontSize: Typography.fontSize.sm,
+                    fontFamily: Typography.fontFamily.regular,
+                  }}
+                />
+              </View>
+
+              <View>
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: 8 }}>
+                  Feedback
+                </Text>
+                <TextInput
+                  value={feedbackText}
+                  onChangeText={setFeedbackText}
+                  placeholder="Tell us what should improve, change, or be added."
+                  placeholderTextColor={colors.textTertiary}
+                  multiline
+                  textAlignVertical="top"
+                  style={{
+                    minHeight: 140,
+                    borderRadius: BorderRadius.md,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                    paddingHorizontal: Spacing.md,
+                    paddingVertical: Spacing.md,
+                    color: colors.textPrimary,
+                    fontSize: Typography.fontSize.sm,
+                    lineHeight: 22,
+                    fontFamily: Typography.fontFamily.regular,
+                  }}
+                />
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.82}
+                onPress={handleSubmitFeedback}
+                accessibilityRole="button"
+                accessibilityLabel="Submit feedback through GitHub Issues"
+                style={{
+                  alignSelf: 'flex-start',
+                  paddingHorizontal: Spacing.lg,
+                  paddingVertical: 13,
+                  borderRadius: BorderRadius.full,
+                  backgroundColor: colors.primary,
+                  borderWidth: 1,
+                  borderColor: colors.primary,
+                }}
+              >
+                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textInverse }}>
+                  Submit feedback
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </SectionCard>
         </View>
       </PublicShell>
     </>
