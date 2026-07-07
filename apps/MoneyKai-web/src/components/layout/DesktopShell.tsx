@@ -57,7 +57,7 @@ const ROUTE_META: { href: string; title: string; subtitle: string; icon?: keyof 
   { href: '/learn-center', title: 'Learn Center', subtitle: 'Practical money guides for calmer decisions' },
   { href: '/notes', title: 'Notes', subtitle: 'Keep review context beside your records' },
   { href: '/notifications', title: 'Notifications', subtitle: 'Review alerts, reminders, and app updates' },
-  { href: '/savings', title: 'Savings', subtitle: 'Track goals, streaks, and emergency buffers' },
+  { href: '/savings', title: 'Savings', subtitle: 'Track goals, streaks, and savings progress' },
   { href: '/subscriptions', title: 'Subscriptions', subtitle: '' },
   { href: '/settings', title: 'Settings', subtitle: 'Profile, privacy, and backups' },
 ];
