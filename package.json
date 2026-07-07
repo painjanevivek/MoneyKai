@@ -40,6 +40,7 @@
     "backend:dev": "node ./scripts/backend-runner.mjs dev",
     "backend:test": "node ./scripts/backend-runner.mjs test",
     "backend:compile": "node ./scripts/backend-runner.mjs compile",
+    "api:test": "node --test api/**/*.test.js",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "playwright:open": "playwright test --ui",
