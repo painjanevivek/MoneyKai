@@ -1,6 +1,7 @@
 const {
   buildRateLimitKey,
   hashSensitiveKeyPart,
+  normalizeRedisTtlMs,
   safeRedisCall,
 } = require('./redis');
 
@@ -192,7 +193,7 @@ const applyLocalRateLimitForKey = (res, rateLimitKey, options) => {
 };
 
 const applyRateLimitForKey = async (res, clientKey, options = {}) => {
-  const windowMs = options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS;
+  const windowMs = normalizeRedisTtlMs(options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS);
   const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
   const rateLimitKey = buildRateLimitKey(clientKey);
   const redisResult = await safeRedisCall(

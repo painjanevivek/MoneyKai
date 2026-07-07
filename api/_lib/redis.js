@@ -4,6 +4,7 @@ const { Redis } = require('@upstash/redis');
 const REQUIRED_ENV = ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'];
 const REDIS_KEY_PREFIX = 'mk';
 const REDIS_KEY_PURPOSES = new Set(['rl', 'cache', 'cooldown', 'dedupe']);
+const DEFAULT_MAX_TTL_SECONDS = 24 * 60 * 60;
 
 let redisClient = null;
 let redisClientConfigKey = '';
@@ -131,6 +132,36 @@ const buildCacheKey = (...parts) => buildRedisKey('cache', ...parts);
 const buildCooldownKey = (...parts) => buildRedisKey('cooldown', ...parts);
 const buildDedupeKey = (...parts) => buildRedisKey('dedupe', ...parts);
 
+const normalizeRedisTtlSeconds = (ttlSeconds, options = {}) => {
+  const maxSeconds = options.maxSeconds ?? DEFAULT_MAX_TTL_SECONDS;
+  const ttl = Number(ttlSeconds);
+
+  if (!Number.isFinite(ttl) || ttl <= 0) {
+    throw new Error('Redis writes require a positive TTL.');
+  }
+
+  if (ttl > maxSeconds) {
+    throw new Error(`Redis TTL cannot exceed ${maxSeconds} seconds.`);
+  }
+
+  return Math.ceil(ttl);
+};
+
+const normalizeRedisTtlMs = (ttlMs, options = {}) => {
+  const maxSeconds = options.maxSeconds ?? DEFAULT_MAX_TTL_SECONDS;
+  const ttl = Number(ttlMs);
+
+  if (!Number.isFinite(ttl) || ttl <= 0) {
+    throw new Error('Redis writes require a positive TTL.');
+  }
+
+  if (ttl > maxSeconds * 1000) {
+    throw new Error(`Redis TTL cannot exceed ${maxSeconds} seconds.`);
+  }
+
+  return Math.ceil(ttl);
+};
+
 const safeRedisCall = async (operationName, callback, fallbackValue = undefined) => {
   const redis = getRedisClient();
   if (!redis) {
@@ -173,6 +204,8 @@ module.exports = {
   hashRedisIdentifier,
   hashSensitiveKeyPart,
   isRedisConfigured,
+  normalizeRedisTtlMs,
+  normalizeRedisTtlSeconds,
   safeRedisCall,
   sanitizeRedisKeyPart,
 };
