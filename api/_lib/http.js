@@ -276,6 +276,15 @@ const normalizeOrigin = (value) => {
   }
 };
 
+const isLocalOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
 const getTrustedRequestOrigins = () => {
   const origins = new Set();
   const addOrigin = (value) => {
@@ -319,6 +328,23 @@ const getHeaderValue = (req, name) => {
   return Array.isArray(value) ? value[0] : value;
 };
 
+const getRequestHostOrigins = (req) => {
+  const origins = new Set();
+  const forwardedProto = getHeaderValue(req, 'x-forwarded-proto') || '';
+  const proto = forwardedProto.split(',')[0].trim() || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+  const hostHeader = getHeaderValue(req, 'x-forwarded-host') || getHeaderValue(req, 'host') || '';
+
+  for (const host of hostHeader.split(',')) {
+    const normalizedHost = host.trim();
+    const normalized = normalizeOrigin(`${proto}://${normalizedHost}`);
+    if (normalized) {
+      origins.add(normalized);
+    }
+  }
+
+  return origins;
+};
+
 const getRequestOrigin = (req) => {
   const origin = normalizeOrigin(getHeaderValue(req, 'origin'));
   if (origin) {
@@ -343,7 +369,11 @@ const requireTrustedOrigin = (req, res) => {
     return true;
   }
 
-  if (getTrustedRequestOrigins().has(requestOrigin)) {
+  if (
+    getTrustedRequestOrigins().has(requestOrigin) ||
+    getRequestHostOrigins(req).has(requestOrigin) ||
+    (process.env.NODE_ENV !== 'production' && isLocalOrigin(requestOrigin))
+  ) {
     return true;
   }
 

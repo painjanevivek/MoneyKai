@@ -119,6 +119,8 @@ check(
     'UNSAFE_METHODS',
     'requireTrustedOrigin',
     'getRequestOrigin',
+    'getRequestHostOrigins',
+    'isLocalOrigin',
     'MONEYKAI_ALLOWED_APP_ORIGINS',
     'Request origin is not trusted.',
     '!UNSAFE_METHODS.has(method) || requireTrustedOrigin(req, res)',
