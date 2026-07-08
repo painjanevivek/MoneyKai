@@ -188,6 +188,7 @@ const authPasswordResetRoute = readText('api/v1/auth/email/password-reset.js');
 const authGoogleStartRoute = readText('api/v1/auth/google/start.js');
 const authGoogleCallbackRoute = readText('api/v1/auth/google/callback.js');
 const authGoogleExchangeRoute = readText('api/v1/auth/google/exchange.js');
+const authGoogleSetupStatusRoute = readText('api/v1/auth/google/setup-status.js');
 const webAuthStore = readText('apps/MoneyKai-web/src/stores/useAuthStore.ts');
 const webAuthGateway = readText('apps/MoneyKai-web/src/services/authGateway.ts');
 const webGoogleCallback = readText('apps/MoneyKai-web/src/app/auth/google/callback.tsx');
@@ -330,6 +331,8 @@ check(
     'GOOGLE_JWKS_URL',
     'GOOGLE_OAUTH_CLIENT_SECRET',
     'GOOGLE_OAUTH_STATE_SECRET',
+    'getGoogleOAuthSetupStatus',
+    'requiredGoogleCloud',
     'code_challenge',
     'verifyGoogleIdToken',
     'email_verified',
@@ -345,6 +348,12 @@ check(
     containsAll(authGoogleStartRoute, [
       'applyRateLimit(req, res',
       'buildGoogleAuthorizationUrl',
+      'sendJson(res, 200',
+    ]) &&
+    containsAll(authGoogleSetupStatusRoute, [
+      'requireMethod(req, res, \'GET\')',
+      'applyRateLimit(req, res',
+      'getGoogleOAuthSetupStatus',
       'sendJson(res, 200',
     ]) &&
     containsAll(authGoogleCallbackRoute, [
