@@ -7,6 +7,16 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "money-kai-backend.vercel.app"
+        }
+      ],
+      "destination": "/api/health"
+    },
+    {
       "source": "/api/v1/auth/google/start",
       "destination": "/api/auth-google-start"
     },
@@ -158,6 +168,15 @@
     },
     {
       "source": "/api/monitoring",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/api/health",
       "headers": [
         {
           "key": "Cache-Control",
