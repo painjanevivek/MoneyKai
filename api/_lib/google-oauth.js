@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const { getAppUrl } = require('./http');
 const {
   FirebaseIdentityError,
+  getFirebaseIdentitySetupStatus,
   signInWithGoogleIdToken,
 } = require('./firebase-identity');
 
@@ -136,7 +137,7 @@ const getBackendGoogleRedirectUri = (candidateOrigin) => {
     return normalizeGoogleRedirectUri(configured.trim());
   }
 
-  if (candidateOrigin && isLocalWebAppUrl(candidateOrigin)) {
+  if (candidateOrigin && (isLocalWebAppUrl(candidateOrigin) || isTrustedWebAppUrl(candidateOrigin))) {
     return buildGoogleCallbackUrl(candidateOrigin);
   }
 
@@ -168,12 +169,22 @@ const getGoogleOAuthSetupStatus = (options = {}) => {
     'FIREBASE_PRIVATE_KEY',
     'FIREBASE_SERVICE_ACCOUNT_JSON',
   ]);
+  const firebaseStatus = getFirebaseIdentitySetupStatus();
 
   return {
-    configured: Boolean(clientIdConfigured && clientSecretConfigured && stateSecretConfigured && redirectUri && !redirectUriError),
+    configured: Boolean(
+      clientIdConfigured &&
+        clientSecretConfigured &&
+        stateSecretConfigured &&
+        redirectUri &&
+        !redirectUriError &&
+        firebaseStatus.firebaseApiKeyConfigured &&
+        firebaseStatus.firebaseServiceAccountValidShape
+    ),
     clientIdConfigured,
     clientSecretConfigured,
     stateSecretConfigured,
+    ...firebaseStatus,
     redirectUri,
     redirectUriConfigured: hasAnyEnvValue(['GOOGLE_OAUTH_REDIRECT_URI']),
     redirectUriError,

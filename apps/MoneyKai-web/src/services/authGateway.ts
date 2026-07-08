@@ -237,6 +237,10 @@ export const isRecoverableGoogleAuthGatewayError = (error: unknown): boolean => 
   const status = error instanceof AuthGatewayError ? error.status : null;
   const message = error instanceof Error ? error.message.toLowerCase() : '';
 
+  if (message.includes('not configured')) {
+    return false;
+  }
+
   return (
     status === 0 ||
     status === 404 ||

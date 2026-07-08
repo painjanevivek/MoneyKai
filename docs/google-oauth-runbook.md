@@ -26,6 +26,15 @@ Copy the value from:
 requiredGoogleCloud.authorizedRedirectUris[0]
 ```
 
+The endpoint should also show these values before Google sign-in can complete:
+
+```text
+configured: true
+firebaseApiKeyConfigured: true
+firebaseServiceAccountConfigured: true
+firebaseServiceAccountValidShape: true
+```
+
 Then add that exact URI in Google Cloud:
 
 1. Open Google Cloud Console.
@@ -45,6 +54,7 @@ MONEYKAI_SITE_URL=https://moneykai.com
 GOOGLE_OAUTH_CLIENT_ID=<google-web-client-id>
 GOOGLE_OAUTH_CLIENT_SECRET=<google-web-client-secret>
 GOOGLE_OAUTH_STATE_SECRET=<long-random-secret>
+FIREBASE_SERVICE_ACCOUNT_JSON=<full Firebase service account JSON>
 ```
 
 Optional:
@@ -61,4 +71,6 @@ Use `GOOGLE_OAUTH_REDIRECT_URI` only when the backend callback must differ from 
 - A trailing `/` at the end is different from no trailing `/`.
 - A Vercel preview URL is different from the production domain.
 - A Firebase client ID is different from the backend web OAuth client ID.
+- `FIREBASE_SERVICE_ACCOUNT_JSON` is missing, partial, or pasted with a broken private key.
+- The Firebase web API key is missing from `EXPO_PUBLIC_FIREBASE_API_KEY`, `FIREBASE_WEB_API_KEY`, or `FIREBASE_API_KEY`.
 - Google changes can take a few minutes to propagate after saving.
