@@ -49,11 +49,11 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (!applyRateLimit(req, res, {
+  if (!(await applyRateLimit(req, res, {
     keyPrefix: 'auth:google-start:ip',
     max: 20,
     windowMs: 15 * 60 * 1000,
-  })) {
+  }))) {
     return;
   }
 

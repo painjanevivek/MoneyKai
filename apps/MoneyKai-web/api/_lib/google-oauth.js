@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const { getAppUrl } = require('./http');
 const {
   FirebaseIdentityError,
+  getFirebaseIdentitySetupStatus,
   signInWithGoogleIdToken,
 } = require('./firebase-identity');
 
@@ -136,11 +137,67 @@ const getBackendGoogleRedirectUri = (candidateOrigin) => {
     return normalizeGoogleRedirectUri(configured.trim());
   }
 
-  if (candidateOrigin && isLocalWebAppUrl(candidateOrigin)) {
+  if (candidateOrigin && (isLocalWebAppUrl(candidateOrigin) || isTrustedWebAppUrl(candidateOrigin))) {
     return buildGoogleCallbackUrl(candidateOrigin);
   }
 
   return buildGoogleCallbackUrl(getAppUrl());
+};
+
+const hasAnyEnvValue = (names) =>
+  names.some((name) => String(process.env[name] || '').trim().length > 0);
+
+const getGoogleOAuthSetupStatus = (options = {}) => {
+  let redirectUri = '';
+  let redirectUriError = '';
+
+  try {
+    redirectUri = getBackendGoogleRedirectUri(options.requestHostOrigin);
+  } catch (error) {
+    redirectUriError = error instanceof Error ? error.message : 'Google OAuth redirect URI could not be resolved.';
+  }
+
+  const clientIdConfigured = hasAnyEnvValue([
+    'GOOGLE_OAUTH_CLIENT_ID',
+    'GOOGLE_CLIENT_ID',
+    'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
+  ]);
+  const clientSecretConfigured = hasAnyEnvValue(['GOOGLE_OAUTH_CLIENT_SECRET', 'GOOGLE_CLIENT_SECRET']);
+  const stateSecretConfigured = hasAnyEnvValue([
+    'GOOGLE_OAUTH_STATE_SECRET',
+    'AUTH_STATE_SECRET',
+    'FIREBASE_PRIVATE_KEY',
+    'FIREBASE_SERVICE_ACCOUNT_JSON',
+  ]);
+  const firebaseStatus = getFirebaseIdentitySetupStatus();
+
+  return {
+    configured: Boolean(
+      clientIdConfigured &&
+        clientSecretConfigured &&
+        stateSecretConfigured &&
+        redirectUri &&
+        !redirectUriError &&
+        firebaseStatus.firebaseApiKeyConfigured &&
+        firebaseStatus.firebaseServiceAccountValidShape
+    ),
+    clientIdConfigured,
+    clientSecretConfigured,
+    stateSecretConfigured,
+    ...firebaseStatus,
+    redirectUri,
+    redirectUriConfigured: hasAnyEnvValue(['GOOGLE_OAUTH_REDIRECT_URI']),
+    redirectUriError,
+    requiredGoogleCloud: {
+      oauthClientType: 'Web application',
+      authorizedRedirectUris: redirectUri ? [redirectUri] : [],
+    },
+    notes: [
+      'Google requires the redirect_uri sent by MoneyKai to exactly match one Authorized redirect URI.',
+      'For moneykai.com production, this is usually https://moneykai.com/api/v1/auth/google/callback.',
+      'If GOOGLE_OAUTH_REDIRECT_URI is set, Google Cloud must authorize that exact value instead.',
+    ],
+  };
 };
 
 const isLocalWebAppUrl = (value) => {
@@ -574,6 +631,7 @@ module.exports = {
   completeGoogleOAuthCallback,
   consumeExchangeCode,
   getBackendGoogleRedirectUri,
+  getGoogleOAuthSetupStatus,
   getPublicGoogleOAuthError,
   getWebCallbackUrl,
   sanitizeReturnPath,

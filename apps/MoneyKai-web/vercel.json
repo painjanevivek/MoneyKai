@@ -19,6 +19,10 @@
       "destination": "/api/auth-google-exchange"
     },
     {
+      "source": "/api/v1/auth/google/setup-status",
+      "destination": "/api/auth-google-setup-status"
+    },
+    {
       "source": "/__/auth",
       "destination": "https://moneykai.firebaseapp.com/__/auth"
     },

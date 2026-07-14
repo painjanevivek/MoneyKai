@@ -8,9 +8,11 @@ const mirroredFiles = [
   ['api/auth-google-start.js', 'apps/MoneyKai-web/api/auth-google-start.js'],
   ['api/auth-google-callback.js', 'apps/MoneyKai-web/api/auth-google-callback.js'],
   ['api/auth-google-exchange.js', 'apps/MoneyKai-web/api/auth-google-exchange.js'],
+  ['api/auth-google-setup-status.js', 'apps/MoneyKai-web/api/auth-google-setup-status.js'],
   ['api/v1/auth/google/start.js', 'apps/MoneyKai-web/api/v1/auth/google/start.js'],
   ['api/v1/auth/google/callback.js', 'apps/MoneyKai-web/api/v1/auth/google/callback.js'],
   ['api/v1/auth/google/exchange.js', 'apps/MoneyKai-web/api/v1/auth/google/exchange.js'],
+  ['api/v1/auth/google/setup-status.js', 'apps/MoneyKai-web/api/v1/auth/google/setup-status.js'],
 ];
 
 const hashFile = (path) =>
@@ -33,6 +35,7 @@ const requiredGoogleAuthRewrites = [
   ['/api/v1/auth/google/start', '/api/auth-google-start'],
   ['/api/v1/auth/google/callback', '/api/auth-google-callback'],
   ['/api/v1/auth/google/exchange', '/api/auth-google-exchange'],
+  ['/api/v1/auth/google/setup-status', '/api/auth-google-setup-status'],
 ];
 
 const readVercelRewrites = (path) => {

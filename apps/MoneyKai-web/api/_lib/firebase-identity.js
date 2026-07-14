@@ -116,6 +116,50 @@ const getServiceAccount = () => {
   };
 };
 
+const hasAnyEnvValue = (names) =>
+  names.some((name) => String(process.env[name] || '').trim().length > 0);
+
+const getFirebaseIdentitySetupStatus = () => {
+  let firebaseApiKeyConfigured = false;
+  let firebaseApiKeyError = '';
+  let firebaseServiceAccountValidShape = false;
+  let firebaseServiceAccountError = '';
+
+  try {
+    getFirebaseApiKey();
+    firebaseApiKeyConfigured = true;
+  } catch (error) {
+    firebaseApiKeyError = error instanceof FirebaseIdentityError ? error.code : 'FIREBASE_API_KEY_INVALID';
+  }
+
+  try {
+    const serviceAccount = getServiceAccount();
+    crypto.createPrivateKey(serviceAccount.privateKey);
+    firebaseServiceAccountValidShape = Boolean(serviceAccount.clientEmail.includes('@'));
+    if (!firebaseServiceAccountValidShape) {
+      firebaseServiceAccountError = 'FIREBASE_SERVICE_ACCOUNT_EMAIL_INVALID';
+    }
+  } catch (error) {
+    firebaseServiceAccountError = error instanceof FirebaseIdentityError
+      ? error.code
+      : 'FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY_INVALID';
+  }
+
+  return {
+    firebaseApiKeyConfigured,
+    firebaseApiKeyError,
+    firebaseServiceAccountConfigured: hasAnyEnvValue([
+      'FIREBASE_SERVICE_ACCOUNT_JSON',
+      'FIREBASE_CLIENT_EMAIL',
+      'GOOGLE_CLIENT_EMAIL',
+      'FIREBASE_PRIVATE_KEY',
+      'GOOGLE_PRIVATE_KEY',
+    ]),
+    firebaseServiceAccountValidShape,
+    firebaseServiceAccountError,
+  };
+};
+
 const hashIdentifier = (value) =>
   crypto.createHash('sha256').update(String(value || '').toLowerCase()).digest('hex').slice(0, 32);
 
@@ -290,6 +334,7 @@ const getPublicFirebaseAuthError = (error, fallback = 'Authentication request fa
 module.exports = {
   FirebaseIdentityError,
   createEmailPasswordUser,
+  getFirebaseIdentitySetupStatus,
   getPublicFirebaseAuthError,
   hashIdentifier,
   mintFirebaseCustomToken,

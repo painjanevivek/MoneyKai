@@ -1,6 +1,23 @@
+const {
+  buildRateLimitKey,
+  hashSensitiveKeyPart,
+  logRedisEvent,
+  normalizeRedisTtlMs,
+  safeRedisCall,
+} = require('./redis');
+
 const DEFAULT_BODY_LIMIT_BYTES = 1024 * 1024;
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const DEFAULT_RATE_LIMIT_MAX = 60;
+const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const RATE_LIMIT_SCRIPT = `
+local current = redis.call("INCR", KEYS[1])
+if current == 1 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[1])
+end
+local ttl = redis.call("PTTL", KEYS[1])
+return { current, ttl }
+`;
 
 const rateLimitBuckets =
   globalThis.__moneykaiRateLimitBuckets ||
@@ -132,22 +149,22 @@ const getClientAddress = (req) => {
   );
 };
 
-const applyRateLimit = (req, res, options = {}) => {
+const applyRateLimit = async (req, res, options = {}) => {
   const windowMs = options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS;
   const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
   const keyPrefix = options.keyPrefix ?? req.url ?? 'default';
-  const clientKey = `${keyPrefix}:${getClientAddress(req)}`;
+  const clientKey = `${keyPrefix}:ip:${hashSensitiveKeyPart(getClientAddress(req))}`;
   return applyRateLimitForKey(res, clientKey, { ...options, windowMs, max });
 };
 
-const applyRateLimitForKey = (res, clientKey, options = {}) => {
+const applyLocalRateLimitForKey = (res, rateLimitKey, options) => {
   const windowMs = options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS;
   const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
   const now = Date.now();
-  const existing = rateLimitBuckets.get(clientKey);
+  const existing = rateLimitBuckets.get(rateLimitKey);
 
   if (!existing || existing.resetAt <= now) {
-    rateLimitBuckets.set(clientKey, {
+    rateLimitBuckets.set(rateLimitKey, {
       count: 1,
       resetAt: now + windowMs,
     });
@@ -161,6 +178,11 @@ const applyRateLimitForKey = (res, clientKey, options = {}) => {
   }
 
   const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+  logRedisEvent('redis_rate_limit_blocked', {
+    backend: 'local',
+    key_type: 'rate_limit',
+    retry_after: retryAfterSeconds,
+  });
   res.setHeader('Retry-After', String(retryAfterSeconds));
   sendJson(res, 429, {
     error: options.message || 'Too many requests. Please wait a moment and try again.',
@@ -177,9 +199,51 @@ const applyRateLimitForKey = (res, clientKey, options = {}) => {
   return false;
 };
 
+const applyRateLimitForKey = async (res, clientKey, options = {}) => {
+  const windowMs = normalizeRedisTtlMs(options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS);
+  const max = options.max ?? DEFAULT_RATE_LIMIT_MAX;
+  const rateLimitKey = buildRateLimitKey(clientKey);
+  const redisResult = await safeRedisCall(
+    'rate_limit',
+    async (redis) => {
+      const result = await redis.eval(RATE_LIMIT_SCRIPT, [rateLimitKey], [String(windowMs)]);
+      const [count, ttlMs] = Array.isArray(result) ? result : [Number(result), windowMs];
+      return {
+        count: Number(count),
+        ttlMs: Number(ttlMs) > 0 ? Number(ttlMs) : windowMs,
+      };
+    },
+    null
+  );
+
+  if (!redisResult.ok || !redisResult.value || !Number.isFinite(redisResult.value.count)) {
+    logRedisEvent('redis_rate_limit_fallback', {
+      backend: 'local',
+      key_type: 'rate_limit',
+    });
+    return applyLocalRateLimitForKey(res, rateLimitKey, { ...options, windowMs, max });
+  }
+
+  if (redisResult.value.count <= max) {
+    return true;
+  }
+
+  const retryAfterSeconds = Math.max(1, Math.ceil(redisResult.value.ttlMs / 1000));
+  logRedisEvent('redis_rate_limit_blocked', {
+    backend: 'redis',
+    key_type: 'rate_limit',
+    retry_after: retryAfterSeconds,
+  });
+  res.setHeader('Retry-After', String(retryAfterSeconds));
+  sendJson(res, 429, {
+    error: options.message || 'Too many requests. Please wait a moment and try again.',
+  });
+  return false;
+};
+
 const requireMethod = (req, res, method) => {
   if (req.method === method) {
-    return true;
+    return !UNSAFE_METHODS.has(method) || requireTrustedOrigin(req, res);
   }
 
   res.setHeader('Allow', method);
@@ -191,6 +255,130 @@ const getBearerToken = (req) => {
   const header = req.headers.authorization || '';
   const [scheme, token] = header.split(' ');
   return scheme?.toLowerCase() === 'bearer' && token ? token : '';
+};
+
+const normalizeOrigin = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (!['https:', 'http:'].includes(parsed.protocol)) {
+      return '';
+    }
+    if (parsed.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname)) {
+      return '';
+    }
+    return parsed.origin.toLowerCase();
+  } catch {
+    return '';
+  }
+};
+
+const isLocalOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const getTrustedRequestOrigins = () => {
+  const origins = new Set();
+  const addOrigin = (value) => {
+    const normalized = normalizeOrigin(value);
+    if (normalized) {
+      origins.add(normalized);
+    }
+  };
+
+  for (const value of [
+    process.env.MONEYKAI_SITE_URL,
+    process.env.PUBLIC_SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    process.env.MONEYKAI_ALLOWED_APP_ORIGINS,
+  ]) {
+    String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .forEach(addOrigin);
+  }
+
+  if (process.env.VERCEL_URL) {
+    addOrigin(`https://${process.env.VERCEL_URL}`);
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    addOrigin('http://localhost:8081');
+    addOrigin('http://localhost:8084');
+    addOrigin('http://localhost:8085');
+    addOrigin('http://127.0.0.1:8081');
+    addOrigin('http://127.0.0.1:8084');
+    addOrigin('http://127.0.0.1:8085');
+  }
+
+  return origins;
+};
+
+const getHeaderValue = (req, name) => {
+  const value = req.headers[name];
+  return Array.isArray(value) ? value[0] : value;
+};
+
+const getRequestHostOrigins = (req) => {
+  const origins = new Set();
+  const forwardedProto = getHeaderValue(req, 'x-forwarded-proto') || '';
+  const proto = forwardedProto.split(',')[0].trim() || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+  const hostHeader = getHeaderValue(req, 'x-forwarded-host') || getHeaderValue(req, 'host') || '';
+
+  for (const host of hostHeader.split(',')) {
+    const normalizedHost = host.trim();
+    const normalized = normalizeOrigin(`${proto}://${normalizedHost}`);
+    if (normalized) {
+      origins.add(normalized);
+    }
+  }
+
+  return origins;
+};
+
+const getRequestOrigin = (req) => {
+  const origin = normalizeOrigin(getHeaderValue(req, 'origin'));
+  if (origin) {
+    return origin;
+  }
+
+  const referer = getHeaderValue(req, 'referer');
+  if (!referer) {
+    return '';
+  }
+
+  try {
+    return normalizeOrigin(new URL(referer).origin);
+  } catch {
+    return '';
+  }
+};
+
+const requireTrustedOrigin = (req, res) => {
+  const requestOrigin = getRequestOrigin(req);
+  if (!requestOrigin) {
+    return true;
+  }
+
+  if (
+    getTrustedRequestOrigins().has(requestOrigin) ||
+    getRequestHostOrigins(req).has(requestOrigin) ||
+    (process.env.NODE_ENV !== 'production' && isLocalOrigin(requestOrigin))
+  ) {
+    return true;
+  }
+
+  sendJson(res, 403, { error: 'Request origin is not trusted.' });
+  return false;
 };
 
 const normalizeTrustedAppUrl = (value) => {
@@ -237,6 +425,7 @@ module.exports = {
   applySecurityHeaders,
   getAppUrl,
   getBearerToken,
+  requireTrustedOrigin,
   readJsonBody,
   readRawBody,
   readRawBodyBuffer,
