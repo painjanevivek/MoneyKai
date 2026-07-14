@@ -9,6 +9,7 @@ const {
 const DEFAULT_BODY_LIMIT_BYTES = 1024 * 1024;
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const DEFAULT_RATE_LIMIT_MAX = 60;
+const MAX_LOCAL_RATE_LIMIT_BUCKETS = 1000;
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const RATE_LIMIT_SCRIPT = `
 local current = redis.call("INCR", KEYS[1])
@@ -24,6 +25,20 @@ const rateLimitBuckets =
   new Map();
 
 globalThis.__moneykaiRateLimitBuckets = rateLimitBuckets;
+
+const pruneLocalRateLimitBuckets = (now) => {
+  for (const [key, bucket] of rateLimitBuckets.entries()) {
+    if (bucket.resetAt <= now) {
+      rateLimitBuckets.delete(key);
+    }
+  }
+
+  while (rateLimitBuckets.size >= MAX_LOCAL_RATE_LIMIT_BUCKETS) {
+    const oldestKey = rateLimitBuckets.keys().next().value;
+    if (!oldestKey) break;
+    rateLimitBuckets.delete(oldestKey);
+  }
+};
 
 const applySecurityHeaders = (res) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
@@ -164,6 +179,7 @@ const applyLocalRateLimitForKey = (res, rateLimitKey, options) => {
   const existing = rateLimitBuckets.get(rateLimitKey);
 
   if (!existing || existing.resetAt <= now) {
+    pruneLocalRateLimitBuckets(now);
     rateLimitBuckets.set(rateLimitKey, {
       count: 1,
       resetAt: now + windowMs,
@@ -187,14 +203,6 @@ const applyLocalRateLimitForKey = (res, rateLimitKey, options) => {
   sendJson(res, 429, {
     error: options.message || 'Too many requests. Please wait a moment and try again.',
   });
-
-  if (rateLimitBuckets.size > 1000) {
-    for (const [key, bucket] of rateLimitBuckets.entries()) {
-      if (bucket.resetAt <= now) {
-        rateLimitBuckets.delete(key);
-      }
-    }
-  }
 
   return false;
 };

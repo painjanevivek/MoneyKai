@@ -150,6 +150,23 @@ test('local rate limit allows, blocks, and resets after TTL', async () => {
   assert.equal(await applyRateLimit(request, thirdResponse, options), true);
 });
 
+test('local rate limit fallback keeps its bucket map bounded', async () => {
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  globalThis.__moneykaiRateLimitBuckets.clear();
+
+  for (let index = 0; index < 1200; index += 1) {
+    const response = createResponse();
+    await applyRateLimit(
+      { url: '/test-rate-limit-cap', headers: { 'x-forwarded-for': `203.0.113.${index}` }, socket: {} },
+      response,
+      { keyPrefix: `test:rate-limit-cap:${index}`, max: 1, windowMs: 60_000 }
+    );
+  }
+
+  assert.ok(globalThis.__moneykaiRateLimitBuckets.size <= 1000);
+});
+
 test('cooldown fallback blocks repeated action without raw identifier in key', async () => {
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
