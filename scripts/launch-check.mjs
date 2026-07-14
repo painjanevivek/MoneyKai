@@ -379,23 +379,30 @@ printStatus(
 
 printSection('Pre-launch Security Checklist');
 
+const privacyPolicyRequirements = [
+  'Firebase cloud backup',
+  'Gmail sync',
+  'Financial AI',
+  'local diagnostics',
+  'notification capture',
+];
+const privacyPolicyHasDeletionDisclosure = (source) =>
+  source?.includes('Retention and deletion') || source?.includes('Deletion and retention');
 const webPrivacyCoversSensitiveFeatures =
   Boolean(webPrivacyPolicySource) &&
-  ['Gmail and statements', 'Financial AI', 'Deletion and audits', 'Capture data minimization'].every((phrase) =>
-    webPrivacyPolicySource.includes(phrase)
-  );
+  privacyPolicyRequirements.every((phrase) => webPrivacyPolicySource.includes(phrase)) &&
+  privacyPolicyHasDeletionDisclosure(webPrivacyPolicySource);
 const mobilePrivacyCoversSensitiveFeatures =
   Boolean(mobilePrivacyPolicySource) &&
-  ['Gmail and statements', 'Financial AI', 'Deletion and audits', 'Capture data minimization'].every((phrase) =>
-    mobilePrivacyPolicySource.includes(phrase)
-  );
+  privacyPolicyRequirements.every((phrase) => mobilePrivacyPolicySource.includes(phrase)) &&
+  privacyPolicyHasDeletionDisclosure(mobilePrivacyPolicySource);
 
 printStatus(
   'Privacy policy coverage',
   webPrivacyCoversSensitiveFeatures && mobilePrivacyCoversSensitiveFeatures,
   webPrivacyCoversSensitiveFeatures && mobilePrivacyCoversSensitiveFeatures
-    ? 'Web and mobile privacy pages cover capture, Gmail/statements, AI, deletion, and audits'
-    : 'Privacy pages should cover capture, Gmail/statements, AI, deletion, and audits'
+    ? 'Web and mobile privacy pages disclose cloud backup, Gmail, AI, capture, diagnostics, and deletion'
+    : 'Privacy pages should disclose cloud backup, Gmail, AI, capture, diagnostics, and deletion'
 );
 
 const knowsDataStorageBoundary =
