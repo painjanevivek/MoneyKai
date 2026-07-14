@@ -16,6 +16,7 @@ export {
   getLinkedAccountStatusLabel,
   isLinkedAccountActive,
   summarizeLinkedAccounts,
+  toClientLinkedAccount,
   type LinkedAccount,
   type LinkedAccountBalance,
   type LinkedAccountDraft,

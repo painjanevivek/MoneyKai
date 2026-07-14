@@ -59,6 +59,8 @@ export type LinkedAccount = {
   updatedAt: string;
 };
 
+export const toClientLinkedAccount = ({ syncCursor: _syncCursor, ...account }: LinkedAccount): Omit<LinkedAccount, 'syncCursor'> => account;
+
 export type LinkedAccountDraft = {
   institutionName: string;
   displayName: string;

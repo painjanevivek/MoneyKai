@@ -5,6 +5,7 @@ import {
   buildSandboxLinkedAccounts,
   getLinkedAccountInsights,
   summarizeLinkedAccounts,
+  toClientLinkedAccount,
   type LinkedAccount,
   type LinkedAccountDraft,
 } from '@moneykai/domain';
@@ -56,7 +57,7 @@ const syncAccountUpsert = (account: LinkedAccount) => {
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
 
-  void upsertUserDoc(COLLECTION, userId, account).catch((error) => {
+  void upsertUserDoc(COLLECTION, userId, toClientLinkedAccount(account)).catch((error) => {
     if (__DEV__) {
       console.warn('[MoneyKai] failed to sync linked account:', error);
     }
@@ -77,7 +78,9 @@ const syncAccountDelete = (id: string) => {
 const mergeAccounts = (existing: LinkedAccount[], incoming: LinkedAccount[]) => {
   const byId = new Map(existing.map((account) => [account.id, account]));
   incoming.forEach((account) => byId.set(account.id, account));
-  return Array.from(byId.values()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return Array.from(byId.values())
+    .map(toClientLinkedAccount)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 };
 
 const isRemoteProviderAccount = (account: LinkedAccount) =>
@@ -399,7 +402,7 @@ export const useLinkedAccountStore = create<LinkedAccountState>()(
 
       replaceAccounts: (accounts) =>
         set({
-          accounts,
+          accounts: accounts.map(toClientLinkedAccount),
           selectedAccountId: accounts[0]?.id,
           lastGlobalSyncAt: summarizeLinkedAccounts(accounts).lastSyncedAt,
         }),
@@ -418,7 +421,7 @@ export const useLinkedAccountStore = create<LinkedAccountState>()(
       name: 'moneykai-linked-accounts',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
-        accounts: state.accounts,
+        accounts: state.accounts.map(toClientLinkedAccount),
         selectedAccountId: state.selectedAccountId,
         lastGlobalSyncAt: state.lastGlobalSyncAt,
       }),

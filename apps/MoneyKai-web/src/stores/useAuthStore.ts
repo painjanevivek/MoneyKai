@@ -124,7 +124,11 @@ export const useAuthStore = create<AuthState>()(
           });
 
           const { syncRemoteState } = await import('@/services/remoteSync');
-          await syncRemoteState();
+          await syncRemoteState().catch((syncError) => {
+            if (__DEV__) {
+              console.warn('[MoneyKai] Sign-in completed but remote sync failed:', syncError);
+            }
+          });
         } catch (err) {
           set({ isLoading: false });
           throw err instanceof Error ? err : new Error('Sign in failed');

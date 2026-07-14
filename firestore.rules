@@ -61,6 +61,12 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // Client-owned display records only. Provider tokens and sync cursors
+      // belong in backend-only collections and must never be stored here.
+      match /linkedAccounts/{document} {
+        allow read, write: if isOwner(userId);
+      }
+
       // Backend-owned financial, provider, AI, audit, and diagnostic data.
       match /provider_connections/{document=**} {
         allow read, write: if false;
