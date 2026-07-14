@@ -2,8 +2,9 @@
   "name": "moneykai-monorepo",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/MoneyKai-mobile",
+    "apps/MoneyKai-web",
+    "packages/domain"
   ],
   "scripts": {
     "start": "npm run mobile:start",
