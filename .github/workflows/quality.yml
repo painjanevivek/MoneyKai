@@ -36,5 +36,17 @@ jobs:
       - name: Lint web
         run: npm run web:lint
 
+      - name: Check Vercel API mirrors
+        run: npm run web:api-mirrors:check
+
+      - name: Test Vercel API handlers
+        run: npm run api:test
+
+      - name: Verify backup/restore release surface
+        run: npm run backup-restore:gate
+
+      - name: Check web release security
+        run: npm run security:check
+
       - name: SMS production policy tests
         run: npm run mobile:test:capture

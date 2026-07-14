@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
+const requiredFailures = [];
 
 const PLACEHOLDER_PATTERNS = ['placeholder', 'REPLACE_ME', 'your-project', 'your-api-key', 'your-google', 'your-firebase'];
 const PRODUCTION_WEB_AUTH_PROXY_HOSTS = ['moneykai.com', 'www.moneykai.com'];
@@ -74,9 +75,12 @@ const printSection = (title) => {
   console.log('-'.repeat(title.length));
 };
 
-const printStatus = (label, ok, details) => {
+const printStatus = (label, ok, details, required = true) => {
   const state = ok ? 'PASS' : 'FAIL';
   console.log(`[${state}] ${label}${details ? ` - ${details}` : ''}`);
+  if (!ok && required) {
+    requiredFailures.push(label);
+  }
 };
 
 const relativePath = (filePath) => path.relative(root, filePath).replaceAll(path.sep, '/');
@@ -407,8 +411,8 @@ printStatus(
     : 'Missing backend/client data ownership documentation'
 );
 
-const flattenedHeaders = (vercelConfig?.headers ?? []).flatMap((entry) => entry.headers ?? []);
-const headerValues = new Map(flattenedHeaders.map((header) => [header.key, header.value]));
+const globalHeaders = (vercelConfig?.headers ?? []).find((entry) => entry.source === '/(.*)')?.headers ?? [];
+const headerValues = new Map(globalHeaders.map((header) => [header.key, header.value]));
 const requiredSecurityHeaders = [
   'Strict-Transport-Security',
   'Content-Security-Policy',
@@ -495,7 +499,7 @@ printSection('Google Sign-In');
 for (const key of googleKeys) {
   const value = mobileEnv?.[key] ?? '';
   const configured = isRealValue(value);
-  printStatus(key, configured, configured ? 'Configured' : 'Optional until Google sign-in is verified live');
+  printStatus(key, configured, configured ? 'Configured' : 'Optional until Google sign-in is verified live', false);
 }
 
 printSection('Store Review Links');
@@ -503,7 +507,7 @@ printSection('Store Review Links');
 for (const key of ['EXPO_PUBLIC_APP_STORE_URL', 'EXPO_PUBLIC_PLAY_STORE_URL']) {
   const value = mobileEnv?.[key] ?? '';
   const configured = isRealValue(value);
-  printStatus(key, configured, configured ? 'Configured' : 'Optional; falls back to store search');
+  printStatus(key, configured, configured ? 'Configured' : 'Optional; falls back to store search', false);
 }
 
 printSection('Backend Admin Setup');
@@ -547,3 +551,10 @@ console.log('- Firebase Authentication providers must still be checked in Fireba
 console.log('- Firestore backup and restore still need one real signed-in account test.');
 console.log('- Notification delivery and tap routing still need a physical device pass.');
 console.log('- Cross-device restore still needs a second device or a fresh install verification.');
+
+if (requiredFailures.length > 0) {
+  console.error(`\nLaunch audit failed: ${requiredFailures.length} required check(s) need attention.`);
+  process.exitCode = 1;
+} else {
+  console.log('\nLaunch audit passed.');
+}
