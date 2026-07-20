@@ -1,0 +1,156 @@
+name: Android release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: EAS build profile to validate and build
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - production
+      release_notes:
+        description: Release notes or the issue/PR reference for this candidate
+        required: true
+        type: string
+      confirm_build:
+        description: I reviewed the release scope and want to request this EAS build
+        required: true
+        default: false
+        type: boolean
+
+# The build is authenticated only with an Expo token scoped to a protected environment.
+permissions:
+  contents: read
+
+# Release candidates must not be cancelled by a later request for the same profile.
+concurrency:
+  group: android-release-candidate-${{ inputs.profile }}
+  cancel-in-progress: false
+
+env:
+  CI: true
+  BUILD_PROFILE: ${{ inputs.profile }}
+
+jobs:
+  validate:
+    name: Validate ${{ inputs.profile }} candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Confirm the release request
+        run: |
+          test "${{ inputs.confirm_build }}" = "true" || {
+            echo "::error::Explicit build confirmation is required."
+            exit 1
+          }
+
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate the selected EAS release profile
+        run: npm run mobile:verify:release-profile -- --profile "$BUILD_PROFILE"
+
+      - name: Verify production signing configuration
+        if: inputs.profile == 'production'
+        run: node apps/MoneyKai-mobile/scripts/verify-android-production-signing.mjs
+
+      - name: Verify the release handoff baseline
+        run: npm run release:handoff-baseline
+
+      - name: Lint the mobile app
+        run: npm run mobile:lint
+
+      - name: Type-check the mobile app
+        run: npm run mobile:typecheck
+
+      - name: Run capture and privacy tests
+        run: npm run mobile:test:capture
+
+      - name: Run interaction behaviour tests
+        run: npm run mobile:test:interaction
+
+      - name: Record candidate request
+        if: always()
+        env:
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          {
+            echo "## Android release candidate"
+            echo "- Profile: $BUILD_PROFILE"
+            echo "- Commit: $GITHUB_SHA"
+            printf '%s\n' "- Release reference: $RELEASE_NOTES"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-preview:
+    name: Request preview EAS build
+    needs: validate
+    if: inputs.profile == 'preview'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release-preview
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.13.0
+
+      - name: Verify Expo access is configured
+        run: |
+          test -n "$EXPO_TOKEN" || {
+            echo "::error::Configure EXPO_TOKEN in the release-preview environment before running this workflow."
+            exit 1
+          }
+
+      - name: Request EAS preview build
+        working-directory: apps/MoneyKai-mobile
+        run: npx --yes eas-cli@latest build --platform android --profile "$BUILD_PROFILE" --non-interactive --no-wait
+
+  build-production:
+    name: Request production EAS build
+    needs: validate
+    if: inputs.profile == 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release-production
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.13.0
+
+      - name: Verify Expo access is configured
+        run: |
+          test -n "$EXPO_TOKEN" || {
+            echo "::error::Configure EXPO_TOKEN in the protected release-production environment before running this workflow."
+            exit 1
+          }
+
+      - name: Request EAS production build
+        working-directory: apps/MoneyKai-mobile
+        run: npx --yes eas-cli@latest build --platform android --profile "$BUILD_PROFILE" --non-interactive --no-wait
