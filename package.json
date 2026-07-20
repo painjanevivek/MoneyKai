@@ -35,6 +35,7 @@
     "seo:generate": "node ./scripts/public-seo.mjs --write",
     "seo:audit": "node ./scripts/public-seo.mjs --audit-dist",
     "security:check": "node ./scripts/owasp-security-check.mjs",
+    "security:audit-dependencies": "node ./scripts/audit-npm-dependencies.mjs",
     "backup-restore:gate": "node ./scripts/backup-restore-release-gate.mjs",
     "backup-restore:handoff": "node ./scripts/capture-backup-restore-handoff.mjs",
     "indexnow:dry-run": "node ./scripts/indexnow-submit.mjs --dry-run",
