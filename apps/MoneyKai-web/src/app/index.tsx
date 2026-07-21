@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
+import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 const VIDEO_URL =
@@ -638,12 +639,17 @@ function FinalCTA() {
 }
 
 function BackgroundFrame({ children }: { children: ReactNode }) {
+  const width = useHydratedViewportWidth();
+  const showAmbientVideo = width >= 900;
+
   return (
     <div className="mk-page-shell">
       <RootNoiseFilter />
-      <div className="mk-video-bg" aria-hidden="true">
-        <video autoPlay loop muted playsInline className="mk-video" src={VIDEO_URL} />
-      </div>
+      {showAmbientVideo ? (
+        <div className="mk-video-bg" aria-hidden="true">
+          <video autoPlay loop muted playsInline preload="metadata" className="mk-video" src={VIDEO_URL} />
+        </div>
+      ) : null}
       <div className="mk-guide mk-guide-left" />
       <div className="mk-guide mk-guide-right" />
       <div className="mk-page-content">{children}</div>

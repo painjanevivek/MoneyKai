@@ -92,6 +92,10 @@ apps/*/ios/Runner/GeneratedPluginRegistrant.*
 skills-lock.json
 tmp-*.png
 playwright-report/
+
+# one-off local smoke checks and image-upscaling outputs
+/.tmp-auth-smoke.py
+/upscaled-clear-icon*.png
 apps/*/artifacts/**
 !apps/*/artifacts/
 !apps/*/artifacts/README.md
