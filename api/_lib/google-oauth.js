@@ -15,6 +15,8 @@ const EXCHANGE_CODE_TTL_MS = 5 * 60 * 1000;
 const MAX_RETURN_PATH_LENGTH = 240;
 const MOBILE_REDIRECT_URI = 'moneykai-mobile://auth/google';
 const GOOGLE_OAUTH_CALLBACK_PATH = '/api/v1/auth/google/callback';
+const CANONICAL_MONEYKAI_ORIGIN = 'https://moneykai.com';
+const MONEYKAI_PRODUCTION_HOSTS = new Set(['moneykai.com', 'www.moneykai.com']);
 const DEFAULT_TRUSTED_WEB_APP_HOSTS = new Set([
   'moneykai.com',
   'www.moneykai.com',
@@ -137,6 +139,11 @@ const getBackendGoogleRedirectUri = (candidateOrigin) => {
     return normalizeGoogleRedirectUri(configured.trim());
   }
 
+  const canonicalMoneyKaiOrigin = getCanonicalMoneyKaiOrigin(candidateOrigin);
+  if (canonicalMoneyKaiOrigin) {
+    return buildGoogleCallbackUrl(canonicalMoneyKaiOrigin);
+  }
+
   if (candidateOrigin && (isLocalWebAppUrl(candidateOrigin) || isTrustedWebAppUrl(candidateOrigin))) {
     return buildGoogleCallbackUrl(candidateOrigin);
   }
@@ -210,6 +217,19 @@ const isLocalWebAppUrl = (value) => {
     );
   } catch {
     return false;
+  }
+};
+
+const getCanonicalMoneyKaiOrigin = (value) => {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== 'https:' || !MONEYKAI_PRODUCTION_HOSTS.has(parsed.hostname.toLowerCase())) {
+      return '';
+    }
+
+    return CANONICAL_MONEYKAI_ORIGIN;
+  } catch {
+    return '';
   }
 };
 

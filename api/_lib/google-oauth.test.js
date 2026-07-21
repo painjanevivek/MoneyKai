@@ -83,6 +83,34 @@ test('prefers the trusted request host over deployment fallback for Google redir
   });
 });
 
+test('canonicalizes trusted www MoneyKai hosts to the registered production redirect URI', () => {
+  withEnv({
+    GOOGLE_OAUTH_REDIRECT_URI: undefined,
+    MONEYKAI_SITE_URL: undefined,
+    PUBLIC_SITE_URL: undefined,
+    VERCEL_URL: 'moneykai-rbjqiyfz0-vivek-painjanes-projects.vercel.app',
+  }, () => {
+    assert.equal(
+      getBackendGoogleRedirectUri('https://www.moneykai.com'),
+      'https://moneykai.com/api/v1/auth/google/callback'
+    );
+  });
+});
+
+test('does not treat lookalike hosts as trusted MoneyKai production origins', () => {
+  withEnv({
+    GOOGLE_OAUTH_REDIRECT_URI: undefined,
+    MONEYKAI_SITE_URL: 'https://moneykai.com',
+    PUBLIC_SITE_URL: undefined,
+    VERCEL_URL: undefined,
+  }, () => {
+    assert.equal(
+      getBackendGoogleRedirectUri('https://moneykai.com.attacker.example'),
+      'https://moneykai.com/api/v1/auth/google/callback'
+    );
+  });
+});
+
 test('uses explicit Google OAuth redirect URI when configured', () => {
   withEnv({
     GOOGLE_OAUTH_REDIRECT_URI: 'https://auth.moneykai.com/api/v1/auth/google/callback',
