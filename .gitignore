@@ -116,6 +116,8 @@ apps/MoneyKai-android/
 
 # editors
 .idea/
+.claude/
+CLAUDE.md
 
 example
 
