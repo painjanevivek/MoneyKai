@@ -1,8 +1,11 @@
 import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = process.cwd();
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const requireDist = process.argv.includes('--require-dist');
 
 const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const readJson = (relativePath) => JSON.parse(readText(relativePath));
@@ -33,16 +36,60 @@ const check = (label, ok, details) => {
   results.push({ label, ok, details });
 };
 
-const getHeaderMap = () => {
-  const vercelConfig = readJson('vercel.json');
-  const globalHeaderBlock = (vercelConfig.headers ?? []).find((entry) => entry.source === '/(.*)');
+const getHeaderMap = (relativePath = 'vercel.json', source = '/(.*)') => {
+  const vercelConfig = readJson(relativePath);
+  const globalHeaderBlock = (vercelConfig.headers ?? []).find((entry) => entry.source === source);
   return new Map((globalHeaderBlock?.headers ?? []).map((header) => [header.key, header.value]));
 };
 
 const containsAll = (value, snippets) =>
   typeof value === 'string' && snippets.every((snippet) => value.includes(snippet));
 
+const parseCsp = (policy) => {
+  const directives = new Map();
+  for (const rawDirective of policy.split(';')) {
+    const parts = rawDirective.trim().split(/\s+/).filter(Boolean);
+    if (parts.length > 0) {
+      directives.set(parts[0].toLowerCase(), parts.slice(1));
+    }
+  }
+  return directives;
+};
+
+const cspHashSource = (body) =>
+  `'sha256-${crypto.createHash('sha256').update(body, 'utf8').digest('base64')}'`;
+
+const getAttributeValue = (attributes, name) => {
+  const match = attributes.match(
+    new RegExp(`\\b${name}\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))`, 'i')
+  );
+  return match ? (match[1] ?? match[2] ?? match[3] ?? '') : null;
+};
+
+const isCspGovernedInlineScript = (attributes) => {
+  if (/\bsrc\s*=/i.test(attributes)) {
+    return false;
+  }
+
+  const type = (getAttributeValue(attributes, 'type') ?? '').trim().toLowerCase();
+  if (!type) {
+    return true;
+  }
+
+  return (
+    type === 'module' ||
+    type === 'importmap' ||
+    type === 'speculationrules' ||
+    type === 'application/javascript' ||
+    type === 'application/ecmascript' ||
+    type === 'application/x-javascript' ||
+    type === 'text/ecmascript' ||
+    type.startsWith('text/javascript')
+  );
+};
+
 const headerMap = getHeaderMap();
+const appHeaderMap = getHeaderMap('apps/MoneyKai-web/vercel.json');
 const requiredHeaders = [
   'Strict-Transport-Security',
   'Content-Security-Policy',
@@ -64,6 +111,16 @@ check(
 );
 
 const csp = headerMap.get('Content-Security-Policy') ?? '';
+const appCsp = appHeaderMap.get('Content-Security-Policy') ?? '';
+const cspDirectives = parseCsp(csp);
+const scriptSources =
+  cspDirectives.get('script-src-elem') ??
+  cspDirectives.get('script-src') ??
+  cspDirectives.get('default-src') ??
+  [];
+const expoHydrationBody = 'globalThis.__EXPO_ROUTER_HYDRATE__=true;';
+const expoHydrationHash = cspHashSource(expoHydrationBody);
+
 check(
   'CSP anti-XSS/clickjacking baseline',
   containsAll(csp, [
@@ -75,6 +132,84 @@ check(
     'upgrade-insecure-requests',
   ]),
   'CSP should restrict defaults, object embedding, framing, form posts, and insecure subresources'
+);
+
+const forbiddenScriptSources = ["'unsafe-inline'", "'unsafe-eval'", "'wasm-unsafe-eval'", "'strict-dynamic'"];
+const presentForbiddenScriptSources = forbiddenScriptSources.filter((source) => scriptSources.includes(source));
+check(
+  'CSP executable scripts use a narrow Expo hydration hash',
+  scriptSources.includes(expoHydrationHash) && presentForbiddenScriptSources.length === 0,
+  presentForbiddenScriptSources.length > 0
+    ? `Forbidden script sources: ${presentForbiddenScriptSources.join(', ')}`
+    : `Expected hydration source ${expoHydrationHash}`
+);
+
+check(
+  'Root and web-app global CSP stay synchronized',
+  csp.length > 0 && csp === appCsp,
+  'vercel.json and apps/MoneyKai-web/vercel.json should protect application routes identically'
+);
+
+const securityTxtRelativePath = 'apps/MoneyKai-web/public/.well-known/security.txt';
+const securityTxtBuffer = fs.readFileSync(path.join(root, securityTxtRelativePath));
+const securityTxt = new TextDecoder('utf-8', { fatal: true }).decode(securityTxtBuffer);
+const securityTxtFields = new Map();
+
+for (const line of securityTxt.split(/\r?\n/)) {
+  if (!line || line.startsWith('#')) {
+    continue;
+  }
+  const separator = line.indexOf(':');
+  const name = separator >= 0 ? line.slice(0, separator) : line;
+  const value = separator >= 0 ? line.slice(separator + 1).trim() : '';
+  const values = securityTxtFields.get(name) ?? [];
+  values.push(value);
+  securityTxtFields.set(name, values);
+}
+
+const contactValues = securityTxtFields.get('Contact') ?? [];
+const expiresValues = securityTxtFields.get('Expires') ?? [];
+const canonicalValues = securityTxtFields.get('Canonical') ?? [];
+const rfc3339Pattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const expiresAt = expiresValues.length === 1 && rfc3339Pattern.test(expiresValues[0])
+  ? Date.parse(expiresValues[0])
+  : Number.NaN;
+const maxSecurityTxtLifetimeMs = 366 * 24 * 60 * 60 * 1000;
+const contactsAreValid = contactValues.length > 0 && contactValues.every((value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'mailto:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+});
+
+check(
+  'RFC 9116 security contact file',
+  !securityTxtBuffer.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])) &&
+    !/\r(?!\n)/.test(securityTxt) &&
+    /\r?\n$/.test(securityTxt) &&
+    contactsAreValid &&
+    Number.isFinite(expiresAt) &&
+    expiresAt > Date.now() &&
+    expiresAt - Date.now() <= maxSecurityTxtLifetimeMs &&
+    canonicalValues.length === 1 &&
+    canonicalValues[0] === 'https://moneykai.com/.well-known/security.txt',
+  'security.txt must be UTF-8 without BOM, end with a newline, include valid Contact URI(s), one future Expires within a year, and the canonical MoneyKai URL'
+);
+
+const securityTxtHeaderMaps = [
+  getHeaderMap('vercel.json', '/.well-known/security.txt'),
+  getHeaderMap('apps/MoneyKai-web/vercel.json', '/.well-known/security.txt'),
+];
+check(
+  'security.txt response metadata',
+  securityTxtHeaderMaps.every(
+    (headers) =>
+      headers.get('Content-Type') === 'text/plain; charset=utf-8' &&
+      headers.get('Cache-Control') === 'public, max-age=0, must-revalidate'
+  ),
+  'Both Vercel project-root configurations must serve fresh UTF-8 plain text'
 );
 
 check(
@@ -494,9 +629,62 @@ check(
 
 const webDistDir = path.join(root, 'apps', 'MoneyKai-web', 'dist');
 const webDistFiles = listFiles(webDistDir);
+const webDistExists = fs.existsSync(webDistDir);
 const publicSourceMaps = webDistFiles.filter((file) => file.endsWith('.map'));
 const jsFilesWithSourceMapRefs = webDistFiles.filter(
   (file) => file.endsWith('.js') && fs.readFileSync(file, 'utf8').includes('sourceMappingURL=')
+);
+
+check(
+  'Required production web export is present',
+  !requireDist || webDistExists,
+  '--require-dist must only pass after Expo has emitted apps/MoneyKai-web/dist'
+);
+
+const distSecurityTxtPath = path.join(webDistDir, '.well-known', 'security.txt');
+check(
+  'security.txt is copied into the web export',
+  !webDistExists ||
+    (fs.existsSync(distSecurityTxtPath) &&
+      fs.readFileSync(distSecurityTxtPath).equals(securityTxtBuffer)),
+  'Expo must copy public/.well-known/security.txt byte-for-byte into dist'
+);
+
+const exportedHtmlFiles = webDistFiles.filter((file) => file.endsWith('.html'));
+const unauthorizedInlineScripts = [];
+const dangerousInlineMarkup = [];
+
+for (const htmlFile of exportedHtmlFiles) {
+  const html = fs.readFileSync(htmlFile, 'utf8');
+  const scriptPattern = /<script\b(?<attributes>[^>]*)>(?<body>[\s\S]*?)<\/script>/gi;
+  for (const match of html.matchAll(scriptPattern)) {
+    const attributes = match.groups?.attributes ?? '';
+    if (!isCspGovernedInlineScript(attributes)) {
+      continue;
+    }
+    const body = match.groups?.body ?? '';
+    const hash = cspHashSource(body);
+    if (!scriptSources.includes(hash)) {
+      unauthorizedInlineScripts.push(`${path.relative(root, htmlFile)} (${hash})`);
+    }
+  }
+
+  if (
+    /\son[a-z0-9_-]+\s*=/i.test(html) ||
+    /\b(?:href|src|action)\s*=\s*(?:"\s*javascript:|'\s*javascript:)/i.test(html)
+  ) {
+    dangerousInlineMarkup.push(path.relative(root, htmlFile));
+  }
+}
+
+check(
+  'Exported executable inline scripts are CSP-authorized',
+  !webDistExists ||
+    (exportedHtmlFiles.length > 0 &&
+      unauthorizedInlineScripts.length === 0 &&
+      dangerousInlineMarkup.length === 0),
+  unauthorizedInlineScripts.concat(dangerousInlineMarkup).slice(0, 10).join(', ') ||
+    'Every executable inline script must match a configured hash and inline handlers/JavaScript URLs are forbidden'
 );
 
 check(

@@ -1,0 +1,4 @@
+Contact: mailto:support@moneykai.app
+Contact: https://moneykai.com/contact
+Expires: 2027-01-28T00:00:00Z
+Canonical: https://moneykai.com/.well-known/security.txt
