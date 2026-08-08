@@ -33,6 +33,7 @@
     "release:handoff-baseline": "node ./scripts/verify-handoff-baseline.mjs",
     "seo:generate": "node ./scripts/public-seo.mjs --write",
     "seo:audit": "node ./scripts/public-seo.mjs --audit-dist",
+    "seo:geo:audit": "node ./scripts/seo-geo-audit.mjs",
     "security:check": "node ./scripts/owasp-security-check.mjs",
     "backup-restore:gate": "node ./scripts/backup-restore-release-gate.mjs",
     "backup-restore:handoff": "node ./scripts/capture-backup-restore-handoff.mjs",
