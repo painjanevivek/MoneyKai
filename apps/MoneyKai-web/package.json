@@ -60,7 +60,8 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~56.0.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.8"
   },
   "scripts": {
     "start": "node ../../node_modules/expo/bin/cli start",
@@ -70,7 +71,8 @@
     "ios": "node ../../node_modules/expo/bin/cli start --ios",
     "web": "node ../../node_modules/expo/bin/cli start --web",
     "lint": "node ../../scripts/check-web-icon-imports.mjs && node ../../node_modules/expo/bin/cli lint --no-cache",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run"
   },
   "engines": {
     "node": ">=22.13.0"
