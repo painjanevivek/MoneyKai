@@ -269,13 +269,13 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
               overflow: 'hidden',
             }}
           >
-            <Svg
-              width="100%"
-              height={VIEWBOX_HEIGHT}
-              viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
-              accessible={false}
-              focusable={false}
-            >
+            <View aria-hidden={true} style={{ width: '100%' }}>
+              <Svg
+                width="100%"
+                height={VIEWBOX_HEIGHT}
+                viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
+                focusable={false}
+              >
               <G transform={`translate(${PLOT_LEFT} ${PLOT_TOP})`}>
                 {tickValues.map((tick) => {
                   const y = getY(tick, domain.min, domain.max, PLOT_HEIGHT);
@@ -422,8 +422,9 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
                     {displayDate(plan.timeline[index].date, true)}
                   </SvgText>
                 ))}
-              </G>
-            </Svg>
+                </G>
+              </Svg>
+            </View>
           </View>
         )}
 
