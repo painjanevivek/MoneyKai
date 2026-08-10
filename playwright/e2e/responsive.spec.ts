@@ -4,10 +4,18 @@ import { expectNoHorizontalOverflow, seedAuthenticatedUser } from '../support/mo
 const cashflowNow = new Date('2026-05-15T12:00:00Z');
 
 const dismissCookieConsent = async (page: Page) => {
-  const decline = page.getByRole('button', { name: 'Decline' });
-  if (await decline.isVisible().catch(() => false)) {
+  const cookieChoices = page.getByText('Cookie choices', { exact: true });
+  const decline = page.getByRole('button', { name: 'Decline', exact: true });
+  const consentVisible = await decline
+    .waitFor({ state: 'visible', timeout: 4_000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (consentVisible) {
     await decline.click();
   }
+
+  await expect(cookieChoices).toHaveCount(0);
 };
 
 const waitForFonts = async (page: Page) => {
@@ -25,7 +33,8 @@ test.describe('MoneyKai responsive mobile views', () => {
       await expectNoHorizontalOverflow(page);
     }
 
-    await expect(page.getByText('Welcome back')).toBeVisible();
+    await expect(page).toHaveURL(/\/signup$/);
+    await expect(page.getByRole('button', { name: 'Create account', exact: true })).toBeVisible();
   });
 
   test('authenticated dashboard and settings fit mobile width', async ({ page }, testInfo) => {
@@ -35,7 +44,7 @@ test.describe('MoneyKai responsive mobile views', () => {
     await seedAuthenticatedUser(page, { onboarded: true, dashboard: 'cashflow' });
 
     await page.goto('/');
-    await expect(page.getByText('Cashflow plan')).toBeVisible();
+    await expect(page.getByTestId('cashflow-dashboard-header').getByText('Cashflow plan')).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
     await dismissCookieConsent(page);

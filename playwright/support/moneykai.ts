@@ -132,7 +132,41 @@ const seedDashboardFixture = async (page: Page, fixture: DashboardFixture) => {
               created_at: '2026-03-20T12:00:00.000Z',
             },
           ]
-        : [];
+        : [
+            {
+              id: 'historical-flight-feb',
+              user_id: user.id,
+              type: 'expense',
+              amount: 8_000,
+              category: 'travel',
+              description: 'Flight booking',
+              payment_method: 'upi',
+              transaction_date: '2026-02-12',
+              created_at: '2026-02-12T12:00:00.000Z',
+            },
+            {
+              id: 'historical-dental-mar',
+              user_id: user.id,
+              type: 'expense',
+              amount: 2_500,
+              category: 'healthcare',
+              description: 'Dental checkup',
+              payment_method: 'upi',
+              transaction_date: '2026-03-08',
+              created_at: '2026-03-08T12:00:00.000Z',
+            },
+            {
+              id: 'historical-lamp-apr',
+              user_id: user.id,
+              type: 'expense',
+              amount: 1_200,
+              category: 'shopping',
+              description: 'Desk lamp',
+              payment_method: 'upi',
+              transaction_date: '2026-04-02',
+              created_at: '2026-04-02T12:00:00.000Z',
+            },
+          ];
       const challenges = dashboard === 'cashflow'
         ? [
             {
@@ -158,7 +192,7 @@ const seedDashboardFixture = async (page: Page, fixture: DashboardFixture) => {
         JSON.stringify({
           state: {
             settings: {
-              monthly_allowance: dashboard === 'cashflow' ? 50_000 : 0,
+              monthly_allowance: 50_000,
               reset_day: 1,
               auto_reset: true,
               carry_forward: false,

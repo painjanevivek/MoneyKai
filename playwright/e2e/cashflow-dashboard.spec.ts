@@ -26,25 +26,33 @@ test.describe('MoneyKai Cashflow Planner dashboard', () => {
     await seedCashflowPlanner(page);
     await page.goto('/');
 
-    await expect(page.getByTestId('cashflow-dashboard')).toBeVisible();
-    await expect(page.getByText('Cashflow plan')).toBeVisible();
-    await expect(page.getByText('Budget available')).toBeVisible();
-    await expect(page.getByText('Safe to spend')).toBeVisible();
-    await expect(page.getByText('Estimated recurring commitments')).toBeVisible();
-    await expect(page.getByText('Forecast net flow')).toBeVisible();
-    await expect(page.getByText('Apartment rent')).toBeVisible();
-    await expect(page.getByText('Spending by category')).toBeVisible();
+    const dashboard = page.getByTestId('cashflow-dashboard');
+    const header = page.getByTestId('cashflow-dashboard-header');
+    const summary = page.getByTestId('cashflow-summary');
+    const commitments = page.getByTestId('estimated-commitments');
+    const categories = page.getByTestId('category-spending');
+
+    await expect(dashboard).toBeVisible();
+    await expect(header.getByText('Cashflow plan')).toBeVisible();
+    await expect(summary.getByText('Budget available')).toBeVisible();
+    await expect(summary.getByText('Safe to spend')).toBeVisible();
+    await expect(summary.getByText('Forecast net flow')).toBeVisible();
+    await expect(commitments.getByText('Estimated recurring commitments')).toBeVisible();
+    await expect(commitments.getByText('Apartment rent')).toBeVisible();
+    await expect(categories.getByText('Spending by category')).toBeVisible();
   });
 
   test('preserves routes from primary dashboard actions', async ({ page }) => {
     await seedCashflowPlanner(page);
     await page.goto('/');
 
-    await page.getByRole('button', { name: 'Add transaction' }).click();
+    const header = page.getByTestId('cashflow-dashboard-header');
+
+    await header.getByRole('button', { name: 'Add transaction' }).click();
     await expect(page).toHaveURL(/\/transactions$/);
 
     await page.goBack();
-    await page.getByRole('button', { name: 'Adjust budget' }).click();
+    await header.getByRole('button', { name: 'Adjust budget' }).click();
     await expect(page).toHaveURL(/\/budgets$/);
 
     await page.goBack();
@@ -57,15 +65,24 @@ test.describe('MoneyKai Cashflow Planner dashboard', () => {
     await seedAuthenticatedUser(page, { onboarded: true, dashboard: 'empty' });
     await page.goto('/');
 
-    await expect(page.getByText('Add transactions to build your cashflow timeline.')).toBeVisible();
-    await expect(page.getByTestId('cashflow-summary').getByText('Budget not set.')).toBeVisible();
+    const timeline = page.getByTestId('cashflow-timeline');
+    const recentTransactions = page.getByTestId('recent-transactions');
+
+    await expect(page.getByTestId('cashflow-dashboard-header')).toBeVisible();
+    await expect(page.getByTestId('cashflow-summary')).toBeVisible();
+    await expect(timeline.getByText('Add transactions to build your cashflow timeline.')).toBeVisible();
+    await expect(recentTransactions.getByText('No transactions in this reporting period')).toBeVisible();
   });
 
   test('closes forecasting when a historical reporting period is selected', async ({ page }) => {
     await seedCashflowPlanner(page);
     await page.goto('/');
 
-    await page.getByRole('button', { name: 'Choose reporting month' }).click();
+    const reportingMonthControls = page.getByRole('button', { name: 'Choose reporting month' });
+    const header = page.getByTestId('cashflow-dashboard-header');
+
+    await expect(reportingMonthControls).toHaveCount(1);
+    await header.getByRole('button', { name: 'Choose reporting month' }).click();
     await page.getByRole('button', { name: 'Show April 2026' }).click();
 
     await expect(page.getByText('Closed reporting period')).toBeVisible();
