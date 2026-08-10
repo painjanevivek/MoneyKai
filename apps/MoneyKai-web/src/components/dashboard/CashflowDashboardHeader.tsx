@@ -59,6 +59,7 @@ export function CashflowDashboardHeader({
         borderBottomWidth: 1,
         borderBottomColor: colors.borderLight,
         minWidth: 0,
+        zIndex: 1,
       }}
     >
       <View

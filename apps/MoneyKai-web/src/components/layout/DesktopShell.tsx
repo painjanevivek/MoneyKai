@@ -359,7 +359,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </View>
             </View>
 
-            <ReportingMonthPicker compact />
+            {pathname !== '/dashboard' ? <ReportingMonthPicker compact /> : null}
 
             <ScrollView
               horizontal
