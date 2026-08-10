@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { e2eUser, seedAuthenticatedUser } from '../support/moneykai';
+import { seedAuthenticatedUser } from '../support/moneykai';
 
 test.describe('MoneyKai onboarding and dashboard', () => {
   test('new signed-in users see onboarding and can skip into the dashboard', async ({ page }) => {
@@ -14,8 +14,8 @@ test.describe('MoneyKai onboarding and dashboard', () => {
     await expect(page.getByText('Build a reviewed ledger')).toBeVisible();
 
     await page.getByRole('button', { name: 'Skip for now' }).click();
-    await expect(page.getByText(`Welcome back, ${e2eUser.full_name.split(' ')[0]}`)).toBeVisible();
-    await expect(page.getByText('Monthly Budget')).toBeVisible();
+    await expect(page.getByText('Cashflow plan')).toBeVisible();
+    await expect(page.getByText('Budget available')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Transactions' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Portfolio' })).toBeVisible();
   });
@@ -25,9 +25,9 @@ test.describe('MoneyKai onboarding and dashboard', () => {
 
     await page.goto('/');
 
-    await expect(page.getByText(`Welcome back, ${e2eUser.full_name.split(' ')[0]}`)).toBeVisible();
+    await expect(page.getByText('Cashflow plan')).toBeVisible();
     await expect(page.getByText('Set up your MoneyKai workspace')).toBeHidden();
-    await expect(page.getByText('Remaining')).toBeVisible();
+    await expect(page.getByText('Safe to spend')).toBeVisible();
     await expect(page.getByRole('button', { name: 'AI Review' })).toBeVisible();
   });
 });
