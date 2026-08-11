@@ -39,6 +39,12 @@ const createDeploymentFixture = () => {
   }
   rmSync(path.join(temporaryRoot, '.vercelignore'));
 
+  const vercelConfigPath = path.join(temporaryRoot, 'vercel.json');
+  writeFileSync(
+    vercelConfigPath,
+    JSON.stringify(JSON.parse(readFileSync(vercelConfigPath, 'utf8'))),
+  );
+
   const temporaryDist = path.join(temporaryRoot, 'apps', 'MoneyKai-web', 'dist');
   mkdirSync(path.join(temporaryDist, '.well-known'), { recursive: true });
   copyFileSync(
@@ -60,7 +66,7 @@ const runDeploymentAudit = (temporaryRoot) => spawnSync(
   { cwd: temporaryRoot, encoding: 'utf8' },
 );
 
-test('deployment audit accepts the exact Vercel-filtered source bundle without ignore metadata', () => {
+test('deployment audit accepts Vercel-filtered sources with normalized config JSON', () => {
   const { temporaryParent, temporaryRoot } = createDeploymentFixture();
 
   try {

@@ -373,7 +373,10 @@ const mobileAuthService = readText('apps/MoneyKai-mobile/src/services/authServic
 const mobileAuthGateway = readText('apps/MoneyKai-mobile/src/services/authGateway.ts');
 const mobileGoogleAuth = readText('apps/MoneyKai-mobile/src/services/googleAuth.ts');
 const mobileAuthRateLimit = readText('apps/MoneyKai-mobile/src/services/authRateLimit.ts');
-const vercelConfigSource = readText('vercel.json');
+const vercelConfig = readJson('vercel.json');
+const vercelRewrites = new Map(
+  (vercelConfig.rewrites ?? []).map(({ source, destination }) => [source, destination])
+);
 
 check(
   'Web cookie consent banner is mounted globally',
@@ -581,12 +584,13 @@ check(
 const passwordResetEvidence = [
   {
     label: 'Vercel Firebase auth rewrites',
-    ok: containsAll(vercelConfigSource, [
-      '"source": "/__/auth"',
-      '"source": "/__/auth/:path*"',
-      '"source": "/__/firebase/init.json"',
-      'firebaseapp.com/__/auth',
-    ]),
+    ok:
+      vercelRewrites.get('/__/auth') ===
+        'https://moneykai.firebaseapp.com/__/auth' &&
+      vercelRewrites.get('/__/auth/:path*') ===
+        'https://moneykai.firebaseapp.com/__/auth/:path*' &&
+      vercelRewrites.get('/__/firebase/init.json') ===
+        'https://moneykai.firebaseapp.com/__/firebase/init.json',
   },
   {
     label: 'web forgot-password enumeration-safe gateway flow',
