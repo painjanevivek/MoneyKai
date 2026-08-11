@@ -211,6 +211,24 @@ void main() {
       throwsA(isA<SecretBoxAuthenticationError>()),
     );
   });
+
+  test(
+    'rejects oversized encrypted backup text before JSON decoding',
+    () async {
+      final exportService = await _seedExportService();
+      final backupService = EncryptedBackupService(
+        exportService: exportService,
+      );
+
+      expect(
+        backupService.decryptBackup(
+          backupJson: 'x' * (EncryptedBackupService.maxBackupJsonBytes + 1),
+          password: 'correct horse battery staple',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    },
+  );
 }
 
 Future<LocalDataExportService> _seedExportService() async {

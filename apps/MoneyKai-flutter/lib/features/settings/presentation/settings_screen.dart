@@ -16,6 +16,7 @@ import '../../budget/application/budget_controller.dart';
 import '../application/encrypted_backup_provider.dart';
 import '../application/local_data_export_provider.dart';
 import '../application/theme_mode_controller.dart';
+import '../data/encrypted_backup_service.dart';
 import '../../transactions/application/transaction_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -232,6 +233,13 @@ class SettingsScreen extends ConsumerWidget {
       );
       if (file == null) {
         return;
+      }
+
+      final backupFileBytes = await file.length();
+      if (backupFileBytes > EncryptedBackupService.maxBackupJsonBytes) {
+        throw const FormatException(
+          'MoneyKai backup file must be 12 MB or less.',
+        );
       }
 
       if (!context.mounted) {

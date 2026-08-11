@@ -72,4 +72,37 @@ void main() {
       );
     },
   );
+
+  test('staged namespaces are invisible until one atomic activation', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': 'original',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final storage = LocalStorageService(preferences);
+    final staged = storage.createStagingNamespace(namespaceId: 'restore-1');
+
+    await staged.writeString('moneykai.localSession', 'replacement');
+
+    expect(storage.readString('moneykai.localSession'), 'original');
+    await storage.activateStagedNamespace(staged);
+    expect(storage.readString('moneykai.localSession'), 'replacement');
+  });
+
+  test('discarding a failed staged restore preserves active data', () async {
+    SharedPreferences.setMockInitialValues({
+      'moneykai.localSession': 'original',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final storage = LocalStorageService(preferences);
+    final staged = storage.createStagingNamespace(namespaceId: 'restore-2');
+
+    await staged.writeString('moneykai.localSession', 'partial');
+    await storage.discardStagedNamespace(staged);
+
+    expect(storage.readString('moneykai.localSession'), 'original');
+    expect(
+      preferences.getString(LocalStorageService.activeNamespaceKey),
+      isNull,
+    );
+  });
 }

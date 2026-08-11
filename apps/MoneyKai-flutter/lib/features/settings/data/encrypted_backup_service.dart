@@ -35,6 +35,12 @@ class EncryptedBackupService {
   static const saltLength = 16;
   static const nonceLength = 12;
   static const macLength = 16;
+  static const maxBackupJsonBytes = 12 * 1024 * 1024;
+  static const maxCiphertextBytes = 8 * 1024 * 1024;
+  static const maxCleartextBytes = 8 * 1024 * 1024;
+  static const maxPasswordBytes = 1024;
+  static const maxCiphertextBase64Characters =
+      ((maxCiphertextBytes + 2) ~/ 3) * 4;
 
   static final _cipher = AesGcm.with256bits();
   static final _kdf = Pbkdf2(
@@ -52,13 +58,18 @@ class EncryptedBackupService {
         'Backup password must be at least 8 characters.',
       );
     }
+    _validatePasswordSize(trimmedPassword);
 
     final exportedAt = _now().toUtc();
     final salt = _randomBytes(16);
     final nonce = _randomBytes(12);
     final secretKey = await _deriveKey(trimmedPassword, salt);
+    final clearBytes = utf8.encode(exportService.buildExportJson());
+    if (clearBytes.length > maxCleartextBytes) {
+      throw const FormatException('MoneyKai backup data must be 8 MB or less.');
+    }
     final secretBox = await _cipher.encrypt(
-      utf8.encode(exportService.buildExportJson()),
+      clearBytes,
       secretKey: secretKey,
       nonce: nonce,
     );
@@ -89,6 +100,12 @@ class EncryptedBackupService {
     required String backupJson,
     required String password,
   }) async {
+    if (backupJson.length > maxBackupJsonBytes ||
+        utf8.encode(backupJson).length > maxBackupJsonBytes) {
+      throw const FormatException(
+        'MoneyKai backup file must be 12 MB or less.',
+      );
+    }
     final decoded = jsonDecode(backupJson);
     if (decoded is! Map<String, Object?> ||
         decoded['kind'] != 'moneykai-encrypted-backup') {
@@ -102,22 +119,38 @@ class EncryptedBackupService {
     }
 
     _validateBackupMetadata(decoded, encryption);
+    final trimmedPassword = password.trim();
+    _validatePasswordSize(trimmedPassword);
 
     final salt = _readBase64Field(encryption, 'salt', length: saltLength);
     final nonce = _readBase64Field(encryption, 'nonce', length: nonceLength);
     final mac = _readBase64Field(encryption, 'mac', length: macLength);
+    if (payload.length > maxCiphertextBase64Characters) {
+      throw const FormatException('Encrypted backup payload is too large.');
+    }
     final cipherText = _decodeBase64(payload);
-    if (cipherText.isEmpty) {
+    if (cipherText.isEmpty || cipherText.length > maxCiphertextBytes) {
       throw const FormatException('Malformed MoneyKai backup payload.');
     }
 
-    final secretKey = await _deriveKey(password.trim(), salt);
+    final secretKey = await _deriveKey(trimmedPassword, salt);
     final clearBytes = await _cipher.decrypt(
       SecretBox(cipherText, nonce: nonce, mac: Mac(mac)),
       secretKey: secretKey,
     );
+    if (clearBytes.length > maxCleartextBytes) {
+      throw const FormatException('Decrypted MoneyKai backup is too large.');
+    }
 
     return utf8.decode(clearBytes);
+  }
+
+  static void _validatePasswordSize(String password) {
+    if (utf8.encode(password).length > maxPasswordBytes) {
+      throw const FormatException(
+        'Backup password must be 1024 bytes or less.',
+      );
+    }
   }
 
   static void _validateBackupMetadata(
