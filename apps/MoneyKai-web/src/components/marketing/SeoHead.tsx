@@ -77,6 +77,7 @@ export function SeoHead({
 
   return (
     <Head>
+      <meta charSet="utf-8" />
       <title>{title}</title>
       <meta name="description" content={description} />
       {keywords.length > 0 ? <meta name="keywords" content={keywords.join(', ')} /> : null}

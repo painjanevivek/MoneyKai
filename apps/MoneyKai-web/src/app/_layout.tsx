@@ -160,6 +160,23 @@ class AppErrorBoundary extends React.Component<
   }
 }
 
+function AppFontLoader() {
+  const [fontsLoaded, fontError] = useFonts({
+    Poppins_400Regular: fontWithSwap(Poppins_400Regular),
+    Poppins_500Medium: fontWithSwap(Poppins_500Medium),
+    Poppins_600SemiBold: fontWithSwap(Poppins_600SemiBold),
+    Poppins_700Bold: fontWithSwap(Poppins_700Bold),
+  });
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || fontsLoaded || fontError) {
+      void SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  return null;
+}
+
 export default function RootLayout() {
   const pathname = usePathname();
   const theme = useSettingsStore((s) => s.theme);
@@ -173,13 +190,6 @@ export default function RootLayout() {
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
   const user = useAuthStore((s) => s.user);
   const [nonCriticalUiReady, setNonCriticalUiReady] = useState(false);
-
-  const [fontsLoaded, fontError] = useFonts({
-    Poppins_400Regular: fontWithSwap(Poppins_400Regular),
-    Poppins_500Medium: fontWithSwap(Poppins_500Medium),
-    Poppins_600SemiBold: fontWithSwap(Poppins_600SemiBold),
-    Poppins_700Bold: fontWithSwap(Poppins_700Bold),
-  });
 
   useEffect(() => {
     if (__DEV__) {
@@ -218,10 +228,10 @@ export default function RootLayout() {
   }, [currencyRenderToken, isAuthenticated, refreshExchangeRates]);
 
   useEffect(() => {
-    if (Platform.OS === 'web' || fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+    if (Platform.OS === 'web' && pathname === '/') {
+      void SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [pathname]);
 
   useEffect(() => {
     if (!isAuthenticated || Platform.OS === 'web') {
@@ -274,6 +284,7 @@ export default function RootLayout() {
 
   return (
     <AppErrorBoundary colors={colors}>
+      {Platform.OS !== 'web' || pathname !== '/' ? <AppFontLoader /> : null}
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {isAuthenticated ? (
         <Suspense fallback={null}>
