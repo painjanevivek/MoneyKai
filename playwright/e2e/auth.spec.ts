@@ -18,6 +18,32 @@ const googleUnsafeReturnUser = {
   photoUrl: 'https://example.test/unsafe-return.png',
 };
 
+const firebaseTestEnvironment = {
+  EXPO_PUBLIC_FIREBASE_API_KEY: 'moneykai-playwright-api-key',
+  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: 'moneykai-playwright.firebaseapp.com',
+  EXPO_PUBLIC_FIREBASE_PROJECT_ID: 'moneykai-playwright',
+  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: 'moneykai-playwright.appspot.com',
+  EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '123456789000',
+  EXPO_PUBLIC_FIREBASE_APP_ID: '1:123456789000:web:playwright',
+};
+
+const configureFirebaseForAuthTests = async (page: Page) => {
+  await page.addInitScript((environment) => {
+    const runtimeProcess = Reflect.get(globalThis, 'process') as { env?: Record<string, string> } | undefined;
+    Object.defineProperty(globalThis, 'process', {
+      configurable: true,
+      writable: true,
+      value: {
+        ...runtimeProcess,
+        env: {
+          ...runtimeProcess?.env,
+          ...environment,
+        },
+      },
+    });
+  }, firebaseTestEnvironment);
+};
+
 const createMockFirebaseIdToken = (uid: string, email: string, displayName: string, photoUrl: string) => {
   const now = Math.floor(Date.now() / 1000);
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -150,6 +176,8 @@ test.describe('MoneyKai auth journeys', () => {
     const legacyBackendCalls: string[] = [];
     const authStartCalls: string[] = [];
 
+    await configureFirebaseForAuthTests(page);
+
     await page.route('http://localhost:8000/**', async (route) => {
       legacyBackendCalls.push(route.request().url());
       await route.fulfill({
@@ -181,9 +209,12 @@ test.describe('MoneyKai auth journeys', () => {
   });
 
   test('Google login falls back to Firebase popup when the gateway route is missing', async ({ page }) => {
-    const firebaseAuthCalls: string[] = [];
+    const authStartRequests: string[] = [];
+
+    await configureFirebaseForAuthTests(page);
 
     await page.route('**/api/v1/auth/google/start', async (route) => {
+      authStartRequests.push(route.request().url());
       await route.fulfill({
         status: 404,
         contentType: 'application/json',
@@ -192,6 +223,7 @@ test.describe('MoneyKai auth journeys', () => {
     });
 
     await page.route('http://localhost:8000/v1/auth/google/start', async (route) => {
+      authStartRequests.push(route.request().url());
       await route.fulfill({
         status: 404,
         contentType: 'application/json',
@@ -199,29 +231,19 @@ test.describe('MoneyKai auth journeys', () => {
       });
     });
 
-    await page.route('https://identitytoolkit.googleapis.com/**', async (route) => {
-      firebaseAuthCalls.push(route.request().url());
-      await route.fulfill({
-        status: 400,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          error: {
-            code: 400,
-            message: 'OPERATION_NOT_ALLOWED',
-            errors: [{ message: 'OPERATION_NOT_ALLOWED' }],
-          },
-        }),
-      });
-    });
-
     await page.goto('/login');
+    const firebasePopup = page.waitForEvent('popup');
     await page.getByTestId('login-google').click();
+    const popup = await firebasePopup;
 
-    await expect(page.getByRole('alert')).toContainText(
-      'Google sign-in is not configured for this deployment yet. Check the Firebase Google provider and authorized domains, then try again.'
-    );
-    expect(firebaseAuthCalls.some((url) => url.includes('accounts:createAuthUri'))).toBe(true);
-    await expect(page.getByText('Please check your details and try again.')).toBeHidden();
+    expect(authStartRequests).toEqual([
+      new URL('/api/v1/auth/google/start', page.url()).toString(),
+      'http://localhost:8000/v1/auth/google/start',
+      'http://localhost:8000/api/v1/auth/google/start',
+    ]);
+    if (!popup.isClosed()) {
+      await popup.close();
+    }
   });
 
   test('Google callback shows provider errors without exchanging a code', async ({ page }) => {

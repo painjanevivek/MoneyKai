@@ -23,7 +23,7 @@ const SENSITIVE_KEY_PATTERN =
   /(email|password|passcode|token|secret|authorization|otp|pin|card|cvv|pan|aadhaar|phone|mobile|name|raw|body|message|query|search)/i;
 
 let queue: AnalyticsEvent[] = [];
-let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let flushTimer: number | null = null;
 let lifecycleFlushInstalled = false;
 let lastPageView: { path: string; trackedAt: number } | null = null;
 

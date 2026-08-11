@@ -32,9 +32,11 @@ export const resetMoneyKaiState = async (page: Page) => {
   }, storageKeys);
 };
 
+type DashboardFixture = 'empty' | 'cashflow' | 'first-use' | 'no-budget';
+
 export const seedAuthenticatedUser = async (
   page: Page,
-  options: { onboarded?: boolean } = {},
+  options: { onboarded?: boolean; dashboard?: DashboardFixture } = {},
 ) => {
   const onboarded = options.onboarded ?? true;
   await page.addInitScript(
@@ -70,6 +72,187 @@ export const seedAuthenticatedUser = async (
     },
     { user: e2eUser, tourCompleted: onboarded },
   );
+
+  if (options.dashboard === 'cashflow') {
+    await seedCashflowDashboard(page);
+  }
+
+  if (options.dashboard === 'empty') {
+    await seedEmptyCashflowDashboard(page);
+  }
+
+  if (options.dashboard === 'no-budget') {
+    await seedNoBudgetCashflowDashboard(page);
+  }
+
+  if (options.dashboard === 'first-use') {
+    await seedFirstUseCashflowDashboard(page);
+  }
+};
+
+const seedDashboardFixture = async (page: Page, fixture: DashboardFixture) => {
+  await page.addInitScript(
+    ({ dashboard, user }) => {
+      const transactions = dashboard === 'empty'
+        ? [
+            {
+              id: 'historical-flight-feb',
+              user_id: user.id,
+              type: 'expense',
+              amount: 8_000,
+              category: 'travel',
+              description: 'Flight booking',
+              payment_method: 'upi',
+              transaction_date: '2026-02-12',
+              created_at: '2026-02-12T12:00:00.000Z',
+            },
+            {
+              id: 'historical-dental-mar',
+              user_id: user.id,
+              type: 'expense',
+              amount: 2_500,
+              category: 'healthcare',
+              description: 'Dental checkup',
+              payment_method: 'upi',
+              transaction_date: '2026-03-08',
+              created_at: '2026-03-08T12:00:00.000Z',
+            },
+            {
+              id: 'historical-lamp-apr',
+              user_id: user.id,
+              type: 'expense',
+              amount: 1_200,
+              category: 'shopping',
+              description: 'Desk lamp',
+              payment_method: 'upi',
+              transaction_date: '2026-04-02',
+              created_at: '2026-04-02T12:00:00.000Z',
+            },
+          ]
+        : [
+            {
+              id: 'salary-may',
+              user_id: user.id,
+              type: 'income',
+              amount: 60_000,
+              category: 'income',
+              description: 'Salary',
+              payment_method: 'upi',
+              transaction_date: '2026-05-01',
+              created_at: '2026-05-01T12:00:00.000Z',
+            },
+            {
+              id: 'groceries-may',
+              user_id: user.id,
+              type: 'expense',
+              amount: 5_000,
+              category: 'food',
+              description: 'Groceries',
+              payment_method: 'upi',
+              transaction_date: '2026-05-10',
+              created_at: '2026-05-10T12:00:00.000Z',
+            },
+            {
+              id: 'rent-apr',
+              user_id: user.id,
+              type: 'expense',
+              amount: 20_000,
+              category: 'housing',
+              description: 'Apartment rent',
+              payment_method: 'bank transfer',
+              transaction_date: '2026-04-20',
+              created_at: '2026-04-20T12:00:00.000Z',
+            },
+            {
+              id: 'rent-mar',
+              user_id: user.id,
+              type: 'expense',
+              amount: 20_000,
+              category: 'housing',
+              description: 'Apartment rent',
+              payment_method: 'bank transfer',
+              transaction_date: '2026-03-20',
+              created_at: '2026-03-20T12:00:00.000Z',
+            },
+          ];
+      const fixtureTransactions = dashboard === 'first-use' ? transactions.slice(0, 2) : transactions;
+      const challenges = dashboard === 'cashflow'
+        ? [
+            {
+              id: 'no-food-delivery-may',
+              user_id: user.id,
+              name: 'No Food Delivery',
+              category: 'food',
+              description: 'Avoid food delivery for 7 days',
+              duration_days: 7,
+              current_streak: 3,
+              xp_earned: 0,
+              savings_earned: 0,
+              status: 'active',
+              start_date: '2026-05-12',
+              end_date: '2026-05-19',
+              created_at: '2026-05-12T12:00:00.000Z',
+            },
+          ]
+        : [];
+
+      localStorage.setItem(
+        'moneykai-budget',
+        JSON.stringify({
+          state: {
+            settings: {
+              monthly_allowance: dashboard === 'no-budget' ? 0 : 50_000,
+              reset_day: 1,
+              auto_reset: true,
+              carry_forward: false,
+              currency: 'INR',
+            },
+            adjustments: [],
+            isEmergencyMode: false,
+            resetHistory: [],
+          },
+          version: 0,
+        }),
+      );
+      localStorage.setItem(
+        'moneykai-transactions',
+        JSON.stringify({
+          state: {
+            transactions: fixtureTransactions,
+            isSeeded: false,
+          },
+          version: 0,
+        }),
+      );
+      localStorage.setItem(
+        'moneykai-challenges',
+        JSON.stringify({
+          state: {
+            challenges,
+            totalXP: 0,
+          },
+          version: 0,
+        }),
+      );
+    },
+    { dashboard: fixture, user: e2eUser },
+  );
+};
+
+export const seedCashflowDashboard = async (page: Page) => {
+  await seedDashboardFixture(page, 'cashflow');
+};
+
+const seedEmptyCashflowDashboard = async (page: Page) => {
+  await seedDashboardFixture(page, 'empty');
+};
+
+const seedNoBudgetCashflowDashboard = async (page: Page) => {
+  await seedDashboardFixture(page, 'no-budget');
+};
+
+const seedFirstUseCashflowDashboard = async (page: Page) => {
+  await seedDashboardFixture(page, 'first-use');
 };
 
 export const expectNoHorizontalOverflow = async (page: Page) => {
