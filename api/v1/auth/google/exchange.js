@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const exchange = consumeExchangeCode(code, transactionVerifier);
+    const exchange = await consumeExchangeCode(code, transactionVerifier);
     if (!exchange.uid || typeof exchange.uid !== 'string') {
       sendJson(res, 400, { error: 'Google sign-in code is invalid.' });
       return;

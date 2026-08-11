@@ -1,6 +1,11 @@
 const crypto = require('node:crypto');
 const { getAppUrl } = require('./http');
 const {
+  buildDedupeKey,
+  hashSensitiveKeyPart,
+  safeRedisCall,
+} = require('./redis');
+const {
   FirebaseIdentityError,
   getFirebaseIdentitySetupStatus,
   signInWithGoogleIdToken,
@@ -29,8 +34,6 @@ let jwksCache = {
   expiresAt: 0,
   keys: new Map(),
 };
-
-const consumedExchangeCodes = new Map();
 
 class GoogleOAuthError extends Error {
   constructor(message, options = {}) {
@@ -607,7 +610,39 @@ const createExchangeCode = ({
   });
 };
 
-const consumeExchangeCode = (code, transactionVerifier) => {
+const consumeExchangeJti = async (payload, redisCall = safeRedisCall) => {
+  const jti = String(payload.jti || '');
+  if (!jti) {
+    throw new GoogleOAuthError('Google sign-in code is invalid.', {
+      code: 'GOOGLE_EXCHANGE_JTI_INVALID',
+      status: 400,
+    });
+  }
+
+  const ttlSeconds = Math.max(1, Math.ceil((Number(payload.exp) - Date.now()) / 1000));
+  const key = buildDedupeKey('oauth-exchange', hashSensitiveKeyPart(jti));
+  const result = await redisCall(
+    'oauth_exchange_consume',
+    (redis) => redis.set(key, '1', { nx: true, ex: ttlSeconds }),
+    null,
+  );
+
+  if (!result.ok) {
+    throw new GoogleOAuthError('Google sign-in is temporarily unavailable. Please try again.', {
+      code: 'GOOGLE_EXCHANGE_STORE_UNAVAILABLE',
+      status: 503,
+    });
+  }
+
+  if (result.value !== 'OK') {
+    throw new GoogleOAuthError('Google sign-in code has already been used.', {
+      code: 'GOOGLE_EXCHANGE_CODE_REPLAYED',
+      status: 409,
+    });
+  }
+};
+
+const consumeExchangeCode = async (code, transactionVerifier, options = {}) => {
   const payload = decodeSignedPayload(code, 'google_oauth_exchange');
   const suppliedHash = hashTransactionVerifier(transactionVerifier);
   const expectedHash = String(payload.transactionVerifierHash || '');
@@ -622,24 +657,10 @@ const consumeExchangeCode = (code, transactionVerifier) => {
       status: 403,
     });
   }
-  const jti = payload.jti;
-  const now = Date.now();
-
-  for (const [key, expiresAt] of consumedExchangeCodes.entries()) {
-    if (expiresAt <= now) {
-      consumedExchangeCodes.delete(key);
-    }
-  }
-
-  if (jti && consumedExchangeCodes.has(jti)) {
-    throw new GoogleOAuthError('Google sign-in code has already been used.', {
-      code: 'GOOGLE_EXCHANGE_CODE_REPLAYED',
-      status: 409,
-    });
-  }
-
-  if (jti) {
-    consumedExchangeCodes.set(jti, payload.exp);
+  if (options.consumeJti) {
+    await options.consumeJti(payload);
+  } else {
+    await consumeExchangeJti(payload, options.redisCall || safeRedisCall);
   }
 
   return payload;
