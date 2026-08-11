@@ -653,15 +653,28 @@ for (const file of clientRuntimeFiles) {
   );
 }
 
-const trackedFiles = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
-  .split(/\r?\n/)
-  .filter(Boolean);
-const trackedEnvFiles = trackedFiles.filter((file) => /(^|\/)\.env($|\.)/.test(file) && !file.endsWith('.env.example'));
+const readTrackedFiles = () => {
+  try {
+    return execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
+      .split(/\r?\n/)
+      .filter(Boolean);
+  } catch (error) {
+    if (deploymentInput) {
+      return null;
+    }
+    throw error;
+  }
+};
+const trackedFiles = readTrackedFiles();
+const trackedEnvFiles = (trackedFiles ?? [])
+  .filter((file) => /(^|\/)\.env($|\.)/.test(file) && !file.endsWith('.env.example'));
 
 check(
   'No real env files tracked',
-  trackedEnvFiles.length === 0,
-  trackedEnvFiles.join(', ') || 'Only env templates are tracked'
+  trackedFiles === null || trackedEnvFiles.length === 0,
+  trackedFiles === null
+    ? 'Git metadata is absent from the deployment input; the full-source audit owns this check'
+    : trackedEnvFiles.join(', ') || 'Only env templates are tracked'
 );
 
 const webDistDir = path.join(root, 'apps', 'MoneyKai-web', 'dist');

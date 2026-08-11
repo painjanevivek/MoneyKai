@@ -41,14 +41,6 @@ test('deployment audit accepts the exact Vercel-filtered source bundle without i
     );
     writeFileSync(path.join(temporaryDist, 'index.html'), '<!doctype html><html><body></body></html>');
 
-    for (const gitArgs of [['init', '--quiet'], ['add', '-A']]) {
-      const gitResult = spawnSync('git', gitArgs, {
-        cwd: temporaryRoot,
-        encoding: 'utf8',
-      });
-      assert.equal(gitResult.status, 0, `${gitResult.stdout}\n${gitResult.stderr}`);
-    }
-
     const result = spawnSync(
       process.execPath,
       [
