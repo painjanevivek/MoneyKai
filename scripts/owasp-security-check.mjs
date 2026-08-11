@@ -66,6 +66,12 @@ const getHeaderMap = (relativePath = 'vercel.json', source = '/(.*)') => {
 
 const containsAll = (value, snippets) =>
   typeof value === 'string' && snippets.every((snippet) => value.includes(snippet));
+const hasRewrite = (configSource, source, destination) =>
+  (JSON.parse(configSource).rewrites ?? []).some(
+    (rewrite) => rewrite.source === source && rewrite.destination === destination
+  );
+const hasRewriteDestination = (configSource, destination) =>
+  (JSON.parse(configSource).rewrites ?? []).some((rewrite) => rewrite.destination === destination);
 
 const parseCsp = (policy) => {
   const directives = new Map();
@@ -376,6 +382,7 @@ const mobileAuthGateway = readText('apps/MoneyKai-mobile/src/services/authGatewa
 const mobileGoogleAuth = readText('apps/MoneyKai-mobile/src/services/googleAuth.ts');
 const mobileAuthRateLimit = readText('apps/MoneyKai-mobile/src/services/authRateLimit.ts');
 const vercelConfigSource = readText('vercel.json');
+const appVercelConfigSource = readText('apps/MoneyKai-web/vercel.json');
 
 check(
   'Web cookie consent banner is mounted globally',
@@ -580,29 +587,64 @@ check(
   'Google sign-in should start on the backend, verify Google identity server-side, and complete through Firebase custom tokens'
 );
 
-check(
-  'Password reset flow is wired and enumeration-safe',
-  containsAll(vercelConfigSource, [
-    '"source": "/__/auth"',
-    '"source": "/__/auth/:path*"',
-    '"source": "/__/firebase/init.json"',
-    'firebaseapp.com/__/auth',
-  ]) &&
+const firebaseAuthRewrites = [
+  ['/__/auth', 'https://moneykai.firebaseapp.com/__/auth'],
+  ['/__/auth/:path*', 'https://moneykai.firebaseapp.com/__/auth/:path*'],
+  ['/__/firebase/init.json', 'https://moneykai.firebaseapp.com/__/firebase/init.json'],
+];
+const rootFirebaseAuthRewritesAreCanonical = firebaseAuthRewrites.every(([source, destination]) =>
+  hasRewrite(vercelConfigSource, source, destination)
+);
+const filteredFrontendFirebaseAuthRewritesArePreserved =
+  authEmailRoutesExcluded &&
+  firebaseAuthRewrites.every(
+    ([source, destination]) =>
+      hasRewrite(appVercelConfigSource, source, destination) &&
+      hasRewriteDestination(vercelConfigSource, destination)
+  );
+
+const passwordResetChecks = [
+  [
+    'Vercel Firebase auth rewrites',
+    rootFirebaseAuthRewritesAreCanonical || filteredFrontendFirebaseAuthRewritesArePreserved,
+  ],
+  [
+    'web forgot-password enumeration guard',
     containsAll(webForgotPassword, [
       'requestPasswordResetGateway(normalizedEmail)',
       'setSentEmail(normalizedEmail)',
       'isPasswordResetEnumerationError',
       'If a MoneyKai account can receive resets',
-    ]) &&
+    ]),
+  ],
+  [
+    'mobile forgot-password enumeration guard',
     containsAll(mobileForgotPassword, [
       'requestPasswordResetEmail(normalizedEmail)',
       'setSentEmail(normalizedEmail)',
       'isPasswordResetEnumerationError',
       'If a MoneyKai account can receive resets',
-    ]) &&
-    containsAll(webSettings, ['requestPasswordResetGateway(normalizedEmail)']) &&
+    ]),
+  ],
+  [
+    'web settings reset gateway',
+    containsAll(webSettings, ['requestPasswordResetGateway(normalizedEmail)']),
+  ],
+  [
+    'mobile auth reset gateway',
     containsAll(mobileAuthService, ['requestPasswordResetGateway(normalizedEmail)']),
-  'Reset links should route through the backend auth gateway, normalize email input, throttle attempts, and avoid account enumeration'
+  ],
+];
+const failedPasswordResetChecks = passwordResetChecks
+  .filter(([, ok]) => !ok)
+  .map(([label]) => label);
+
+check(
+  'Password reset flow is wired and enumeration-safe',
+  failedPasswordResetChecks.length === 0,
+  failedPasswordResetChecks.length > 0
+    ? `Missing: ${failedPasswordResetChecks.join(', ')}`
+    : 'Reset links route through the backend auth gateway, normalize email input, throttle attempts, and avoid account enumeration'
 );
 
 check(

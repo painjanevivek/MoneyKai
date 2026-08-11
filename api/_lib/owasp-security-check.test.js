@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } = require('node:fs');
+const { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
@@ -26,6 +26,14 @@ test('security audit accepts API routes intentionally excluded from the frontend
     )) {
       rmSync(path.join(temporaryRoot, relativePath));
     }
+    const vercelConfigPath = path.join(temporaryRoot, 'vercel.json');
+    const vercelConfig = JSON.parse(readFileSync(vercelConfigPath, 'utf8'));
+    for (const rewrite of vercelConfig.rewrites ?? []) {
+      if (rewrite.source.startsWith('/__/')) {
+        rewrite.source = `/vercel-normalized${rewrite.source}`;
+      }
+    }
+    writeFileSync(vercelConfigPath, `${JSON.stringify(vercelConfig, null, 2)}\n`);
     const temporaryDist = path.join(temporaryRoot, 'apps', 'MoneyKai-web', 'dist');
     mkdirSync(path.join(temporaryDist, '.well-known'), { recursive: true });
     copyFileSync(
