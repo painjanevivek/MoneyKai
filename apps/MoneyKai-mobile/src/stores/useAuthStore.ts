@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { invalidateRemoteSyncSession } from '@moneykai/domain/syncSession';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createUserWithEmail,
@@ -62,9 +63,13 @@ export const useAuthStore = create<AuthState>()(
       isOnboarded: false,
       isHydratingSession: true,
 
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user) => {
+        invalidateRemoteSyncSession();
+        set({ user, isAuthenticated: !!user });
+      },
 
       hydrateSession: async () => {
+        invalidateRemoteSyncSession();
         set({ isHydratingSession: true });
 
         if (isDemoModeEnabled()) {
@@ -95,6 +100,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signIn: async (email: string, password: string) => {
+        invalidateRemoteSyncSession();
         set({ isLoading: true });
         try {
           if (isDemoModeEnabled()) {
@@ -133,6 +139,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signUp: async (email: string, password: string, fullName: string) => {
+        invalidateRemoteSyncSession();
         set({ isLoading: true });
         try {
           if (isDemoModeEnabled()) {
@@ -179,6 +186,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithGoogle: async () => {
+        invalidateRemoteSyncSession();
         set({ isLoading: true });
         try {
           if (isDemoModeEnabled()) {
@@ -219,6 +227,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
+        invalidateRemoteSyncSession();
         const cleanup = async () => {
           if (isFirebaseConfigured()) {
             await signOutFromFirebase().catch(() => {

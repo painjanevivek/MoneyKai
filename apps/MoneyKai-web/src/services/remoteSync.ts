@@ -11,6 +11,10 @@ import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
 import { clearAutomaticBackupQueue } from './automaticBackupQueue';
 import { loadUserFirestoreSnapshot } from './firestoreData';
 import { DEFAULT_THEME_PALETTE, getDefaultedThemePalette, getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark } from '@/constants/theme';
+import {
+  captureRemoteSyncSession,
+  isRemoteSyncSessionCurrent,
+} from '@moneykai/domain/syncSession';
 
 const EMPTY_BUDGET_SETTINGS = {
   monthly_allowance: 0,
@@ -77,6 +81,7 @@ export const syncRemoteState = async () => {
   if (!user) {
     return;
   }
+  const session = captureRemoteSyncSession(user.id);
 
   const snapshot = await loadUserFirestoreSnapshot(user.id, {
     id: user.id,
@@ -87,6 +92,10 @@ export const syncRemoteState = async () => {
     dob: user.dob,
     gender: user.gender,
   });
+
+  if (!isRemoteSyncSessionCurrent(session, useAuthStore.getState().user?.id)) {
+    return;
+  }
 
   resetLocalAppState();
 

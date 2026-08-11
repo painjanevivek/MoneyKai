@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./currency": "./src/currency.ts",
-    "./linkedAccounts": "./src/linkedAccounts.ts"
+    "./linkedAccounts": "./src/linkedAccounts.ts",
+    "./syncSession": "./src/syncSession.ts"
   }
 }
