@@ -186,6 +186,8 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
   const { colors } = useTheme();
   return (
     <Pressable
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? title : undefined}
       onPress={onPress}
       disabled={!onPress}
       style={({ hovered, pressed }: any) => ({
