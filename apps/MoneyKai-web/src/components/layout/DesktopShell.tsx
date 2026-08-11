@@ -1,17 +1,15 @@
-import React, { type PropsWithChildren, useEffect, useMemo, useState } from 'react';
+import React, { type PropsWithChildren, useEffect, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, usePathname } from 'expo-router';
-import { Alert, Linking, Pressable, ScrollView, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle, useWindowDimensions } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View, type LayoutChangeEvent, useWindowDimensions } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { useTransactionStore } from '@/stores/useTransactionStore';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { UserAvatar } from '@/components/ui/UserAvatar';
-import { Button } from '@/components/ui/Button';
-import { endOfMonth, formatDate, startOfMonth } from '@/utils/dateUtils';
+import { ReportingMonthPicker } from '@/components/layout/ReportingMonthPicker';
 import { glassBackdropStyle, withAlpha } from '@/utils/glassStyle';
 
 type NavItem = {
@@ -223,23 +221,6 @@ function SlidingNavItems({ pathname, orientation }: { pathname: string; orientat
   );
 }
 
-const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => ({
-  index,
-  label: formatDate(new Date(2026, index, 1), 'MMM'),
-  fullLabel: formatDate(new Date(2026, index, 1), 'MMMM'),
-}));
-
-const toMonthKey = (year: number, monthIndex: number) => `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
-
-const getCurrentMonthKey = () => formatDate(new Date(), 'yyyy-MM');
-
-const parseMonthKey = (monthKey: string) => {
-  const [yearValue, monthValue] = monthKey.split('-').map((part) => Number(part));
-  const safeYear = Number.isFinite(yearValue) && yearValue > 1900 ? yearValue : new Date().getFullYear();
-  const safeMonthIndex = Number.isFinite(monthValue) ? Math.min(Math.max(monthValue - 1, 0), 11) : new Date().getMonth();
-  return new Date(safeYear, safeMonthIndex, 1);
-};
-
 export function DesktopShell({ children }: PropsWithChildren) {
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();
@@ -247,26 +228,10 @@ export function DesktopShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
-  const setTransactionFilter = useTransactionStore((s) => s.setFilter);
-  const currentMonthKey = useMemo(() => getCurrentMonthKey(), []);
-  const [selectedMonthKey, setSelectedMonthKey] = useState(currentMonthKey);
-  const [showMonthMenu, setShowMonthMenu] = useState(false);
-  const [visibleYear, setVisibleYear] = useState(() => parseMonthKey(currentMonthKey).getFullYear());
-
   const sidebarWidth = width >= 1440 ? 300 : 268;
   const activeMeta = ROUTE_META.find((item) => isRouteActive(pathname, item.href)) ?? ROUTE_META[0];
-  const selectedMonthDate = useMemo(() => parseMonthKey(selectedMonthKey), [selectedMonthKey]);
-  const monthRangeLabel = `${formatDate(startOfMonth(selectedMonthDate), 'MMM d')} - ${formatDate(endOfMonth(selectedMonthDate), 'MMM d, yyyy')}`;
   const isCompact = width < 900;
   const sidebarHeight = Math.max(0, height - Spacing.base * 2);
-
-  useEffect(() => {
-    setTransactionFilter({
-      dateRange: 'custom',
-      startDate: formatDate(startOfMonth(selectedMonthDate), 'yyyy-MM-dd'),
-      endDate: formatDate(endOfMonth(selectedMonthDate), 'yyyy-MM-dd'),
-    });
-  }, [selectedMonthDate, setTransactionFilter]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -287,42 +252,10 @@ export function DesktopShell({ children }: PropsWithChildren) {
     });
   };
 
-  const handleSelectMonth = (monthKey: string) => {
-    setSelectedMonthKey(monthKey);
-    setShowMonthMenu(false);
-  };
-
-  const handleResetToCurrentMonth = () => {
-    setSelectedMonthKey(currentMonthKey);
-    setVisibleYear(parseMonthKey(currentMonthKey).getFullYear());
-    setShowMonthMenu(false);
-  };
-
-  const handleToggleMonthMenu = () => {
-    if (!showMonthMenu) {
-      setVisibleYear(selectedMonthDate.getFullYear());
-    }
-    setShowMonthMenu((current) => !current);
-  };
-
   if (isCompact) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <View style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
-          {showMonthMenu ? (
-            <Pressable
-              onPress={() => setShowMonthMenu(false)}
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-                zIndex: 30,
-              }}
-            />
-          ) : null}
-
           <View
             style={{
               borderBottomWidth: 1,
@@ -426,51 +359,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </View>
             </View>
 
-            <View style={{ position: 'relative', zIndex: 60 }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Choose reporting month"
-                accessibilityState={{ expanded: showMonthMenu }}
-                onPress={handleToggleMonthMenu}
-                style={({ hovered, pressed }: any) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: Spacing.sm,
-                  backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
-                  borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}38` : colors.borderLight,
-                  borderRadius: BorderRadius.md,
-                  paddingHorizontal: Spacing.md,
-                  paddingVertical: 11,
-                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-                })}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1, minWidth: 0 }}>
-                  <MaterialCommunityIcons name="calendar-month-outline" size={18} color={colors.textPrimary} />
-                  <Text
-                    style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 20, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}
-                    numberOfLines={1}
-                  >
-                    {monthRangeLabel}
-                  </Text>
-                </View>
-                <MaterialCommunityIcons name="chevron-down" size={16} color={colors.textSecondary} />
-              </Pressable>
-
-              {showMonthMenu && (
-                <MonthYearPickerPopover
-                  selectedMonthKey={selectedMonthKey}
-                  currentMonthKey={currentMonthKey}
-                  visibleYear={visibleYear}
-                  onChangeYear={setVisibleYear}
-                  onSelect={handleSelectMonth}
-                  onResetToCurrentMonth={handleResetToCurrentMonth}
-                  onClose={() => setShowMonthMenu(false)}
-                  style={{ top: 52, left: 0, right: 0 }}
-                />
-              )}
-            </View>
+            {pathname !== '/dashboard' ? <ReportingMonthPicker compact /> : null}
 
             <ScrollView
               horizontal
@@ -826,20 +715,6 @@ export function DesktopShell({ children }: PropsWithChildren) {
         </View>
 
         <View style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-          {showMonthMenu ? (
-            <Pressable
-              onPress={() => setShowMonthMenu(false)}
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-                zIndex: 30,
-              }}
-            />
-          ) : null}
-
           <View
             style={{
               marginTop: Spacing.base,
@@ -889,30 +764,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, position: 'relative', zIndex: 60, overflow: 'visible' }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Choose reporting month"
-                accessibilityState={{ expanded: showMonthMenu }}
-                onPress={handleToggleMonthMenu}
-                style={({ hovered, pressed }: any) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
-                  borderWidth: 1,
-                  borderColor: hovered ? `${colors.primary}38` : colors.borderLight,
-                  borderRadius: BorderRadius.md,
-                  paddingHorizontal: Spacing.md,
-                  paddingVertical: 10,
-                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-                })}
-              >
-                <MaterialCommunityIcons name="calendar-month-outline" size={18} color={colors.textPrimary} />
-                <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-                  {monthRangeLabel}
-                </Text>
-                <MaterialCommunityIcons name="chevron-down" size={16} color={colors.textSecondary} />
-              </Pressable>
+              {pathname !== '/dashboard' ? <ReportingMonthPicker /> : null}
 
               <Pressable
                 accessibilityRole="button"
@@ -949,18 +801,6 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 <MaterialCommunityIcons name="help-circle-outline" size={20} color={colors.textPrimary} />
               </Pressable>
 
-              {showMonthMenu && (
-                <MonthYearPickerPopover
-                  selectedMonthKey={selectedMonthKey}
-                  currentMonthKey={currentMonthKey}
-                  visibleYear={visibleYear}
-                  onChangeYear={setVisibleYear}
-                  onSelect={handleSelectMonth}
-                  onResetToCurrentMonth={handleResetToCurrentMonth}
-                  onClose={() => setShowMonthMenu(false)}
-                  style={{ top: 54, right: 108, width: 340 }}
-                />
-              )}
             </View>
           </View>
 
@@ -986,170 +826,6 @@ export function DesktopShell({ children }: PropsWithChildren) {
         </View>
       </View>
     </SafeAreaView>
-  );
-}
-
-type MonthYearPickerPopoverProps = {
-  selectedMonthKey: string;
-  currentMonthKey: string;
-  visibleYear: number;
-  onChangeYear: (year: number) => void;
-  onSelect: (monthKey: string) => void;
-  onResetToCurrentMonth: () => void;
-  onClose: () => void;
-  style?: StyleProp<ViewStyle>;
-};
-
-function MonthYearPickerPopover({
-  selectedMonthKey,
-  currentMonthKey,
-  visibleYear,
-  onChangeYear,
-  onSelect,
-  onResetToCurrentMonth,
-  onClose,
-  style,
-}: MonthYearPickerPopoverProps) {
-  const { colors } = useTheme();
-
-  return (
-    <View
-      style={[
-        {
-          position: 'absolute',
-          backgroundColor: colors.glassBg,
-          borderRadius: BorderRadius.lg,
-          borderWidth: 1,
-          borderColor: colors.glassBorder,
-          ...Shadows.lg,
-          shadowColor: colors.shadowColor,
-          padding: Spacing.md,
-          zIndex: 20,
-          gap: Spacing.md,
-          overflow: 'hidden',
-          ...(glassBackdropStyle ?? {}),
-        },
-        style,
-      ]}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Previous year"
-          onPress={() => onChangeYear(visibleYear - 1)}
-          style={({ hovered, pressed }: any) => ({
-            width: 38,
-            height: 38,
-            borderRadius: BorderRadius.md,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
-            borderWidth: 1,
-            borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
-            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-          })}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={22} color={colors.textPrimary} />
-        </Pressable>
-
-        <View style={{ flex: 1, alignItems: 'center', minWidth: 0 }}>
-          <Text style={{ fontSize: Typography.fontSize.lg, lineHeight: 24, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-            {visibleYear}
-          </Text>
-          <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>
-            Select reporting month
-          </Text>
-        </View>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Next year"
-          onPress={() => onChangeYear(visibleYear + 1)}
-          style={({ hovered, pressed }: any) => ({
-            width: 38,
-            height: 38,
-            borderRadius: BorderRadius.md,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
-            borderWidth: 1,
-            borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
-            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-          })}
-        >
-          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textPrimary} />
-        </Pressable>
-      </View>
-
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-        {MONTH_OPTIONS.map((month) => {
-          const monthKey = toMonthKey(visibleYear, month.index);
-          const active = monthKey === selectedMonthKey;
-          const isCurrent = monthKey === currentMonthKey;
-
-          return (
-            <Pressable
-              key={monthKey}
-              accessibilityRole="button"
-              accessibilityLabel={`Show ${month.fullLabel} ${visibleYear}`}
-              accessibilityState={{ selected: active }}
-              onPress={() => onSelect(monthKey)}
-              style={({ hovered, pressed }: any) => ({
-                width: '31.4%',
-                minHeight: 58,
-                borderRadius: BorderRadius.md,
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-                backgroundColor: active ? colors.primary : hovered ? `${colors.primary}10` : colors.glassBg,
-                borderWidth: 1,
-                borderColor: active ? colors.primary : isCurrent ? colors.primaryLight : colors.glassBorder,
-                transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-              })}
-            >
-              <Text
-                style={{
-                  fontSize: Typography.fontSize.sm,
-                  lineHeight: 20,
-                  fontFamily: Typography.fontFamily.semiBold,
-                  color: active ? colors.textInverse : colors.textPrimary,
-                }}
-              >
-                {month.label}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontSize: Typography.fontSize.xs,
-                  lineHeight: 16,
-                  color: active ? colors.textInverse : isCurrent ? colors.primary : colors.textTertiary,
-                }}
-              >
-                {isCurrent ? 'Current' : month.fullLabel}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-        <Button
-          title="Current Month"
-          icon="calendar-today-outline"
-          variant="outline"
-          size="sm"
-          onPress={onResetToCurrentMonth}
-          style={{ flex: 1 }}
-        />
-        <Button
-          title="Done"
-          icon="check"
-          size="sm"
-          onPress={onClose}
-          style={{ flex: 1 }}
-        />
-      </View>
-    </View>
   );
 }
 
