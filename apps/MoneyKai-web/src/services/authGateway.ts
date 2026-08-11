@@ -15,6 +15,7 @@ type AuthGatewayResponse = {
 type GoogleOAuthStartResponse = {
   authorizationUrl: string;
   redirectUri?: string;
+  transactionVerifier: string;
 };
 
 class AuthGatewayError extends Error {
@@ -33,6 +34,18 @@ const AUTH_GATEWAY_ROUTE_MISSING_MESSAGE =
   'MoneyKai could not reach the authentication service. Check the web API deployment, then try again.';
 const AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE =
   'Authentication service returned an invalid response. Check the auth gateway deployment, then try again.';
+const GOOGLE_OAUTH_TRANSACTION_KEY = 'moneykai:google-oauth:transaction-verifier';
+
+const getSessionStorage = (): Storage | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+};
 
 const withApiPrefix = (path: string): string =>
   path.startsWith('/api/') ? path : `/api${path}`;
@@ -217,15 +230,29 @@ export const startGoogleOAuthGateway = async (returnTo = '/dashboard'): Promise<
     throw new AuthGatewayError('Google sign-in did not return a usable authorization URL.', 502);
   }
 
+  if (!response.transactionVerifier || !getSessionStorage()) {
+    throw new AuthGatewayError('Google sign-in could not create a secure browser transaction.', 502);
+  }
+
+  getSessionStorage()?.setItem(GOOGLE_OAUTH_TRANSACTION_KEY, response.transactionVerifier);
+
   return response.authorizationUrl;
 };
 
 export const exchangeGoogleOAuthCodeGateway = async (
   code: string
 ): Promise<{ credentials: UserCredential; returnTo: string }> => {
+  const storage = getSessionStorage();
+  const transactionVerifier = storage?.getItem(GOOGLE_OAUTH_TRANSACTION_KEY) || '';
+  if (!transactionVerifier) {
+    throw new AuthGatewayError('This Google sign-in was not started in this browser. Please try again.', 403);
+  }
+
   const response = await requestAuthGateway<AuthGatewayResponse>('/v1/auth/google/exchange', {
     code,
+    transactionVerifier,
   });
+  storage?.removeItem(GOOGLE_OAUTH_TRANSACTION_KEY);
 
   return {
     credentials: await signInWithGatewayToken(response),

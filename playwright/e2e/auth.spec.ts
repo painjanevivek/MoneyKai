@@ -1,6 +1,16 @@
 import { test, expect, type Page } from '@playwright/test';
 import { resetMoneyKaiState } from '../support/moneykai';
 
+const GOOGLE_OAUTH_TRANSACTION_KEY = 'moneykai:google-oauth:transaction-verifier';
+const GOOGLE_OAUTH_TRANSACTION_VERIFIER = 'playwright-google-oauth-transaction-verifier-12345';
+
+const seedGoogleOAuthTransaction = async (page: Page) => {
+  await page.addInitScript(
+    ({ key, verifier }) => sessionStorage.setItem(key, verifier),
+    { key: GOOGLE_OAUTH_TRANSACTION_KEY, verifier: GOOGLE_OAUTH_TRANSACTION_VERIFIER },
+  );
+};
+
 const googleUnsafeReturnUser = {
   uid: 'google-unsafe-return-user',
   email: 'unsafe.return@moneykai.test',
@@ -156,6 +166,7 @@ test.describe('MoneyKai auth journeys', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           authorizationUrl: new URL('/auth/google/callback?error=Mocked%20Google%20failure', page.url()).toString(),
+          transactionVerifier: GOOGLE_OAUTH_TRANSACTION_VERIFIER,
         }),
       });
     });
@@ -253,6 +264,20 @@ test.describe('MoneyKai auth journeys', () => {
     expect(exchangeRequests).toEqual([]);
   });
 
+  test('Google callback rejects a code that was not initiated in this browser', async ({ page }) => {
+    const exchangeRequests: string[] = [];
+    await page.route('**/api/v1/auth/google/exchange', async (route) => {
+      exchangeRequests.push(route.request().url());
+      await route.abort();
+    });
+
+    await page.goto('/auth/google/callback?code=relayed-attacker-code');
+
+    await expect(page.getByText('Google sign-in failed')).toBeVisible();
+    await expect(page.getByText('This Google sign-in was not started in this browser. Please try again.')).toBeVisible();
+    expect(exchangeRequests).toEqual([]);
+  });
+
   test('Google callback surfaces gateway exchange failures without storing a session', async ({ page }) => {
     const exchangeRequests: Array<{ url: string; body: unknown }> = [];
 
@@ -268,6 +293,7 @@ test.describe('MoneyKai auth journeys', () => {
       });
     });
 
+    await seedGoogleOAuthTransaction(page);
     await page.goto('/auth/google/callback?code=replayed-google-code');
 
     await expect(page.getByText('Google sign-in failed')).toBeVisible();
@@ -283,7 +309,10 @@ test.describe('MoneyKai auth journeys', () => {
     expect(exchangeRequests).toEqual([
       {
         url: expect.stringContaining('/api/v1/auth/google/exchange'),
-        body: { code: 'replayed-google-code' },
+        body: {
+          code: 'replayed-google-code',
+          transactionVerifier: GOOGLE_OAUTH_TRANSACTION_VERIFIER,
+        },
       },
     ]);
   });
@@ -384,6 +413,7 @@ test.describe('MoneyKai auth journeys', () => {
       });
     });
 
+    await seedGoogleOAuthTransaction(page);
     await page.goto('/auth/google/callback?code=mock-google-code');
 
     await expect(page).toHaveURL(/\/settings$/);
@@ -408,7 +438,10 @@ test.describe('MoneyKai auth journeys', () => {
     expect(exchangeRequests).toEqual([
       {
         url: expect.stringContaining('/api/v1/auth/google/exchange'),
-        body: { code: 'mock-google-code' },
+        body: {
+          code: 'mock-google-code',
+          transactionVerifier: GOOGLE_OAUTH_TRANSACTION_VERIFIER,
+        },
       },
     ]);
     expect(firebaseTokenRequests).toEqual([
@@ -449,6 +482,7 @@ test.describe('MoneyKai auth journeys', () => {
       });
     });
 
+    await seedGoogleOAuthTransaction(page);
     await page.goto('/auth/google/callback?code=unsafe-return-code');
 
     await expect(page).toHaveURL(/\/dashboard$/);
@@ -472,7 +506,10 @@ test.describe('MoneyKai auth journeys', () => {
     expect(exchangeRequests).toEqual([
       {
         url: expect.stringContaining('/api/v1/auth/google/exchange'),
-        body: { code: 'unsafe-return-code' },
+        body: {
+          code: 'unsafe-return-code',
+          transactionVerifier: GOOGLE_OAUTH_TRANSACTION_VERIFIER,
+        },
       },
     ]);
   });

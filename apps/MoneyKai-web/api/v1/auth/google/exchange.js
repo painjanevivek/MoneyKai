@@ -30,6 +30,7 @@ module.exports = async (req, res) => {
   try {
     const payload = await readJsonBody(req, { limitBytes: 8 * 1024 });
     const code = String(payload.code || '');
+    const transactionVerifier = String(payload.transactionVerifier || '');
 
     if (!(await applyRateLimitForKey(res, `auth:google-exchange:code:${hashIdentifier(code)}`, {
       max: 3,
@@ -38,7 +39,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const exchange = consumeExchangeCode(code);
+    const exchange = consumeExchangeCode(code, transactionVerifier);
     if (!exchange.uid || typeof exchange.uid !== 'string') {
       sendJson(res, 400, { error: 'Google sign-in code is invalid.' });
       return;

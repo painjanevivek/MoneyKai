@@ -4,6 +4,8 @@ const test = require('node:test');
 
 const {
   buildGoogleAuthorizationUrl,
+  createExchangeCode,
+  consumeExchangeCode,
   getBackendGoogleRedirectUri,
   getGoogleOAuthSetupStatus,
 } = require('./google-oauth');
@@ -213,5 +215,41 @@ test('Google authorization URL sends the same redirect URI shown by setup status
 
     assert.equal(result.redirectUri, setup.redirectUri);
     assert.equal(authorizationUrl.searchParams.get('redirect_uri'), setup.redirectUri);
+  });
+});
+
+test('Google OAuth keeps a high-entropy transaction verifier out of the authorization URL', () => {
+  withEnv({
+    GOOGLE_OAUTH_CLIENT_ID: 'client-id',
+    GOOGLE_OAUTH_STATE_SECRET: 'state-secret',
+    MONEYKAI_SITE_URL: 'https://moneykai.com',
+  }, () => {
+    const result = buildGoogleAuthorizationUrl({
+      platform: 'web',
+      returnTo: '/dashboard',
+      requestOrigin: 'https://moneykai.com',
+      requestHostOrigin: 'https://moneykai.com',
+    });
+
+    assert.match(result.transactionVerifier, /^[A-Za-z0-9_-]{40,}$/);
+    assert.equal(result.authorizationUrl.includes(result.transactionVerifier), false);
+  });
+});
+
+test('Google OAuth exchange rejects a verifier from another client transaction', () => {
+  withEnv({ GOOGLE_OAUTH_STATE_SECRET: 'state-secret' }, () => {
+    const verifier = 'client-held-verifier-for-the-real-transaction';
+    const code = createExchangeCode({
+      firebaseUser: { uid: 'firebase-user-1' },
+      platform: 'web',
+      returnTo: '/dashboard',
+      transactionVerifier: verifier,
+    });
+
+    assert.throws(
+      () => consumeExchangeCode(code, 'verifier-from-another-browser-transaction-12345'),
+      /does not match the initiating client/i,
+    );
+    assert.equal(consumeExchangeCode(code, verifier).uid, 'firebase-user-1');
   });
 });
