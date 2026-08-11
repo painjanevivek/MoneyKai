@@ -29,10 +29,28 @@ const createDeploymentFixture = () => {
     copyFileSync(path.join(root, relativePath), destination);
   }
 
-  const ignoredV1Routes = trackedFiles.filter(
-    (file) => file.startsWith('api/v1/') && !file.startsWith('api/v1/auth/google/'),
+  const vercelIgnore = readFileSync(path.join(temporaryRoot, '.vercelignore'), 'utf8');
+  assert.doesNotMatch(
+    vercelIgnore,
+    /^!api\/v1\//m,
+    'frontend deployments must not restore duplicate v1 function entrypoints',
   );
-  assert.equal(ignoredV1Routes.length, 26, 'fixture must match Vercel\'s reported removal set');
+
+  const ignoredV1Routes = trackedFiles.filter((file) => file.startsWith('api/v1/'));
+  assert.equal(ignoredV1Routes.length, 30, 'fixture must match the complete v1 removal set');
+
+  const deployedApiEntrypoints = trackedFiles.filter(
+    (file) =>
+      file.startsWith('api/') &&
+      file.endsWith('.js') &&
+      !file.includes('.test.') &&
+      !file.startsWith('api/_lib/') &&
+      !file.startsWith('api/v1/'),
+  );
+  assert.ok(
+    deployedApiEntrypoints.length <= 12,
+    `frontend deployment has ${deployedApiEntrypoints.length} function candidates`,
+  );
 
   for (const relativePath of ignoredV1Routes) {
     rmSync(path.join(temporaryRoot, relativePath));
