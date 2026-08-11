@@ -5,11 +5,18 @@ import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { formatCurrency } from '@/utils/formatCurrency';
 
-const metricLabels = [
+const forecastMetricLabels = [
   'Budget available',
   'Safe to spend',
   'Upcoming commitments',
   'Forecast net flow',
+] as const;
+
+const historicalMetricLabels = [
+  'Budget available',
+  'Actual net flow',
+  'Actual income',
+  'Actual spending',
 ] as const;
 
 type CashflowSummaryStripProps = {
@@ -19,17 +26,34 @@ type CashflowSummaryStripProps = {
 export function CashflowSummaryStrip({ plan }: CashflowSummaryStripProps) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const isNarrow = width < 480;
   const isCompact = width < 760;
+  const columnCount = isNarrow ? 1 : isCompact ? 2 : 4;
+  const cellWidth = isNarrow ? '100%' : isCompact ? '50%' : '25%';
+  const metricLabels = plan.isForecastAvailable ? forecastMetricLabels : historicalMetricLabels;
+  const actualNetFlow = plan.metrics.actualIncome - plan.metrics.actualExpense;
 
-  const metricValues = [
+  const metricValues = plan.isForecastAvailable ? [
     formatCurrency(plan.metrics.budgetAvailable),
     plan.hasBudget ? formatCurrency(plan.metrics.safeToSpend) : 'Budget not set.',
-    plan.isForecastAvailable ? formatCurrency(plan.metrics.upcomingCommitments) : 'Closed period.',
-    plan.isForecastAvailable ? formatCurrency(plan.metrics.forecastNetFlow) : 'Closed period.',
+    formatCurrency(plan.metrics.upcomingCommitments),
+    formatCurrency(plan.metrics.forecastNetFlow),
+  ] as const : [
+    plan.hasBudget ? formatCurrency(plan.metrics.budgetAvailable) : 'Budget not set.',
+    formatCurrency(actualNetFlow),
+    formatCurrency(plan.metrics.actualIncome),
+    formatCurrency(plan.metrics.actualExpense),
   ] as const;
 
   const resolveValueColor = (index: number) => {
-    if ((!plan.hasBudget && index === 1) || (!plan.isForecastAvailable && index >= 2)) {
+    if (!plan.isForecastAvailable) {
+      if (!plan.hasBudget && index === 0) return colors.textTertiary;
+      if (index === 1) return actualNetFlow < 0 ? colors.error : colors.success;
+      if (index === 2) return colors.success;
+      if (index === 3) return colors.warning;
+      return colors.primary;
+    }
+    if (!plan.hasBudget && index === 1) {
       return colors.textTertiary;
     }
     if (index === 2) return colors.warning;
@@ -52,8 +76,8 @@ export function CashflowSummaryStrip({ plan }: CashflowSummaryStripProps) {
     >
       {metricLabels.map((label, index) => {
         const value = metricValues[index];
-        const isLastColumn = index % 2 === 1;
-        const isLastRow = index >= 2;
+        const isLastColumn = (index + 1) % columnCount === 0;
+        const isLastRow = index >= metricLabels.length - columnCount;
 
         return (
           <View
@@ -61,12 +85,12 @@ export function CashflowSummaryStrip({ plan }: CashflowSummaryStripProps) {
             accessible
             accessibilityLabel={`${label}: ${value}`}
             style={{
-              width: isCompact ? '50%' : '25%',
+              width: cellWidth,
               minWidth: 0,
               paddingHorizontal: isCompact ? Spacing.md : Spacing.lg,
               paddingVertical: Spacing.md,
-              borderRightWidth: isCompact ? (isLastColumn ? 0 : 1) : (index === metricLabels.length - 1 ? 0 : 1),
-              borderBottomWidth: isCompact && !isLastRow ? 1 : 0,
+              borderRightWidth: isLastColumn ? 0 : 1,
+              borderBottomWidth: !isLastRow ? 1 : 0,
               borderColor: colors.borderLight,
             }}
           >
@@ -81,7 +105,7 @@ export function CashflowSummaryStrip({ plan }: CashflowSummaryStripProps) {
               {label}
             </Text>
             <Text
-              numberOfLines={1}
+              numberOfLines={isNarrow ? undefined : 1}
               style={{
                 marginTop: Spacing.xs,
                 fontSize: isCompact ? Typography.fontSize.md : Typography.fontSize.lg,

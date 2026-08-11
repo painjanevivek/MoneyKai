@@ -25,21 +25,20 @@ export function CashflowBudgetPressure({
   const { colors } = useTheme();
   const { actualExpense, budgetAvailable, safeToSpend } = plan.metrics;
   const hasBudget = plan.hasBudget && Number.isFinite(monthlyAllowance) && monthlyAllowance > 0;
-  const usage = hasBudget
-    ? Math.min(100, Math.max(0, (actualExpense / monthlyAllowance) * 100))
-    : 0;
+  const usage = hasBudget ? Math.max(0, (actualExpense / monthlyAllowance) * 100) : null;
+  const progressUsage = Math.min(100, usage ?? 0);
   const tone: BudgetTone = !hasBudget
     ? 'neutral'
-    : usage >= 100
+    : (usage ?? 0) >= 100
       ? 'danger'
-      : usage >= 80
+      : (usage ?? 0) >= 80
         ? 'warning'
         : 'success';
   const label = !hasBudget
     ? 'Budget not set'
-    : usage >= 100
+    : (usage ?? 0) >= 100
       ? 'Over budget'
-      : usage >= 80
+      : (usage ?? 0) >= 80
         ? 'Watch'
         : 'On track';
   const toneColor = {
@@ -54,6 +53,17 @@ export function CashflowBudgetPressure({
     warning: 'alert-outline',
     success: 'check-circle-outline',
   }[tone] as keyof typeof MaterialCommunityIcons.glyphMap;
+  const unavailableBudget = 'Budget not set.';
+  const budgetAvailableValue = hasBudget ? formatCurrency(budgetAvailable) : unavailableBudget;
+  const metrics = plan.isForecastAvailable ? [
+    { label: 'Spent', value: formatCurrency(actualExpense) },
+    { label: 'Budget available', value: budgetAvailableValue },
+    { label: 'Safe to spend', value: hasBudget ? formatCurrency(safeToSpend) : unavailableBudget },
+  ] : [
+    { label: 'Spent', value: formatCurrency(actualExpense) },
+    { label: 'Budget available', value: budgetAvailableValue },
+    { label: 'Budget used', value: hasBudget ? `${Math.round(usage ?? 0)}%` : unavailableBudget },
+  ];
 
   return (
     <View testID="budget-pressure" style={styles.root}>
@@ -80,33 +90,35 @@ export function CashflowBudgetPressure({
 
         <View style={styles.usageRow}>
           <View>
-            <Text style={[styles.usageValue, { color: colors.textPrimary }]}>{Math.round(usage)}%</Text>
-            <Text style={[styles.usageCaption, { color: colors.textSecondary }]}>of budget used</Text>
+            <Text style={[styles.usageValue, { color: colors.textPrimary }]}>
+              {hasBudget ? `${Math.round(usage ?? 0)}%` : 'Budget usage unavailable'}
+            </Text>
+            <Text style={[styles.usageCaption, { color: colors.textSecondary }]}>
+              {hasBudget ? 'of budget used' : 'Set a budget to track usage'}
+            </Text>
           </View>
           <Text style={[styles.allowance, { color: colors.textSecondary }]} numberOfLines={1}>
             {hasBudget ? `${formatCurrency(monthlyAllowance)} monthly` : 'Add a monthly allowance'}
           </Text>
         </View>
 
-        <View
-          accessibilityRole="progressbar"
-          accessibilityLabel={`${label}. ${Math.round(usage)} percent of monthly budget used.`}
-          accessibilityValue={{ min: 0, max: 100, now: Math.round(usage) }}
-          style={[styles.track, { backgroundColor: colors.borderLight }]}
-        >
-          <View style={[styles.fill, { width: `${usage}%`, backgroundColor: toneColor }]} />
-        </View>
+        {hasBudget ? (
+          <View
+            accessibilityRole="progressbar"
+            accessibilityLabel={`${label}. ${Math.round(progressUsage)} percent of monthly budget used.`}
+            accessibilityValue={{ min: 0, max: 100, now: Math.round(progressUsage) }}
+            style={[styles.track, { backgroundColor: colors.borderLight }]}
+          >
+            <View style={[styles.fill, { width: `${progressUsage}%`, backgroundColor: toneColor }]} />
+          </View>
+        ) : null}
 
         <View style={styles.metrics}>
-          {[
-            { label: 'Spent', value: actualExpense },
-            { label: 'Budget available', value: budgetAvailable },
-            { label: 'Safe to spend', value: safeToSpend },
-          ].map((metric) => (
+          {metrics.map((metric) => (
             <View key={metric.label} style={[styles.metric, { borderColor: colors.borderLight }]}>
               <Text style={[styles.metricLabel, { color: colors.textTertiary }]}>{metric.label}</Text>
               <Text style={[styles.metricValue, { color: colors.textPrimary }]} numberOfLines={1}>
-                {formatCurrency(metric.value)}
+                {metric.value}
               </Text>
             </View>
           ))}

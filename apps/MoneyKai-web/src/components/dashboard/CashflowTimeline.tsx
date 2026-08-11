@@ -153,8 +153,12 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
   const summaryRows = [
     { label: 'Opening date', value: displayDate(plan.timeline[0]?.date) },
     { label: 'Actual net flow', value: formatCurrency(actualNetFlow) },
-    { label: 'Estimated commitments', value: formatCurrency(plan.metrics.upcomingCommitments) },
-    { label: 'Forecast net flow', value: formatCurrency(plan.metrics.forecastNetFlow) },
+    ...(plan.isForecastAvailable ? [
+      { label: 'Estimated commitments', value: formatCurrency(plan.metrics.upcomingCommitments) },
+      { label: 'Forecast net flow', value: formatCurrency(plan.metrics.forecastNetFlow) },
+    ] : [
+      { label: 'Period status', value: 'Closed reporting period' },
+    ]),
   ];
 
   return (

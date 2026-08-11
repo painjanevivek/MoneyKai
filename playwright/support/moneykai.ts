@@ -32,9 +32,11 @@ export const resetMoneyKaiState = async (page: Page) => {
   }, storageKeys);
 };
 
+type DashboardFixture = 'empty' | 'cashflow' | 'first-use' | 'no-budget';
+
 export const seedAuthenticatedUser = async (
   page: Page,
-  options: { onboarded?: boolean; dashboard?: 'empty' | 'cashflow' } = {},
+  options: { onboarded?: boolean; dashboard?: DashboardFixture } = {},
 ) => {
   const onboarded = options.onboarded ?? true;
   await page.addInitScript(
@@ -78,15 +80,56 @@ export const seedAuthenticatedUser = async (
   if (options.dashboard === 'empty') {
     await seedEmptyCashflowDashboard(page);
   }
-};
 
-type DashboardFixture = 'empty' | 'cashflow';
+  if (options.dashboard === 'no-budget') {
+    await seedNoBudgetCashflowDashboard(page);
+  }
+
+  if (options.dashboard === 'first-use') {
+    await seedFirstUseCashflowDashboard(page);
+  }
+};
 
 const seedDashboardFixture = async (page: Page, fixture: DashboardFixture) => {
   await page.addInitScript(
     ({ dashboard, user }) => {
-      const transactions = dashboard === 'cashflow'
+      const transactions = dashboard === 'empty'
         ? [
+            {
+              id: 'historical-flight-feb',
+              user_id: user.id,
+              type: 'expense',
+              amount: 8_000,
+              category: 'travel',
+              description: 'Flight booking',
+              payment_method: 'upi',
+              transaction_date: '2026-02-12',
+              created_at: '2026-02-12T12:00:00.000Z',
+            },
+            {
+              id: 'historical-dental-mar',
+              user_id: user.id,
+              type: 'expense',
+              amount: 2_500,
+              category: 'healthcare',
+              description: 'Dental checkup',
+              payment_method: 'upi',
+              transaction_date: '2026-03-08',
+              created_at: '2026-03-08T12:00:00.000Z',
+            },
+            {
+              id: 'historical-lamp-apr',
+              user_id: user.id,
+              type: 'expense',
+              amount: 1_200,
+              category: 'shopping',
+              description: 'Desk lamp',
+              payment_method: 'upi',
+              transaction_date: '2026-04-02',
+              created_at: '2026-04-02T12:00:00.000Z',
+            },
+          ]
+        : [
             {
               id: 'salary-may',
               user_id: user.id,
@@ -131,42 +174,8 @@ const seedDashboardFixture = async (page: Page, fixture: DashboardFixture) => {
               transaction_date: '2026-03-20',
               created_at: '2026-03-20T12:00:00.000Z',
             },
-          ]
-        : [
-            {
-              id: 'historical-flight-feb',
-              user_id: user.id,
-              type: 'expense',
-              amount: 8_000,
-              category: 'travel',
-              description: 'Flight booking',
-              payment_method: 'upi',
-              transaction_date: '2026-02-12',
-              created_at: '2026-02-12T12:00:00.000Z',
-            },
-            {
-              id: 'historical-dental-mar',
-              user_id: user.id,
-              type: 'expense',
-              amount: 2_500,
-              category: 'healthcare',
-              description: 'Dental checkup',
-              payment_method: 'upi',
-              transaction_date: '2026-03-08',
-              created_at: '2026-03-08T12:00:00.000Z',
-            },
-            {
-              id: 'historical-lamp-apr',
-              user_id: user.id,
-              type: 'expense',
-              amount: 1_200,
-              category: 'shopping',
-              description: 'Desk lamp',
-              payment_method: 'upi',
-              transaction_date: '2026-04-02',
-              created_at: '2026-04-02T12:00:00.000Z',
-            },
           ];
+      const fixtureTransactions = dashboard === 'first-use' ? transactions.slice(0, 2) : transactions;
       const challenges = dashboard === 'cashflow'
         ? [
             {
@@ -192,7 +201,7 @@ const seedDashboardFixture = async (page: Page, fixture: DashboardFixture) => {
         JSON.stringify({
           state: {
             settings: {
-              monthly_allowance: 50_000,
+              monthly_allowance: dashboard === 'no-budget' ? 0 : 50_000,
               reset_day: 1,
               auto_reset: true,
               carry_forward: false,
@@ -209,7 +218,7 @@ const seedDashboardFixture = async (page: Page, fixture: DashboardFixture) => {
         'moneykai-transactions',
         JSON.stringify({
           state: {
-            transactions,
+            transactions: fixtureTransactions,
             isSeeded: false,
           },
           version: 0,
@@ -236,6 +245,14 @@ export const seedCashflowDashboard = async (page: Page) => {
 
 const seedEmptyCashflowDashboard = async (page: Page) => {
   await seedDashboardFixture(page, 'empty');
+};
+
+const seedNoBudgetCashflowDashboard = async (page: Page) => {
+  await seedDashboardFixture(page, 'no-budget');
+};
+
+const seedFirstUseCashflowDashboard = async (page: Page) => {
+  await seedDashboardFixture(page, 'first-use');
 };
 
 export const expectNoHorizontalOverflow = async (page: Page) => {

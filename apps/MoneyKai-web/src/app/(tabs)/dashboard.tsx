@@ -333,7 +333,7 @@ export default function DashboardScreen() {
       onPress: () => router.push('/transactions' as any),
     },
   ];
-  const activationComplete = activationSteps.every((step) => step.done);
+  const needsActivation = transactions.length < 3;
 
   const completeTour = () => {
     if (user?.id) {
@@ -348,7 +348,7 @@ export default function DashboardScreen() {
       showsVerticalScrollIndicator={true}
       contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['4xl'] }}
     >
-      {!activationComplete ? (
+      {needsActivation ? (
         <>
           <WorkspaceHeader
             icon="view-dashboard-outline"

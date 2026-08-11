@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { format } from 'date-fns';
@@ -21,6 +21,12 @@ const getMonthYear = (monthKey: string) => {
   return Number.isFinite(year) ? year : new Date().getFullYear();
 };
 
+export const isFutureReportingMonth = (monthKey: string, currentMonthKey: string) =>
+  monthKey > currentMonthKey;
+
+export const isNextReportingYearDisabled = (visibleYear: number, currentMonthKey: string) =>
+  visibleYear >= getMonthYear(currentMonthKey);
+
 type ReportingMonthPickerProps = {
   compact?: boolean;
 };
@@ -36,25 +42,60 @@ export function ReportingMonthPicker({ compact = false }: ReportingMonthPickerPr
   } = useReportingMonth();
   const [open, setOpen] = useState(false);
   const [visibleYear, setVisibleYear] = useState(() => getMonthYear(selectedMonthKey));
+  const triggerRef = useRef<React.ElementRef<typeof Pressable>>(null);
+  const restoreFocusOnCloseRef = useRef(false);
 
-  const close = () => setOpen(false);
+  const closeAndRestoreFocus = useCallback(() => {
+    restoreFocusOnCloseRef.current = true;
+    setOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (open || !restoreFocusOnCloseRef.current) {
+      return;
+    }
+
+    restoreFocusOnCloseRef.current = false;
+    triggerRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || typeof document === 'undefined') {
+      return;
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      event.preventDefault();
+      closeAndRestoreFocus();
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [closeAndRestoreFocus, open]);
 
   const toggle = () => {
-    if (!open) {
-      setVisibleYear(getMonthYear(selectedMonthKey));
+    if (open) {
+      closeAndRestoreFocus();
+      return;
     }
-    setOpen((current) => !current);
+
+    setVisibleYear(getMonthYear(selectedMonthKey));
+    setOpen(true);
   };
 
   const handleSelectMonth = (monthKey: string) => {
     selectMonth(monthKey);
-    close();
+    closeAndRestoreFocus();
   };
 
   const handleResetToCurrentMonth = () => {
     resetToCurrentMonth();
     setVisibleYear(getMonthYear(currentMonthKey));
-    close();
+    closeAndRestoreFocus();
   };
 
   const popoverStyle: StyleProp<ViewStyle> = compact
@@ -67,7 +108,7 @@ export function ReportingMonthPicker({ compact = false }: ReportingMonthPickerPr
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close reporting month picker"
-          onPress={close}
+          onPress={closeAndRestoreFocus}
           style={{
             position: 'absolute',
             top: -10000,
@@ -80,6 +121,7 @@ export function ReportingMonthPicker({ compact = false }: ReportingMonthPickerPr
       ) : null}
 
       <Pressable
+        ref={triggerRef}
         accessibilityRole="button"
         accessibilityLabel="Choose reporting month"
         accessibilityState={{ expanded: open }}
@@ -125,7 +167,7 @@ export function ReportingMonthPicker({ compact = false }: ReportingMonthPickerPr
         <MonthYearPickerPopover
           currentMonthKey={currentMonthKey}
           onChangeYear={setVisibleYear}
-          onClose={close}
+          onClose={closeAndRestoreFocus}
           onResetToCurrentMonth={handleResetToCurrentMonth}
           onSelect={handleSelectMonth}
           selectedMonthKey={selectedMonthKey}
@@ -159,9 +201,19 @@ function MonthYearPickerPopover({
   style,
 }: MonthYearPickerPopoverProps) {
   const { colors } = useTheme();
+  const nextYearDisabled = isNextReportingYearDisabled(visibleYear, currentMonthKey);
+  const dialogRef = useRef<React.ElementRef<typeof View>>(null);
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+  }, []);
 
   return (
     <View
+      ref={dialogRef}
+      role="dialog"
+      accessibilityLabel="Reporting month picker"
+      tabIndex={-1}
       style={[
         {
           position: 'absolute',
@@ -212,6 +264,8 @@ function MonthYearPickerPopover({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Next year"
+          accessibilityState={{ disabled: nextYearDisabled }}
+          disabled={nextYearDisabled}
           onPress={() => onChangeYear(visibleYear + 1)}
           style={({ hovered, pressed }: any) => ({
             width: 38,
@@ -219,13 +273,18 @@ function MonthYearPickerPopover({
             borderRadius: BorderRadius.md,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: hovered ? colors.surfaceElevated : colors.glassBg,
+            backgroundColor: !nextYearDisabled && hovered ? colors.surfaceElevated : colors.glassBg,
             borderWidth: 1,
-            borderColor: hovered ? `${colors.primary}40` : colors.glassBorder,
-            transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+            borderColor: !nextYearDisabled && hovered ? `${colors.primary}40` : colors.glassBorder,
+            opacity: nextYearDisabled ? 0.45 : 1,
+            transform: !nextYearDisabled && hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
           })}
         >
-          <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textPrimary} />
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={22}
+            color={nextYearDisabled ? colors.textTertiary : colors.textPrimary}
+          />
         </Pressable>
       </View>
 
@@ -234,13 +293,15 @@ function MonthYearPickerPopover({
           const monthKey = toMonthKey(visibleYear, month.index);
           const active = monthKey === selectedMonthKey;
           const isCurrent = monthKey === currentMonthKey;
+          const disabled = isFutureReportingMonth(monthKey, currentMonthKey);
 
           return (
             <Pressable
               key={monthKey}
               accessibilityRole="button"
               accessibilityLabel={`Show ${month.fullLabel} ${visibleYear}`}
-              accessibilityState={{ selected: active }}
+              accessibilityState={{ disabled, selected: active }}
+              disabled={disabled}
               onPress={() => onSelect(monthKey)}
               style={({ hovered, pressed }: any) => ({
                 width: '31.4%',
@@ -249,10 +310,11 @@ function MonthYearPickerPopover({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 2,
-                backgroundColor: active ? colors.primary : hovered ? `${colors.primary}10` : colors.glassBg,
+                backgroundColor: active ? colors.primary : !disabled && hovered ? `${colors.primary}10` : colors.glassBg,
                 borderWidth: 1,
                 borderColor: active ? colors.primary : isCurrent ? colors.primaryLight : colors.glassBorder,
-                transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                opacity: disabled ? 0.45 : 1,
+                transform: !disabled && hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
               })}
             >
               <Text
@@ -260,7 +322,7 @@ function MonthYearPickerPopover({
                   fontSize: Typography.fontSize.sm,
                   lineHeight: 20,
                   fontFamily: Typography.fontFamily.semiBold,
-                  color: active ? colors.textInverse : colors.textPrimary,
+                  color: active ? colors.textInverse : disabled ? colors.textTertiary : colors.textPrimary,
                 }}
               >
                 {month.label}

@@ -8,11 +8,16 @@ const seedCashflowPlanner = async (page: Page) => {
   await seedAuthenticatedUser(page, { onboarded: true, dashboard: 'cashflow' });
 };
 
+const seedNoBudgetPlanner = async (page: Page) => {
+  await page.clock.install({ time: cashflowNow });
+  await seedAuthenticatedUser(page, { onboarded: true, dashboard: 'no-budget' });
+};
+
 const dismissCookieConsent = async (page: Page) => {
-  const decline = page.getByRole('button', { name: 'Decline' });
-  if (await decline.isVisible().catch(() => false)) {
-    await decline.click();
-  }
+  const consent = page.getByRole('alert', { name: 'Cookie consent' });
+  await expect(consent).toBeVisible();
+  await consent.getByRole('button', { name: 'Decline' }).click();
+  await expect(consent).toBeHidden();
 };
 
 const waitForFonts = async (page: Page) => {
@@ -60,6 +65,38 @@ test.describe('MoneyKai Cashflow Planner dashboard', () => {
     await expect(page).toHaveURL(/\/goals$/);
   });
 
+  test('keeps the planner available for an established user without a monthly budget', async ({ page }) => {
+    await seedNoBudgetPlanner(page);
+    await page.goto('/');
+
+    const header = page.getByTestId('cashflow-dashboard-header');
+    const summary = page.getByTestId('cashflow-summary');
+    const timeline = page.getByTestId('cashflow-timeline');
+    const categories = page.getByTestId('category-spending');
+    const recentTransactions = page.getByTestId('recent-transactions');
+
+    await expect(header.getByText('Cashflow plan')).toBeVisible();
+    await expect(page.getByText('Finish the first useful review')).toHaveCount(0);
+    await expect(summary.getByLabel('Safe to spend: Budget not set.')).toBeVisible();
+    await expect(timeline.getByLabel(/Actual net flow: .*55,000/)).toBeVisible();
+    await expect(categories.getByLabel(/Food & Dining: .*5,000, 100 percent of spending\./)).toBeVisible();
+    await expect(recentTransactions.getByLabel(/Salary,.*\+.*60,000\./)).toBeVisible();
+    await expect(recentTransactions.getByLabel(/Groceries,.*-.*5,000\./)).toBeVisible();
+
+    await header.getByRole('button', { name: 'Adjust budget' }).click();
+    await expect(page).toHaveURL(/\/budgets$/);
+  });
+
+  test('keeps first-use activation for a new user with exactly two reviewed transactions', async ({ page }) => {
+    await page.clock.install({ time: cashflowNow });
+    await seedAuthenticatedUser(page, { onboarded: true, dashboard: 'first-use' });
+    await page.goto('/');
+
+    await expect(page.getByText('Finish the first useful review')).toBeVisible();
+    await expect(page.getByText('2 records feed reports, categories, and AI summaries.')).toBeVisible();
+    await expect(page.getByTestId('cashflow-dashboard-header')).toHaveCount(0);
+  });
+
   test('explains the empty authenticated cashflow state', async ({ page }) => {
     await page.clock.install({ time: cashflowNow });
     await seedAuthenticatedUser(page, { onboarded: true, dashboard: 'empty' });
@@ -85,9 +122,55 @@ test.describe('MoneyKai Cashflow Planner dashboard', () => {
     await header.getByRole('button', { name: 'Choose reporting month' }).click();
     await page.getByRole('button', { name: 'Show April 2026' }).click();
 
-    await expect(page.getByText('Closed reporting period')).toBeVisible();
+    await expect(page.getByLabel('Period status: Closed reporting period')).toBeVisible();
     await expect(page.getByTestId('estimated-commitments')).toHaveCount(0);
     await expect(page.getByText('Estimated recurring commitments')).toHaveCount(0);
+    await expect(page.getByText('Upcoming commitments', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Forecast net flow', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Estimated commitments', { exact: true })).toHaveCount(0);
+  });
+
+  test('prevents selecting a future reporting period', async ({ page }) => {
+    await seedCashflowPlanner(page);
+    await page.goto('/');
+
+    const header = page.getByTestId('cashflow-dashboard-header');
+    const trigger = header.getByRole('button', { name: 'Choose reporting month' });
+    await trigger.click();
+
+    const picker = page.getByRole('dialog', { name: 'Reporting month picker' });
+    await expect(picker.getByRole('button', { name: 'Show June 2026' })).toBeDisabled();
+    await expect(picker.getByRole('button', { name: 'Next year' })).toBeDisabled();
+  });
+
+  test('supports keyboard month selection and restores trigger focus on Escape', async ({ page }) => {
+    await seedCashflowPlanner(page);
+    await page.goto('/');
+
+    const header = page.getByTestId('cashflow-dashboard-header');
+    const trigger = header.getByRole('button', { name: 'Choose reporting month' });
+    const picker = page.getByRole('dialog', { name: 'Reporting month picker' });
+
+    await trigger.focus();
+    await trigger.press('Enter');
+    await expect(picker).toBeVisible();
+    await expect(picker).toBeFocused();
+    await expect(trigger).not.toBeFocused();
+    const april = picker.getByRole('button', { name: 'Show April 2026' });
+    await april.focus();
+    await expect(april).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(picker).toBeHidden();
+    await expect(trigger).toBeFocused();
+
+    await page.keyboard.press('Space');
+    await expect(picker).toBeVisible();
+    await april.focus();
+    await expect(april).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(picker).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await expect(header.getByText('Apr 1 - Apr 30, 2026')).toBeVisible();
   });
 
   test('matches the desktop cashflow dashboard', async ({ page }, testInfo) => {
