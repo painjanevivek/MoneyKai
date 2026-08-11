@@ -9,7 +9,7 @@ const requireDist = process.argv.includes('--require-dist');
 
 const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const readJson = (relativePath) => JSON.parse(readText(relativePath));
-const readFrontendAiRoute = (relativePath) => {
+const readFrontendRoute = (relativePath) => {
   const fullPath = path.join(root, relativePath);
   if (fs.existsSync(fullPath)) {
     return { excluded: false, source: readText(relativePath) };
@@ -20,9 +20,12 @@ const readFrontendAiRoute = (relativePath) => {
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('#'));
   const excludesV1Routes = ignoreRules.includes('api/v1/**');
-  const restoresAiRoutes = ignoreRules.some((rule) => rule.startsWith('!api/v1/ai'));
+  const restoresRoute = ignoreRules
+    .filter((rule) => rule.startsWith('!') && rule.endsWith('/**'))
+    .map((rule) => rule.slice(1, -2))
+    .some((prefix) => relativePath.startsWith(prefix));
 
-  if (relativePath.startsWith('api/v1/ai/') && excludesV1Routes && !restoresAiRoutes) {
+  if (relativePath.startsWith('api/v1/') && excludesV1Routes && !restoresRoute) {
     return { excluded: true, source: '' };
   }
 
@@ -288,7 +291,7 @@ const highCostRoutes = [
   'api/billing/status.js',
   'api/v1/ai/attachments/analyze.js',
 ];
-const aiAttachmentAnalysis = readFrontendAiRoute('api/v1/ai/attachments/analyze.js');
+const aiAttachmentAnalysis = readFrontendRoute('api/v1/ai/attachments/analyze.js');
 
 for (const route of highCostRoutes) {
   const routeSecurity = route === 'api/v1/ai/attachments/analyze.js'
@@ -345,9 +348,14 @@ const webAnalyticsRouteTracker = readText('apps/MoneyKai-web/src/components/anal
 const analyticsEventsRoute = readText('api/analytics/events.js');
 const firebaseIdentity = readText('api/_lib/firebase-identity.js');
 const googleOAuth = readText('api/_lib/google-oauth.js');
-const authEmailSignInRoute = readText('api/v1/auth/email/sign-in.js');
-const authEmailSignUpRoute = readText('api/v1/auth/email/sign-up.js');
-const authPasswordResetRoute = readText('api/v1/auth/email/password-reset.js');
+const authEmailSignIn = readFrontendRoute('api/v1/auth/email/sign-in.js');
+const authEmailSignUp = readFrontendRoute('api/v1/auth/email/sign-up.js');
+const authPasswordReset = readFrontendRoute('api/v1/auth/email/password-reset.js');
+const authEmailRoutesExcluded = [authEmailSignIn, authEmailSignUp, authPasswordReset]
+  .every((route) => route.excluded);
+const authEmailSignInRoute = authEmailSignIn.source;
+const authEmailSignUpRoute = authEmailSignUp.source;
+const authPasswordResetRoute = authPasswordReset.source;
 const authGoogleStartRoute = readText('api/v1/auth/google/start.js');
 const authGoogleCallbackRoute = readText('api/v1/auth/google/callback.js');
 const authGoogleExchangeRoute = readText('api/v1/auth/google/exchange.js');
@@ -431,24 +439,25 @@ check(
       'FIREBASE_SERVICE_ACCOUNT_JSON',
       'getPublicFirebaseAuthError',
     ]) &&
-    containsAll(authEmailSignInRoute, [
-      'applyRateLimit(req, res',
-      'applyRateLimitForKey',
-      'signInWithEmailPassword',
-      'sendJson(res, 200',
-    ]) &&
-    containsAll(authEmailSignUpRoute, [
-      'applyRateLimit(req, res',
-      'applyRateLimitForKey',
-      'createEmailPasswordUser',
-      'sendJson(res, 201',
-    ]) &&
-    containsAll(authPasswordResetRoute, [
-      'applyRateLimit(req, res',
-      'applyRateLimitForKey',
-      'sendPasswordResetEmail',
-      'sendJson(res, 202',
-    ]) &&
+    (authEmailRoutesExcluded ||
+      (containsAll(authEmailSignInRoute, [
+        'applyRateLimit(req, res',
+        'applyRateLimitForKey',
+        'signInWithEmailPassword',
+        'sendJson(res, 200',
+      ]) &&
+        containsAll(authEmailSignUpRoute, [
+          'applyRateLimit(req, res',
+          'applyRateLimitForKey',
+          'createEmailPasswordUser',
+          'sendJson(res, 201',
+        ]) &&
+        containsAll(authPasswordResetRoute, [
+          'applyRateLimit(req, res',
+          'applyRateLimitForKey',
+          'sendPasswordResetEmail',
+          'sendJson(res, 202',
+        ]))) &&
     containsAll(webAuthGateway, [
       '/v1/auth/email/sign-in',
       '/v1/auth/email/sign-up',
@@ -483,7 +492,9 @@ check(
     !webAuthStore.includes('createUserWithEmailAndPassword') &&
     !mobileAuthService.includes('signInWithEmailAndPassword') &&
     !mobileAuthService.includes('createUserWithEmailAndPassword'),
-  'Email/password and reset attempts should pass through rate-limited backend auth routes before Firebase session creation'
+  authEmailRoutesExcluded
+    ? 'Email auth routes are excluded from the frontend deploy; clients remain backend-gated and throttled'
+    : 'Email/password and reset attempts should pass through rate-limited backend auth routes before Firebase session creation'
 );
 
 check(

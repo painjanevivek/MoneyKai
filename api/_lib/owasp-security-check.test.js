@@ -7,7 +7,7 @@ const test = require('node:test');
 
 const root = path.resolve(__dirname, '..', '..');
 
-test('security audit accepts an AI route intentionally excluded from the frontend deploy', () => {
+test('security audit accepts API routes intentionally excluded from the frontend deploy', () => {
   const temporaryParent = mkdtempSync(path.join(tmpdir(), 'moneykai-security-check-'));
   const temporaryRoot = path.join(temporaryParent, 'repo');
 
@@ -21,7 +21,11 @@ test('security audit accepts an AI route intentionally excluded from the fronten
       mkdirSync(path.dirname(destination), { recursive: true });
       copyFileSync(path.join(root, relativePath), destination);
     }
-    rmSync(path.join(temporaryRoot, 'api', 'v1', 'ai', 'attachments', 'analyze.js'));
+    for (const relativePath of trackedFiles.filter(
+      (file) => file.startsWith('api/v1/') && !file.startsWith('api/v1/auth/google/'),
+    )) {
+      rmSync(path.join(temporaryRoot, relativePath));
+    }
     const temporaryDist = path.join(temporaryRoot, 'apps', 'MoneyKai-web', 'dist');
     mkdirSync(path.join(temporaryDist, '.well-known'), { recursive: true });
     copyFileSync(
@@ -46,6 +50,7 @@ test('security audit accepts an AI route intentionally excluded from the fronten
 
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     assert.match(result.stdout, /AI attachment analysis is excluded from the frontend deploy/);
+    assert.match(result.stdout, /Email auth routes are excluded from the frontend deploy/);
   } finally {
     rmSync(temporaryParent, { recursive: true, force: true });
   }
