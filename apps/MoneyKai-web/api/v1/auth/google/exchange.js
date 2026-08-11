@@ -23,6 +23,7 @@ module.exports = async (req, res) => {
     keyPrefix: 'auth:google-exchange:ip',
     max: 30,
     windowMs: 15 * 60 * 1000,
+    requireDistributed: process.env.NODE_ENV === 'production',
   }))) {
     return;
   }
@@ -35,6 +36,7 @@ module.exports = async (req, res) => {
     if (!(await applyRateLimitForKey(res, `auth:google-exchange:code:${hashIdentifier(code)}`, {
       max: 3,
       windowMs: 5 * 60 * 1000,
+      requireDistributed: process.env.NODE_ENV === 'production',
     }))) {
       return;
     }

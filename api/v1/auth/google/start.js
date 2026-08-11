@@ -53,6 +53,7 @@ module.exports = async (req, res) => {
     keyPrefix: 'auth:google-start:ip',
     max: 20,
     windowMs: 15 * 60 * 1000,
+    requireDistributed: process.env.NODE_ENV === 'production',
   }))) {
     return;
   }

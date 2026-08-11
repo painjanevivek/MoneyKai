@@ -42,6 +42,7 @@ module.exports = async (req, res) => {
     keyPrefix: 'auth:google-callback:ip',
     max: 30,
     windowMs: 15 * 60 * 1000,
+    requireDistributed: process.env.NODE_ENV === 'production',
   }))) {
     return;
   }

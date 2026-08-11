@@ -53,6 +53,14 @@ const enforceCooldown = async (res, options = {}) => {
     null
   );
 
+  if (!redisResult.ok && options.requireDistributed) {
+    res.setHeader('Retry-After', '30');
+    sendJson(res, 503, {
+      error: options.unavailableMessage || 'Security checks are temporarily unavailable. Please try again.',
+    });
+    return false;
+  }
+
   const localResult = redisResult.ok ? null : setLocalCooldown(key, ttlSeconds);
   const allowed = redisResult.ok
     ? redisResult.value === 'OK' || redisResult.value === true

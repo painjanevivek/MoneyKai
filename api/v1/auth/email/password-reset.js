@@ -22,6 +22,7 @@ module.exports = async (req, res) => {
     keyPrefix: 'auth:password-reset:ip',
     max: 20,
     windowMs: 60 * 60 * 1000,
+    requireDistributed: process.env.NODE_ENV === 'production',
   }))) {
     return;
   }
@@ -33,6 +34,7 @@ module.exports = async (req, res) => {
     if (!(await applyRateLimitForKey(res, `auth:password-reset:email:${hashIdentifier(email)}`, {
       max: 5,
       windowMs: 60 * 60 * 1000,
+      requireDistributed: process.env.NODE_ENV === 'production',
     }))) {
       return;
     }

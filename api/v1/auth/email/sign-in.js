@@ -21,6 +21,7 @@ module.exports = async (req, res) => {
     keyPrefix: 'auth:email-sign-in:ip',
     max: 30,
     windowMs: 15 * 60 * 1000,
+    requireDistributed: process.env.NODE_ENV === 'production',
   }))) {
     return;
   }
@@ -32,6 +33,7 @@ module.exports = async (req, res) => {
     if (!(await applyRateLimitForKey(res, `auth:email-sign-in:email:${hashIdentifier(email)}`, {
       max: 8,
       windowMs: 15 * 60 * 1000,
+      requireDistributed: process.env.NODE_ENV === 'production',
     }))) {
       return;
     }

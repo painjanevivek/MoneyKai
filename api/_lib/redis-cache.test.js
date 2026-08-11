@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
 const test = require('node:test');
 
 const redis = require('./redis');
@@ -184,4 +185,57 @@ test('cooldown fallback blocks repeated action without raw identifier in key', a
   assert.equal(await enforceCooldown(secondResponse, options), false);
   assert.equal(secondResponse.statusCode, 429);
   assert.ok(secondResponse.headers['Retry-After']);
+});
+
+test('security-critical rate limits fail closed without distributed state', async () => {
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  const response = createResponse();
+
+  assert.equal(await applyRateLimit(
+    { url: '/test-strict-rate-limit', headers: { 'x-forwarded-for': '203.0.113.40' }, socket: {} },
+    response,
+    {
+      keyPrefix: `test:strict-rate-limit:${Date.now()}`,
+      max: 1,
+      windowMs: 60_000,
+      requireDistributed: true,
+    },
+  ), false);
+  assert.equal(response.statusCode, 503);
+  assert.ok(response.headers['Retry-After']);
+});
+
+test('security-critical cooldowns fail closed without distributed state', async () => {
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  const response = createResponse();
+
+  assert.equal(await enforceCooldown(response, {
+    action: 'test-strict-cooldown',
+    identifierType: 'uid',
+    identifier: `strict-user-${Date.now()}`,
+    ttlSeconds: 30,
+    requireDistributed: true,
+  }), false);
+  assert.equal(response.statusCode, 503);
+  assert.ok(response.headers['Retry-After']);
+});
+
+test('production auth and paid AI routes opt into distributed-only enforcement', () => {
+  const routeRequirements = new Map([
+    ['api/v1/auth/email/sign-in.js', 2],
+    ['api/v1/auth/email/sign-up.js', 2],
+    ['api/v1/auth/email/password-reset.js', 2],
+    ['api/v1/auth/google/start.js', 1],
+    ['api/v1/auth/google/callback.js', 1],
+    ['api/v1/auth/google/exchange.js', 2],
+    ['api/v1/ai/attachments/analyze.js', 2],
+  ]);
+
+  for (const [path, expectedCount] of routeRequirements) {
+    const source = readFileSync(path, 'utf8');
+    const actualCount = source.match(/requireDistributed: process\.env\.NODE_ENV === 'production'/g)?.length ?? 0;
+    assert.equal(actualCount, expectedCount, `${path} must fail closed for every security-critical limiter`);
+  }
 });
