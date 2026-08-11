@@ -578,29 +578,53 @@ check(
   'Google sign-in should start on the backend, verify Google identity server-side, and complete through Firebase custom tokens'
 );
 
-check(
-  'Password reset flow is wired and enumeration-safe',
-  containsAll(vercelConfigSource, [
-    '"source": "/__/auth"',
-    '"source": "/__/auth/:path*"',
-    '"source": "/__/firebase/init.json"',
-    'firebaseapp.com/__/auth',
-  ]) &&
-    containsAll(webForgotPassword, [
+const passwordResetEvidence = [
+  {
+    label: 'Vercel Firebase auth rewrites',
+    ok: containsAll(vercelConfigSource, [
+      '"source": "/__/auth"',
+      '"source": "/__/auth/:path*"',
+      '"source": "/__/firebase/init.json"',
+      'firebaseapp.com/__/auth',
+    ]),
+  },
+  {
+    label: 'web forgot-password enumeration-safe gateway flow',
+    ok: containsAll(webForgotPassword, [
       'requestPasswordResetGateway(normalizedEmail)',
       'setSentEmail(normalizedEmail)',
       'isPasswordResetEnumerationError',
       'If a MoneyKai account can receive resets',
-    ]) &&
-    containsAll(mobileForgotPassword, [
+    ]),
+  },
+  {
+    label: 'mobile forgot-password enumeration-safe gateway flow',
+    ok: containsAll(mobileForgotPassword, [
       'requestPasswordResetEmail(normalizedEmail)',
       'setSentEmail(normalizedEmail)',
       'isPasswordResetEnumerationError',
       'If a MoneyKai account can receive resets',
-    ]) &&
-    containsAll(webSettings, ['requestPasswordResetGateway(normalizedEmail)']) &&
-    containsAll(mobileAuthService, ['requestPasswordResetGateway(normalizedEmail)']),
-  'Reset links should route through the backend auth gateway, normalize email input, throttle attempts, and avoid account enumeration'
+    ]),
+  },
+  {
+    label: 'web settings gateway call',
+    ok: containsAll(webSettings, ['requestPasswordResetGateway(normalizedEmail)']),
+  },
+  {
+    label: 'mobile auth service gateway call',
+    ok: containsAll(mobileAuthService, ['requestPasswordResetGateway(normalizedEmail)']),
+  },
+];
+const missingPasswordResetEvidence = passwordResetEvidence
+  .filter(({ ok }) => !ok)
+  .map(({ label }) => label);
+
+check(
+  'Password reset flow is wired and enumeration-safe',
+  missingPasswordResetEvidence.length === 0,
+  missingPasswordResetEvidence.length === 0
+    ? 'Reset links route through the backend auth gateway, normalize email input, throttle attempts, and avoid account enumeration'
+    : `Missing password-reset evidence: ${missingPasswordResetEvidence.join(', ')}`
 );
 
 check(
