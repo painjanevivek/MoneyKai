@@ -150,3 +150,13 @@ imp/
 
 .vercel
 .env*.local
+
+# isolated local worktrees
+/.worktrees/
+
+# local design, audit, and planning artifacts
+/docs/superpowers/
+/outputs/sidebar-*.png
+/outputs/ui-audit/
+/outputs/ui-concepts/
+/outputs/web-quality-audit-*/

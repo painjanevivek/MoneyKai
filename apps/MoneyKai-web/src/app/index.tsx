@@ -1,31 +1,24 @@
 import React, { type ReactNode, useState } from 'react';
 import { Redirect } from 'expo-router';
-import { motion } from 'motion/react';
-import {
-  Archive,
-  BarChart3,
-  Check,
-  ChevronRight,
-  Forward,
-  Inbox,
-  Menu,
-  MoreHorizontal,
-  Paperclip,
-  Reply,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Target,
-  Trash2,
-  WalletCards,
-} from 'lucide-react';
+import Archive from 'lucide-react/dist/esm/icons/archive.mjs';
+import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3.mjs';
+import Check from 'lucide-react/dist/esm/icons/check.mjs';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.mjs';
+import Forward from 'lucide-react/dist/esm/icons/forward.mjs';
+import Inbox from 'lucide-react/dist/esm/icons/inbox.mjs';
+import Menu from 'lucide-react/dist/esm/icons/menu.mjs';
+import MoreHorizontal from 'lucide-react/dist/esm/icons/more-horizontal.mjs';
+import Paperclip from 'lucide-react/dist/esm/icons/paperclip.mjs';
+import Reply from 'lucide-react/dist/esm/icons/reply.mjs';
+import Search from 'lucide-react/dist/esm/icons/search.mjs';
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check.mjs';
+import Sparkles from 'lucide-react/dist/esm/icons/sparkles.mjs';
+import Target from 'lucide-react/dist/esm/icons/target.mjs';
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2.mjs';
+import WalletCards from 'lucide-react/dist/esm/icons/wallet-cards.mjs';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
-import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
 import { useAuthStore } from '@/stores/useAuthStore';
-
-const VIDEO_URL =
-  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4';
 
 const navLinks = ['Features', 'Pricing', 'Security', 'Learn', 'Contact'] as const;
 
@@ -239,11 +232,8 @@ function RootNoiseFilter() {
 
 function Navbar() {
   return (
-    <motion.nav
+    <nav
       className="mk-navbar"
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
       aria-label="Primary"
     >
       <a href="/" aria-label="MoneyKai home" className="mk-logo-link">
@@ -251,15 +241,13 @@ function Navbar() {
       </a>
       <div className="mk-nav-links">
         {navLinks.map((item, index) => (
-          <motion.a
+          <a
             key={item}
             href={item === 'Pricing' ? '#pricing' : item === 'Contact' ? '/contact' : `#${item.toLowerCase()}`}
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + index * 0.05, duration: 0.4, ease: 'easeOut' }}
+            style={{ animationDelay: `${100 + index * 50}ms` }}
           >
             {item}
-          </motion.a>
+          </a>
         ))}
       </div>
       <div className="mk-nav-action">
@@ -268,41 +256,32 @@ function Navbar() {
       <button className="mk-menu-button" aria-label="Open menu">
         <Menu size={18} />
       </button>
-    </motion.nav>
+    </nav>
   );
 }
 
 function Hero() {
   return (
     <section className="mk-hero" aria-labelledby="hero-title">
-      <motion.h1
+      <h1
         id="hero-title"
         className="mk-hero-title"
-        initial={{ opacity: 0, y: 22 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
       >
         <span>Your money.</span>
         <span className="mk-shiny-text animate-shiny">Revitalized</span>
-      </motion.h1>
-      <motion.p
+      </h1>
+      <p
         className="mk-hero-copy"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.6, ease: 'easeOut' }}
       >
         MoneyKai is the calm personal finance platform for the current era. It organizes expenses, budgets, shared
         spending, savings, and encrypted backup files into total clarity.
-      </motion.p>
-      <motion.div
+      </p>
+      <div
         className="mk-hero-actions"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 0.6, ease: 'easeOut' }}
       >
         <AppButton />
         <span>Android release now available</span>
-      </motion.div>
+      </div>
     </section>
   );
 }
@@ -311,11 +290,8 @@ function MenuBar() {
   const items = ['Expenses', 'Budgets', 'Savings', 'Backups'] as const;
 
   return (
-    <motion.div
+    <div
       className="mk-menu-strip"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.9, duration: 0.55, ease: 'easeOut' }}
     >
       <div className="mk-menu-inner">
         <div className="mk-menu-left">
@@ -329,20 +305,14 @@ function MenuBar() {
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function MoneyMockup() {
   return (
     <section className="mk-mockup-section" aria-label="MoneyKai app preview">
-      <motion.div
-        className="mk-window"
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={{ delay: 0.1, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <div className="mk-window">
         <div className="mk-titlebar">
           <div className="mk-traffic">
             <span style={{ background: '#ff5f57' }} />
@@ -399,7 +369,7 @@ function MoneyMockup() {
                   <strong>{row.name}</strong>
                   <span>{row.time}</span>
                 </div>
-                <h3>{row.subject}</h3>
+                <p className="mk-message-subject">{row.subject}</p>
                 <p>{row.preview}</p>
                 {'unread' in row && row.unread ? <i /> : null}
               </article>
@@ -456,7 +426,7 @@ function MoneyMockup() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }
@@ -464,12 +434,7 @@ function MoneyMockup() {
 function FeatureTriage() {
   return (
     <section id="features" className="mk-feature-grid">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
-      >
+      <div>
         <SectionEyebrow label="Review" tag="Local-first" />
         <h2>
           Clear your money picture
@@ -485,14 +450,8 @@ function FeatureTriage() {
             <span key={item}>{item}</span>
           ))}
         </div>
-      </motion.div>
-      <motion.div
-        className="liquid-glass mk-triage-card"
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
-      >
+      </div>
+      <div className="liquid-glass mk-triage-card">
         <div className="mk-triage-head">Today - 42 records reviewed</div>
         {triageCards.map((card) => (
           <div className="liquid-glass mk-triage-row" key={card.title}>
@@ -505,7 +464,7 @@ function FeatureTriage() {
             <p>{card.items.join(' - ')}</p>
           </div>
         ))}
-      </motion.div>
+      </div>
     </section>
   );
 }
@@ -515,16 +474,8 @@ function LogoCloud() {
     <section className="mk-logo-cloud" aria-label="MoneyKai audiences">
       <p>Trusted by thoughtful money reviewers</p>
       <div>
-        {logos.map((logo, index) => (
-          <motion.span
-            key={logo}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.05, duration: 0.45, ease: 'easeOut' }}
-          >
-            {logo}
-          </motion.span>
+        {logos.map((logo) => (
+          <span key={logo}>{logo}</span>
         ))}
       </div>
     </section>
@@ -610,13 +561,7 @@ function Pricing() {
 function FinalCTA() {
   return (
     <section className="mk-final-cta">
-      <motion.div
-        className="liquid-glass"
-        initial={{ opacity: 0, y: 26 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
-      >
+      <div className="liquid-glass">
         <div className="mk-final-glow" />
         <h2>
           Close the tabs.
@@ -633,23 +578,16 @@ function FinalCTA() {
             Talk to sales <ChevronRight size={16} />
           </a>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }
 
 function BackgroundFrame({ children }: { children: ReactNode }) {
-  const width = useHydratedViewportWidth();
-  const showAmbientVideo = width >= 900;
-
   return (
     <div className="mk-page-shell">
       <RootNoiseFilter />
-      {showAmbientVideo ? (
-        <div className="mk-video-bg" aria-hidden="true">
-          <video autoPlay loop muted playsInline preload="metadata" className="mk-video" src={VIDEO_URL} />
-        </div>
-      ) : null}
+      <div className="mk-ambient-bg" aria-hidden="true" />
       <div className="mk-guide mk-guide-left" />
       <div className="mk-guide mk-guide-right" />
       <div className="mk-page-content">{children}</div>

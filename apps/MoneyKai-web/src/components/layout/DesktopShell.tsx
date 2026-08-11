@@ -3,7 +3,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, usePathname } from 'expo-router';
 import { Alert, Linking, Pressable, ScrollView, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle, useWindowDimensions } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -86,39 +85,16 @@ function SlidingNavItems({ pathname, orientation }: { pathname: string; orientat
   const [navLayouts, setNavLayouts] = useState<Record<string, NavLayout>>({});
   const activeItem = NAV_ITEMS.find((item) => isRouteActive(pathname, item.href));
   const isHorizontal = orientation === 'horizontal';
-  const indicatorX = useSharedValue(0);
-  const indicatorY = useSharedValue(0);
-  const indicatorWidth = useSharedValue(0);
-  const indicatorHeight = useSharedValue(0);
-  const indicatorOpacity = useSharedValue(0);
-
-  useEffect(() => {
-    if (!activeItem) {
-      indicatorOpacity.value = withTiming(0, { duration: 120 });
-      return;
-    }
-
-    const layout = navLayouts[activeItem.href];
-    if (!layout) return;
-
-    const config = {
-      duration: 240,
-      easing: Easing.out(Easing.cubic),
-    };
-
-    indicatorX.value = withTiming(layout.x, config);
-    indicatorY.value = withTiming(layout.y, config);
-    indicatorWidth.value = withTiming(layout.width, config);
-    indicatorHeight.value = withTiming(layout.height, config);
-    indicatorOpacity.value = withTiming(1, { duration: 120 });
-  }, [activeItem, indicatorHeight, indicatorOpacity, indicatorWidth, indicatorX, indicatorY, navLayouts]);
-
-  const indicatorStyle = useAnimatedStyle(() => ({
-    opacity: indicatorOpacity.value,
-    width: indicatorWidth.value,
-    height: indicatorHeight.value,
-    transform: [{ translateX: indicatorX.value }, { translateY: indicatorY.value }],
-  }));
+  const activeLayout = activeItem ? navLayouts[activeItem.href] : undefined;
+  const indicatorStyle: ViewStyle = {
+    opacity: activeLayout ? 1 : 0,
+    width: activeLayout?.width ?? 0,
+    height: activeLayout?.height ?? 0,
+    transform: [
+      { translateX: activeLayout?.x ?? 0 },
+      { translateY: activeLayout?.y ?? 0 },
+    ],
+  };
 
   const handleNavItemLayout = (href: string) => (event: LayoutChangeEvent) => {
     const { x, y, width: itemWidth, height: itemHeight } = event.nativeEvent.layout;
@@ -158,7 +134,7 @@ function SlidingNavItems({ pathname, orientation }: { pathname: string; orientat
         position: 'relative',
       }}
     >
-      <Animated.View
+      <View
         style={[
           {
             position: 'absolute',
