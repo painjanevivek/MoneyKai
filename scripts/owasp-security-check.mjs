@@ -9,6 +9,25 @@ const requireDist = process.argv.includes('--require-dist');
 
 const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const readJson = (relativePath) => JSON.parse(readText(relativePath));
+const readFrontendAiRoute = (relativePath) => {
+  const fullPath = path.join(root, relativePath);
+  if (fs.existsSync(fullPath)) {
+    return { excluded: false, source: readText(relativePath) };
+  }
+
+  const ignoreRules = readText('.vercelignore')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#'));
+  const excludesV1Routes = ignoreRules.includes('api/v1/**');
+  const restoresAiRoutes = ignoreRules.some((rule) => rule.startsWith('!api/v1/ai'));
+
+  if (relativePath.startsWith('api/v1/ai/') && excludesV1Routes && !restoresAiRoutes) {
+    return { excluded: true, source: '' };
+  }
+
+  return { excluded: false, source: readText(relativePath) };
+};
 const listFiles = (directory) => {
   if (!fs.existsSync(directory)) {
     return [];
@@ -269,27 +288,36 @@ const highCostRoutes = [
   'api/billing/status.js',
   'api/v1/ai/attachments/analyze.js',
 ];
+const aiAttachmentAnalysis = readFrontendAiRoute('api/v1/ai/attachments/analyze.js');
 
 for (const route of highCostRoutes) {
+  const routeSecurity = route === 'api/v1/ai/attachments/analyze.js'
+    ? aiAttachmentAnalysis
+    : { excluded: false, source: readText(route) };
   check(
     `Rate limit wired: ${route}`,
-    readText(route).includes('applyRateLimit'),
-    'High-cost or sensitive routes should call applyRateLimit before provider work'
+    routeSecurity.excluded || routeSecurity.source.includes('applyRateLimit'),
+    routeSecurity.excluded
+      ? 'AI attachment analysis is excluded from the frontend deploy'
+      : 'High-cost or sensitive routes should call applyRateLimit before provider work'
   );
 }
 
-const aiAttachmentAnalysisRoute = readText('api/v1/ai/attachments/analyze.js');
+const aiAttachmentAnalysisRoute = aiAttachmentAnalysis.source;
 const aiRuntime = readText('api/_lib/ai-runtime.js');
 check(
   'AI attachment analysis requires Firebase auth',
-  containsAll(aiAttachmentAnalysisRoute, [
-    'verifyFirebaseIdToken',
-    'getBearerToken',
-    'await verifyFirebaseIdToken(token)',
-  ]) &&
-    aiAttachmentAnalysisRoute.indexOf('await verifyFirebaseIdToken(token)') <
-      aiAttachmentAnalysisRoute.indexOf('const payload = await readJsonBody'),
-  'AI attachment analysis must verify the signed-in Firebase user before parsing uploads or calling the AI provider'
+  aiAttachmentAnalysis.excluded ||
+    (containsAll(aiAttachmentAnalysisRoute, [
+      'verifyFirebaseIdToken',
+      'getBearerToken',
+      'await verifyFirebaseIdToken(token)',
+    ]) &&
+      aiAttachmentAnalysisRoute.indexOf('await verifyFirebaseIdToken(token)') <
+        aiAttachmentAnalysisRoute.indexOf('const payload = await readJsonBody')),
+  aiAttachmentAnalysis.excluded
+    ? 'AI attachment analysis is excluded from the frontend deploy'
+    : 'AI attachment analysis must verify the signed-in Firebase user before parsing uploads or calling the AI provider'
 );
 
 check(
