@@ -231,6 +231,7 @@ test('production auth and paid AI routes opt into distributed-only enforcement',
     ['api/v1/auth/google/callback.js', 1],
     ['api/v1/auth/google/exchange.js', 2],
     ['api/v1/ai/attachments/analyze.js', 2],
+    ['api/monitoring.js', 1],
   ]);
 
   for (const [path, expectedCount] of routeRequirements) {
