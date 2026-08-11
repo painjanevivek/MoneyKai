@@ -6,9 +6,29 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const requireDist = process.argv.includes('--require-dist');
+const deploymentInput = process.argv.includes('--deployment-input');
+
+const optionalDeploymentSources = new Set([
+  'api/v1/ai/attachments/analyze.js',
+  'api/v1/auth/email/sign-in.js',
+  'api/v1/auth/email/sign-up.js',
+  'api/v1/auth/email/password-reset.js',
+]);
 
 const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const readJson = (relativePath) => JSON.parse(readText(relativePath));
+const readDeploymentSource = (relativePath) => {
+  const fullPath = path.join(root, relativePath);
+  if (fs.existsSync(fullPath)) {
+    return { absent: false, source: readText(relativePath) };
+  }
+
+  if (deploymentInput && optionalDeploymentSources.has(relativePath)) {
+    return { absent: true, source: '' };
+  }
+
+  return { absent: false, source: readText(relativePath) };
+};
 const listFiles = (directory) => {
   if (!fs.existsSync(directory)) {
     return [];
@@ -269,27 +289,36 @@ const highCostRoutes = [
   'api/billing/status.js',
   'api/v1/ai/attachments/analyze.js',
 ];
+const aiAttachmentAnalysis = readDeploymentSource('api/v1/ai/attachments/analyze.js');
 
 for (const route of highCostRoutes) {
+  const routeSecurity = route === 'api/v1/ai/attachments/analyze.js'
+    ? aiAttachmentAnalysis
+    : { absent: false, source: readText(route) };
   check(
     `Rate limit wired: ${route}`,
-    readText(route).includes('applyRateLimit'),
-    'High-cost or sensitive routes should call applyRateLimit before provider work'
+    routeSecurity.absent || routeSecurity.source.includes('applyRateLimit'),
+    routeSecurity.absent
+      ? 'AI attachment analysis source is intentionally absent from the deployment input'
+      : 'High-cost or sensitive routes should call applyRateLimit before provider work'
   );
 }
 
-const aiAttachmentAnalysisRoute = readText('api/v1/ai/attachments/analyze.js');
+const aiAttachmentAnalysisRoute = aiAttachmentAnalysis.source;
 const aiRuntime = readText('api/_lib/ai-runtime.js');
 check(
   'AI attachment analysis requires Firebase auth',
-  containsAll(aiAttachmentAnalysisRoute, [
-    'verifyFirebaseIdToken',
-    'getBearerToken',
-    'await verifyFirebaseIdToken(token)',
-  ]) &&
-    aiAttachmentAnalysisRoute.indexOf('await verifyFirebaseIdToken(token)') <
-      aiAttachmentAnalysisRoute.indexOf('const payload = await readJsonBody'),
-  'AI attachment analysis must verify the signed-in Firebase user before parsing uploads or calling the AI provider'
+  aiAttachmentAnalysis.absent ||
+    (containsAll(aiAttachmentAnalysisRoute, [
+      'verifyFirebaseIdToken',
+      'getBearerToken',
+      'await verifyFirebaseIdToken(token)',
+    ]) &&
+      aiAttachmentAnalysisRoute.indexOf('await verifyFirebaseIdToken(token)') <
+        aiAttachmentAnalysisRoute.indexOf('const payload = await readJsonBody')),
+  aiAttachmentAnalysis.absent
+    ? 'AI attachment analysis source is intentionally absent from the deployment input'
+    : 'AI attachment analysis must verify the signed-in Firebase user before parsing uploads or calling the AI provider'
 );
 
 check(
@@ -317,9 +346,14 @@ const webAnalyticsRouteTracker = readText('apps/MoneyKai-web/src/components/anal
 const analyticsEventsRoute = readText('api/analytics/events.js');
 const firebaseIdentity = readText('api/_lib/firebase-identity.js');
 const googleOAuth = readText('api/_lib/google-oauth.js');
-const authEmailSignInRoute = readText('api/v1/auth/email/sign-in.js');
-const authEmailSignUpRoute = readText('api/v1/auth/email/sign-up.js');
-const authPasswordResetRoute = readText('api/v1/auth/email/password-reset.js');
+const authEmailSignIn = readDeploymentSource('api/v1/auth/email/sign-in.js');
+const authEmailSignUp = readDeploymentSource('api/v1/auth/email/sign-up.js');
+const authPasswordReset = readDeploymentSource('api/v1/auth/email/password-reset.js');
+const authEmailRoutesAbsent = [authEmailSignIn, authEmailSignUp, authPasswordReset]
+  .every((route) => route.absent);
+const authEmailSignInRoute = authEmailSignIn.source;
+const authEmailSignUpRoute = authEmailSignUp.source;
+const authPasswordResetRoute = authPasswordReset.source;
 const authGoogleStartRoute = readText('api/v1/auth/google/start.js');
 const authGoogleCallbackRoute = readText('api/v1/auth/google/callback.js');
 const authGoogleExchangeRoute = readText('api/v1/auth/google/exchange.js');
@@ -403,24 +437,25 @@ check(
       'FIREBASE_SERVICE_ACCOUNT_JSON',
       'getPublicFirebaseAuthError',
     ]) &&
-    containsAll(authEmailSignInRoute, [
-      'applyRateLimit(req, res',
-      'applyRateLimitForKey',
-      'signInWithEmailPassword',
-      'sendJson(res, 200',
-    ]) &&
-    containsAll(authEmailSignUpRoute, [
-      'applyRateLimit(req, res',
-      'applyRateLimitForKey',
-      'createEmailPasswordUser',
-      'sendJson(res, 201',
-    ]) &&
-    containsAll(authPasswordResetRoute, [
-      'applyRateLimit(req, res',
-      'applyRateLimitForKey',
-      'sendPasswordResetEmail',
-      'sendJson(res, 202',
-    ]) &&
+    (authEmailRoutesAbsent ||
+      (containsAll(authEmailSignInRoute, [
+        'applyRateLimit(req, res',
+        'applyRateLimitForKey',
+        'signInWithEmailPassword',
+        'sendJson(res, 200',
+      ]) &&
+        containsAll(authEmailSignUpRoute, [
+          'applyRateLimit(req, res',
+          'applyRateLimitForKey',
+          'createEmailPasswordUser',
+          'sendJson(res, 201',
+        ]) &&
+        containsAll(authPasswordResetRoute, [
+          'applyRateLimit(req, res',
+          'applyRateLimitForKey',
+          'sendPasswordResetEmail',
+          'sendJson(res, 202',
+        ]))) &&
     containsAll(webAuthGateway, [
       '/v1/auth/email/sign-in',
       '/v1/auth/email/sign-up',
@@ -455,7 +490,9 @@ check(
     !webAuthStore.includes('createUserWithEmailAndPassword') &&
     !mobileAuthService.includes('signInWithEmailAndPassword') &&
     !mobileAuthService.includes('createUserWithEmailAndPassword'),
-  'Email/password and reset attempts should pass through rate-limited backend auth routes before Firebase session creation'
+  authEmailRoutesAbsent
+    ? 'Email auth route sources are intentionally absent from the deployment input'
+    : 'Email/password and reset attempts should pass through rate-limited backend auth routes before Firebase session creation'
 );
 
 check(
