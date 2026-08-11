@@ -146,12 +146,14 @@ test.describe('MoneyKai Cashflow Planner dashboard', () => {
   test('supports keyboard month selection and restores trigger focus on Escape', async ({ page }) => {
     await seedCashflowPlanner(page);
     await page.goto('/');
+    await dismissCookieConsent(page);
 
     const header = page.getByTestId('cashflow-dashboard-header');
     const trigger = header.getByRole('button', { name: 'Choose reporting month' });
     const picker = page.getByRole('dialog', { name: 'Reporting month picker' });
 
     await trigger.focus();
+    await expect(trigger).toBeFocused();
     await trigger.press('Enter');
     await expect(picker).toBeVisible();
     await expect(picker).toBeFocused();
