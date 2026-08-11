@@ -40,6 +40,18 @@ class EncryptedBackupRestoreService {
   final LocalBudgetRepository budgetRepository;
   final ThemePreferenceRepository themeRepository;
 
+  static const maxTransactionCount = 10000;
+  static const maxBudgetCategoryCount = 256;
+  static const maxEmailBytes = 254;
+  static const maxDisplayNameBytes = 128;
+  static const maxTransactionIdBytes = 128;
+  static const maxTransactionTypeBytes = 16;
+  static const maxTransactionDateBytes = 64;
+  static const maxTransactionCategoryBytes = 128;
+  static const maxPaymentMethodBytes = 128;
+  static const maxTransactionDescriptionBytes = 2048;
+  static const maxBudgetCategoryNameBytes = 128;
+
   Future<EncryptedBackupRestoreResult> restoreEncryptedBackup({
     required String backupJson,
     required String password,
@@ -61,15 +73,43 @@ class EncryptedBackupRestoreService {
     final budget = _readBudget(decoded['budget']);
     final themeMode = _readThemeMode(decoded['settings']);
 
-    await storage.resetNamespace();
-    await authRepository.saveSession(
-      email: user.email,
-      displayName: user.displayName,
+    final stagedStorage = storage.createStagingNamespace();
+    final stagedAuthRepository = LocalAuthRepository(stagedStorage);
+    final stagedTransactionRepository = LocalTransactionRepository(
+      stagedStorage,
     );
-    await transactionRepository.saveTransactions(transactions);
-    await budgetRepository.saveBudget(budget);
-    if (themeMode != null) {
-      await themeRepository.saveThemeMode(themeMode);
+    final stagedBudgetRepository = LocalBudgetRepository(stagedStorage);
+    final stagedThemeRepository = ThemePreferenceRepository(stagedStorage);
+
+    try {
+      await stagedAuthRepository.saveSession(
+        email: user.email,
+        displayName: user.displayName,
+      );
+      await stagedTransactionRepository.saveTransactions(transactions);
+      await stagedBudgetRepository.saveBudget(budget);
+      if (themeMode != null) {
+        await stagedThemeRepository.saveThemeMode(themeMode);
+      }
+
+      _verifyStagedRestore(
+        authRepository: stagedAuthRepository,
+        transactionRepository: stagedTransactionRepository,
+        budgetRepository: stagedBudgetRepository,
+        themeRepository: stagedThemeRepository,
+        user: user,
+        transactions: transactions,
+        budget: budget,
+        themeMode: themeMode ?? ThemeMode.system,
+      );
+      await storage.activateStagedNamespace(stagedStorage);
+    } catch (_) {
+      try {
+        await storage.discardStagedNamespace(stagedStorage);
+      } catch (_) {
+        // If activation already completed, the committed namespace must remain.
+      }
+      rethrow;
     }
 
     return EncryptedBackupRestoreResult(
@@ -83,6 +123,17 @@ class EncryptedBackupRestoreService {
       throw const FormatException('Backup is missing a local user.');
     }
 
+    _requireBoundedText(
+      rawUser['email'],
+      maxBytes: maxEmailBytes,
+      fieldName: 'Local user email',
+    );
+    _requireBoundedText(
+      rawUser['displayName'],
+      maxBytes: maxDisplayNameBytes,
+      fieldName: 'Local user display name',
+    );
+
     try {
       return LocalUser.fromJson(rawUser);
     } catch (_) {
@@ -94,15 +145,26 @@ class EncryptedBackupRestoreService {
     if (rawTransactions is! List<Object?>) {
       throw const FormatException('Backup has invalid transactions.');
     }
+    if (rawTransactions.length > maxTransactionCount) {
+      throw const FormatException('Backup has too many transactions.');
+    }
 
     try {
       final transactions = <MoneyTransaction>[];
+      final transactionIds = <String>{};
       for (final item in rawTransactions) {
         if (item is! Map<String, Object?>) {
           throw const FormatException('Backup has invalid transactions.');
         }
 
-        transactions.add(MoneyTransaction.fromJson(item));
+        _validateTransactionText(item);
+        final transaction = MoneyTransaction.fromJson(item);
+        if (!transactionIds.add(transaction.id)) {
+          throw const FormatException(
+            'Backup has duplicate transaction identifiers.',
+          );
+        }
+        transactions.add(transaction);
       }
       return transactions;
     } catch (_) {
@@ -118,6 +180,22 @@ class EncryptedBackupRestoreService {
     if (rawBudget['monthlyLimit'] is! num ||
         rawBudget['categoryLimits'] is! Map) {
       throw const FormatException('Backup has an invalid budget.');
+    }
+
+    final rawCategoryLimits = rawBudget['categoryLimits'] as Map;
+    if (rawCategoryLimits.length > maxBudgetCategoryCount) {
+      throw const FormatException('Backup has too many budget categories.');
+    }
+    final normalizedCategoryNames = <String>{};
+    for (final key in rawCategoryLimits.keys) {
+      final categoryName = _requireBoundedText(
+        key,
+        maxBytes: maxBudgetCategoryNameBytes,
+        fieldName: 'Budget category name',
+      ).trim();
+      if (!normalizedCategoryNames.add(categoryName)) {
+        throw const FormatException('Backup has duplicate budget categories.');
+      }
     }
 
     try {
@@ -144,5 +222,83 @@ class EncryptedBackupRestoreService {
       'dark' => ThemeMode.dark,
       _ => throw const FormatException('Backup has invalid settings.'),
     };
+  }
+
+  static void _validateTransactionText(Map<String, Object?> transaction) {
+    _requireBoundedText(
+      transaction['id'],
+      maxBytes: maxTransactionIdBytes,
+      fieldName: 'Transaction id',
+    );
+    _requireBoundedText(
+      transaction['type'],
+      maxBytes: maxTransactionTypeBytes,
+      fieldName: 'Transaction type',
+    );
+    _requireBoundedText(
+      transaction['date'],
+      maxBytes: maxTransactionDateBytes,
+      fieldName: 'Transaction date',
+    );
+    _requireBoundedText(
+      transaction['category'],
+      maxBytes: maxTransactionCategoryBytes,
+      fieldName: 'Transaction category',
+    );
+    _requireBoundedText(
+      transaction['paymentMethod'],
+      maxBytes: maxPaymentMethodBytes,
+      fieldName: 'Transaction payment method',
+    );
+    _requireBoundedText(
+      transaction['description'],
+      maxBytes: maxTransactionDescriptionBytes,
+      fieldName: 'Transaction description',
+    );
+  }
+
+  static String _requireBoundedText(
+    Object? value, {
+    required int maxBytes,
+    required String fieldName,
+  }) {
+    if (value is! String || utf8.encode(value).length > maxBytes) {
+      throw FormatException('$fieldName is invalid or too long.');
+    }
+    return value;
+  }
+
+  static void _verifyStagedRestore({
+    required LocalAuthRepository authRepository,
+    required LocalTransactionRepository transactionRepository,
+    required LocalBudgetRepository budgetRepository,
+    required ThemePreferenceRepository themeRepository,
+    required LocalUser user,
+    required List<MoneyTransaction> transactions,
+    required BudgetState budget,
+    required ThemeMode themeMode,
+  }) {
+    final stagedUser = authRepository.readSession().user;
+    final stagedTransactions = transactionRepository.readTransactions();
+    final stagedBudget = budgetRepository.readBudget();
+    final stagedThemeMode = themeRepository.readThemeMode();
+    final stagedIds = stagedTransactions.map((item) => item.id).toSet();
+    final expectedIds = transactions.map((item) => item.id).toSet();
+    final budgetMatches =
+        stagedBudget.monthlyLimit == budget.monthlyLimit &&
+        stagedBudget.categoryLimits.length == budget.categoryLimits.length &&
+        budget.categoryLimits.entries.every(
+          (entry) => stagedBudget.categoryLimits[entry.key] == entry.value,
+        );
+
+    if (stagedUser?.email != user.email ||
+        stagedUser?.displayName != user.displayName ||
+        stagedTransactions.length != transactions.length ||
+        stagedIds.length != expectedIds.length ||
+        !stagedIds.containsAll(expectedIds) ||
+        !budgetMatches ||
+        stagedThemeMode != themeMode) {
+      throw StateError('Could not verify staged MoneyKai restore data.');
+    }
   }
 }

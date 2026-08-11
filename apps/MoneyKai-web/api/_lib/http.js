@@ -132,6 +132,16 @@ const readRawBodyBuffer = (req, options = {}) =>
 
 const readJsonBody = async (req, options) => {
   if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    const limitBytes = options?.limitBytes ?? DEFAULT_BODY_LIMIT_BYTES;
+    let serializedBody;
+    try {
+      serializedBody = JSON.stringify(req.body);
+    } catch {
+      throw Object.assign(new Error('Request body must be valid JSON.'), { statusCode: 400 });
+    }
+    if (Buffer.byteLength(serializedBody ?? '', 'utf8') > limitBytes) {
+      throw Object.assign(new Error('Request body is too large.'), { statusCode: 413 });
+    }
     return req.body;
   }
 
@@ -225,6 +235,18 @@ const applyRateLimitForKey = async (res, clientKey, options = {}) => {
   );
 
   if (!redisResult.ok || !redisResult.value || !Number.isFinite(redisResult.value.count)) {
+    if (options.requireDistributed) {
+      logRedisEvent('redis_rate_limit_unavailable', {
+        backend: 'redis',
+        key_type: 'rate_limit',
+      });
+      res.setHeader('Retry-After', '30');
+      sendJson(res, 503, {
+        error: options.unavailableMessage || 'Security checks are temporarily unavailable. Please try again.',
+      });
+      return false;
+    }
+
     logRedisEvent('redis_rate_limit_fallback', {
       backend: 'local',
       key_type: 'rate_limit',

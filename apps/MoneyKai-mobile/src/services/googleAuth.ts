@@ -83,9 +83,9 @@ export const signInWithGoogleAsync = async (): Promise<NativeFirebaseUser> => {
 
   pendingGoogleSignIn = (async () => {
     await consumeAuthAttempt('google-sign-in', 'google');
-    const authorizationUrl = await startGoogleOAuthGateway('/dashboard');
+    const { authorizationUrl, transactionVerifier } = await startGoogleOAuthGateway('/dashboard');
     const code = await waitForGoogleOAuthCode(authorizationUrl);
-    const credentials = await signInWithGoogleOAuthCode(code);
+    const credentials = await signInWithGoogleOAuthCode(code, transactionVerifier);
     return credentials.user;
   })();
 

@@ -4,11 +4,9 @@ import { readFileSync } from 'node:fs';
 const mirroredFiles = [
   ['api/_lib/http.js', 'apps/MoneyKai-web/api/_lib/http.js'],
   ['api/_lib/google-oauth.js', 'apps/MoneyKai-web/api/_lib/google-oauth.js'],
+  ['api/_lib/google-oauth-router.js', 'apps/MoneyKai-web/api/_lib/google-oauth-router.js'],
   ['api/_lib/firebase-identity.js', 'apps/MoneyKai-web/api/_lib/firebase-identity.js'],
-  ['api/auth-google-start.js', 'apps/MoneyKai-web/api/auth-google-start.js'],
-  ['api/auth-google-callback.js', 'apps/MoneyKai-web/api/auth-google-callback.js'],
-  ['api/auth-google-exchange.js', 'apps/MoneyKai-web/api/auth-google-exchange.js'],
-  ['api/auth-google-setup-status.js', 'apps/MoneyKai-web/api/auth-google-setup-status.js'],
+  ['api/auth-google.js', 'apps/MoneyKai-web/api/auth-google.js'],
   ['api/v1/auth/google/start.js', 'apps/MoneyKai-web/api/v1/auth/google/start.js'],
   ['api/v1/auth/google/callback.js', 'apps/MoneyKai-web/api/v1/auth/google/callback.js'],
   ['api/v1/auth/google/exchange.js', 'apps/MoneyKai-web/api/v1/auth/google/exchange.js'],
@@ -22,20 +20,14 @@ const hashFile = (path) =>
 
 const mismatches = mirroredFiles.filter(([source, copy]) => hashFile(source) !== hashFile(copy));
 const vercelIgnore = readFileSync('.vercelignore', 'utf8');
-const requiredVercelIgnoreRules = [
-  '!api/v1/',
-  '!api/v1/auth/',
-  '!api/v1/auth/google/',
-  '!api/v1/auth/google/**',
-];
-const missingVercelIgnoreRules = requiredVercelIgnoreRules.filter(
-  (rule) => !vercelIgnore.split(/\r?\n/).includes(rule)
-);
+const restoredV1Rules = vercelIgnore
+  .split(/\r?\n/)
+  .filter((rule) => rule.startsWith('!api/v1/'));
 const requiredGoogleAuthRewrites = [
-  ['/api/v1/auth/google/start', '/api/auth-google-start'],
-  ['/api/v1/auth/google/callback', '/api/auth-google-callback'],
-  ['/api/v1/auth/google/exchange', '/api/auth-google-exchange'],
-  ['/api/v1/auth/google/setup-status', '/api/auth-google-setup-status'],
+  ['/api/v1/auth/google/start', '/api/auth-google?action=start'],
+  ['/api/v1/auth/google/callback', '/api/auth-google?action=callback'],
+  ['/api/v1/auth/google/exchange', '/api/auth-google?action=exchange'],
+  ['/api/v1/auth/google/setup-status', '/api/auth-google?action=setup-status'],
 ];
 
 const readVercelRewrites = (path) => {
@@ -60,10 +52,10 @@ if (mismatches.length > 0) {
   process.exit(1);
 }
 
-if (missingVercelIgnoreRules.length > 0) {
-  console.error('Google auth API routes are still hidden from the Vercel deployment:');
-  for (const rule of missingVercelIgnoreRules) {
-    console.error(`- .vercelignore must include ${rule}`);
+if (restoredV1Rules.length > 0) {
+  console.error('Duplicate v1 API entrypoints are restored in the frontend deployment:');
+  for (const rule of restoredV1Rules) {
+    console.error(`- .vercelignore must remove ${rule}`);
   }
   process.exit(1);
 }

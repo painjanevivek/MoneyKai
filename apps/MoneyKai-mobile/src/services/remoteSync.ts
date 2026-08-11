@@ -14,6 +14,11 @@ import { clearAutomaticBackupQueue } from './backupService';
 import { loadUserFirestoreSnapshot, type FirestoreUserSnapshot } from './firestoreData';
 import { getNetworkStatus, readDataCache, retryAsync, writeDataCache } from './networkClient';
 import { DEFAULT_THEME_PALETTE, getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark } from '@/constants/theme';
+import {
+  captureRemoteSyncSession,
+  isRemoteSyncSessionCurrent,
+  type RemoteSyncSession,
+} from '@moneykai/domain/syncSession';
 
 const REMOTE_SNAPSHOT_CACHE_TTL_MS = 10 * 60 * 1000;
 
@@ -165,9 +170,12 @@ const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot) => {
   useLinkedAccountStore.getState().replaceAccounts(snapshot.data.linkedAccounts ?? []);
 };
 
-const hydrateCachedSnapshot = async (userId: string) => {
+const isCurrentSession = (session: RemoteSyncSession) =>
+  isRemoteSyncSessionCurrent(session, useAuthStore.getState().user?.id);
+
+const hydrateCachedSnapshot = async (userId: string, session: RemoteSyncSession) => {
   const cached = await readDataCache<FirestoreUserSnapshot>(remoteSnapshotCacheKey(userId));
-  if (!cached) {
+  if (!cached || !isCurrentSession(session)) {
     return null;
   }
 
@@ -183,10 +191,17 @@ export const syncRemoteState = async ({
   if (!profile) {
     return { source: 'none', synced: false };
   }
+  const session = captureRemoteSyncSession(profile.id);
 
   useSyncStore.getState().startSync();
-  const cached = await hydrateCachedSnapshot(profile.id);
+  const cached = await hydrateCachedSnapshot(profile.id, session);
+  if (!isCurrentSession(session)) {
+    return { source: 'none', synced: false };
+  }
   const networkStatus = await getNetworkStatus().catch(() => null);
+  if (!isCurrentSession(session)) {
+    return { source: 'none', synced: false };
+  }
   useSyncStore.getState().setOnline(networkStatus?.isOnline ?? true);
 
   if (cached && !force && cached.expiresAt && new Date(cached.expiresAt).getTime() > Date.now()) {
@@ -207,16 +222,28 @@ export const syncRemoteState = async ({
       () => loadUserFirestoreSnapshot(profile.id, profile),
       { retries: force ? 3 : 2, baseDelayMs: 500 },
     );
+    if (!isCurrentSession(session)) {
+      return { source: 'none', synced: false };
+    }
     applyRemoteSnapshot(snapshot);
+    if (!isCurrentSession(session)) {
+      return { source: 'none', synced: false };
+    }
     const nextCache = await writeDataCache(
       remoteSnapshotCacheKey(profile.id),
       snapshot,
       REMOTE_SNAPSHOT_CACHE_TTL_MS,
     );
+    if (!isCurrentSession(session)) {
+      return { source: 'none', synced: false };
+    }
     useSyncStore.getState().markCacheHydrated(nextCache.cachedAt);
     useSyncStore.getState().finishSync(nextCache.cachedAt);
     return { source: 'network', synced: true, cachedAt: nextCache.cachedAt };
   } catch (error) {
+    if (!isCurrentSession(session)) {
+      return { source: 'none', synced: false };
+    }
     const message = error instanceof Error ? error.message : 'Could not sync account data.';
     useSyncStore.getState().failSync(cached ? 'Using cached data because the latest sync failed.' : message);
     return {

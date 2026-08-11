@@ -689,6 +689,123 @@ void main() {
       themeRepository,
     );
   });
+
+  test('rejects transaction collections above the restore limit', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = LocalStorageService(await SharedPreferences.getInstance());
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
+    final transactions = List<Object?>.generate(
+      EncryptedBackupRestoreService.maxTransactionCount + 1,
+      (index) => {
+        'id': 'txn-$index',
+        'type': 'expense',
+        'amount': 1,
+        'date': '2026-06-29T00:00:00.000Z',
+        'category': 'Other',
+        'paymentMethod': 'Cash',
+        'description': 'Item',
+      },
+    );
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
+        hasValidUser: true,
+        transactions: transactions,
+      ),
+      randomBytes: (length) => List<int>.filled(length, 17),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    await _seedOriginalData(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
+    );
+
+    expect(
+      restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<FormatException>()),
+    );
+    _expectOriginalDataIntact(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
+    );
+  });
+
+  test('activation failure leaves the previous namespace intact', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final storage = _ActivationFailingStorage(preferences);
+    final authRepository = LocalAuthRepository(storage);
+    final transactionRepository = LocalTransactionRepository(storage);
+    final budgetRepository = LocalBudgetRepository(storage);
+    final themeRepository = ThemePreferenceRepository(storage);
+    await _seedOriginalData(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
+    );
+    final backupService = EncryptedBackupService(
+      exportService: _StaticExportService(
+        authRepository: authRepository,
+        transactionRepository: transactionRepository,
+        budgetRepository: budgetRepository,
+        themeRepository: themeRepository,
+        user: {
+          'email': 'replacement@example.com',
+          'displayName': 'Replacement',
+        },
+      ),
+      randomBytes: (length) => List<int>.filled(length, 18),
+    );
+    final backup = await backupService.buildEncryptedBackup(
+      password: 'correct horse battery staple',
+    );
+    final restoreService = EncryptedBackupRestoreService(
+      backupService: backupService,
+      storage: storage,
+      authRepository: authRepository,
+      transactionRepository: transactionRepository,
+      budgetRepository: budgetRepository,
+      themeRepository: themeRepository,
+    );
+
+    expect(
+      restoreService.restoreEncryptedBackup(
+        backupJson: backup.content,
+        password: 'correct horse battery staple',
+      ),
+      throwsA(isA<StateError>()),
+    );
+    _expectOriginalDataIntact(
+      authRepository,
+      transactionRepository,
+      budgetRepository,
+      themeRepository,
+    );
+  });
 }
 
 Future<void> _seedOriginalData(
@@ -765,5 +882,14 @@ class _StaticExportService extends LocalDataExportService {
       'budget': budget,
       if (settings != null) 'settings': settings,
     });
+  }
+}
+
+class _ActivationFailingStorage extends LocalStorageService {
+  _ActivationFailingStorage(super.preferences);
+
+  @override
+  Future<void> activateStagedNamespace(LocalStorageService staged) {
+    throw StateError('Simulated pointer write failure.');
   }
 }

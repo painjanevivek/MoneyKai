@@ -98,8 +98,8 @@ export const requestPasswordResetEmail = async (email: string) => {
   return requestPasswordResetGateway(normalizedEmail);
 };
 
-export const signInWithGoogleOAuthCode = async (code: string) => {
-  const gatewayResponse = await exchangeGoogleOAuthCodeGateway(code);
+export const signInWithGoogleOAuthCode = async (code: string, transactionVerifier: string) => {
+  const gatewayResponse = await exchangeGoogleOAuthCodeGateway(code, transactionVerifier);
   return (await getAuth()).signInWithCustomToken(gatewayResponse.customToken);
 };
 

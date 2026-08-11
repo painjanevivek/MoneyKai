@@ -16,7 +16,7 @@ $backupRulesPath = Join-Path $appRoot "android\app\src\main\res\xml\backup_rules
 $dataExtractionRulesPath = Join-Path $appRoot "android\app\src\main\res\xml\data_extraction_rules.xml"
 $networkSecurityConfigPath = Join-Path $appRoot "android\app\src\main\res\xml\network_security_config.xml"
 
-$isWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
+$runningOnWindows = [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
     [System.Runtime.InteropServices.OSPlatform]::Windows
 )
 
@@ -63,10 +63,10 @@ function Resolve-AndroidBuildTool {
     $sdkRoots = @(
         $env:ANDROID_HOME,
         $env:ANDROID_SDK_ROOT,
-        $(if ($isWindows) { "D:\Android\Sdk" }),
-        $(if ($isWindows -and $env:LOCALAPPDATA) { "$env:LOCALAPPDATA\Android\Sdk" }),
-        $(if (-not $isWindows) { "/usr/local/lib/android/sdk" }),
-        $(if (-not $isWindows -and $env:HOME) { "$env:HOME/Android/Sdk" })
+        $(if ($runningOnWindows) { "D:\Android\Sdk" }),
+        $(if ($runningOnWindows -and $env:LOCALAPPDATA) { "$env:LOCALAPPDATA\Android\Sdk" }),
+        $(if (-not $runningOnWindows) { "/usr/local/lib/android/sdk" }),
+        $(if (-not $runningOnWindows -and $env:HOME) { "$env:HOME/Android/Sdk" })
     ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
 
     foreach ($root in $sdkRoots) {

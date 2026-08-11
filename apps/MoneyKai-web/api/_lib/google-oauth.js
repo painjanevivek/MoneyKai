@@ -1,6 +1,11 @@
 const crypto = require('node:crypto');
 const { getAppUrl } = require('./http');
 const {
+  buildDedupeKey,
+  hashSensitiveKeyPart,
+  safeRedisCall,
+} = require('./redis');
+const {
   FirebaseIdentityError,
   getFirebaseIdentitySetupStatus,
   signInWithGoogleIdToken,
@@ -30,8 +35,6 @@ let jwksCache = {
   keys: new Map(),
 };
 
-const consumedExchangeCodes = new Map();
-
 class GoogleOAuthError extends Error {
   constructor(message, options = {}) {
     super(message);
@@ -57,6 +60,20 @@ const base64UrlDecode = (value) => {
 const randomToken = (bytes = 32) => base64UrlEncode(crypto.randomBytes(bytes));
 
 const sha256Base64Url = (value) => base64UrlEncode(crypto.createHash('sha256').update(value).digest());
+
+const normalizeTransactionVerifier = (value) => {
+  const verifier = String(value || '').trim();
+  if (!/^[A-Za-z0-9_-]{32,256}$/.test(verifier)) {
+    throw new GoogleOAuthError('Google sign-in transaction proof is missing or invalid.', {
+      code: 'GOOGLE_TRANSACTION_VERIFIER_INVALID',
+      status: 400,
+    });
+  }
+  return verifier;
+};
+
+const hashTransactionVerifier = (value) =>
+  sha256Base64Url(normalizeTransactionVerifier(value));
 
 const getGoogleClientId = () => {
   const value = process.env.GOOGLE_OAUTH_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
@@ -403,6 +420,7 @@ const normalizePlatform = (value) => (value === 'mobile' ? 'mobile' : 'web');
 const buildGoogleAuthorizationUrl = ({ platform, returnTo, requestOrigin, requestHostOrigin }) => {
   const normalizedPlatform = normalizePlatform(platform);
   const codeVerifier = randomToken(48);
+  const transactionVerifier = randomToken(32);
   const redirectUri = getBackendGoogleRedirectUri(requestHostOrigin);
   const appUrl = resolveWebAppUrl(requestOrigin);
   const state = encodeSignedPayload({
@@ -412,6 +430,7 @@ const buildGoogleAuthorizationUrl = ({ platform, returnTo, requestOrigin, reques
     codeVerifier,
     redirectUri,
     appUrl,
+    transactionVerifierHash: hashTransactionVerifier(transactionVerifier),
     nonce: randomToken(16),
     iat: Date.now(),
     exp: Date.now() + STATE_TTL_MS,
@@ -432,6 +451,7 @@ const buildGoogleAuthorizationUrl = ({ platform, returnTo, requestOrigin, reques
   return {
     authorizationUrl: url.toString(),
     redirectUri,
+    transactionVerifier,
   };
 };
 
@@ -563,37 +583,84 @@ const verifyGoogleIdToken = async (idToken) => {
   return parsed.payload;
 };
 
-const createExchangeCode = ({ firebaseUser, platform, returnTo }) =>
-  encodeSignedPayload({
+const createExchangeCode = ({
+  firebaseUser,
+  platform,
+  returnTo,
+  transactionVerifier,
+  transactionVerifierHash,
+}) => {
+  const clientProofHash = transactionVerifierHash || hashTransactionVerifier(transactionVerifier);
+  if (typeof clientProofHash !== 'string' || !clientProofHash) {
+    throw new GoogleOAuthError('Google sign-in transaction proof is missing.', {
+      code: 'GOOGLE_TRANSACTION_PROOF_MISSING',
+      status: 400,
+    });
+  }
+
+  return encodeSignedPayload({
     type: 'google_oauth_exchange',
     jti: randomToken(18),
     platform: normalizePlatform(platform),
     returnTo: sanitizeReturnPath(returnTo),
     uid: firebaseUser.uid,
+    transactionVerifierHash: clientProofHash,
     iat: Date.now(),
     exp: Date.now() + EXCHANGE_CODE_TTL_MS,
   });
+};
 
-const consumeExchangeCode = (code) => {
-  const payload = decodeSignedPayload(code, 'google_oauth_exchange');
-  const jti = payload.jti;
-  const now = Date.now();
-
-  for (const [key, expiresAt] of consumedExchangeCodes.entries()) {
-    if (expiresAt <= now) {
-      consumedExchangeCodes.delete(key);
-    }
+const consumeExchangeJti = async (payload, redisCall = safeRedisCall) => {
+  const jti = String(payload.jti || '');
+  if (!jti) {
+    throw new GoogleOAuthError('Google sign-in code is invalid.', {
+      code: 'GOOGLE_EXCHANGE_JTI_INVALID',
+      status: 400,
+    });
   }
 
-  if (jti && consumedExchangeCodes.has(jti)) {
+  const ttlSeconds = Math.max(1, Math.ceil((Number(payload.exp) - Date.now()) / 1000));
+  const key = buildDedupeKey('oauth-exchange', hashSensitiveKeyPart(jti));
+  const result = await redisCall(
+    'oauth_exchange_consume',
+    (redis) => redis.set(key, '1', { nx: true, ex: ttlSeconds }),
+    null,
+  );
+
+  if (!result.ok) {
+    throw new GoogleOAuthError('Google sign-in is temporarily unavailable. Please try again.', {
+      code: 'GOOGLE_EXCHANGE_STORE_UNAVAILABLE',
+      status: 503,
+    });
+  }
+
+  if (result.value !== 'OK') {
     throw new GoogleOAuthError('Google sign-in code has already been used.', {
       code: 'GOOGLE_EXCHANGE_CODE_REPLAYED',
       status: 409,
     });
   }
+};
 
-  if (jti) {
-    consumedExchangeCodes.set(jti, payload.exp);
+const consumeExchangeCode = async (code, transactionVerifier, options = {}) => {
+  const payload = decodeSignedPayload(code, 'google_oauth_exchange');
+  const suppliedHash = hashTransactionVerifier(transactionVerifier);
+  const expectedHash = String(payload.transactionVerifierHash || '');
+  const suppliedBuffer = Buffer.from(suppliedHash);
+  const expectedBuffer = Buffer.from(expectedHash);
+  if (
+    suppliedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)
+  ) {
+    throw new GoogleOAuthError('Google sign-in transaction does not match the initiating client.', {
+      code: 'GOOGLE_TRANSACTION_MISMATCH',
+      status: 403,
+    });
+  }
+  if (options.consumeJti) {
+    await options.consumeJti(payload);
+  } else {
+    await consumeExchangeJti(payload, options.redisCall || safeRedisCall);
   }
 
   return payload;
@@ -624,6 +691,7 @@ const completeGoogleOAuthCallback = async ({ code, state }) => {
     firebaseUser,
     platform: statePayload.platform,
     returnTo: statePayload.returnTo,
+    transactionVerifierHash: statePayload.transactionVerifierHash,
   });
 
   return statePayload.platform === 'mobile'
@@ -649,6 +717,7 @@ module.exports = {
   GoogleOAuthError,
   buildGoogleAuthorizationUrl,
   completeGoogleOAuthCallback,
+  createExchangeCode,
   consumeExchangeCode,
   getBackendGoogleRedirectUri,
   getGoogleOAuthSetupStatus,

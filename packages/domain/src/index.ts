@@ -27,3 +27,10 @@ export {
   type LinkedAccountStatus,
   type LinkedAccountSummary,
 } from './linkedAccounts';
+
+export {
+  captureRemoteSyncSession,
+  invalidateRemoteSyncSession,
+  isRemoteSyncSessionCurrent,
+  type RemoteSyncSession,
+} from './syncSession';

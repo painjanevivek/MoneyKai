@@ -14,6 +14,7 @@ type AuthGatewayResponse = {
 type GoogleOAuthStartResponse = {
   authorizationUrl: string;
   redirectUri?: string;
+  transactionVerifier: string;
 };
 
 class AuthGatewayError extends Error {
@@ -153,22 +154,31 @@ export const requestPasswordResetGateway = async (email: string): Promise<void> 
   });
 };
 
-export const startGoogleOAuthGateway = async (returnTo = '/dashboard'): Promise<string> => {
+export const startGoogleOAuthGateway = async (
+  returnTo = '/dashboard',
+): Promise<{ authorizationUrl: string; transactionVerifier: string }> => {
   const response = await requestAuthGateway<GoogleOAuthStartResponse>('/v1/auth/google/start', {
     platform: 'mobile',
     returnTo,
   });
 
-  if (!response.authorizationUrl) {
+  if (!response.authorizationUrl || !response.transactionVerifier) {
     throw new AuthGatewayError('Google sign-in did not return a usable authorization URL.', 502);
   }
 
-  return response.authorizationUrl;
+  return {
+    authorizationUrl: response.authorizationUrl,
+    transactionVerifier: response.transactionVerifier,
+  };
 };
 
-export const exchangeGoogleOAuthCodeGateway = async (code: string): Promise<AuthGatewayResponse> =>
+export const exchangeGoogleOAuthCodeGateway = async (
+  code: string,
+  transactionVerifier: string,
+): Promise<AuthGatewayResponse> =>
   requestAuthGateway<AuthGatewayResponse>('/v1/auth/google/exchange', {
     code,
+    transactionVerifier,
   });
 
 export { AuthGatewayError };

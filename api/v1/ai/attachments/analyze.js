@@ -7,7 +7,12 @@ module.exports = async (req, res) => {
   if (!requireMethod(req, res, 'POST')) {
     return;
   }
-  if (!(await applyRateLimit(req, res, { keyPrefix: 'ai:attachments:analyze', max: 12, windowMs: 60 * 1000 }))) {
+  if (!(await applyRateLimit(req, res, {
+    keyPrefix: 'ai:attachments:analyze',
+    max: 12,
+    windowMs: 60 * 1000,
+    requireDistributed: process.env.NODE_ENV === 'production',
+  }))) {
     return;
   }
 
@@ -20,6 +25,7 @@ module.exports = async (req, res) => {
       identifierType: 'uid',
       identifier: user.uid,
       ttlSeconds: 30,
+      requireDistributed: process.env.NODE_ENV === 'production',
       message: 'Please wait a moment before requesting another attachment analysis.',
     }))) {
       return;

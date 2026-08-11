@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { invalidateRemoteSyncSession } from '@moneykai/domain/syncSession';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { queueAutomaticBackup } from '@/services/automaticBackupClient';
 import {
@@ -71,9 +72,13 @@ export const useAuthStore = create<AuthState>()(
       isOnboarded: false,
       isHydratingSession: true,
 
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user) => {
+        invalidateRemoteSyncSession();
+        set({ user, isAuthenticated: !!user });
+      },
 
       hydrateSession: async () => {
+        invalidateRemoteSyncSession();
         set({ isHydratingSession: true });
 
         const { isFirebaseConfigured, waitForAuthState } = await getFirebaseRuntime();
@@ -98,6 +103,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signIn: async (email: string, password: string) => {
+        invalidateRemoteSyncSession();
         const normalizedEmail = email.trim().toLowerCase();
         set({ isLoading: true });
         try {
@@ -136,6 +142,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signUp: async (email: string, password: string, fullName: string) => {
+        invalidateRemoteSyncSession();
         const normalizedEmail = email.trim().toLowerCase();
         set({ isLoading: true });
         try {
@@ -167,6 +174,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signInWithGoogle: async () => {
+        invalidateRemoteSyncSession();
         set({ isLoading: true });
         try {
           const { isFirebaseConfigured } = await getFirebaseRuntime();
@@ -219,6 +227,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async (options) => {
+        invalidateRemoteSyncSession();
         const cleanup = async () => {
           const { firebaseAuth, isFirebaseConfigured, signOut: firebaseSignOut } = await getFirebaseRuntime();
 

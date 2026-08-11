@@ -2,7 +2,17 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_VISION_MODEL = 'google/gemini-2.0-flash-001';
 const DEFAULT_TEXT_MODEL = 'google/gemini-2.0-flash-001';
 const MAX_INLINE_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAX_TOTAL_INLINE_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAX_INLINE_ATTACHMENTS = 3;
+const MAX_AI_MESSAGE_BYTES = 8 * 1024;
 const ALLOWED_INLINE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+const createAiInputError = (message, code, statusCode = 400) => {
+  const error = new Error(message);
+  error.code = code;
+  error.statusCode = statusCode;
+  return error;
+};
 
 const getConfig = () => {
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.MONEYKAI_OPENROUTER_API_KEY || '';
@@ -86,6 +96,7 @@ const decodeInlineImageDataUrl = (attachment) => {
     filename: typeof attachment?.filename === 'string' ? attachment.filename.slice(0, 160) : 'attachment',
     mimeType,
     dataUrl,
+    byteLength: buffer.length,
   };
 };
 
@@ -94,10 +105,53 @@ const normalizeInlineImages = (attachments) => {
     return [];
   }
 
-  return attachments
-    .map(decodeInlineImageDataUrl)
-    .filter(Boolean)
-    .slice(0, 3);
+  if (attachments.length > MAX_INLINE_ATTACHMENTS) {
+    throw createAiInputError(
+      `Attach no more than ${MAX_INLINE_ATTACHMENTS} images per analysis.`,
+      'AI_TOO_MANY_ATTACHMENTS',
+      413,
+    );
+  }
+
+  const images = [];
+  let totalBytes = 0;
+  for (const attachment of attachments) {
+    const image = decodeInlineImageDataUrl(attachment);
+    if (!image) {
+      continue;
+    }
+
+    totalBytes += image.byteLength;
+    if (totalBytes > MAX_TOTAL_INLINE_IMAGE_BYTES) {
+      throw createAiInputError(
+        'Combined attachment size must be 4 MB or less.',
+        'AI_ATTACHMENTS_TOO_LARGE',
+        413,
+      );
+    }
+
+    images.push({
+      filename: image.filename,
+      mimeType: image.mimeType,
+      dataUrl: image.dataUrl,
+    });
+  }
+
+  return images;
+};
+
+const normalizeAiMessage = (message) => {
+  const normalized = typeof message === 'string' && message.trim()
+    ? message.trim()
+    : 'Analyse this image.';
+  if (Buffer.byteLength(normalized, 'utf8') > MAX_AI_MESSAGE_BYTES) {
+    throw createAiInputError(
+      'The analysis prompt must be 8 KB or less.',
+      'AI_MESSAGE_TOO_LARGE',
+      413,
+    );
+  }
+  return normalized;
 };
 
 const buildAnalysisInstructions = (task) => {
@@ -181,6 +235,7 @@ const analyzeInlineImages = async ({ task, message, inlineAttachments }) => {
     throw error;
   }
 
+  const normalizedMessage = normalizeAiMessage(message);
   const images = normalizeInlineImages(inlineAttachments);
   if (images.length === 0) {
     const error = new Error('Attach a supported PNG, JPEG, WebP, or GIF image under 4 MB.');
@@ -193,7 +248,7 @@ const analyzeInlineImages = async ({ task, message, inlineAttachments }) => {
     buildAnalysisInstructions(task),
     '',
     'User prompt:',
-    typeof message === 'string' && message.trim() ? message.trim() : 'Analyse this image.',
+    normalizedMessage,
   ].join('\n');
 
   const response = await fetch(OPENROUTER_URL, {

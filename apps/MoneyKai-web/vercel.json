@@ -8,19 +8,19 @@
   "rewrites": [
     {
       "source": "/api/v1/auth/google/start",
-      "destination": "/api/auth-google-start"
+      "destination": "/api/auth-google?action=start"
     },
     {
       "source": "/api/v1/auth/google/callback",
-      "destination": "/api/auth-google-callback"
+      "destination": "/api/auth-google?action=callback"
     },
     {
       "source": "/api/v1/auth/google/exchange",
-      "destination": "/api/auth-google-exchange"
+      "destination": "/api/auth-google?action=exchange"
     },
     {
       "source": "/api/v1/auth/google/setup-status",
-      "destination": "/api/auth-google-setup-status"
+      "destination": "/api/auth-google?action=setup-status"
     },
     {
       "source": "/__/auth",

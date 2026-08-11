@@ -6,30 +6,28 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const requireDist = process.argv.includes('--require-dist');
+const deploymentInput = process.argv.includes('--deployment-input');
+
+const optionalDeploymentSources = new Set([
+  'api/v1/ai/attachments/analyze.js',
+  'api/v1/auth/email/sign-in.js',
+  'api/v1/auth/email/sign-up.js',
+  'api/v1/auth/email/password-reset.js',
+]);
 
 const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const readJson = (relativePath) => JSON.parse(readText(relativePath));
-const readFrontendRoute = (relativePath) => {
+const readDeploymentSource = (relativePath) => {
   const fullPath = path.join(root, relativePath);
   if (fs.existsSync(fullPath)) {
-    return { excluded: false, source: readText(relativePath) };
+    return { absent: false, source: readText(relativePath) };
   }
 
-  const ignoreRules = readText('.vercelignore')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#'));
-  const excludesV1Routes = ignoreRules.includes('api/v1/**');
-  const restoresRoute = ignoreRules
-    .filter((rule) => rule.startsWith('!') && rule.endsWith('/**'))
-    .map((rule) => rule.slice(1, -2))
-    .some((prefix) => relativePath.startsWith(prefix));
-
-  if (relativePath.startsWith('api/v1/') && excludesV1Routes && !restoresRoute) {
-    return { excluded: true, source: '' };
+  if (deploymentInput && optionalDeploymentSources.has(relativePath)) {
+    return { absent: true, source: '' };
   }
 
-  return { excluded: false, source: readText(relativePath) };
+  return { absent: false, source: readText(relativePath) };
 };
 const listFiles = (directory) => {
   if (!fs.existsSync(directory)) {
@@ -66,12 +64,6 @@ const getHeaderMap = (relativePath = 'vercel.json', source = '/(.*)') => {
 
 const containsAll = (value, snippets) =>
   typeof value === 'string' && snippets.every((snippet) => value.includes(snippet));
-const hasRewrite = (configSource, source, destination) =>
-  (JSON.parse(configSource).rewrites ?? []).some(
-    (rewrite) => rewrite.source === source && rewrite.destination === destination
-  );
-const hasRewriteDestination = (configSource, destination) =>
-  (JSON.parse(configSource).rewrites ?? []).some((rewrite) => rewrite.destination === destination);
 
 const parseCsp = (policy) => {
   const directives = new Map();
@@ -297,17 +289,17 @@ const highCostRoutes = [
   'api/billing/status.js',
   'api/v1/ai/attachments/analyze.js',
 ];
-const aiAttachmentAnalysis = readFrontendRoute('api/v1/ai/attachments/analyze.js');
+const aiAttachmentAnalysis = readDeploymentSource('api/v1/ai/attachments/analyze.js');
 
 for (const route of highCostRoutes) {
   const routeSecurity = route === 'api/v1/ai/attachments/analyze.js'
     ? aiAttachmentAnalysis
-    : { excluded: false, source: readText(route) };
+    : { absent: false, source: readText(route) };
   check(
     `Rate limit wired: ${route}`,
-    routeSecurity.excluded || routeSecurity.source.includes('applyRateLimit'),
-    routeSecurity.excluded
-      ? 'AI attachment analysis is excluded from the frontend deploy'
+    routeSecurity.absent || routeSecurity.source.includes('applyRateLimit'),
+    routeSecurity.absent
+      ? 'AI attachment analysis source is intentionally absent from the deployment input'
       : 'High-cost or sensitive routes should call applyRateLimit before provider work'
   );
 }
@@ -316,7 +308,7 @@ const aiAttachmentAnalysisRoute = aiAttachmentAnalysis.source;
 const aiRuntime = readText('api/_lib/ai-runtime.js');
 check(
   'AI attachment analysis requires Firebase auth',
-  aiAttachmentAnalysis.excluded ||
+  aiAttachmentAnalysis.absent ||
     (containsAll(aiAttachmentAnalysisRoute, [
       'verifyFirebaseIdToken',
       'getBearerToken',
@@ -324,8 +316,8 @@ check(
     ]) &&
       aiAttachmentAnalysisRoute.indexOf('await verifyFirebaseIdToken(token)') <
         aiAttachmentAnalysisRoute.indexOf('const payload = await readJsonBody')),
-  aiAttachmentAnalysis.excluded
-    ? 'AI attachment analysis is excluded from the frontend deploy'
+  aiAttachmentAnalysis.absent
+    ? 'AI attachment analysis source is intentionally absent from the deployment input'
     : 'AI attachment analysis must verify the signed-in Firebase user before parsing uploads or calling the AI provider'
 );
 
@@ -354,18 +346,19 @@ const webAnalyticsRouteTracker = readText('apps/MoneyKai-web/src/components/anal
 const analyticsEventsRoute = readText('api/analytics/events.js');
 const firebaseIdentity = readText('api/_lib/firebase-identity.js');
 const googleOAuth = readText('api/_lib/google-oauth.js');
-const authEmailSignIn = readFrontendRoute('api/v1/auth/email/sign-in.js');
-const authEmailSignUp = readFrontendRoute('api/v1/auth/email/sign-up.js');
-const authPasswordReset = readFrontendRoute('api/v1/auth/email/password-reset.js');
-const authEmailRoutesExcluded = [authEmailSignIn, authEmailSignUp, authPasswordReset]
-  .every((route) => route.excluded);
+const authEmailSignIn = readDeploymentSource('api/v1/auth/email/sign-in.js');
+const authEmailSignUp = readDeploymentSource('api/v1/auth/email/sign-up.js');
+const authPasswordReset = readDeploymentSource('api/v1/auth/email/password-reset.js');
+const authEmailRoutesAbsent = [authEmailSignIn, authEmailSignUp, authPasswordReset]
+  .every((route) => route.absent);
 const authEmailSignInRoute = authEmailSignIn.source;
 const authEmailSignUpRoute = authEmailSignUp.source;
 const authPasswordResetRoute = authPasswordReset.source;
-const authGoogleStartRoute = readText('api/v1/auth/google/start.js');
-const authGoogleCallbackRoute = readText('api/v1/auth/google/callback.js');
-const authGoogleExchangeRoute = readText('api/v1/auth/google/exchange.js');
-const authGoogleSetupStatusRoute = readText('api/v1/auth/google/setup-status.js');
+const googleOAuthRouter = readText('api/_lib/google-oauth-router.js');
+const authGoogleStartRoute = googleOAuthRouter;
+const authGoogleCallbackRoute = googleOAuthRouter;
+const authGoogleExchangeRoute = googleOAuthRouter;
+const authGoogleSetupStatusRoute = googleOAuthRouter;
 const webAuthStore = readText('apps/MoneyKai-web/src/stores/useAuthStore.ts');
 const webAuthGateway = readText('apps/MoneyKai-web/src/services/authGateway.ts');
 const webGoogleCallback = readText('apps/MoneyKai-web/src/app/auth/google/callback.tsx');
@@ -381,8 +374,10 @@ const mobileAuthService = readText('apps/MoneyKai-mobile/src/services/authServic
 const mobileAuthGateway = readText('apps/MoneyKai-mobile/src/services/authGateway.ts');
 const mobileGoogleAuth = readText('apps/MoneyKai-mobile/src/services/googleAuth.ts');
 const mobileAuthRateLimit = readText('apps/MoneyKai-mobile/src/services/authRateLimit.ts');
-const vercelConfigSource = readText('vercel.json');
-const appVercelConfigSource = readText('apps/MoneyKai-web/vercel.json');
+const vercelConfig = readJson('vercel.json');
+const vercelRewrites = new Map(
+  (vercelConfig.rewrites ?? []).map(({ source, destination }) => [source, destination])
+);
 
 check(
   'Web cookie consent banner is mounted globally',
@@ -446,7 +441,7 @@ check(
       'FIREBASE_SERVICE_ACCOUNT_JSON',
       'getPublicFirebaseAuthError',
     ]) &&
-    (authEmailRoutesExcluded ||
+    (authEmailRoutesAbsent ||
       (containsAll(authEmailSignInRoute, [
         'applyRateLimit(req, res',
         'applyRateLimitForKey',
@@ -499,8 +494,8 @@ check(
     !webAuthStore.includes('createUserWithEmailAndPassword') &&
     !mobileAuthService.includes('signInWithEmailAndPassword') &&
     !mobileAuthService.includes('createUserWithEmailAndPassword'),
-  authEmailRoutesExcluded
-    ? 'Email auth routes are excluded from the frontend deploy; clients remain backend-gated and throttled'
+  authEmailRoutesAbsent
+    ? 'Email auth route sources are intentionally absent from the deployment input'
     : 'Email/password and reset attempts should pass through rate-limited backend auth routes before Firebase session creation'
 );
 
@@ -587,64 +582,54 @@ check(
   'Google sign-in should start on the backend, verify Google identity server-side, and complete through Firebase custom tokens'
 );
 
-const firebaseAuthRewrites = [
-  ['/__/auth', 'https://moneykai.firebaseapp.com/__/auth'],
-  ['/__/auth/:path*', 'https://moneykai.firebaseapp.com/__/auth/:path*'],
-  ['/__/firebase/init.json', 'https://moneykai.firebaseapp.com/__/firebase/init.json'],
-];
-const rootFirebaseAuthRewritesAreCanonical = firebaseAuthRewrites.every(([source, destination]) =>
-  hasRewrite(vercelConfigSource, source, destination)
-);
-const filteredFrontendFirebaseAuthRewritesArePreserved =
-  authEmailRoutesExcluded &&
-  firebaseAuthRewrites.every(
-    ([source, destination]) =>
-      hasRewrite(appVercelConfigSource, source, destination) &&
-      hasRewriteDestination(vercelConfigSource, destination)
-  );
-
-const passwordResetChecks = [
-  [
-    'Vercel Firebase auth rewrites',
-    rootFirebaseAuthRewritesAreCanonical || filteredFrontendFirebaseAuthRewritesArePreserved,
-  ],
-  [
-    'web forgot-password enumeration guard',
-    containsAll(webForgotPassword, [
+const passwordResetEvidence = [
+  {
+    label: 'Vercel Firebase auth rewrites',
+    ok:
+      vercelRewrites.get('/__/auth') ===
+        'https://moneykai.firebaseapp.com/__/auth' &&
+      vercelRewrites.get('/__/auth/:path*') ===
+        'https://moneykai.firebaseapp.com/__/auth/:path*' &&
+      vercelRewrites.get('/__/firebase/init.json') ===
+        'https://moneykai.firebaseapp.com/__/firebase/init.json',
+  },
+  {
+    label: 'web forgot-password enumeration-safe gateway flow',
+    ok: containsAll(webForgotPassword, [
       'requestPasswordResetGateway(normalizedEmail)',
       'setSentEmail(normalizedEmail)',
       'isPasswordResetEnumerationError',
       'If a MoneyKai account can receive resets',
     ]),
-  ],
-  [
-    'mobile forgot-password enumeration guard',
-    containsAll(mobileForgotPassword, [
+  },
+  {
+    label: 'mobile forgot-password enumeration-safe gateway flow',
+    ok: containsAll(mobileForgotPassword, [
       'requestPasswordResetEmail(normalizedEmail)',
       'setSentEmail(normalizedEmail)',
       'isPasswordResetEnumerationError',
       'If a MoneyKai account can receive resets',
     ]),
-  ],
-  [
-    'web settings reset gateway',
-    containsAll(webSettings, ['requestPasswordResetGateway(normalizedEmail)']),
-  ],
-  [
-    'mobile auth reset gateway',
-    containsAll(mobileAuthService, ['requestPasswordResetGateway(normalizedEmail)']),
-  ],
+  },
+  {
+    label: 'web settings gateway call',
+    ok: containsAll(webSettings, ['requestPasswordResetGateway(normalizedEmail)']),
+  },
+  {
+    label: 'mobile auth service gateway call',
+    ok: containsAll(mobileAuthService, ['requestPasswordResetGateway(normalizedEmail)']),
+  },
 ];
-const failedPasswordResetChecks = passwordResetChecks
-  .filter(([, ok]) => !ok)
-  .map(([label]) => label);
+const missingPasswordResetEvidence = passwordResetEvidence
+  .filter(({ ok }) => !ok)
+  .map(({ label }) => label);
 
 check(
   'Password reset flow is wired and enumeration-safe',
-  failedPasswordResetChecks.length === 0,
-  failedPasswordResetChecks.length > 0
-    ? `Missing: ${failedPasswordResetChecks.join(', ')}`
-    : 'Reset links route through the backend auth gateway, normalize email input, throttle attempts, and avoid account enumeration'
+  missingPasswordResetEvidence.length === 0,
+  missingPasswordResetEvidence.length === 0
+    ? 'Reset links route through the backend auth gateway, normalize email input, throttle attempts, and avoid account enumeration'
+    : `Missing password-reset evidence: ${missingPasswordResetEvidence.join(', ')}`
 );
 
 check(
@@ -697,15 +682,28 @@ for (const file of clientRuntimeFiles) {
   );
 }
 
-const trackedFiles = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
-  .split(/\r?\n/)
-  .filter(Boolean);
-const trackedEnvFiles = trackedFiles.filter((file) => /(^|\/)\.env($|\.)/.test(file) && !file.endsWith('.env.example'));
+const readTrackedFiles = () => {
+  try {
+    return execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
+      .split(/\r?\n/)
+      .filter(Boolean);
+  } catch (error) {
+    if (deploymentInput) {
+      return null;
+    }
+    throw error;
+  }
+};
+const trackedFiles = readTrackedFiles();
+const trackedEnvFiles = (trackedFiles ?? [])
+  .filter((file) => /(^|\/)\.env($|\.)/.test(file) && !file.endsWith('.env.example'));
 
 check(
   'No real env files tracked',
-  trackedEnvFiles.length === 0,
-  trackedEnvFiles.join(', ') || 'Only env templates are tracked'
+  trackedFiles === null || trackedEnvFiles.length === 0,
+  trackedFiles === null
+    ? 'Git metadata is absent from the deployment input; the full-source audit owns this check'
+    : trackedEnvFiles.join(', ') || 'Only env templates are tracked'
 );
 
 const webDistDir = path.join(root, 'apps', 'MoneyKai-web', 'dist');

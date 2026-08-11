@@ -4,6 +4,8 @@ const test = require('node:test');
 
 const {
   buildGoogleAuthorizationUrl,
+  createExchangeCode,
+  consumeExchangeCode,
   getBackendGoogleRedirectUri,
   getGoogleOAuthSetupStatus,
 } = require('./google-oauth');
@@ -21,6 +23,30 @@ const withEnv = (values, callback) => {
 
   try {
     return callback();
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+};
+
+const withEnvAsync = async (values, callback) => {
+  const previous = {};
+  for (const key of Object.keys(values)) {
+    previous[key] = process.env[key];
+    if (values[key] === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = values[key];
+    }
+  }
+
+  try {
+    return await callback();
   } finally {
     for (const [key, value] of Object.entries(previous)) {
       if (value === undefined) {
@@ -213,5 +239,96 @@ test('Google authorization URL sends the same redirect URI shown by setup status
 
     assert.equal(result.redirectUri, setup.redirectUri);
     assert.equal(authorizationUrl.searchParams.get('redirect_uri'), setup.redirectUri);
+  });
+});
+
+test('Google OAuth keeps a high-entropy transaction verifier out of the authorization URL', () => {
+  withEnv({
+    GOOGLE_OAUTH_CLIENT_ID: 'client-id',
+    GOOGLE_OAUTH_STATE_SECRET: 'state-secret',
+    MONEYKAI_SITE_URL: 'https://moneykai.com',
+  }, () => {
+    const result = buildGoogleAuthorizationUrl({
+      platform: 'web',
+      returnTo: '/dashboard',
+      requestOrigin: 'https://moneykai.com',
+      requestHostOrigin: 'https://moneykai.com',
+    });
+
+    assert.match(result.transactionVerifier, /^[A-Za-z0-9_-]{40,}$/);
+    assert.equal(result.authorizationUrl.includes(result.transactionVerifier), false);
+  });
+});
+
+test('Google OAuth exchange rejects a verifier from another client transaction', async () => {
+  await withEnvAsync({ GOOGLE_OAUTH_STATE_SECRET: 'state-secret' }, async () => {
+    const verifier = 'client-held-verifier-for-the-real-transaction';
+    const code = createExchangeCode({
+      firebaseUser: { uid: 'firebase-user-1' },
+      platform: 'web',
+      returnTo: '/dashboard',
+      transactionVerifier: verifier,
+    });
+
+    await assert.rejects(
+      () => consumeExchangeCode(code, 'verifier-from-another-browser-transaction-12345'),
+      /does not match the initiating client/i,
+    );
+    assert.equal((await consumeExchangeCode(code, verifier, {
+      consumeJti: async () => undefined,
+    })).uid, 'firebase-user-1');
+  });
+});
+
+test('Google OAuth exchange atomically rejects a second distributed redemption', async () => {
+  await withEnvAsync({ GOOGLE_OAUTH_STATE_SECRET: 'state-secret' }, async () => {
+    const verifier = 'distributed-exchange-verifier-for-one-client';
+    const code = createExchangeCode({
+      firebaseUser: { uid: 'firebase-user-2' },
+      platform: 'web',
+      returnTo: '/dashboard',
+      transactionVerifier: verifier,
+    });
+    const consumed = new Set();
+    const redisCall = async (_operation, callback) => ({
+      ok: true,
+      configured: true,
+      value: await callback({
+        set: async (key, _value, options) => {
+          assert.equal(options.nx, true);
+          assert.ok(options.ex > 0);
+          if (consumed.has(key)) {
+            return null;
+          }
+          consumed.add(key);
+          return 'OK';
+        },
+      }),
+    });
+
+    assert.equal((await consumeExchangeCode(code, verifier, { redisCall })).uid, 'firebase-user-2');
+    await assert.rejects(
+      () => consumeExchangeCode(code, verifier, { redisCall }),
+      /already been used/i,
+    );
+  });
+});
+
+test('Google OAuth exchange fails closed when distributed consumption is unavailable', async () => {
+  await withEnvAsync({ GOOGLE_OAUTH_STATE_SECRET: 'state-secret' }, async () => {
+    const verifier = 'distributed-store-unavailable-verifier-value';
+    const code = createExchangeCode({
+      firebaseUser: { uid: 'firebase-user-3' },
+      platform: 'mobile',
+      returnTo: '/dashboard',
+      transactionVerifier: verifier,
+    });
+
+    await assert.rejects(
+      () => consumeExchangeCode(code, verifier, {
+        redisCall: async () => ({ ok: false, configured: false, value: null }),
+      }),
+      (error) => error?.status === 503 && /temporarily unavailable/i.test(error.message),
+    );
   });
 });
