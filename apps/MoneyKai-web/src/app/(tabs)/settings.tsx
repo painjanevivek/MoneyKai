@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
-import { THEME_OPTIONS, Typography, Spacing, BorderRadius } from '@/constants/theme';
+import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { consumeAuthAttempt } from '@/services/authRateLimit';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
@@ -225,79 +225,6 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
   );
 };
 
-function ThemeSwatches({ swatches }: { swatches: readonly string[] }) {
-  const { colors } = useTheme();
-
-  return (
-    <View style={{ flexDirection: 'row', marginRight: Spacing.sm }}>
-      {swatches.map((swatch) => (
-        <View
-          key={swatch}
-          style={{
-            width: 18,
-            height: 18,
-            borderRadius: 9,
-            backgroundColor: swatch,
-            borderWidth: 1,
-            borderColor: colors.borderLight,
-            marginRight: -4,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
-function ThemeDropdownOption({
-  active,
-  option,
-  onSelect,
-}: {
-  active: boolean;
-  option: (typeof THEME_OPTIONS)[number];
-  onSelect: () => void;
-}) {
-  const { colors } = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ checked: active }}
-      accessibilityLabel={`Use ${option.label} theme`}
-      onPress={onSelect}
-      style={({ hovered, pressed }: any) => ({
-        minHeight: 64,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.md,
-        paddingVertical: Spacing.sm,
-        paddingHorizontal: Spacing.sm,
-        borderRadius: BorderRadius.sm,
-        borderWidth: 1,
-        borderColor: active ? colors.primary : hovered ? `${colors.primary}66` : colors.borderLight,
-        backgroundColor: active ? colors.primaryBg : hovered ? colors.surfaceElevated : colors.surface,
-        transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-      })}
-    >
-      <View style={{ minWidth: 82, flexDirection: 'row', alignItems: 'center' }}>
-        <ThemeSwatches swatches={option.swatches} />
-      </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
-          <MaterialCommunityIcons name={option.icon as any} size={16} color={active ? colors.primary : colors.textTertiary} />
-          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            {option.label}
-          </Text>
-        </View>
-        <Text style={{ marginTop: 3, fontSize: Typography.fontSize.xs, color: colors.textSecondary }} numberOfLines={1}>
-          {option.description}
-        </Text>
-      </View>
-      <MaterialCommunityIcons name={active ? 'check-circle' : 'circle-outline'} size={20} color={active ? colors.primary : colors.textTertiary} />
-    </Pressable>
-  );
-}
-
 function ExportFormatOption({
   icon,
   title,
@@ -417,7 +344,7 @@ function CurrencyOption({
 }
 
 export default function SettingsScreen() {
-  const { colors, darkModeEnabled, setDarkModeEnabled, setThemePalette, themePalette } = useTheme();
+  const { colors } = useTheme();
   const { user, signOut } = useAuthStore();
   const {
     notificationsEnabled,
@@ -435,7 +362,6 @@ export default function SettingsScreen() {
   const [showBackupSheet, setShowBackupSheet] = useState(false);
   const [showExportSheet, setShowExportSheet] = useState(false);
   const [showChangePasswordSheet, setShowChangePasswordSheet] = useState(false);
-  const [showThemePicker, setShowThemePicker] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
   const [showDeleteAccountSheet, setShowDeleteAccountSheet] = useState(false);
@@ -453,7 +379,6 @@ export default function SettingsScreen() {
     true: colors.primary,
   } as const;
   const switchThumb = colors.textInverse;
-  const selectedTheme = THEME_OPTIONS.find((option) => option.id === themePalette) ?? THEME_OPTIONS[0];
   const backupConfigured = isFirebaseConfigured() || isBackendConfigured();
 
   const loadBackupMetadata = useCallback(async () => {
@@ -709,94 +634,8 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Appearance</Text>
+        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Preferences</Text>
         <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem
-            icon={darkModeEnabled ? 'weather-night' : 'white-balance-sunny'}
-            iconColor={colors.primary}
-            iconBg={colors.primaryBg}
-            title="Dark Mode"
-            subtitle={darkModeEnabled ? 'Using the dark glass version of your palette' : 'Using the light glass version of your palette'}
-            right={
-              <Switch
-                value={darkModeEnabled}
-                onValueChange={setDarkModeEnabled}
-                trackColor={switchTrack}
-                thumbColor={switchThumb}
-                ios_backgroundColor={colors.borderLight}
-              />
-            }
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showThemePicker }}
-            accessibilityLabel="Choose website theme"
-            onPress={() => setShowThemePicker((value) => !value)}
-            style={({ hovered, pressed }: any) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingVertical: Spacing.md,
-              paddingHorizontal: Spacing.sm,
-              marginHorizontal: -Spacing.sm,
-              borderRadius: BorderRadius.sm,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.borderLight,
-              backgroundColor: hovered ? `${colors.primary}0F` : 'transparent',
-              transform: hovered && !pressed ? [{ translateX: 2 }] : [{ translateX: 0 }],
-            })}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: BorderRadius.sm,
-                backgroundColor: colors.primaryBg,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: Spacing.md,
-              }}
-            >
-              <MaterialCommunityIcons name="palette-outline" size={20} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>Theme</Text>
-              <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>Choose a MoneyKai look</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
-              <ThemeSwatches swatches={selectedTheme.swatches} />
-              <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-                {selectedTheme.label}
-              </Text>
-              <MaterialCommunityIcons name={showThemePicker ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
-            </View>
-          </Pressable>
-          {showThemePicker ? (
-            <View
-              accessibilityRole="menu"
-              style={{
-                gap: Spacing.xs,
-                marginTop: -Spacing.xs,
-                marginBottom: Spacing.sm,
-                padding: Spacing.sm,
-                borderRadius: BorderRadius.md,
-                borderWidth: 1,
-                borderColor: colors.borderLight,
-                backgroundColor: colors.surfaceElevated,
-              }}
-            >
-              {THEME_OPTIONS.map((option) => (
-                <ThemeDropdownOption
-                  key={option.id}
-                  option={option}
-                  active={themePalette === option.id}
-                  onSelect={() => {
-                    setThemePalette(option.id);
-                    setShowThemePicker(false);
-                  }}
-                />
-              ))}
-            </View>
-          ) : null}
           <SettingItem
             icon="currency-usd"
             iconColor="#707070"

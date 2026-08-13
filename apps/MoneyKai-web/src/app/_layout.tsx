@@ -9,7 +9,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
+import { Colors, type ColorScheme } from '@/constants/theme';
 import { WebsiteSkeleton } from '@/components/skeletons/WebsiteSkeleton';
 import { captureSentryException, identifySentryUser } from '@/services/sentry';
 
@@ -179,12 +179,10 @@ function AppFontLoader() {
 
 export default function RootLayout() {
   const pathname = usePathname();
-  const theme = useSettingsStore((s) => s.theme);
-  const darkModeEnabled = useSettingsStore((s) => s.darkModeEnabled);
   const currencyRenderToken = useSettingsStore((s) => `${s.currency}:${s.currencySymbol}:${s.exchangeRatesUpdatedAt ?? ''}`);
   const refreshExchangeRates = useSettingsStore((s) => s.refreshExchangeRates);
-  const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
-  const isDark = darkModeEnabled || isThemeModeDark(theme);
+  const colors = Colors.jetLuxuryLight as ColorScheme;
+  const isDark = false;
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);

@@ -6,8 +6,12 @@ import { CashflowTimeline, buildPath, getChartDomain, getX, getY } from './Cashf
 vi.mock('react-native', () => ({
   Dimensions: { get: () => ({ width: 1024, height: 768 }) },
   Platform: { OS: 'web' },
+  Modal: () => null,
+  Pressable: () => null,
+  ScrollView: () => null,
   Text: () => null,
   View: () => null,
+  useWindowDimensions: () => ({ width: 1024, height: 768 }),
 }));
 
 vi.mock('react-native-svg', () => {
@@ -48,6 +52,8 @@ vi.mock('@/utils/formatCurrency', () => ({
 vi.mock('../ui/Button', () => ({ Button: () => null }));
 vi.mock('../ui/Card', () => ({ Card: () => null }));
 vi.mock('../ui/EmptyState', () => ({ EmptyState: () => null }));
+
+vi.spyOn(React, 'useState').mockReturnValue([false, vi.fn()]);
 
 const makePlan = (isForecastAvailable: boolean): CashflowPlan => ({
   metrics: {

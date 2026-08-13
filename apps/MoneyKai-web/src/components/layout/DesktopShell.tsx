@@ -7,7 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
-import { UserAvatar } from '@/components/ui/UserAvatar';
+import { AccountMenu } from '@/components/layout/AccountMenu';
 import { ReportingMonthPicker } from '@/components/layout/ReportingMonthPicker';
 import { glassBackdropStyle, withAlpha } from '@/utils/glassStyle';
 
@@ -27,13 +27,10 @@ type NavLayout = {
 const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'view-dashboard-outline' },
   { href: '/transactions', label: 'Transactions', icon: 'swap-horizontal' },
-  { href: '/ai-review', label: 'AI Review', icon: 'receipt-text-outline' },
   { href: '/budgets', label: 'Budgets', icon: 'wallet-outline' },
-  { href: '/goals', label: 'Goals', icon: 'target' },
-  { href: '/wealth', label: 'Wealth', icon: 'chart-timeline-variant' },
-  { href: '/portfolio', label: 'Portfolio', icon: 'briefcase-outline' },
-  { href: '/reports', label: 'Reports', icon: 'chart-bar' },
   { href: '/accounts', label: 'Accounts', icon: 'credit-card-outline' },
+  { href: '/goals', label: 'Goals', icon: 'target' },
+  { href: '/reports', label: 'Reports', icon: 'chart-bar' },
 ] as const;
 
 const MOBILE_APK_DOWNLOAD_URL: string | null = null;
@@ -314,6 +311,32 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
                 <Pressable
+                  accessibilityRole="link"
+                  accessibilityLabel="Open AI Review"
+                  onPress={() => router.push('/ai-review' as any)}
+                  style={({ hovered, pressed }: any) => ({
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: hovered ? withAlpha(colors.primary, 0.2) : colors.primaryBg,
+                    borderWidth: 1,
+                    borderColor: withAlpha(colors.primary, 0.24),
+                    transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                  })}
+                >
+                  <MaterialCommunityIcons name="brain" size={20} color={colors.primary} />
+                </Pressable>
+                <AccountMenu
+                  compact
+                  placement="below"
+                  user={user}
+                  onProfile={() => router.push('/profile-edit' as any)}
+                  onSettings={() => router.push('/settings' as any)}
+                  onSignOut={handleSignOut}
+                />
+                <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Open notifications"
                   onPress={() => router.push('/notifications' as any)}
@@ -431,7 +454,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
         >
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 96, flexGrow: 1 }}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 160, flexGrow: 1 }}
             showsVerticalScrollIndicator={false}
           >
             <Pressable
@@ -496,46 +519,50 @@ export function DesktopShell({ children }: PropsWithChildren) {
             >
               <Pressable
                 accessibilityRole="link"
-                accessibilityLabel="Open account settings"
-                onPress={() => router.push('/settings' as any)}
+                accessibilityLabel="Open AI Review"
+                onPress={() => router.push('/ai-review' as any)}
                 style={({ hovered, pressed }: any) => ({
+                  minHeight: 60,
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: BorderRadius.md,
-                  backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
+                  gap: Spacing.sm,
+                  paddingHorizontal: Spacing.md,
+                  paddingVertical: Spacing.sm,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.glassBorder,
+                  backgroundColor: hovered ? withAlpha(colors.primary, 0.16) : colors.primaryBg,
                   transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
                 })}
               >
-                <UserAvatar
-                  name={user?.full_name}
-                  email={user?.email}
-                  avatarUrl={user?.avatar_url}
-                  size={34}
-                />
+                <View
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: BorderRadius.sm,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: withAlpha(colors.primary, 0.16),
+                  }}
+                >
+                  <MaterialCommunityIcons name="brain" size={18} color={colors.primary} />
+                </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    style={{
-                      fontSize: Typography.fontSize.sm,
-                      lineHeight: 20,
-                      fontFamily: Typography.fontFamily.semiBold,
-                      color: colors.textPrimary,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {user?.full_name || 'Signed in user'}
+                  <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                    AI Review
                   </Text>
-                  <Text
-                    style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary }}
-                    numberOfLines={1}
-                  >
-                    {user?.email || 'No email available'}
+                  <Text numberOfLines={1} style={{ marginTop: 1, fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                    Review receipt drafts before saving
                   </Text>
                 </View>
-                <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} />
+                <MaterialCommunityIcons name="chevron-right" size={18} color={colors.primary} />
               </Pressable>
+              <AccountMenu
+                placement="above"
+                user={user}
+                onProfile={() => router.push('/profile-edit' as any)}
+                onSettings={() => router.push('/settings' as any)}
+                onSignOut={handleSignOut}
+              />
 
               <Pressable
                 accessibilityRole="link"

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { ProgressFlow } from '@/components/ui/ProgressFlow';
 import { AiModelConsole } from '@/components/ai/AiModelConsole';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
-import { BorderRadius, Colors, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import {
   buildDefaultAttachmentPrompt,
   createReceiptReviewDraft,
@@ -128,8 +128,8 @@ export default function AiReviewScreen() {
   const canAnalyze = Boolean(selectedAsset) && attachmentsReady && !requiresSignIn && !analysisPending;
   const deskWide = width >= 1180;
   const deskCompact = width < 760;
-  const deskColors = Colors.jetLuxuryDark;
-  const deskBorder = 'rgba(164, 244, 253, 0.16)';
+  const deskColors = colors;
+  const deskBorder = colors.glassBorder;
   const selectedTaskOption = TASK_OPTIONS.find((option) => option.id === task) ?? TASK_OPTIONS[0];
   const setupMessage = requiresSignIn
     ? 'Sign in to check AI review availability.'

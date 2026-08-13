@@ -3,7 +3,6 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   DEFAULT_THEME_PALETTE,
-  getDefaultedThemePalette,
   getPaletteForThemeMode,
   getThemeModeForPalette,
   isThemeModeDark,
@@ -87,9 +86,9 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
-      theme: getThemeModeForPalette(DEFAULT_THEME_PALETTE, true),
+      theme: getThemeModeForPalette(DEFAULT_THEME_PALETTE, false),
       themePalette: DEFAULT_THEME_PALETTE,
-      darkModeEnabled: true,
+      darkModeEnabled: false,
       dashboardTrendRange: '1m',
       dashboardTrendMetric: 'spending',
       dashboardTrendChartType: 'line',
@@ -382,11 +381,11 @@ export const useSettingsStore = create<SettingsState>()(
       }),
       merge: (persisted, current) => {
         const persistedState = persisted as Partial<SettingsState> | undefined;
-        const themePalette = getDefaultedThemePalette(persistedState?.themePalette, persistedState?.theme);
-        const migratedToDefault = themePalette === DEFAULT_THEME_PALETTE && persistedState?.themePalette !== DEFAULT_THEME_PALETTE;
-        const darkModeEnabled = migratedToDefault
-          ? true
-          : persistedState?.darkModeEnabled ?? isThemeModeDark(persistedState?.theme ?? current.theme);
+        // Theme values are retained in the persisted shape for backwards
+        // compatible backups, but every restored web workspace uses the
+        // single MoneyKai light system.
+        const themePalette = DEFAULT_THEME_PALETTE;
+        const darkModeEnabled = false;
         const theme = getThemeModeForPalette(themePalette, darkModeEnabled);
 
         return {
