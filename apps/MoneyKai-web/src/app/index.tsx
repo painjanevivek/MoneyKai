@@ -1,4 +1,4 @@
-import React, { type ReactNode, useState } from 'react';
+import React, { type ReactNode } from 'react';
 import { Redirect } from 'expo-router';
 import Archive from 'lucide-react/dist/esm/icons/archive.mjs';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3.mjs';
@@ -125,73 +125,13 @@ const triageCards = [
   },
 ] as const;
 
-const logos = ['Students', 'Families', 'Couples', 'Freelancers', 'Roommates', 'Creators', 'Founders', 'Operators'] as const;
+const audiences = ['Students', 'Families', 'Couples', 'Freelancers', 'Roommates'] as const;
 
-const testimonials = [
-  {
-    quote:
-      'MoneyKai made money review feel calm instead of judgmental. I can see what changed without opening five spreadsheets.',
-    name: 'Aarav Mehta',
-    role: 'Product Designer',
-    company: 'BANGALORE',
-  },
-  {
-    quote:
-      'The local-first approach matters. I wanted a practical tracker that did not ask for my bank login to be useful.',
-    name: 'Nisha Rao',
-    role: 'Operations Lead',
-    company: 'PUNE',
-  },
-  {
-    quote:
-      'Shared expenses, budgets, and encrypted backups in one place changed how our family reviews the month.',
-    name: 'Rohan Shah',
-    role: 'Engineering Manager',
-    company: 'MUMBAI',
-  },
-] as const;
-
-const plans = [
-  {
-    tier: 'Free',
-    monthly: 'Free',
-    yearly: 'Free',
-    desc: 'For individuals building a calmer daily money habit.',
-    features: [
-      'Manual expense and income tracking',
-      'Budgets, categories, and notes',
-      'Savings and shared spend views',
-      'Local-first Android experience',
-      'Encrypted backup export',
-    ],
-  },
-  {
-    tier: 'Plus',
-    monthly: '₹99/m',
-    yearly: '₹999/y',
-    desc: 'For power users who want deeper review workflows and richer summaries.',
-    features: [
-      'Unlimited budgets and groups',
-      'Advanced monthly review surfaces',
-      'Priority backup and restore flows',
-      'Expanded report history',
-      'Early access to premium tools',
-    ],
-  },
-  {
-    tier: 'Pro',
-    monthly: '₹199/m',
-    yearly: '₹1,999/y',
-    desc: 'For families and teams who need shared money clarity without the noise.',
-    features: [
-      'Family and group workspaces',
-      'Deep spending breakdowns',
-      'AI-assisted review prompts',
-      'Custom categories and reports',
-      'Priority support',
-    ],
-    pro: true,
-  },
+const currentReleaseFeatures = [
+  'Manual income and expense tracking',
+  'Budgets and categories',
+  'Savings and shared expense views',
+  'Export your records',
 ] as const;
 
 function LogoMark({ className = 'mk-logo-mark' }: { className?: string }) {
@@ -267,20 +207,20 @@ function Hero() {
         id="hero-title"
         className="mk-hero-title"
       >
-        <span>Your money.</span>
-        <span className="mk-shiny-text animate-shiny">Revitalized</span>
+        <span>Review expenses, budgets,</span>
+        <span className="mk-shiny-text animate-shiny">and shared bills before the month ends.</span>
       </h1>
       <p
         className="mk-hero-copy"
       >
-        MoneyKai is the calm personal finance platform for the current era. It organizes expenses, budgets, shared
-        spending, savings, and encrypted backup files into total clarity.
+        Add your income and expenses, check each budget, keep shared costs organized, and export a copy of your
+        records when you need one.
       </p>
       <div
         className="mk-hero-actions"
       >
         <AppButton />
-        <span>Android release now available</span>
+        <span>Available on Android</span>
       </div>
     </section>
   );
@@ -387,7 +327,7 @@ function MoneyMockup() {
               </button>
             </div>
             <div className="mk-reader-content">
-              <h2>Monthly money digest</h2>
+              <h2>July review</h2>
               <div className="mk-sender-row">
                 <span className="mk-avatar">M</span>
                 <div>
@@ -399,25 +339,19 @@ function MoneyMockup() {
               <div className="mk-summary-card">
                 <Sparkles size={16} color="#A4F4FD" />
                 <div>
-                  <strong>Summary by MoneyKai</strong>
+                  <strong>This month</strong>
                   <p>
-                    You logged 128 transactions, kept 5 budgets on track, and moved 18% more into savings. Dining
-                    needs review. No bank connection required.
+                    128 transactions recorded. Five budgets checked. Dining is at 82% of its budget.
                   </p>
                 </div>
               </div>
               <div className="mk-reader-copy">
-                <p>Hi Vivek,</p>
                 <p>
-                  Here is your monthly digest across expenses, budgets, savings, and shared spending. This was a
-                  steadier month with fewer surprise purchases.
+                  Groceries and rent stayed within their usual range. Subscription spending fell. Weekend dining
+                  increased.
                 </p>
-                <p>
-                  Grocery and rent stayed predictable, subscriptions moved down, and weekend dining increased. Your
-                  emergency fund continued to climb.
-                </p>
-                <p>Use this as a review, not advice. MoneyKai organizes the records you provide.</p>
-                <p className="muted">- The MoneyKai team</p>
+                <p>This review is based on the records you add. It is not financial advice.</p>
+                <p className="muted">MoneyKai</p>
               </div>
               <div className="mk-attachment">
                 <Paperclip size={15} />
@@ -435,24 +369,23 @@ function FeatureTriage() {
   return (
     <section id="features" className="mk-feature-grid">
       <div>
-        <SectionEyebrow label="Review" tag="Local-first" />
+        <SectionEyebrow label="Monthly review" tag="Local-first" />
         <h2>
-          Clear your money picture
+          See what needs attention
           <br />
-          in a single pass.
+          this month.
         </h2>
         <p>
-          MoneyKai reads the records you create, understands your categories, and routes the noise away from the
-          signal. Focus on what moves your month forward. The rest becomes easier to review.
+          Review the records you added, compare each category with its budget, and keep shared costs organized.
         </p>
         <div className="mk-chip-row">
-          {['Auto-categorize', 'Budget guardrails', 'Shared spends', 'Encrypted backup'].map((item) => (
+          {['Manual records', 'Budget status', 'Shared expenses', 'Export records'].map((item) => (
             <span key={item}>{item}</span>
           ))}
         </div>
       </div>
       <div className="liquid-glass mk-triage-card">
-        <div className="mk-triage-head">Today - 42 records reviewed</div>
+        <div className="mk-triage-head">Today: 42 records reviewed</div>
         {triageCards.map((card) => (
           <div className="liquid-glass mk-triage-row" key={card.title}>
             <div>
@@ -469,39 +402,20 @@ function FeatureTriage() {
   );
 }
 
-function LogoCloud() {
+function AudienceStrip() {
   return (
-    <section className="mk-logo-cloud" aria-label="MoneyKai audiences">
-      <p>Trusted by thoughtful money reviewers</p>
+    <section className="mk-logo-cloud" aria-label="MoneyKai use cases">
+      <p>For personal budgets and shared bills</p>
       <div>
-        {logos.map((logo) => (
-          <span key={logo}>{logo}</span>
+        {audiences.map((audience) => (
+          <span key={audience}>{audience}</span>
         ))}
       </div>
     </section>
   );
 }
 
-function Testimonials() {
-  return (
-    <section className="mk-testimonials">
-      {testimonials.map((item) => (
-        <figure className="liquid-glass" key={item.name}>
-          <blockquote>{item.quote}</blockquote>
-          <figcaption>
-            <strong>{item.name}</strong>
-            <span>{item.role}</span>
-            <em>{item.company}</em>
-          </figcaption>
-        </figure>
-      ))}
-    </section>
-  );
-}
-
 function Pricing() {
-  const [yearly, setYearly] = useState(true);
-
   return (
     <section id="pricing" className="c3-pricing-section">
       <svg className="mk-noise-svg" aria-hidden="true">
@@ -515,44 +429,33 @@ function Pricing() {
         </filter>
       </svg>
       <div className="c3-watermark-container">
-        <div className="c3-watermark-main">
-          <span className="c3-watermark-line-1">Your money.</span>
-          <span className="c3-watermark-line-2">Revitalized</span>
-        </div>
+        <h2 className="c3-watermark-main">
+          <span className="c3-watermark-line-1">Current Android</span>
+          <span className="c3-watermark-line-2">release</span>
+        </h2>
       </div>
-      <div className="c3-grid">
-        {plans.map((plan) => (
-          <article className={`c3-card ${'pro' in plan && plan.pro ? 'c3-card-pro' : ''}`} key={plan.tier}>
-            <span className="c3-tier-small">{plan.tier}</span>
-            <strong className="c3-tier-large">{yearly ? plan.yearly : plan.monthly}</strong>
-            <p className="c3-desc">{plan.desc}</p>
-            <ul className="c3-list">
-              {plan.features.map((feature) => (
-                <li key={feature}>
-                  <span className="c3-check">
-                    <Check size={14} strokeWidth={2.4} />
-                  </span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <a className="c3-btn" href="/signup">
-              Choose Plan
-            </a>
-          </article>
-        ))}
-      </div>
-      <div className="c3-toggle-wrap">
-        <span>Yearly</span>
-        <button
-          type="button"
-          aria-label="Toggle yearly pricing"
-          aria-pressed={yearly}
-          className={`c3-toggle ${yearly ? 'active' : ''}`}
-          onClick={() => setYearly((value) => !value)}
-        >
-          <span className="c3-toggle-knob" />
-        </button>
+      <div className="c3-grid c3-grid-single">
+        <article className="c3-card">
+          <span className="c3-tier-small">Current Android release</span>
+          <strong className="c3-tier-large">Free</strong>
+          <p className="c3-desc">
+            Record transactions, review budgets, check savings progress, and export your records. This release has no
+            paid Android plan.
+          </p>
+          <ul className="c3-list">
+            {currentReleaseFeatures.map((feature) => (
+              <li key={feature}>
+                <span className="c3-check">
+                  <Check size={14} strokeWidth={2.4} />
+                </span>
+                {feature}
+              </li>
+            ))}
+          </ul>
+          <a className="c3-btn" href="/signup">
+            Create an account
+          </a>
+        </article>
       </div>
     </section>
   );
@@ -564,18 +467,17 @@ function FinalCTA() {
       <div className="liquid-glass">
         <div className="mk-final-glow" />
         <h2>
-          Close the tabs.
+          Start with this month&apos;s
           <br />
-          Open your month.
+          spending.
         </h2>
         <p>
-          Join people who treat money review like a useful habit, not an obligation. MoneyKai keeps the flow private,
-          practical, and calm.
+          Add the records you need, then check your budgets, shared costs, and savings progress in the same review.
         </p>
         <div>
-          <AppButton label="Open MoneyKai" />
+          <AppButton label="Create an account" />
           <a href="/contact" className="mk-sales-button">
-            Talk to sales <ChevronRight size={16} />
+            Contact MoneyKai <ChevronRight size={16} />
           </a>
         </div>
       </div>
@@ -636,8 +538,7 @@ export default function LandingScreen() {
           <MenuBar />
           <MoneyMockup />
           <FeatureTriage />
-          <LogoCloud />
-          <Testimonials />
+          <AudienceStrip />
           <Pricing />
           <FinalCTA />
         </main>

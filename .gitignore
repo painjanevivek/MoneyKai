@@ -156,6 +156,8 @@ imp/
 
 # local design, audit, and planning artifacts
 /docs/superpowers/
+/docs/website-copy-inventory.md
+/docs/moneykai-copy-review-homepage.md
 /outputs/sidebar-*.png
 /outputs/ui-audit/
 /outputs/ui-concepts/
