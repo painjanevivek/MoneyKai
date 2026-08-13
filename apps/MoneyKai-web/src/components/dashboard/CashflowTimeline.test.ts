@@ -129,19 +129,18 @@ describe('CashflowTimeline summary', () => {
     }));
 
     expect(currentText).toEqual(expect.arrayContaining([
-      'Opening date',
-      'Actual net flow',
-      'Estimated commitments',
-      'Forecast net flow',
-      'Estimated from reviewed transaction history',
+      'Projected balance',
+      'Recurring expense',
+      'Forecast net flow on 31 Jul',
+      '8000',
     ]));
     expect(historicalText).toEqual(expect.arrayContaining([
-      'Opening date',
-      'Actual net flow',
-      'Period status',
+      'Projected balance',
       'Closed reporting period',
+      'Actual net flow for closed period',
+      '3000',
     ]));
-    expect(historicalText).not.toContain('Estimated commitments');
-    expect(historicalText).not.toContain('Forecast net flow');
+    expect(historicalText).not.toContain('Recurring expense');
+    expect(historicalText).not.toContain('Forecast net flow on 31 Jul');
   });
 });

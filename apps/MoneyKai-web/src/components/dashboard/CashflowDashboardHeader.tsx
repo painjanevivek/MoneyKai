@@ -37,6 +37,7 @@ export function CashflowDashboardHeader({
         title="Add transaction"
         icon="plus"
         variant="outline"
+        size="sm"
         onPress={onAddTransaction}
         style={{ flexGrow: isCompact ? 1 : 0 }}
       />
@@ -44,6 +45,7 @@ export function CashflowDashboardHeader({
         title="Adjust budget"
         icon="tune-variant"
         variant="outline"
+        size="sm"
         onPress={onAdjustBudget}
         style={{ flexGrow: isCompact ? 1 : 0 }}
       />
@@ -54,10 +56,7 @@ export function CashflowDashboardHeader({
     <View
       testID="cashflow-dashboard-header"
       style={{
-        gap: isCompact ? Spacing.md : Spacing.lg,
-        paddingBottom: Spacing.lg,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.borderLight,
+        gap: isCompact ? Spacing.md : Spacing.base,
         minWidth: 0,
         zIndex: 1,
       }}
@@ -70,7 +69,7 @@ export function CashflowDashboardHeader({
           minWidth: 0,
         }}
       >
-        <View style={{ flex: 1, minWidth: 0, maxWidth: 720 }}>
+        <View style={{ flex: 1, minWidth: 0, maxWidth: 680 }}>
           <Text
             accessibilityRole="header"
             style={{
@@ -84,13 +83,13 @@ export function CashflowDashboardHeader({
           </Text>
           <Text
             style={{
-              marginTop: Spacing.sm,
+              marginTop: 4,
               fontSize: Typography.fontSize.sm,
               lineHeight: Typography.lineHeight.base,
               color: colors.textSecondary,
             }}
           >
-            Plan your month. Track income, commitments, budgets, and savings goals.
+            Plan your month. Track income, bills, budgets, and savings goals.
           </Text>
         </View>
         {!isCompact ? controls : null}

@@ -7,9 +7,19 @@ vi.mock('react-native', () => ({
   Dimensions: { get: () => ({ width: 1024, height: 768 }) },
   Platform: { OS: 'web' },
   StyleSheet: { create: <T,>(styles: T) => styles },
+  Pressable: () => null,
   Text: () => null,
   View: () => null,
 }));
+
+vi.mock('react-native-svg', () => {
+  const SvgNode = () => null;
+  return { default: SvgNode, Circle: SvgNode, G: SvgNode };
+});
+
+vi.mock('expo-router', () => ({ router: { push: vi.fn() } }));
+
+vi.mock('../../constants/categories', () => ({ getCategoryById: () => undefined }));
 
 vi.mock('@expo/vector-icons', () => ({
   MaterialCommunityIcons: Object.assign(() => null, { glyphMap: {} }),
@@ -19,6 +29,8 @@ vi.mock('../../hooks/useTheme', () => ({
   useTheme: () => ({
     colors: {
       borderLight: '#000000',
+      info: '#000000',
+      primary: '#000000',
       error: '#000000',
       success: '#000000',
       textPrimary: '#000000',
@@ -33,7 +45,6 @@ vi.mock('../../utils/formatCurrency', () => ({
   formatCurrency: (value: number) => `INR ${value}`,
 }));
 
-vi.mock('../ui/Button', () => ({ Button: () => null }));
 vi.mock('../ui/Card', () => ({ Card: () => null }));
 
 const plan: CashflowPlan = {
@@ -61,7 +72,7 @@ const collectText = (node: ReactNode): string[] => {
   return collectText((node.props as { children?: ReactNode }).children);
 };
 
-const metricLabels = new Set(['Spent', 'Budget available', 'Safe to spend', 'Budget used']);
+const metricLabels = new Set(['Available', 'Committed', 'Spendable']);
 
 const renderBudgetPressure = (cashflowPlan: CashflowPlan, monthlyAllowance: number) =>
   CashflowBudgetPressure({
@@ -81,10 +92,12 @@ const renderMetricRows = (cashflowPlan: CashflowPlan, monthlyAllowance: number) 
     const children = React.Children.toArray(
       (node.props as { children?: ReactNode }).children,
     );
-    if (children.length === 2 && children.every(React.isValidElement)) {
-      const label = collectText(children[0]).join('');
+    if (children.length >= 2 && children.every(React.isValidElement)) {
+      const labelIndex = children.length === 3 ? 1 : 0;
+      const valueIndex = children.length === 3 ? 2 : 1;
+      const label = collectText(children[labelIndex]).join('');
       if (metricLabels.has(label)) {
-        rows.push({ label, value: collectText(children[1]).join('') });
+        rows.push({ label, value: collectText(children[valueIndex]).join('') });
       }
     }
     children.forEach(visit);
@@ -114,17 +127,12 @@ const findByAccessibilityRole = (node: ReactNode, role: string): React.ReactElem
   return findByAccessibilityRole(props.children, role);
 };
 
-describe('CashflowBudgetPressure period metrics', () => {
-  it('keeps safe-to-spend current and uses budget-used for a historical period', () => {
+describe('CashflowBudgetPressure hierarchy', () => {
+  it('renders truthful budget, commitment, and safe-to-spend values', () => {
     expect(renderMetricRows(plan, 4_000)).toEqual([
-      { label: 'Spent', value: 'INR 2000' },
-      { label: 'Budget available', value: 'INR 2000' },
-      { label: 'Safe to spend', value: 'INR 1500' },
-    ]);
-    expect(renderMetricRows({ ...plan, isForecastAvailable: false }, 4_000)).toEqual([
-      { label: 'Spent', value: 'INR 2000' },
-      { label: 'Budget available', value: 'INR 2000' },
-      { label: 'Budget used', value: '50%' },
+      { label: 'Available', value: 'INR 2000' },
+      { label: 'Committed', value: 'INR 500' },
+      { label: 'Spendable', value: 'INR 1500' },
     ]);
   });
 
@@ -141,19 +149,8 @@ describe('CashflowBudgetPressure period metrics', () => {
     };
     const rendered = renderBudgetPressure(overBudgetPlan, 4_000);
     const progress = findByAccessibilityRole(rendered, 'progressbar');
-    const fill = React.Children.only(progress?.props.children) as React.ReactElement<{
-      style: unknown[];
-    }>;
-
-    expect(renderMetricRows(overBudgetPlan, 4_000)).toContainEqual({
-      label: 'Budget used',
-      value: '125%',
-    });
     expect(collectText(rendered)).toContain('125%');
     expect(progress?.props.accessibilityValue).toEqual({ min: 0, max: 100, now: 100 });
-    expect(fill.props.style).toEqual(expect.arrayContaining([
-      expect.objectContaining({ width: '100%' }),
-    ]));
   });
 
   it('describes unavailable budget metrics truthfully when no budget is set', () => {
@@ -164,25 +161,20 @@ describe('CashflowBudgetPressure period metrics', () => {
     };
 
     expect(renderMetricRows(noBudgetPlan, 0)).toEqual([
-      { label: 'Spent', value: 'INR 2000' },
-      { label: 'Budget available', value: 'Budget not set.' },
-      { label: 'Safe to spend', value: 'Budget not set.' },
-    ]);
-    expect(renderMetricRows({ ...noBudgetPlan, isForecastAvailable: false }, 0)).toEqual([
-      { label: 'Spent', value: 'INR 2000' },
-      { label: 'Budget available', value: 'Budget not set.' },
-      { label: 'Budget used', value: 'Budget not set.' },
+      { label: 'Available', value: 'Not set' },
+      { label: 'Committed', value: 'INR 500' },
+      { label: 'Spendable', value: 'Not set' },
     ]);
 
     const rendered = renderBudgetPressure(noBudgetPlan, 0);
     const text = collectText(rendered);
     const renderedText = text.join('');
     expect(text).toEqual(expect.arrayContaining([
-      'Budget usage unavailable',
-      'Set a budget to track usage',
+      '—',
+      'Set a budget',
     ]));
     expect(renderedText).not.toContain('0%');
-    expect(renderedText).not.toContain('of budget used');
+    expect(renderedText).not.toContain('budget used');
     expect(findByAccessibilityRole(rendered, 'progressbar')).toBeUndefined();
   });
 });

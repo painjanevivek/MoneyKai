@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { format } from 'date-fns';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
@@ -33,9 +33,9 @@ type ReportingMonthPickerProps = {
 
 export function ReportingMonthPicker({ compact = false }: ReportingMonthPickerProps) {
   const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const {
     currentMonthKey,
-    monthRangeLabel,
     resetToCurrentMonth,
     selectedMonthKey,
     selectMonth,
@@ -44,6 +44,10 @@ export function ReportingMonthPicker({ compact = false }: ReportingMonthPickerPr
   const [visibleYear, setVisibleYear] = useState(() => getMonthYear(selectedMonthKey));
   const triggerRef = useRef<React.ElementRef<typeof Pressable>>(null);
   const restoreFocusOnCloseRef = useRef(false);
+  const selectedMonthLabel = format(
+    new Date(getMonthYear(selectedMonthKey), Number(selectedMonthKey.slice(5, 7)) - 1, 1),
+    'MMM yyyy',
+  );
 
   const closeAndRestoreFocus = useCallback(() => {
     restoreFocusOnCloseRef.current = true;
@@ -99,8 +103,8 @@ export function ReportingMonthPicker({ compact = false }: ReportingMonthPickerPr
   };
 
   const popoverStyle: StyleProp<ViewStyle> = compact
-    ? { top: 52, left: 0, right: 0 }
-    : { top: 54, right: 0, width: 340 };
+    ? { top: 52, right: 0, width: Math.min(340, windowWidth - 32) }
+    : { top: 54, right: 0, width: Math.min(360, windowWidth - 32) };
 
   return (
     <View style={{ position: 'relative', zIndex: 60, overflow: 'visible' }}>
@@ -149,14 +153,14 @@ export function ReportingMonthPicker({ compact = false }: ReportingMonthPickerPr
               style={{ flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 20, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}
               numberOfLines={1}
             >
-              {monthRangeLabel}
+              {selectedMonthLabel}
             </Text>
           </View>
         ) : (
           <>
             <MaterialCommunityIcons name="calendar-month-outline" size={18} color={colors.textPrimary} />
             <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-              {monthRangeLabel}
+              {selectedMonthLabel}
             </Text>
           </>
         )}
@@ -256,8 +260,8 @@ function MonthYearPickerPopover({
           <Text style={{ fontSize: Typography.fontSize.lg, lineHeight: 24, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
             {visibleYear}
           </Text>
-          <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>
-            Select reporting month
+          <Text numberOfLines={1} style={{ marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: 16, color: colors.textSecondary }}>
+            Reporting month
           </Text>
         </View>
 
@@ -288,7 +292,7 @@ function MonthYearPickerPopover({
         </Pressable>
       </View>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {MONTH_OPTIONS.map((month) => {
           const monthKey = toMonthKey(visibleYear, month.index);
           const active = monthKey === selectedMonthKey;
@@ -304,12 +308,12 @@ function MonthYearPickerPopover({
               disabled={disabled}
               onPress={() => onSelect(monthKey)}
               style={({ hovered, pressed }: any) => ({
-                width: '31.4%',
-                minHeight: 58,
+                width: '31.6%',
+                minHeight: 52,
                 borderRadius: BorderRadius.md,
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 2,
+                gap: 1,
                 backgroundColor: active ? colors.primary : !disabled && hovered ? `${colors.primary}10` : colors.glassBg,
                 borderWidth: 1,
                 borderColor: active ? colors.primary : isCurrent ? colors.primaryLight : colors.glassBorder,
@@ -327,16 +331,19 @@ function MonthYearPickerPopover({
               >
                 {month.label}
               </Text>
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontSize: Typography.fontSize.xs,
-                  lineHeight: 16,
-                  color: active ? colors.textInverse : isCurrent ? colors.primary : colors.textTertiary,
-                }}
-              >
-                {isCurrent ? 'Current' : month.fullLabel}
-              </Text>
+              {isCurrent ? (
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 10,
+                    lineHeight: 14,
+                    fontFamily: Typography.fontFamily.medium,
+                    color: active ? colors.textInverse : colors.primary,
+                  }}
+                >
+                  Current
+                </Text>
+              ) : null}
             </Pressable>
           );
         })}
@@ -344,7 +351,7 @@ function MonthYearPickerPopover({
 
       <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
         <Button
-          title="Current Month"
+          title="This month"
           icon="calendar-today-outline"
           variant="outline"
           size="sm"

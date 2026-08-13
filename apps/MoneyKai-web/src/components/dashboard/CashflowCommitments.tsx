@@ -27,9 +27,9 @@ export function CashflowCommitments({ commitments, onViewAll }: CashflowCommitme
 
   return (
     <View testID="estimated-commitments" style={styles.root}>
-      <Card variant="glass" style={styles.card}>
+      <Card variant="glass" padding="md" style={styles.card}>
         <View style={styles.header}>
-          <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>Estimated recurring commitments</Text>
+          <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>Upcoming bills</Text>
           <Button title="View all" variant="ghost" size="sm" onPress={onViewAll} />
         </View>
         <Text style={[styles.disclosure, { color: colors.textSecondary }]}>Based on stable monthly patterns in reviewed transaction history.</Text>
@@ -96,18 +96,18 @@ export function CashflowCommitments({ commitments, onViewAll }: CashflowCommitme
 const styles = StyleSheet.create({
   root: { flex: 1, minWidth: 0 },
   card: { flex: 1, minWidth: 0 },
-  header: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
+  header: { minHeight: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
   title: { flex: 1, minWidth: 0, fontSize: Typography.fontSize.md, lineHeight: Typography.lineHeight.md, fontFamily: Typography.fontFamily.semiBold },
-  disclosure: { marginTop: Spacing.xs, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, fontFamily: Typography.fontFamily.regular },
-  list: { marginTop: Spacing.sm, minWidth: 0 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.md, minWidth: 0 },
-  icon: { width: 40, height: 40, borderRadius: BorderRadius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  disclosure: { display: 'none', marginTop: Spacing.xs, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, fontFamily: Typography.fontFamily.regular },
+  list: { marginTop: 4, minWidth: 0 },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 4, minWidth: 0 },
+  icon: { width: 30, height: 30, borderRadius: BorderRadius.sm, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, minWidth: 0 },
   topline: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, minWidth: 0 },
   label: { flex: 1, minWidth: 0, fontSize: Typography.fontSize.base, lineHeight: Typography.lineHeight.base, fontFamily: Typography.fontFamily.medium },
   amount: { maxWidth: '45%', fontSize: Typography.fontSize.base, lineHeight: Typography.lineHeight.base, fontFamily: Typography.fontFamily.semiBold },
-  meta: { marginTop: Spacing.xs, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, fontFamily: Typography.fontFamily.regular },
-  provenance: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.xs, minWidth: 0 },
+  meta: { marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: Typography.lineHeight.xs, fontFamily: Typography.fontFamily.regular },
+  provenance: { display: 'none', flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.xs, minWidth: 0 },
   provenanceText: { flex: 1, minWidth: 0, fontSize: Typography.fontSize.xs, lineHeight: Typography.lineHeight.xs, fontFamily: Typography.fontFamily.regular },
   emptyState: { marginTop: Spacing.md, paddingVertical: Spacing.xl },
 });

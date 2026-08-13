@@ -70,10 +70,10 @@ export default function PortfolioScreen() {
     const needsConcentrationReview = concentrationPercent >= 50;
 
     return {
-      title: holdings.length === 0 ? 'No holdings ready' : needsConcentrationReview ? 'Concentration needs review' : 'Holdings review is ready',
+      title: holdings.length === 0 ? 'Build your portfolio view' : needsConcentrationReview ? 'Concentration needs review' : 'Holdings review is ready',
       tone: needsConcentrationReview ? 'warning' as const : holdings.length > 0 ? 'success' as const : 'neutral' as const,
       body: holdings.length === 0
-        ? 'Add holdings or sync a provider before MoneyKai can compare allocation, performance, and concentration.'
+        ? 'Add one holding to start tracking value, allocation, and concentration. MoneyKai will never invent a portfolio from placeholder data.'
         : `${largestHolding?.name ?? 'Top holding'} represents ${concentrationPercent.toFixed(0)}% of tracked portfolio value. This is a review note, not investment advice.`,
       rows: [
         ['Holdings', String(holdings.length)],
@@ -104,15 +104,15 @@ export default function PortfolioScreen() {
           icon="briefcase-outline"
           eyebrow="WEALTH WORKSPACE"
           title="Portfolio review"
-          description={lastUpdatedAt ? `Last updated ${new Date(lastUpdatedAt).toLocaleString()}` : 'Add holdings or connect a provider before portfolio insights become useful.'}
+          description={lastUpdatedAt ? `Last updated ${new Date(lastUpdatedAt).toLocaleString()}` : 'Track the holdings you own and review how your portfolio is distributed.'}
           metrics={[
             { label: 'Accounts', value: String(accounts.length) },
             { label: 'Holdings', value: String(holdings.length) },
             { label: 'Status', value: busy ? 'Syncing' : 'Ready', tone: busy ? 'warning' : 'positive' },
           ]}
           chips={[
-            { icon: 'shield-check-outline', label: 'Manual review' },
-            { icon: 'bank-transfer', label: aaStatus ? 'AA status open' : 'Consented data only' },
+            { icon: 'shield-check-outline', label: 'Manual entry available' },
+            { icon: 'bank-transfer', label: aaStatus ? 'Connection details open' : 'Connections require consent' },
           ]}
           actions={
             <>
@@ -124,7 +124,7 @@ export default function PortfolioScreen() {
           }
         />
 
-        <PortfolioSummaryCard snapshot={overview.snapshot} currencySymbol={currencySymbol} />
+        {holdings.length > 0 ? <PortfolioSummaryCard snapshot={overview.snapshot} currencySymbol={currencySymbol} /> : null}
         <ReviewSummaryCard
           eyebrow="PORTFOLIO REVIEW"
           title={portfolioReview.title}

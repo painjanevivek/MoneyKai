@@ -37,7 +37,7 @@ test.describe('MoneyKai responsive mobile views', () => {
     await expect(page.getByRole('button', { name: 'Create account', exact: true })).toBeVisible();
   });
 
-  test('authenticated dashboard and settings fit mobile width', async ({ page }, testInfo) => {
+  test('authenticated dashboard, budgets, and settings fit mobile width', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-chrome', 'Mobile responsive smoke runs in the mobile project only.');
 
     await page.clock.install({ time: cashflowNow });
@@ -53,6 +53,29 @@ test.describe('MoneyKai responsive mobile views', () => {
     await expect(page.getByTestId('cashflow-dashboard')).toHaveScreenshot('cashflow-dashboard-mobile.png', {
       animations: 'disabled',
     });
+
+    await page.goto('/budgets');
+    await expect(page.getByTestId('budgets-workspace')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Choose reporting month' })).toHaveCount(1);
+    await expectNoHorizontalOverflow(page);
+    await waitForFonts(page);
+    await expect(page.getByTestId('budgets-workspace')).toHaveScreenshot('budgets-mobile.png', {
+      animations: 'disabled',
+    });
+
+    const autoReset = page.getByRole('switch', { name: 'Auto reset monthly budget' });
+    const wasAutoResetEnabled = await autoReset.isChecked();
+    await autoReset.click();
+    if (wasAutoResetEnabled) {
+      await expect(autoReset).not.toBeChecked();
+    } else {
+      await expect(autoReset).toBeChecked();
+    }
+
+    await page.getByRole('textbox', { name: 'Budget adjustment amount' }).fill('1000');
+    await page.getByRole('button', { name: 'Update budget' }).click();
+    await expect(page.getByLabel(/Monthly budget: .*51,000/)).toBeVisible();
+    await expect(page.getByText('Manual budget adjustment')).toBeVisible();
 
     await page.goto('/settings');
     await expect(page.getByText('Data & Privacy')).toBeVisible();

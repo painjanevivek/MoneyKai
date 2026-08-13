@@ -33,7 +33,7 @@ export const Card: React.FC<CardProps> = ({
     info: colors.info,
   }[tone];
   const surfaceColor = variant === 'default'
-    ? 'transparent'
+    ? colors.card
     : variant === 'glass'
       ? colors.surface
     : variant === 'elevated'
@@ -49,8 +49,8 @@ export const Card: React.FC<CardProps> = ({
     overflow: 'hidden',
     ...(variant === 'default'
       ? {
-          borderWidth: isToned ? 1 : 0,
-          borderColor: isToned ? withAlpha(toneColor, isDark ? 0.28 : 0.2) : 'transparent',
+          borderWidth: 1,
+          borderColor: isToned ? withAlpha(toneColor, isDark ? 0.28 : 0.2) : colors.borderLight,
         }
       : variant === 'outlined'
       ? { borderWidth: 1, borderColor: colors.borderLight, backgroundColor: 'transparent' }
