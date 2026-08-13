@@ -282,7 +282,7 @@ export default function RootLayout() {
 
   return (
     <AppErrorBoundary colors={colors}>
-      {Platform.OS !== 'web' || pathname !== '/' ? <AppFontLoader /> : null}
+      <AppFontLoader />
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {isAuthenticated ? (
         <Suspense fallback={null}>
