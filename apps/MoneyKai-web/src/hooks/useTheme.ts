@@ -1,17 +1,26 @@
-import { Colors, isThemeModeDark, type ColorScheme } from '../constants/theme';
+import { Colors, type ColorScheme } from '../constants/theme';
 import { useSettingsStore } from '../stores/useSettingsStore';
 
 export const useTheme = () => {
-  const theme = useSettingsStore((s) => s.theme);
   const toggleTheme = useSettingsStore((s) => s.toggleTheme);
   const setTheme = useSettingsStore((s) => s.setTheme);
-  const themePalette = useSettingsStore((s) => s.themePalette);
   const setThemePalette = useSettingsStore((s) => s.setThemePalette);
-  const darkModeEnabled = useSettingsStore((s) => s.darkModeEnabled);
   const setDarkModeEnabled = useSettingsStore((s) => s.setDarkModeEnabled);
 
-  const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
-  const isDark = darkModeEnabled || isThemeModeDark(theme);
+  // Keep legacy theme data compatible with restored backups, but do not let it
+  // change MoneyKai's single light visual system.
+  const colors = Colors.jetLuxuryLight as ColorScheme;
+  const isDark = false;
 
-  return { colors, darkModeEnabled, isDark, setDarkModeEnabled, setTheme, setThemePalette, theme, themePalette, toggleTheme };
+  return {
+    colors,
+    darkModeEnabled: false,
+    isDark,
+    setDarkModeEnabled,
+    setTheme,
+    setThemePalette,
+    theme: 'jetLuxuryLight' as const,
+    themePalette: 'jetLuxury' as const,
+    toggleTheme,
+  };
 };

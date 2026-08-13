@@ -1,10 +1,8 @@
 import { Stack } from 'expo-router';
-import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Colors, type ColorScheme } from '@/constants/theme';
 
 export default function AuthLayout() {
-  const theme = useSettingsStore((s) => s.theme);
-  const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
+  const colors = Colors.jetLuxuryLight as ColorScheme;
 
   return (
     <Stack

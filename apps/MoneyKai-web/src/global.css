@@ -7,7 +7,7 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
-  --brand: #3d81e3;
+  --brand: #d86736;
 }
 
 html,
@@ -32,8 +32,8 @@ html {
   position: relative;
   min-height: 100vh;
   overflow-x: hidden;
-  background: #0c0c0c;
-  color: #fff;
+  background: #f8f5f0;
+  color: #24211d;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   isolation: isolate;
   scroll-behavior: smooth;
@@ -52,19 +52,11 @@ html {
   pointer-events: none;
   overflow: hidden;
   contain: paint;
-  background:
-    radial-gradient(circle at 50% 16%, rgba(0, 210, 255, 0.24), transparent 36%),
-    radial-gradient(circle at 72% 28%, rgba(61, 129, 227, 0.18), transparent 42%),
-    linear-gradient(180deg, #111820 0%, #0c0c0c 78%);
+  background: #f8f5f0;
 }
 
 .mk-ambient-bg::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 18%, rgba(0, 210, 255, 0.14), transparent 38%),
-    linear-gradient(180deg, rgba(12, 12, 12, 0.4), #0c0c0c 78%);
+  display: none;
 }
 
 .mk-page-content {
@@ -77,7 +69,7 @@ html {
   inset-block: 0;
   left: 50%;
   width: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #e8e1d7;
   pointer-events: none;
   z-index: 5;
 }
@@ -126,14 +118,14 @@ html {
 }
 
 .mk-nav-links a {
-  color: rgba(255, 255, 255, 0.7);
+  color: #6f6860;
   font-size: 14px;
   font-weight: 500;
   transition: color 180ms ease;
 }
 
 .mk-nav-links a:hover {
-  color: #fff;
+  color: #24211d;
 }
 
 .mk-nav-action {
@@ -147,9 +139,9 @@ html {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  border: 1px solid #ded6cb;
+  background: #fff;
+  color: #24211d;
 }
 
 .mk-app-button {
@@ -158,8 +150,8 @@ html {
   justify-content: center;
   gap: 8px;
   border-radius: 999px;
-  background: #fff;
-  color: #000;
+  background: #d86736;
+  color: #fff;
   font-weight: 500;
   font-size: 14px;
   padding: 12px 20px;
@@ -169,11 +161,11 @@ html {
 }
 
 .mk-page-shell .mk-app-button {
-  color: #000;
+  color: #fff;
 }
 
 .mk-app-button:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: #b94e23;
 }
 
 .mk-app-button:active {
@@ -211,25 +203,12 @@ html {
 }
 
 .mk-shiny-text {
-  background-image: linear-gradient(
-    to right,
-    #091020 0%,
-    #0b2551 12.5%,
-    #a4f4fd 32.5%,
-    #00d2ff 50%,
-    #0b2551 67.5%,
-    #091020 87.5%,
-    #091020 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  color: #d86736;
+  -webkit-text-fill-color: #d86736;
 }
 
 .animate-shiny {
-  animation: shiny 4.8s cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+  animation: none;
 }
 
 @keyframes shiny {
@@ -244,7 +223,7 @@ html {
 
 .mk-hero-copy {
   margin: 32px 0 0;
-  color: rgba(255, 255, 255, 0.76);
+  color: #625c54;
   max-width: 500px;
   font-size: 16px;
   line-height: 1.5;
@@ -259,7 +238,7 @@ html {
 }
 
 .mk-hero-actions > span {
-  color: rgba(255, 255, 255, 0.68);
+  color: #766f66;
   font-size: 12px;
 }
 
@@ -1303,4 +1282,132 @@ html {
   .mk-final-cta > div {
     padding: 56px 20px;
   }
+}
+
+/* Public site: the same quiet, warm workspace system as the signed-in app. */
+.mk-menu-inner,
+.mk-window,
+.c3-card,
+.c3-card-pro {
+  background: #fff;
+  border-color: #e1d9cf;
+  box-shadow: 0 16px 36px rgba(58, 45, 32, 0.08);
+}
+
+.mk-menu-inner,
+.mk-titlebar,
+.mk-sidebar,
+.mk-message-list,
+.mk-side-nav a,
+.mk-labels div,
+.mk-search-box,
+.mk-message-list article,
+.mk-toolbar button,
+.mk-reader-content,
+.mk-reader-content h2,
+.mk-sender-row strong,
+.mk-reader-body,
+.mk-window {
+  color: #24211d;
+}
+
+.mk-menu-inner,
+.mk-titlebar,
+.mk-sidebar,
+.mk-message-list,
+.mk-message-list article,
+.mk-search-box,
+.mk-toolbar,
+.mk-window-body {
+  border-color: #e8e1d7;
+}
+
+.mk-sidebar,
+.mk-message-list article.active,
+.mk-side-nav a.active {
+  background: #faf7f2;
+}
+
+.mk-menu-left strong,
+.mk-message-list strong,
+.mk-message-subject,
+.mk-reader-content h2 {
+  color: #24211d;
+}
+
+.mk-strip-caption,
+.mk-side-nav a,
+.mk-side-nav em,
+.mk-labels > span,
+.mk-labels div,
+.mk-search-box,
+.mk-message-list article,
+.mk-message-list p,
+.mk-sender-row span,
+.mk-reader-body {
+  color: #766f66;
+}
+
+.mk-menu-right span,
+.mk-compose-button,
+.c3-btn {
+  background: #d86736;
+  color: #fff;
+  border-color: #d86736;
+}
+
+.mk-page-shell .c3-btn,
+.mk-compose-button {
+  color: #fff;
+}
+
+.mk-side-nav a.active {
+  color: #24211d;
+}
+
+.mk-message-list i {
+  background: #d86736;
+}
+
+.mk-avatar {
+  background: #fce8de;
+  color: #b94e23;
+}
+
+.c3-card::before,
+.mk-final-glow {
+  display: none;
+}
+
+.c3-card:hover {
+  background: #fffaf6;
+  border-color: #e98760;
+  transform: translate3d(0, -4px, 0);
+}
+
+.c3-tier-small,
+.c3-desc,
+.c3-list li,
+.c3-toggle-wrap span,
+.mk-final-cta p {
+  color: #6f6860;
+}
+
+.c3-tier-large,
+.mk-final-cta h2 {
+  color: #24211d;
+}
+
+.c3-check,
+.c3-toggle {
+  background: #fce8de;
+}
+
+.c3-toggle-knob {
+  background: #d86736;
+}
+
+.mk-sales-button {
+  color: #b94e23;
+  border-color: #e98760;
 }

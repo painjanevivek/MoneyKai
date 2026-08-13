@@ -1,7 +1,7 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
-import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { CashflowPlan, CashflowPoint } from '@/utils/cashflowPlan';
 import { formatCompactCurrency, formatCurrency } from '@/utils/formatCurrency';
@@ -114,6 +114,201 @@ const getMarker = (
   />
 );
 
+type ExpandedTimelineProps = {
+  plan: CashflowPlan;
+};
+
+function ExpandedCashflowTimeline({ plan }: ExpandedTimelineProps) {
+  const { colors } = useTheme();
+  const { width, height } = useWindowDimensions();
+  const isWide = width >= 768;
+  const chartWidth = 1100;
+  const chartHeight = isWide
+    ? Math.min(390, Math.max(280, height - 390))
+    : Math.min(310, Math.max(230, height - 350));
+  const eventListHeight = isWide
+    ? Math.min(188, Math.max(112, height - chartHeight - 230))
+    : Math.min(156, Math.max(112, height - chartHeight - 280));
+  const plotLeft = 76;
+  const plotTop = 28;
+  const plotRight = 24;
+  const plotBottom = 34;
+  const plotWidth = chartWidth - plotLeft - plotRight;
+  const plotHeight = chartHeight - plotTop - plotBottom;
+  const actualValues = plan.timeline.map(({ actualNetFlow }) => safeNumber(actualNetFlow));
+  const projectedValues = plan.timeline.map(({ projectedNetFlow }) => safeNumber(projectedNetFlow));
+  const currentDayIndex = actualValues.reduce<number>(
+    (latest, value, index) => value === null ? latest : index,
+    -1,
+  );
+  const futureValues = projectedValues.map((value, index) =>
+    plan.isForecastAvailable && index >= Math.max(0, currentDayIndex) ? value : null);
+  const domain = getChartDomain([
+    ...actualValues,
+    ...(plan.isForecastAvailable ? projectedValues : []),
+  ]);
+  const actualPath = buildPath(actualValues, plotWidth, plotHeight, domain.min, domain.max);
+  const projectedPath = buildPath(futureValues, plotWidth, plotHeight, domain.min, domain.max);
+  const tickValues = Array.from({ length: GRID_LINE_COUNT + 1 }, (_, index) =>
+    domain.max - ((domain.max - domain.min) * index) / GRID_LINE_COUNT);
+  const xTickIndexes = [...new Set([
+    0,
+    Math.floor((plan.timeline.length - 1) / 4),
+    Math.floor((plan.timeline.length - 1) / 2),
+    Math.floor(((plan.timeline.length - 1) * 3) / 4),
+    Math.max(0, plan.timeline.length - 1),
+  ])].filter((index) => index >= 0 && index < plan.timeline.length);
+  const events = plan.timeline.flatMap((point) => [
+    ...point.actualEvents.map((event) => ({ ...event, date: point.date, estimated: false })),
+    ...point.projectedEvents.map((event) => ({ ...event, date: point.date, estimated: true })),
+  ]);
+
+  return (
+    <View style={{ flex: 1, minHeight: 0, gap: Spacing.md }}>
+      <View
+        style={{
+          borderRadius: BorderRadius.lg,
+          backgroundColor: withAlpha(colors.surfaceElevated, 0.58),
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+          overflow: 'hidden',
+        }}
+      >
+        <Svg
+          width="100%"
+          height={chartHeight}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          focusable={false}
+        >
+          <G transform={`translate(${plotLeft} ${plotTop})`}>
+            {tickValues.map((tick) => {
+              const y = getY(tick, domain.min, domain.max, plotHeight);
+              return (
+                <G key={tick}>
+                  <Line x1={0} y1={y} x2={plotWidth} y2={y} stroke={withAlpha(colors.border, 0.42)} strokeWidth={1} />
+                  <SvgText x={-12} y={y + 4} fill={colors.textTertiary} fontFamily={Typography.fontFamily.regular} fontSize={12} textAnchor="end">
+                    {formatCompactCurrency(Math.round(tick))}
+                  </SvgText>
+                </G>
+              );
+            })}
+            <Line
+              x1={0}
+              y1={getY(0, domain.min, domain.max, plotHeight)}
+              x2={plotWidth}
+              y2={getY(0, domain.min, domain.max, plotHeight)}
+              stroke={withAlpha(colors.textTertiary, 0.7)}
+              strokeDasharray="5 6"
+              strokeWidth={1.25}
+            />
+            {actualPath ? <Path d={actualPath} fill="none" stroke={colors.chart2} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" /> : null}
+            {plan.isForecastAvailable && projectedPath ? (
+              <Path d={projectedPath} fill="none" stroke={colors.info} strokeWidth={2.5} strokeDasharray="8 7" strokeLinecap="round" strokeLinejoin="round" />
+            ) : null}
+            {plan.timeline.flatMap((point, pointIndex) => {
+              const x = getX(pointIndex, plan.timeline.length, plotWidth);
+              const actual = actualValues[pointIndex];
+              const projected = projectedValues[pointIndex];
+              const actualMarkers = actual === null ? [] : point.actualEvents.map((event, eventIndex) =>
+                getMarker(
+                  event.type,
+                  x + (eventIndex - (point.actualEvents.length - 1) / 2) * 6,
+                  getY(actual, domain.min, domain.max, plotHeight),
+                  event.type === 'income' ? colors.success : colors.warning,
+                  colors.surface,
+                  false,
+                  `expanded-actual-${event.id}`,
+                ));
+              const projectedMarkers = !plan.isForecastAvailable || projected === null ? [] : point.projectedEvents.map((event, eventIndex) =>
+                getMarker(
+                  event.type,
+                  x + (eventIndex - (point.projectedEvents.length - 1) / 2) * 6,
+                  getY(projected, domain.min, domain.max, plotHeight),
+                  event.type === 'income' ? colors.success : colors.warning,
+                  colors.surface,
+                  true,
+                  `expanded-projected-${event.id}`,
+                ));
+              return [...actualMarkers, ...projectedMarkers];
+            })}
+            {plan.isForecastAvailable && currentDayIndex >= 0 ? (
+              <Line
+                x1={getX(currentDayIndex, plan.timeline.length, plotWidth)}
+                y1={0}
+                x2={getX(currentDayIndex, plan.timeline.length, plotWidth)}
+                y2={plotHeight}
+                stroke={colors.info}
+                strokeDasharray="4 5"
+                strokeWidth={1.5}
+              />
+            ) : null}
+            {xTickIndexes.map((index) => (
+              <SvgText
+                key={plan.timeline[index].date}
+                x={getX(index, plan.timeline.length, plotWidth)}
+                y={plotHeight + 28}
+                fill={colors.textTertiary}
+                fontFamily={Typography.fontFamily.medium}
+                fontSize={12}
+                textAnchor={index === 0 ? 'start' : index === plan.timeline.length - 1 ? 'end' : 'middle'}
+              >
+                {displayDate(plan.timeline[index].date, true)}
+              </SvgText>
+            ))}
+          </G>
+        </Svg>
+      </View>
+
+      <View style={{ gap: Spacing.xs }}>
+        <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm }}>
+          Transactions on this timeline
+        </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.xs, lineHeight: Typography.lineHeight.xs }}>
+          Each marker is listed here so nearby records remain readable.
+        </Text>
+      </View>
+
+      <ScrollView
+        style={{ maxHeight: eventListHeight }}
+        contentContainerStyle={{ gap: Spacing.xs, paddingRight: Spacing.xs }}
+        showsVerticalScrollIndicator
+      >
+        {events.map((event) => {
+          const amount = event.type === 'expense' ? -event.amount : event.amount;
+          const label = ('description' in event ? event.description : event.label) || 'Transaction';
+          return (
+            <View
+              key={`${event.estimated ? 'projected' : 'actual'}-${event.id}`}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: Spacing.sm,
+                borderRadius: BorderRadius.md,
+                backgroundColor: colors.surfaceElevated,
+                paddingHorizontal: Spacing.sm,
+                paddingVertical: Spacing.sm,
+              }}
+            >
+              <View style={{ width: 8, height: 8, borderRadius: event.type === 'income' ? BorderRadius.full : 1, transform: event.type === 'expense' ? [{ rotate: '45deg' }] : undefined, backgroundColor: event.type === 'income' ? colors.success : colors.warning }} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text numberOfLines={1} style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm }}>
+                  {label}
+                </Text>
+                <Text style={{ color: colors.textTertiary, fontSize: Typography.fontSize.xs }}>
+                  {displayDate(event.date, true)}{event.estimated ? ' · Planned' : ''}
+                </Text>
+              </View>
+              <Text style={{ color: event.type === 'income' ? colors.success : colors.warning, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm }}>
+                {formatCurrency(amount)}
+              </Text>
+            </View>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
 interface CashflowTimelineProps {
   plan: CashflowPlan;
   onViewTransactions: () => void;
@@ -121,6 +316,7 @@ interface CashflowTimelineProps {
 
 export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineProps) {
   const { colors } = useTheme();
+  const [isExpanded, setIsExpanded] = React.useState(false);
   const actualValues = plan.timeline.map(({ actualNetFlow }) => safeNumber(actualNetFlow));
   const projectedValues = plan.timeline.map(({ projectedNetFlow }) => safeNumber(projectedNetFlow));
   const currentDayIndex = actualValues.reduce<number>(
@@ -204,13 +400,25 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
               Cumulative movement from reviewed transactions — not a bank balance.
             </Text>
           </View>
-          <Button
-            title="View calendar"
-            icon="calendar-month-outline"
-            variant="ghost"
-            size="sm"
-            onPress={onViewTransactions}
-          />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs }}>
+            {!isEmpty ? (
+              <Button
+                title="Full chart"
+                icon="arrow-expand-all"
+                variant="ghost"
+                size="sm"
+                onPress={() => setIsExpanded(true)}
+                testID="cashflow-timeline-full-chart"
+              />
+            ) : null}
+            <Button
+              title="View calendar"
+              icon="calendar-month-outline"
+              variant="ghost"
+              size="sm"
+              onPress={onViewTransactions}
+            />
+          </View>
         </View>
 
         <View
@@ -509,6 +717,58 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
           </Text>
         </View>
       </Card>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isExpanded}
+        onRequestClose={() => setIsExpanded(false)}
+      >
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.md, backgroundColor: colors.overlay }}>
+          <Pressable
+            accessibilityLabel="Close full cashflow chart"
+            onPress={() => setIsExpanded(false)}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
+          />
+          <View
+            accessibilityViewIsModal
+            style={{
+              width: '100%',
+              maxWidth: 1200,
+              height: '92%',
+              maxHeight: '92%',
+              padding: Spacing.lg,
+              gap: Spacing.md,
+              borderRadius: BorderRadius['2xl'],
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+              ...Shadows.lg,
+              shadowColor: colors.shadowColor,
+              overflow: 'hidden',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.md }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text accessibilityRole="header" style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.display, fontSize: Typography.fontSize.xl }}>
+                  30-day cashflow timeline
+                </Text>
+                <Text style={{ marginTop: Spacing.xs, color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm }}>
+                  A larger view of your cashflow, with nearby transaction names listed below the graph.
+                </Text>
+              </View>
+              <Button
+                title="Close"
+                variant="ghost"
+                size="sm"
+                onPress={() => setIsExpanded(false)}
+              />
+            </View>
+
+            <ExpandedCashflowTimeline plan={plan} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
