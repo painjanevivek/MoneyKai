@@ -26,9 +26,9 @@ export function CashflowCategorySpending({ categories, onViewAll }: CashflowCate
 
   return (
     <View testID="category-spending" style={styles.root}>
-      <Card variant="glass" style={styles.card}>
+      <Card variant="glass" padding="md" style={styles.card}>
         <View style={styles.header}>
-          <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>Spending by category</Text>
+          <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>Budget by category</Text>
           <Button title="View all" variant="ghost" size="sm" onPress={onViewAll} />
         </View>
 
@@ -88,17 +88,17 @@ export function CashflowCategorySpending({ categories, onViewAll }: CashflowCate
 const styles = StyleSheet.create({
   root: { flex: 1, minWidth: 0 },
   card: { flex: 1, minWidth: 0 },
-  header: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm, marginBottom: Spacing.sm },
+  header: { minHeight: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm, marginBottom: 2 },
   title: { flex: 1, minWidth: 0, fontSize: Typography.fontSize.md, lineHeight: Typography.lineHeight.md, fontFamily: Typography.fontFamily.semiBold },
-  list: { gap: Spacing.md, paddingVertical: Spacing.sm },
-  row: { gap: Spacing.sm, minWidth: 0 },
+  list: { gap: 4, paddingVertical: 2 },
+  row: { gap: 3, minWidth: 0 },
   topline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm, minWidth: 0 },
   categoryIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   categoryName: { flex: 1, minWidth: 0, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, fontFamily: Typography.fontFamily.medium },
   values: { maxWidth: '52%', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.xs },
   amount: { flexShrink: 1, minWidth: 0, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, fontFamily: Typography.fontFamily.semiBold },
   percentage: { fontSize: Typography.fontSize.xs, lineHeight: Typography.lineHeight.xs, fontFamily: Typography.fontFamily.medium },
-  track: { height: 6, borderRadius: BorderRadius.full, overflow: 'hidden' },
+  track: { height: 4, borderRadius: BorderRadius.full, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: BorderRadius.full },
   emptyState: { paddingVertical: Spacing.xl },
 });

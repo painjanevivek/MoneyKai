@@ -80,12 +80,12 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
         ) : null}
       </View>
       <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-        Add holdings manually today. Broker sync and Account Aggregator data stay setup-gated until live provider credentials and consent flows are configured.
+        Start with a manual holding, or connect an account when you are ready. MoneyKai only imports data after you explicitly authorize it.
       </Text>
       {accounts.length === 0 ? (
-        <View style={{ gap: Spacing.sm }}>
-          <Button title="Add Manual Entry" icon="plus" onPress={onAddManual} fullWidth />
-          <Button title="Create Manual Account" icon="folder-plus-outline" onPress={onCreateManualAccount} variant="outline" fullWidth />
+        <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: Spacing.sm }}>
+          <Button title="Add first holding" icon="plus" onPress={onAddManual} style={isCompact ? undefined : { flex: 1 }} />
+          <Button title="Create manual account" icon="folder-plus-outline" onPress={onCreateManualAccount} variant="outline" style={isCompact ? undefined : { flex: 1 }} />
         </View>
       ) : (
         <View style={{ gap: Spacing.sm }}>
@@ -135,8 +135,8 @@ export const ProviderConnectionCard: React.FC<ProviderConnectionCardProps> = ({
         </View>
       )}
       <View style={{ flexDirection: isCompact ? 'column' : 'row', flexWrap: isCompact ? 'nowrap' : 'wrap', gap: Spacing.sm, alignItems: isCompact ? 'stretch' : 'center' }}>
-        <Button title="Broker setup" icon="chart-line" onPress={onStartZerodha} variant="outline" style={isCompact ? undefined : { flexGrow: 1, flexBasis: 220 }} />
-        <Button title="AA setup" icon="bank-transfer" onPress={onExploreAccountAggregator} variant="outline" style={isCompact ? undefined : { flexGrow: 1, flexBasis: 220 }} />
+        <Button title="Connect Zerodha" icon="chart-line" onPress={onStartZerodha} variant="outline" size="sm" style={isCompact ? undefined : { flexGrow: 1, flexBasis: 220 }} />
+        <Button title="Explore account sync" icon="bank-transfer" onPress={onExploreAccountAggregator} variant="outline" size="sm" style={isCompact ? undefined : { flexGrow: 1, flexBasis: 220 }} />
       </View>
     </Card>
   );

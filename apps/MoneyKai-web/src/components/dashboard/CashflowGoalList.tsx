@@ -24,7 +24,7 @@ export function CashflowGoalList({ goals, onViewAll }: CashflowGoalListProps) {
 
   return (
     <View testID="savings-goals" style={styles.root}>
-      <Card variant="glass" style={styles.card}>
+      <Card variant="glass" padding="md" style={styles.card}>
         <View style={styles.header}>
           <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>Savings goals</Text>
           <Button title="View all" variant="ghost" size="sm" onPress={onViewAll} />
@@ -85,19 +85,19 @@ export function CashflowGoalList({ goals, onViewAll }: CashflowGoalListProps) {
 const styles = StyleSheet.create({
   root: { flex: 1, minWidth: 0 },
   card: { flex: 1, minWidth: 0 },
-  header: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm, marginBottom: Spacing.sm },
+  header: { minHeight: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm, marginBottom: 2 },
   title: { flex: 1, minWidth: 0, fontSize: Typography.fontSize.md, lineHeight: Typography.lineHeight.md, fontFamily: Typography.fontFamily.semiBold },
   list: { minWidth: 0 },
-  goalRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.md, minWidth: 0 },
-  goalIcon: { width: 40, height: 40, borderRadius: BorderRadius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  goalRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 4, minWidth: 0 },
+  goalIcon: { width: 30, height: 30, borderRadius: BorderRadius.sm, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   goalBody: { flex: 1, minWidth: 0 },
   goalTopline: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   goalName: { flex: 1, minWidth: 0, fontSize: Typography.fontSize.base, lineHeight: Typography.lineHeight.base, fontFamily: Typography.fontFamily.medium },
   percent: { fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, fontFamily: Typography.fontFamily.semiBold },
-  goalValues: { marginTop: Spacing.xs, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, fontFamily: Typography.fontFamily.regular },
-  track: { height: 6, borderRadius: BorderRadius.full, overflow: 'hidden', marginTop: Spacing.sm },
+  goalValues: { marginTop: 2, fontSize: Typography.fontSize.xs, lineHeight: Typography.lineHeight.xs, fontFamily: Typography.fontFamily.regular },
+  track: { height: 4, borderRadius: BorderRadius.full, overflow: 'hidden', marginTop: 3 },
   fill: { height: '100%', borderRadius: BorderRadius.full },
-  endDate: { marginTop: Spacing.xs, fontSize: Typography.fontSize.xs, lineHeight: Typography.lineHeight.xs, fontFamily: Typography.fontFamily.regular },
+  endDate: { display: 'none', marginTop: Spacing.xs, fontSize: Typography.fontSize.xs, lineHeight: Typography.lineHeight.xs, fontFamily: Typography.fontFamily.regular },
   emptyState: { paddingVertical: Spacing.xl },
 });
 

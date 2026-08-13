@@ -11,11 +11,11 @@ import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 
 const VIEWBOX_WIDTH = 900;
-const VIEWBOX_HEIGHT = 320;
+const VIEWBOX_HEIGHT = 180;
 const PLOT_LEFT = 76;
-const PLOT_TOP = 34;
+const PLOT_TOP = 30;
 const PLOT_RIGHT = 18;
-const PLOT_BOTTOM = 42;
+const PLOT_BOTTOM = 32;
 const PLOT_WIDTH = VIEWBOX_WIDTH - PLOT_LEFT - PLOT_RIGHT;
 const PLOT_HEIGHT = VIEWBOX_HEIGHT - PLOT_TOP - PLOT_BOTTOM;
 const GRID_LINE_COUNT = 4;
@@ -150,19 +150,24 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
     Math.max(0, plan.timeline.length - 1),
   ])].filter((index) => index >= 0 && index < plan.timeline.length);
   const actualNetFlow = getLastActualValue(plan.timeline);
-  const summaryRows = [
-    { label: 'Opening date', value: displayDate(plan.timeline[0]?.date) },
-    { label: 'Actual net flow', value: formatCurrency(actualNetFlow) },
-    ...(plan.isForecastAvailable ? [
-      { label: 'Estimated commitments', value: formatCurrency(plan.metrics.upcomingCommitments) },
-      { label: 'Forecast net flow', value: formatCurrency(plan.metrics.forecastNetFlow) },
-    ] : [
-      { label: 'Period status', value: 'Closed reporting period' },
-    ]),
-  ];
+  const periodEndLabel = displayDate(plan.timeline[plan.timeline.length - 1]?.date, true);
+  const calloutEventIds = new Set(
+    plan.timeline
+      .flatMap((point) => [...point.actualEvents, ...point.projectedEvents])
+      .sort((left, right) => right.amount - left.amount || left.id.localeCompare(right.id))
+      .slice(0, 4)
+      .map((event) => event.id),
+  );
+
+  const accessibleSummary = `Cashflow timeline. Actual net flow: ${formatCurrency(actualNetFlow)}. ${plan.isForecastAvailable ? `Forecast month end: ${formatCurrency(plan.metrics.forecastNetFlow)}.` : 'Period status: Closed reporting period.'}`;
 
   return (
-    <View testID="cashflow-timeline">
+    <View
+      testID="cashflow-timeline"
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={accessibleSummary}
+    >
       <Card variant="outlined" padding="lg">
         <View
           style={{
@@ -193,14 +198,15 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
                 fontSize: Typography.fontSize.sm,
                 lineHeight: Typography.lineHeight.sm,
                 marginTop: Spacing.xs,
+                display: 'none',
               }}
             >
               Cumulative movement from reviewed transactions — not a bank balance.
             </Text>
           </View>
           <Button
-            title="View transactions"
-            icon="format-list-bulleted"
+            title="View calendar"
+            icon="calendar-month-outline"
             variant="ghost"
             size="sm"
             onPress={onViewTransactions}
@@ -219,7 +225,7 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
             <View style={{ width: 24, height: 3, borderRadius: BorderRadius.full, backgroundColor: colors.chart2 }} />
             <Text style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm }}>
-              Actual net flow
+              Projected balance
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
@@ -229,7 +235,7 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
               ))}
             </View>
             <Text style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm }}>
-              {plan.isForecastAvailable ? 'Estimated from reviewed transaction history' : 'Closed reporting period'}
+              {plan.isForecastAvailable ? 'Recurring expense' : 'Closed reporting period'}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
@@ -360,7 +366,54 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
                       true,
                       `projected-${event.id}`,
                     ));
-                  return [...actualMarkers, ...projectedMarkers];
+                  const actualCalloutEvent = point.actualEvents.find((event) => calloutEventIds.has(event.id));
+                  const projectedCalloutEvent = point.projectedEvents.find((event) => calloutEventIds.has(event.id));
+                  const calloutEvent = actualCalloutEvent ?? projectedCalloutEvent;
+                  const calloutValue = point.actualEvents.length > 0 ? actual : projected;
+                  const callout = calloutEvent && calloutValue !== null && calloutValue !== undefined
+                    ? (() => {
+                        const pointY = getY(calloutValue, domain.min, domain.max, PLOT_HEIGHT);
+                        const placeBelow = pointY < 58;
+                        const labelY = placeBelow ? pointY + 34 : pointY - 32;
+                        const alignRight = x > PLOT_WIDTH * 0.72;
+                        const textX = x + (alignRight ? -8 : 8);
+                        const eventLabel = actualCalloutEvent?.description ?? projectedCalloutEvent?.label ?? '';
+                        const amount = calloutEvent.type === 'expense' ? -calloutEvent.amount : calloutEvent.amount;
+                        return (
+                          <G key={`callout-${calloutEvent.id}`}>
+                            <Line
+                              x1={x}
+                              y1={pointY}
+                              x2={x}
+                              y2={placeBelow ? labelY - 14 : labelY + 5}
+                              stroke={withAlpha(calloutEvent.type === 'income' ? colors.success : colors.warning, 0.72)}
+                              strokeWidth={1}
+                            />
+                            <SvgText
+                              x={textX}
+                              y={labelY}
+                              fill={colors.textPrimary}
+                              fontFamily={Typography.fontFamily.semiBold}
+                              fontSize={10}
+                              textAnchor={alignRight ? 'end' : 'start'}
+                            >
+                              {formatCurrency(amount)}
+                            </SvgText>
+                            <SvgText
+                              x={textX}
+                              y={labelY + 13}
+                              fill={colors.textSecondary}
+                              fontFamily={Typography.fontFamily.regular}
+                              fontSize={9}
+                              textAnchor={alignRight ? 'end' : 'start'}
+                            >
+                              {eventLabel.slice(0, 18)}
+                            </SvgText>
+                          </G>
+                        );
+                      })()
+                    : null;
+                  return [...actualMarkers, ...projectedMarkers, callout];
                 })}
                 {plan.isForecastAvailable && currentDayIndex >= 0 ? (
                   <G>
@@ -447,54 +500,13 @@ export function CashflowTimeline({ plan, onViewTransactions }: CashflowTimelineP
           </Text>
         ) : null}
 
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderTopColor: colors.borderLight,
-            marginTop: Spacing.lg,
-            paddingTop: Spacing.md,
-          }}
-        >
-          <Text
-            accessibilityRole="header"
-            style={{
-              color: colors.textSecondary,
-              fontFamily: Typography.fontFamily.semiBold,
-              fontSize: Typography.fontSize.sm,
-              lineHeight: Typography.lineHeight.sm,
-              marginBottom: Spacing.sm,
-            }}
-          >
-            Cashflow timeline summary
+        <View style={{ marginTop: Spacing.sm, paddingTop: Spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderLight, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
+          <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.xs }}>
+            {plan.isForecastAvailable ? `Forecast net flow on ${periodEndLabel}` : 'Actual net flow for closed period'}
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-            {summaryRows.map((row) => (
-              <View
-                key={row.label}
-                accessible
-                accessibilityRole="text"
-                accessibilityLabel={`${row.label}: ${row.value}`}
-                style={{
-                  flexGrow: 1,
-                  flexBasis: 170,
-                  minWidth: 0,
-                  paddingVertical: Spacing.sm,
-                  paddingHorizontal: Spacing.md,
-                  borderRadius: BorderRadius.sm,
-                  backgroundColor: colors.surfaceElevated,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                }}
-              >
-                <Text style={{ color: colors.textTertiary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.xs }}>
-                  {row.label}
-                </Text>
-                <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm, marginTop: 2 }}>
-                  {row.value}
-                </Text>
-              </View>
-            ))}
-          </View>
+          <Text style={{ color: plan.isForecastAvailable ? colors.success : actualNetFlow < 0 ? colors.error : colors.success, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold }}>
+            {formatCurrency(plan.isForecastAvailable ? plan.metrics.forecastNetFlow : actualNetFlow)}
+          </Text>
         </View>
       </Card>
     </View>

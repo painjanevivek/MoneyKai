@@ -73,10 +73,10 @@ describe('CashflowSummaryStrip period metrics', () => {
     });
 
     expect(currentLabels).toEqual([
-      'Budget available: INR 123456789012',
+      'Available now: INR 123456789012',
       'Safe to spend: INR 7500',
       'Upcoming commitments: INR 2500',
-      'Forecast net flow: INR 8000',
+      'Forecast month end: INR 8000',
     ]);
     expect(historicalLabels).toEqual([
       'Budget available: INR 123456789012',

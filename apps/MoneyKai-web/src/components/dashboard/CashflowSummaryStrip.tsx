@@ -6,10 +6,10 @@ import { useTheme } from '@/hooks/useTheme';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 const forecastMetricLabels = [
-  'Budget available',
+  'Available now',
   'Safe to spend',
   'Upcoming commitments',
-  'Forecast net flow',
+  'Forecast month end',
 ] as const;
 
 const historicalMetricLabels = [
@@ -58,7 +58,8 @@ export function CashflowSummaryStrip({ plan }: CashflowSummaryStripProps) {
     }
     if (index === 2) return colors.warning;
     if (index === 3) return plan.metrics.forecastNetFlow < 0 ? colors.error : colors.success;
-    return index === 1 ? colors.success : colors.primary;
+    if (index === 0 || index === 3) return colors.success;
+    return colors.info;
   };
 
   return (
@@ -88,7 +89,7 @@ export function CashflowSummaryStrip({ plan }: CashflowSummaryStripProps) {
               width: cellWidth,
               minWidth: 0,
               paddingHorizontal: isCompact ? Spacing.md : Spacing.lg,
-              paddingVertical: Spacing.md,
+              paddingVertical: 22,
               borderRightWidth: isLastColumn ? 0 : 1,
               borderBottomWidth: !isLastRow ? 1 : 0,
               borderColor: colors.borderLight,

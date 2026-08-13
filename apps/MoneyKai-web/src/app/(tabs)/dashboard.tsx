@@ -346,7 +346,7 @@ export default function DashboardScreen() {
     <ScrollView
       testID="cashflow-dashboard"
       showsVerticalScrollIndicator={true}
-      contentContainerStyle={{ gap: Spacing.xl, paddingBottom: Spacing['4xl'] }}
+      contentContainerStyle={{ gap: Spacing.md, paddingBottom: Spacing.xl }}
     >
       {needsActivation ? (
         <>

@@ -1,4 +1,4 @@
-import React, { type PropsWithChildren, useState } from 'react';
+import React, { type PropsWithChildren, useEffect, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, usePathname } from 'expo-router';
@@ -45,7 +45,7 @@ const ROUTE_META: { href: string; title: string; subtitle: string; icon?: keyof 
   { href: '/budgets', title: 'Budgets', subtitle: 'Review monthly limits and budget health', icon: 'wallet-outline' },
   { href: '/goals', title: 'Goals', subtitle: 'Stay focused on savings progress' },
   { href: '/wealth', title: 'Wealth', subtitle: 'Net worth, allocation, and AI portfolio review' },
-  { href: '/portfolio', title: 'Portfolio', subtitle: 'Manual holdings and provider placeholders' },
+  { href: '/portfolio', title: 'Portfolio', subtitle: 'Track holdings, allocation, and account value in one place' },
   { href: '/reports', title: 'Reports', subtitle: 'Spot patterns in your spending' },
   { href: '/accounts', title: 'Accounts', subtitle: 'Linked balances, sync health, and account controls' },
   { href: '/categories', title: 'Categories', subtitle: 'See where money goes by category' },
@@ -156,6 +156,7 @@ function SlidingNavItems({ pathname, orientation }: { pathname: string; orientat
             accessibilityRole="link"
             accessibilityLabel={`Open ${item.label}`}
             accessibilityState={{ selected: active }}
+            aria-selected={active}
             onLayout={handleNavItemLayout(item.href)}
             onPress={() => router.push(item.href as any)}
             style={({ hovered, pressed }: any) => ({
@@ -204,10 +205,25 @@ export function DesktopShell({ children }: PropsWithChildren) {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
-  const sidebarWidth = width >= 1440 ? 300 : 268;
+  const sidebarWidth = width >= 1440 ? 278 : 250;
   const activeMeta = ROUTE_META.find((item) => isRouteActive(pathname, item.href)) ?? ROUTE_META[0];
   const isCompact = width < 900;
-  const sidebarHeight = Math.max(0, height - Spacing.base * 2);
+  const sidebarHeight = Math.max(0, height - 20);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const scrollToTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      scrollToTop();
+      const frame = window.requestAnimationFrame(scrollToTop);
+      const timer = window.setTimeout(scrollToTop, 50);
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.clearTimeout(timer);
+      };
+    }
+
+    return undefined;
+  }, [pathname]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -335,7 +351,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </View>
             </View>
 
-            {pathname !== '/dashboard' ? <ReportingMonthPicker compact /> : null}
+            {pathname !== '/dashboard' && pathname !== '/budgets' ? <ReportingMonthPicker compact /> : null}
 
             <ScrollView
               horizontal
@@ -374,6 +390,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
         <View
           pointerEvents="none"
           style={{
+            display: 'none',
             position: 'absolute',
             top: 0,
             bottom: 0,
@@ -385,6 +402,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
         <View
           pointerEvents="none"
           style={{
+            display: 'none',
             position: 'absolute',
             top: 0,
             bottom: 0,
@@ -396,26 +414,25 @@ export function DesktopShell({ children }: PropsWithChildren) {
         <View
           style={{
             width: sidebarWidth,
-            margin: Spacing.base,
+            margin: 10,
             marginRight: 0,
             borderWidth: 1,
             borderColor: colors.glassBorder,
-            borderRadius: BorderRadius['2xl'],
-            backgroundColor: colors.glassBg,
+            borderRadius: 24,
+            backgroundColor: withAlpha(colors.surface, 0.58),
             height: sidebarHeight,
             maxHeight: sidebarHeight,
-            paddingVertical: Spacing.base,
-            paddingHorizontal: Spacing.base,
+            paddingVertical: 18,
+            paddingHorizontal: 16,
             overflow: 'hidden',
             ...Shadows.sm,
             shadowColor: colors.shadowColor,
-            ...(glassBackdropStyle ?? {}),
           }}
         >
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-            showsVerticalScrollIndicator
+            contentContainerStyle={{ paddingBottom: insets.bottom + 96, flexGrow: 1 }}
+            showsVerticalScrollIndicator={false}
           >
             <Pressable
               accessibilityRole="link"
@@ -464,22 +481,39 @@ export function DesktopShell({ children }: PropsWithChildren) {
 
             <View
               style={{
+                position: 'absolute',
+                left: 12,
+                right: 12,
+                bottom: 12,
                 backgroundColor: colors.glassBg,
-                borderRadius: BorderRadius.lg,
-                padding: Spacing.md,
+                borderRadius: BorderRadius.md,
                 borderWidth: 1,
                 borderColor: colors.glassBorder,
-                ...Shadows.md,
+                ...Shadows.sm,
                 shadowColor: colors.shadowColor,
                 ...(glassBackdropStyle ?? {}),
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Open account settings"
+                onPress={() => router.push('/settings' as any)}
+                style={({ hovered, pressed }: any) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: BorderRadius.md,
+                  backgroundColor: hovered ? colors.surfaceElevated : 'transparent',
+                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                })}
+              >
                 <UserAvatar
                   name={user?.full_name}
                   email={user?.email}
                   avatarUrl={user?.avatar_url}
-                  size={42}
+                  size={34}
                 />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text
@@ -500,13 +534,15 @@ export function DesktopShell({ children }: PropsWithChildren) {
                     {user?.email || 'No email available'}
                   </Text>
                 </View>
-              </View>
+                <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textTertiary} />
+              </Pressable>
 
               <Pressable
                 accessibilityRole="link"
                 accessibilityLabel="Open MoneyKai Plus premium membership"
                 onPress={() => router.push('/subscriptions' as any)}
                 style={({ hovered, pressed }: any) => ({
+                  display: 'none',
                   minHeight: 40,
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -554,6 +590,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 accessibilityHint="The Android APK download is currently under development"
                 onPress={handleDownloadMobileApp}
                 style={({ hovered, pressed }: any) => ({
+                  display: 'none',
                   minHeight: 54,
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -619,7 +656,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
                 </View>
               </Pressable>
 
-              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
+              <View style={{ display: 'none', flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Open settings"
@@ -691,7 +728,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
         </View>
 
         <View style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-          <View
+          {pathname !== '/dashboard' && pathname !== '/budgets' && pathname !== '/portfolio' ? <View
             style={{
               marginTop: Spacing.base,
               marginRight: Spacing.base,
@@ -778,7 +815,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
               </Pressable>
 
             </View>
-          </View>
+          </View> : null}
 
           <View
             style={{
@@ -786,15 +823,15 @@ export function DesktopShell({ children }: PropsWithChildren) {
               minWidth: 0,
               position: 'relative',
               zIndex: 1,
-              paddingHorizontal: Spacing['2xl'],
-              paddingTop: Spacing.xl,
-              paddingBottom: insets.bottom + Spacing['2xl'],
+              paddingHorizontal: 24,
+              paddingTop: pathname === '/dashboard' || pathname === '/budgets' ? 18 : 16,
+              paddingBottom: insets.bottom + 20,
             }}
           >
             <View
               nativeID="main-content"
               role="main"
-              style={{ maxWidth: 1440, width: '100%', alignSelf: 'center', flex: 1, minWidth: 0 }}
+              style={{ maxWidth: 1460, width: '100%', alignSelf: 'center', flex: 1, minWidth: 0 }}
             >
               {children}
             </View>
