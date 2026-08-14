@@ -10,7 +10,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, type ColorScheme } from '@/constants/theme';
-import { WebsiteSkeleton } from '@/components/skeletons/WebsiteSkeleton';
+import { AppLoadingScreen } from '@/components/loading/AppLoadingScreen';
 import { captureSentryException, identifySentryUser } from '@/services/sentry';
 
 const AutoBackupCoordinator = lazy(() =>
@@ -277,7 +277,7 @@ export default function RootLayout() {
     </Stack>
   );
   const isServerRender = Platform.OS === 'web' && typeof window === 'undefined';
-  const showWebsiteSkeleton =
+  const showAppLoadingScreen =
     !isServerRender && shouldBlockForAppShellHydration(pathname) && isHydratingSession;
 
   return (
@@ -297,7 +297,7 @@ export default function RootLayout() {
         </Suspense>
       ) : null}
       <View key={currencyRenderToken} style={{ flex: 1, backgroundColor: colors.background }}>
-        <WebsiteSkeleton loading={showWebsiteSkeleton}>{content}</WebsiteSkeleton>
+        {showAppLoadingScreen ? <AppLoadingScreen colors={colors} /> : content}
       </View>
       {nonCriticalUiReady ? (
         <Suspense fallback={null}>
