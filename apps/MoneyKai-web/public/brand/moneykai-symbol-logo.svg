@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">MoneyKai symbol logo</title>
+  <rect width="512" height="512" fill="#000000"/>
+  <path d="M249 15 249 132 146 234 18 234Z" fill="#ffffff"/>
+  <path d="M271 15 271 132 373 234 501 234Z" fill="#ffffff"/>
+  <path d="M18 256 146 256 249 359 249 483Z" fill="#ffffff"/>
+  <path d="M501 256 373 256 271 359 271 483Z" fill="#ffffff"/>
+</svg>

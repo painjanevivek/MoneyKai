@@ -1,5 +1,6 @@
 import React, { type ReactNode } from 'react';
 import { Redirect } from 'expo-router';
+import { motion, useReducedMotion } from 'motion/react';
 import Archive from 'lucide-react/dist/esm/icons/archive.mjs';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3.mjs';
 import Check from 'lucide-react/dist/esm/icons/check.mjs';
@@ -127,15 +128,35 @@ const triageCards = [
 
 const audiences = ['Students', 'Families', 'Couples', 'Freelancers', 'Roommates'] as const;
 
-const currentReleaseFeatures = [
-  'Manual income and expense tracking',
-  'Budgets and categories',
-  'Savings and shared expense views',
-  'Export your records',
+const pricingPlans = [
+  {
+    name: 'Free',
+    price: '₹0',
+    availability: 'Available at launch',
+    description: 'Build a calm, consistent money-review habit without a subscription.',
+    features: ['Manual income and expense tracking', 'Budgets and categories', 'Savings and shared expense views', 'Export your records'],
+    cta: 'Create an account',
+  },
+  {
+    name: 'Plus',
+    price: '₹249',
+    availability: 'Coming soon',
+    description: 'For richer monthly context when the next MoneyKai release is ready.',
+    features: ['Everything in Free', 'Expanded review workflows', 'More report context', 'Priority feature access'],
+    cta: 'Join the Plus waitlist',
+  },
+  {
+    name: 'Premium',
+    price: '₹449',
+    availability: 'Coming soon',
+    description: 'For the most complete MoneyKai workspace as premium limits are finalized.',
+    features: ['Everything in Plus', 'Advanced reports', 'Portfolio review depth', 'Premium support path'],
+    cta: 'Join the Premium waitlist',
+  },
 ] as const;
 
 function LogoMark({ className = 'mk-logo-mark' }: { className?: string }) {
-  return <img src="/brand/moneykai-mark-96.png" className={className} alt="" aria-hidden="true" />;
+  return <img src="/brand/moneykai-symbol-logo.svg" className={className} alt="" aria-hidden="true" />;
 }
 
 function AppButton({ label = 'Open MoneyKai', full = false }: { label?: string; full?: boolean }) {
@@ -201,27 +222,45 @@ function Navbar() {
 }
 
 function Hero() {
+  const prefersReducedMotion = useReducedMotion();
+  const brandMotion = prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, scale: 0.82, rotate: -8 },
+        animate: { opacity: 1, scale: 1, rotate: 0 },
+        transition: { duration: 0.72, ease: [0.16, 1, 0.3, 1] as const },
+      };
+  const copyMotion = prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 20 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.64, delay: 0.16, ease: [0.16, 1, 0.3, 1] as const },
+      };
+
   return (
     <section className="mk-hero" aria-labelledby="hero-title">
-      <h1
+      <motion.div className="mk-hero-brand" {...brandMotion} aria-hidden="true">
+        <LogoMark className="mk-hero-mark" />
+        <span className="mk-hero-brand-line" />
+        <span>MoneyKai</span>
+      </motion.div>
+      <motion.h1
         id="hero-title"
         className="mk-hero-title"
+        {...copyMotion}
       >
-        <span>Review expenses, budgets,</span>
-        <span className="mk-shiny-text animate-shiny">and shared bills before the month ends.</span>
-      </h1>
-      <p
-        className="mk-hero-copy"
-      >
+        <span>Review your money,</span>
+        <span className="mk-shiny-text animate-shiny">before the month moves on.</span>
+      </motion.h1>
+      <motion.p className="mk-hero-copy" {...copyMotion}>
         Add your income and expenses, check each budget, keep shared costs organized, and export a copy of your
         records when you need one.
-      </p>
-      <div
-        className="mk-hero-actions"
-      >
-        <AppButton />
-        <span>Available on Android</span>
-      </div>
+      </motion.p>
+      <motion.div className="mk-hero-actions" {...copyMotion}>
+        <AppButton label="Create an account" />
+        <a href="#pricing">See upcoming plans</a>
+      </motion.div>
     </section>
   );
 }
@@ -250,8 +289,18 @@ function MenuBar() {
 }
 
 function MoneyMockup() {
+  const prefersReducedMotion = useReducedMotion();
+  const revealMotion = prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 40, scale: 0.98 },
+        whileInView: { opacity: 1, y: 0, scale: 1 },
+        viewport: { once: true, amount: 0.2 },
+        transition: { duration: 0.72, ease: [0.16, 1, 0.3, 1] as const },
+      };
+
   return (
-    <section className="mk-mockup-section" aria-label="MoneyKai app preview">
+    <motion.section className="mk-mockup-section" aria-label="MoneyKai app preview" {...revealMotion}>
       <div className="mk-window">
         <div className="mk-titlebar">
           <div className="mk-traffic">
@@ -361,7 +410,7 @@ function MoneyMockup() {
           </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
@@ -416,46 +465,52 @@ function AudienceStrip() {
 }
 
 function Pricing() {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <section id="pricing" className="c3-pricing-section">
-      <svg className="mk-noise-svg" aria-hidden="true">
-        <filter id="c3-noise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" stitchTiles="stitch" />
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.075" />
-          </feComponentTransfer>
-          <feComposite in2="SourceGraphic" operator="in" result="noise" />
-          <feBlend in="SourceGraphic" in2="noise" mode="overlay" />
-        </filter>
-      </svg>
-      <div className="c3-watermark-container">
-        <h2 className="c3-watermark-main">
-          <span className="c3-watermark-line-1">Current Android</span>
-          <span className="c3-watermark-line-2">release</span>
-        </h2>
+      <div className="c3-pricing-intro">
+        <div className="mk-pricing-brand" aria-hidden="true">
+          <LogoMark />
+          <span />
+        </div>
+        <h2>Clear plans for the next MoneyKai release.</h2>
+        <p>There is no Android release today. These plans are for the upcoming MoneyKai web experience and are not yet available to purchase.</p>
       </div>
-      <div className="c3-grid c3-grid-single">
-        <article className="c3-card">
-          <span className="c3-tier-small">Current Android release</span>
-          <strong className="c3-tier-large">Free</strong>
-          <p className="c3-desc">
-            Record transactions, review budgets, check savings progress, and export your records. This release has no
-            paid Android plan.
-          </p>
-          <ul className="c3-list">
-            {currentReleaseFeatures.map((feature) => (
-              <li key={feature}>
-                <span className="c3-check">
-                  <Check size={14} strokeWidth={2.4} />
-                </span>
-                {feature}
-              </li>
-            ))}
-          </ul>
-          <a className="c3-btn" href="/signup">
-            Create an account
-          </a>
-        </article>
+      <div className="c3-grid">
+        {pricingPlans.map((plan, index) => (
+          <motion.article
+            key={plan.name}
+            className={`c3-card ${plan.name === 'Premium' ? 'c3-card-featured' : ''}`}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 28 }}
+            whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.24 }}
+            transition={{ duration: 0.55, delay: prefersReducedMotion ? 0 : index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="c3-card-head">
+              <span className="c3-tier-small">{plan.availability}</span>
+              <strong>{plan.name}</strong>
+            </div>
+            <div className="c3-price-row">
+              <span>{plan.price}</span>
+              <small>per month</small>
+            </div>
+            <p className="c3-desc">{plan.description}</p>
+            <ul className="c3-list">
+              {plan.features.map((feature) => (
+                <li key={feature}>
+                  <span className="c3-check">
+                    <Check size={14} strokeWidth={2.4} />
+                  </span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <a className="c3-btn" href="/signup">
+              {plan.cta}
+            </a>
+          </motion.article>
+        ))}
       </div>
     </section>
   );
@@ -504,10 +559,10 @@ export default function LandingScreen() {
   const structuredData = [
     {
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
+      '@type': 'WebApplication',
       name: SITE.name,
       applicationCategory: 'FinanceApplication',
-      operatingSystem: 'Android',
+      operatingSystem: 'Web',
       url: SITE.url,
       description,
       offers: {
