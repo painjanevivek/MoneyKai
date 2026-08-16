@@ -19,7 +19,7 @@ export const Card: React.FC<CardProps> = ({
   variant = 'default',
   tone = 'default',
   padding = 'base',
-  borderRadius = 'lg',
+  borderRadius = 'md',
 }) => {
   const { colors, isDark } = useTheme();
   const isToned = tone !== 'default';
