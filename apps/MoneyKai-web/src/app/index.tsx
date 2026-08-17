@@ -226,21 +226,19 @@ function Hero() {
   const brandMotion = prefersReducedMotion
     ? {}
     : {
-        initial: { opacity: 0, scale: 0.82, rotate: -8 },
         animate: { opacity: 1, scale: 1, rotate: 0 },
         transition: { duration: 0.72, ease: [0.16, 1, 0.3, 1] as const },
       };
   const copyMotion = prefersReducedMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 20 },
         animate: { opacity: 1, y: 0 },
         transition: { duration: 0.64, delay: 0.16, ease: [0.16, 1, 0.3, 1] as const },
       };
 
   return (
     <section className="mk-hero" aria-labelledby="hero-title">
-      <motion.div className="mk-hero-brand" {...brandMotion} aria-hidden="true">
+      <motion.div className="mk-hero-brand" {...brandMotion} initial={false} aria-hidden="true">
         <LogoMark className="mk-hero-mark" />
         <span className="mk-hero-brand-line" />
         <span>MoneyKai</span>
@@ -249,15 +247,16 @@ function Hero() {
         id="hero-title"
         className="mk-hero-title"
         {...copyMotion}
+        initial={false}
       >
         <span>Review your money,</span>
         <span className="mk-shiny-text animate-shiny">before the month moves on.</span>
       </motion.h1>
-      <motion.p className="mk-hero-copy" {...copyMotion}>
+      <motion.p className="mk-hero-copy" {...copyMotion} initial={false}>
         Add your income and expenses, check each budget, keep shared costs organized, and export a copy of your
         records when you need one.
       </motion.p>
-      <motion.div className="mk-hero-actions" {...copyMotion}>
+      <motion.div className="mk-hero-actions" {...copyMotion} initial={false}>
         <AppButton label="Create an account" />
         <a href="#pricing">See upcoming plans</a>
       </motion.div>
@@ -293,14 +292,18 @@ function MoneyMockup() {
   const revealMotion = prefersReducedMotion
     ? {}
     : {
-        initial: { opacity: 0, y: 40, scale: 0.98 },
         whileInView: { opacity: 1, y: 0, scale: 1 },
         viewport: { once: true, amount: 0.2 },
         transition: { duration: 0.72, ease: [0.16, 1, 0.3, 1] as const },
       };
 
   return (
-    <motion.section className="mk-mockup-section" aria-label="MoneyKai app preview" {...revealMotion}>
+    <motion.section
+      className="mk-mockup-section"
+      aria-label="MoneyKai app preview"
+      {...revealMotion}
+      initial={false}
+    >
       <div className="mk-window">
         <div className="mk-titlebar">
           <div className="mk-traffic">
@@ -482,7 +485,7 @@ function Pricing() {
           <motion.article
             key={plan.name}
             className={`c3-card ${plan.name === 'Premium' ? 'c3-card-featured' : ''}`}
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 28 }}
+            initial={false}
             whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.24 }}
             transition={{ duration: 0.55, delay: prefersReducedMotion ? 0 : index * 0.1, ease: [0.16, 1, 0.3, 1] }}

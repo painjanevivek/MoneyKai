@@ -157,11 +157,11 @@ check(
 const forbiddenScriptSources = ["'unsafe-inline'", "'unsafe-eval'", "'wasm-unsafe-eval'", "'strict-dynamic'"];
 const presentForbiddenScriptSources = forbiddenScriptSources.filter((source) => scriptSources.includes(source));
 check(
-  'CSP executable scripts use a narrow Expo hydration hash',
-  scriptSources.includes(expoHydrationHash) && presentForbiddenScriptSources.length === 0,
+  'CSP permits same-origin Expo scripts with a narrow hydration hash',
+  scriptSources.includes("'self'") && scriptSources.includes(expoHydrationHash) && presentForbiddenScriptSources.length === 0,
   presentForbiddenScriptSources.length > 0
     ? `Forbidden script sources: ${presentForbiddenScriptSources.join(', ')}`
-    : `Expected hydration source ${expoHydrationHash}`
+    : `Expected same-origin scripts and hydration source ${expoHydrationHash}`
 );
 
 check(
