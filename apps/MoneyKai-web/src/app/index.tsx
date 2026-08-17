@@ -1,5 +1,7 @@
 import React, { type ReactNode } from 'react';
+import { useGSAP } from '@gsap/react';
 import { Redirect } from 'expo-router';
+import { gsap } from 'gsap';
 import { motion, useReducedMotion } from 'motion/react';
 import Archive from 'lucide-react/dist/esm/icons/archive.mjs';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3.mjs';
@@ -126,7 +128,18 @@ const triageCards = [
   },
 ] as const;
 
-const audiences = ['Students', 'Families', 'Couples', 'Freelancers', 'Roommates'] as const;
+const audiences = [
+  'Students',
+  'First-job earners',
+  'Families',
+  'Couples',
+  'Freelancers',
+  'Roommates',
+  'Self-employed',
+  'Shared households',
+] as const;
+
+gsap.registerPlugin(useGSAP);
 
 const pricingPlans = [
   {
@@ -455,13 +468,39 @@ function FeatureTriage() {
 }
 
 function AudienceStrip() {
+  const marqueeRef = React.useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion || !marqueeRef.current) return;
+
+      gsap.to(marqueeRef.current, {
+        xPercent: -50,
+        duration: 32,
+        ease: 'none',
+        repeat: -1,
+      });
+    },
+    { dependencies: [prefersReducedMotion], revertOnUpdate: true, scope: marqueeRef }
+  );
+
   return (
-    <section className="mk-logo-cloud" aria-label="MoneyKai use cases">
+    <section
+      className="mk-logo-cloud"
+      aria-label={`MoneyKai supports ${audiences.join(', ')}`}
+    >
       <p>For personal budgets and shared bills</p>
-      <div>
-        {audiences.map((audience) => (
-          <span key={audience}>{audience}</span>
-        ))}
+      <div className="mk-audience-viewport">
+        <div ref={marqueeRef} className="mk-audience-track" aria-hidden="true">
+          {[0, 1].map((copy) => (
+            <div className="mk-audience-list" key={copy}>
+              {audiences.map((audience) => (
+                <span key={`${copy}-${audience}`}>{audience}</span>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

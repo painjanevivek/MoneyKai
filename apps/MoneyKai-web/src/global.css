@@ -784,20 +784,40 @@ html {
   text-transform: uppercase;
 }
 
-.mk-logo-cloud div {
-  margin-top: 40px;
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 24px;
+.mk-audience-viewport {
+  width: 100%;
+  margin-top: 32px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
 
-.mk-logo-cloud span {
+.mk-audience-track,
+.mk-audience-list {
+  display: flex;
+  align-items: center;
+  width: max-content;
+}
+
+.mk-audience-track {
+  will-change: transform;
+}
+
+.mk-audience-list {
+  flex: 0 0 auto;
+  gap: clamp(32px, 5vw, 80px);
+  padding-right: clamp(32px, 5vw, 80px);
+}
+
+.mk-audience-list span {
+  flex: 0 0 auto;
   color: rgba(255, 255, 255, 0.5);
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.mk-logo-cloud span:hover {
+.mk-audience-list span:hover {
   color: #fff;
 }
 
@@ -1169,10 +1189,6 @@ html {
     grid-template-columns: 1fr;
   }
 
-  .mk-logo-cloud div {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .c3-watermark-main {
     font-size: 3.5rem;
     filter: none;
@@ -1275,8 +1291,8 @@ html {
     padding: 18px;
   }
 
-  .mk-logo-cloud div {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .mk-audience-viewport {
+    margin-top: 24px;
   }
 
   .mk-final-cta > div {
