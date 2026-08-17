@@ -149,7 +149,7 @@ export function LearnArticleTemplate({
         '@type': 'Organization',
         name: SITE.name,
         url: SITE.url,
-        logo: `${SITE.url}/brand/moneykai-mark.jpeg`,
+        logo: `${SITE.url}${SITE.logoPath}`,
       },
       mainEntityOfPage: `${SITE.url}${articlePath}`,
     },

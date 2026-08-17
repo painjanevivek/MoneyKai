@@ -1523,34 +1523,6 @@ html {
   padding: 72px 24px 52px;
 }
 
-.mk-hero-brand,
-.mk-pricing-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--mk-ink);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.mk-hero-brand {
-  margin-bottom: 22px;
-}
-
-.mk-hero-mark {
-  width: 34px;
-  height: 34px;
-}
-
-.mk-hero-brand-line,
-.mk-pricing-brand > span {
-  width: 28px;
-  height: 1px;
-  background: var(--mk-line);
-}
-
 .mk-hero-title {
   max-width: 62rem;
   font-size: clamp(3rem, 6.6vw, 5.9rem);
@@ -1605,14 +1577,11 @@ html {
   text-align: center;
 }
 
-.mk-pricing-brand {
-  justify-content: center;
+.mk-pricing-wordmark {
+  display: block;
+  width: min(100%, 294px);
+  height: auto;
   margin-bottom: 18px;
-}
-
-.mk-pricing-brand .mk-logo-mark {
-  width: 30px;
-  height: 30px;
 }
 
 .c3-pricing-intro h2 {

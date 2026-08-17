@@ -4,7 +4,7 @@ import { LEARN_ARTICLES, LEARN_CATEGORIES } from '@/data/learnArticles';
 export const SITE = {
   name: 'MoneyKai',
   url: 'https://moneykai.com',
-  logoPath: '/brand/moneykai-mark.jpeg',
+  logoPath: '/brand/moneykai-wordmark.svg',
   supportEmail: 'support@moneykai.app',
   sameAs: [] as string[],
   title: 'MoneyKai | Official Website',

@@ -501,10 +501,7 @@ function Pricing() {
   return (
     <section id="pricing" className="c3-pricing-section">
       <div className="c3-pricing-intro">
-        <div className="mk-pricing-brand" aria-hidden="true">
-          <LogoMark />
-          <span />
-        </div>
+        <img className="mk-pricing-wordmark" src="/brand/moneykai-wordmark.svg" alt="MoneyKai" />
         <h2>Clear plans for the next MoneyKai release.</h2>
         <p>There is no Android release today. These plans are for the upcoming MoneyKai web experience and are not yet available to purchase.</p>
       </div>
