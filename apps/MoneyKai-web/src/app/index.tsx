@@ -236,12 +236,6 @@ function Navbar() {
 
 function Hero() {
   const prefersReducedMotion = useReducedMotion();
-  const brandMotion = prefersReducedMotion
-    ? {}
-    : {
-        animate: { opacity: 1, scale: 1, rotate: 0 },
-        transition: { duration: 0.72, ease: [0.16, 1, 0.3, 1] as const },
-      };
   const copyMotion = prefersReducedMotion
     ? {}
     : {
@@ -251,11 +245,6 @@ function Hero() {
 
   return (
     <section className="mk-hero" aria-labelledby="hero-title">
-      <motion.div className="mk-hero-brand" {...brandMotion} initial={false} aria-hidden="true">
-        <LogoMark className="mk-hero-mark" />
-        <span className="mk-hero-brand-line" />
-        <span>MoneyKai</span>
-      </motion.div>
       <motion.h1
         id="hero-title"
         className="mk-hero-title"

@@ -587,10 +587,6 @@ export default function TransactionsScreen() {
               { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
               { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'danger' : 'positive' },
             ]}
-            chips={[
-              { icon: 'filter-variant', label: `${activeFilterCount} active filters` },
-              { icon: 'sort', label: sortLabel },
-            ]}
             actions={<Button title="Add Transaction" icon="plus" onPress={handleOpenAddModal} variant="outline" />}
           />
         </View>
