@@ -136,7 +136,7 @@ export function AuthShell({ children, eyebrow, title, subtitle, showHero = true 
                     }}
                   >
                     <Image
-                      source={require('../../../assets/images/moneykai-logo.png')}
+                      source={{ uri: '/brand/moneykai-symbol-logo.svg' }}
                       style={{ width: 38, height: 38 }}
                       resizeMode="contain"
                       accessibilityLabel="MoneyKai logo"

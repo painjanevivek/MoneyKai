@@ -58,7 +58,7 @@ const ROUTE_META: { href: string; title: string; subtitle: string; icon?: keyof 
 function MoneyKaiBrandMark({ size }: { size: number }) {
   return (
     <Image
-      source={{ uri: '/brand/moneykai-mark-96.png' }}
+      source={{ uri: '/brand/moneykai-symbol-logo.svg' }}
       contentFit="contain"
       contentPosition="center"
       accessibilityIgnoresInvertColors

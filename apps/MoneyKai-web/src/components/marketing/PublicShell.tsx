@@ -48,7 +48,7 @@ function BrandMark({ colors, lightMode }: { colors: ColorScheme; lightMode: bool
       }}
     >
       <Image
-        source={{ uri: '/brand/moneykai-mark-96.png' }}
+        source={{ uri: '/brand/moneykai-symbol-logo.svg' }}
         contentFit="contain"
         accessibilityIgnoresInvertColors
         style={{
