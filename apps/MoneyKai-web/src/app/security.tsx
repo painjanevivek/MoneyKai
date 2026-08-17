@@ -1,8 +1,10 @@
 import React from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text, View, useWindowDimensions } from 'react-native';
+import { Link } from 'expo-router';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { PublicShell, SectionCard } from '@/components/marketing/PublicShell';
 import { SeoHead } from '@/components/marketing/SeoHead';
+import { SECURITY_GUIDES } from '@/content/securityGuides';
 import { SITE } from '@/constants/site';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
@@ -139,6 +141,58 @@ export default function SecurityScreen() {
                 </Text>
               </View>
             ))}
+          </View>
+
+          <View style={{ gap: Spacing.lg }}>
+            <View style={{ gap: Spacing.xs }}>
+              <Text style={{ fontSize: Typography.fontSize['2xl'], fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
+                Explore security guides
+              </Text>
+              <Text style={{ maxWidth: 760, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
+                Read the specific controls and user boundaries behind browser protection, account access, and backup workflows.
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
+              {SECURITY_GUIDES.map((guide) => (
+                <Link key={guide.slug} href={`/security/${guide.slug}` as any} asChild>
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`Read the ${guide.label} security guide`}
+                    style={({ hovered, pressed }: any) => ({
+                      flex: 1,
+                      minWidth: 0,
+                      minHeight: 184,
+                      gap: Spacing.md,
+                      padding: Spacing.lg,
+                      borderRadius: BorderRadius.lg,
+                      backgroundColor: hovered ? colors.primaryBg : colors.card,
+                      borderWidth: 1,
+                      borderColor: hovered ? colors.primary : colors.border,
+                      transform: pressed ? [{ scale: 0.99 }] : hovered ? [{ translateY: -2 }] : [{ translateY: 0 }],
+                    })}
+                  >
+                    <View style={{ width: 42, height: 42, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
+                      <MaterialCommunityIcons name={guide.icon} size={21} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0, gap: Spacing.xs }}>
+                      <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                        {guide.label}
+                      </Text>
+                      <Text style={{ fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }} numberOfLines={3}>
+                        {guide.description}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs }}>
+                      <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
+                        Read guide
+                      </Text>
+                      <MaterialCommunityIcons name="arrow-right" size={17} color={colors.primary} />
+                    </View>
+                  </Pressable>
+                </Link>
+              ))}
+            </View>
           </View>
 
           <View style={{ gap: Spacing.lg }}>

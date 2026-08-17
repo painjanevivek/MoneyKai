@@ -23,7 +23,13 @@ import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
 import { useAuthStore } from '@/stores/useAuthStore';
 
-const navLinks = ['Features', 'Pricing', 'Security', 'Learn', 'Contact'] as const;
+const navLinks = [
+  { label: 'Features', href: '#features' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'Security', href: '/security' },
+  { label: 'Learn', href: '/docs' },
+  { label: 'Contact', href: '/contact' },
+] as const;
 
 const moneyItems = [
   {
@@ -216,11 +222,11 @@ function Navbar() {
       <div className="mk-nav-links">
         {navLinks.map((item, index) => (
           <a
-            key={item}
-            href={item === 'Pricing' ? '#pricing' : item === 'Contact' ? '/contact' : `#${item.toLowerCase()}`}
+            key={item.label}
+            href={item.href}
             style={{ animationDelay: `${100 + index * 50}ms` }}
           >
-            {item}
+            {item.label}
           </a>
         ))}
       </div>
