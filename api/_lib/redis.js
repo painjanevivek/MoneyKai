@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const { Redis } = require('@upstash/redis');
 
 const REQUIRED_ENV = ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'];
+const VERCEL_KV_ENV = ['KV_REST_API_URL', 'KV_REST_API_TOKEN'];
 const REDIS_KEY_PREFIX = 'mk';
 const REDIS_KEY_PURPOSES = new Set(['rl', 'cache', 'cooldown', 'dedupe']);
 const DEFAULT_MAX_TTL_SECONDS = 24 * 60 * 60;
@@ -59,9 +60,11 @@ const describeRedisKey = (key) => {
 };
 
 const readRedisConfig = () => {
-  const url = process.env.UPSTASH_REDIS_REST_URL || '';
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || '';
-  const missingEnv = REQUIRED_ENV.filter((name) => !process.env[name]);
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '';
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '';
+  const missingEnv = url && token
+    ? []
+    : REQUIRED_ENV.filter((name, index) => ![process.env[name], process.env[VERCEL_KV_ENV[index]]].some(Boolean));
 
   return {
     configured: missingEnv.length === 0,
