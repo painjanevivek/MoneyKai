@@ -5,7 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useHydratedViewportWidth } from '@/hooks/useHydratedViewportWidth';
-import { BorderRadius, Colors, Shadows, Spacing, Typography, type ColorScheme } from '@/constants/theme';
+import { BorderRadius, Colors, ComponentTokens, Shadows, Spacing, Typography, type ColorScheme } from '@/constants/theme';
 import { SITE } from '@/constants/site';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { glassBackdropStyle, withAlpha } from '@/utils/glassStyle';
@@ -247,13 +247,8 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                     style={{
                       flexDirection: 'row',
                       flexWrap: 'wrap',
-                      columnGap: Spacing.xs,
-                      rowGap: Spacing.xs,
-                      padding: 6,
-                      borderRadius: BorderRadius.full,
-                      backgroundColor: navLightMode ? 'rgba(255, 255, 255, 0.78)' : 'rgba(255, 255, 255, 0.055)',
-                      borderWidth: 1,
-                      borderColor: navLightMode ? navColors.borderLight : withAlpha(shellColors.primary, 0.18),
+                      justifyContent: isWide ? 'center' : 'flex-start',
+                      gap: Spacing.md,
                     }}
                   >
                     {PRIMARY_LINKS.map((item) => {
@@ -267,19 +262,19 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                             style={({ hovered, pressed }: any) => {
                               const highlighted = active || hovered;
                               return {
-                                minHeight: 34,
+                                minHeight: ComponentTokens.controlHeight.sm,
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                paddingHorizontal: 14,
-                                paddingVertical: 8,
+                                paddingHorizontal: Spacing.md,
+                                paddingVertical: Spacing.sm,
                                 borderRadius: BorderRadius.full,
                                 backgroundColor: highlighted
                                   ? (navLightMode ? '#FFFFFF' : withAlpha(shellColors.primary, 0.16))
-                                  : 'transparent',
+                                  : (navLightMode ? navColors.surfaceElevated : 'rgba(255, 255, 255, 0.055)'),
                                 borderWidth: 1,
                                 borderColor: highlighted
                                   ? (navLightMode ? navColors.borderLight : withAlpha(shellColors.primaryLight, 0.24))
-                                  : 'transparent',
+                                  : (navLightMode ? navColors.borderLight : withAlpha(shellColors.primary, 0.18)),
                                 transform: pressed ? [{ scale: 0.98 }] : hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
                               };
                             }}
@@ -449,7 +444,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                   Contact: {SITE.supportEmail}
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.md, rowGap: Spacing.sm }}>
                 {[
                   { href: '/about', label: 'About' },
                   { href: '/services', label: 'Services' },
@@ -466,16 +461,19 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                     <Pressable
                       accessibilityRole="link"
                       accessibilityLabel={`Open ${item.label}`}
-                      style={({ hovered }: any) => ({
-                        flexDirection: 'row',
+                      style={({ hovered, pressed }: any) => ({
+                        minHeight: ComponentTokens.controlHeight.sm,
                         alignItems: 'center',
-                        gap: 6,
-                        paddingVertical: 4,
-                        paddingRight: 6,
-                        opacity: hovered ? 1 : 0.9,
+                        justifyContent: 'center',
+                        paddingHorizontal: Spacing.sm,
+                        paddingVertical: Spacing.sm,
+                        borderRadius: BorderRadius.sm,
+                        backgroundColor: hovered ? shellColors.surfaceElevated : 'transparent',
+                        borderWidth: 1,
+                        borderColor: hovered ? shellColors.borderLight : 'transparent',
+                        transform: pressed ? [{ scale: 0.98 }] : [{ scale: 1 }],
                       })}
                     >
-                      <Text style={{ fontSize: Typography.fontSize.sm, color: shellColors.textTertiary }}>-&gt;</Text>
                       <Text style={{ fontSize: Typography.fontSize.sm, color: shellColors.textSecondary }}>{item.label}</Text>
                     </Pressable>
                   </Link>

@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, TextInput, Platform, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { endOfDay, endOfWeek, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
 import { useTheme } from '@/hooks/useTheme';
@@ -70,6 +71,7 @@ export default function TransactionsScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { add } = useLocalSearchParams<{ add?: string }>();
   const userId = useAuthStore((s) => s.user?.id ?? 'local');
   const { addTransaction, updateTransaction, deleteTransaction, setFilter } = useTransactionStore();
   const allTransactions = useTransactionStore((s) => s.transactions);
@@ -98,7 +100,7 @@ export default function TransactionsScreen() {
   const [showMobileDatePicker, setShowMobileDatePicker] = useState(false);
   const isEditing = editingTransaction !== null;
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setTxnAmount('');
     setTxnCategory('');
     setTxnDescription('');
@@ -106,7 +108,7 @@ export default function TransactionsScreen() {
     setTxnType('expense');
     setTxnDate(getTodayDate());
     setShowMobileDatePicker(false);
-  };
+  }, []);
 
   const handleTabChange = (tab: typeof FILTER_TABS[number]) => {
     setActiveTab(tab);
@@ -141,11 +143,20 @@ export default function TransactionsScreen() {
     setTxnDate(transaction.transaction_date);
   };
 
-  const handleOpenAddModal = () => {
+  const handleOpenAddModal = useCallback(() => {
     setEditingTransaction(null);
     resetForm();
     setShowAddModal(true);
-  };
+  }, [resetForm]);
+
+  useEffect(() => {
+    if (add !== 'true') {
+      return undefined;
+    }
+
+    const frameId = requestAnimationFrame(handleOpenAddModal);
+    return () => cancelAnimationFrame(frameId);
+  }, [add, handleOpenAddModal]);
 
   const handleOpenEditModal = (transaction: Transaction) => {
     setEditingTransaction(transaction);
@@ -229,13 +240,6 @@ export default function TransactionsScreen() {
     const availableSources = new Set(allTransactions.map((transaction) => transaction.captureSource).filter(Boolean));
     return CAPTURE_SOURCE_OPTIONS.filter((option) => availableSources.has(option.id));
   }, [allTransactions]);
-  const activeFilterCount =
-    Number(categoryFilter !== 'all') +
-    Number(paymentFilter !== 'all') +
-    Number(accountFilter !== 'all') +
-    Number(sourceFilter !== 'all') +
-    Number(dateFilter !== 'all');
-  const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest First';
   const netFlow = totalIncome - totalSpent;
   const isLedgerWide = width >= 980;
 
@@ -650,46 +654,6 @@ export default function TransactionsScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <TouchableOpacity
-                onPress={() => setShowFilterModal(true)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  paddingHorizontal: Spacing.md,
-                  paddingVertical: Spacing.sm,
-                  borderRadius: BorderRadius.full,
-                  backgroundColor: activeFilterCount > 0 ? colors.primaryBg : colors.card,
-                  borderWidth: 1,
-                  borderColor: activeFilterCount > 0 ? colors.primary : colors.border,
-                }}
-              >
-                <MaterialCommunityIcons name="filter-variant" size={16} color={activeFilterCount > 0 ? colors.primary : colors.textSecondary} />
-                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: activeFilterCount > 0 ? colors.primary : colors.textSecondary }}>
-                  {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setShowSortModal(true)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  paddingHorizontal: Spacing.md,
-                  paddingVertical: Spacing.sm,
-                  borderRadius: BorderRadius.full,
-                  backgroundColor: colors.card,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <MaterialCommunityIcons name="sort" size={16} color={colors.textSecondary} />
-                <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>
-                  {sortLabel}
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>
