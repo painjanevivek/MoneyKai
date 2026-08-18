@@ -246,29 +246,6 @@ function Hero() {
   );
 }
 
-function MenuBar() {
-  const items = ['Expenses', 'Budgets', 'Savings', 'Backups'] as const;
-
-  return (
-    <div
-      className="mk-menu-strip"
-    >
-      <div className="mk-menu-inner">
-        <div className="mk-menu-left">
-          <LogoMark className="mk-menu-logo" />
-          <strong>MoneyKai</strong>
-          <span className="mk-strip-caption">Private money review, organized locally.</span>
-        </div>
-        <div className="mk-menu-right">
-          {items.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function MoneyMockup() {
   const prefersReducedMotion = useReducedMotion();
   const revealMotion = prefersReducedMotion
@@ -598,7 +575,6 @@ export default function LandingScreen() {
         <Navbar />
         <main id="main-content">
           <Hero />
-          <MenuBar />
           <MoneyMockup />
           <FeatureTriage />
           <AudienceStrip />

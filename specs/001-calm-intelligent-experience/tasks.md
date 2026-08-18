@@ -62,7 +62,7 @@ Use `fix(scope): ...` when correcting a defect. Stage only the files produced by
 **Independent Test**: With motion both enabled and reduced, a visitor can identify MoneyKai’s purpose and primary action within the first view, then reach accurate pricing and availability content while scrolling.
 
 - [X] T011 [P] [US1] Write landing-page content and claim tests in `apps/MoneyKai-web/src/app/index.test.tsx`, covering web-only wording, Free/coming-soon pricing labels, and the primary call to action.
-- [ ] T012 [US1] Recompose the public story and remove redundant/empty sections in `apps/MoneyKai-web/src/app/index.tsx` using the promise → proof → benefits → trust → pricing → action sequence from `plan.md`.
+- [X] T012 [US1] Recompose the public story and remove redundant/empty sections in `apps/MoneyKai-web/src/app/index.tsx` using the promise → proof → benefits → trust → pricing → action sequence from `plan.md`.
 - [ ] T013 [US1] Consolidate the landing-page visual hierarchy and responsive spacing in `apps/MoneyKai-web/src/global.css` using existing warm MoneyKai public tokens rather than adding a competing style system.
 - [ ] T014 [US1] Implement the landing hero and product-preview motion recipes in `apps/MoneyKai-web/src/app/index.tsx` with a complete stable reduced-motion path from `src/utils/motionPolicy.ts`.
 - [ ] T015 [US1] Encapsulate any required timeline-only landing composition in `apps/MoneyKai-web/src/components/marketing/LandingMotionScene.tsx`; do not introduce ambient workspace motion or a new animation dependency.
