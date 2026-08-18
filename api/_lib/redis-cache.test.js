@@ -74,6 +74,35 @@ test('builds namespaced Redis keys and hashes sensitive identifiers', () => {
   assert.equal(cooldownKey.includes(ipAddress), false);
 });
 
+
+test('recognizes Vercel Upstash Redis environment variable aliases', () => {
+  const originalUpstashUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const originalUpstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const originalKvUrl = process.env.KV_REST_API_URL;
+  const originalKvToken = process.env.KV_REST_API_TOKEN;
+
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  process.env.KV_REST_API_URL = 'https://example.upstash.io';
+  process.env.KV_REST_API_TOKEN = 'test-token';
+
+  try {
+    assert.deepEqual(redis.getRedisConfigStatus(), {
+      configured: true,
+      missingEnv: [],
+    });
+  } finally {
+    if (originalUpstashUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
+    else process.env.UPSTASH_REDIS_REST_URL = originalUpstashUrl;
+    if (originalUpstashToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    else process.env.UPSTASH_REDIS_REST_TOKEN = originalUpstashToken;
+    if (originalKvUrl === undefined) delete process.env.KV_REST_API_URL;
+    else process.env.KV_REST_API_URL = originalKvUrl;
+    if (originalKvToken === undefined) delete process.env.KV_REST_API_TOKEN;
+    else process.env.KV_REST_API_TOKEN = originalKvToken;
+  }
+});
+
 test('rejects Redis cache writes without a positive TTL', async () => {
   const { getOrSetJsonCache } = require('./cache');
 
