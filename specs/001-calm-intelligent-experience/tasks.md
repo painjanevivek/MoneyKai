@@ -31,7 +31,7 @@ Use `fix(scope): ...` when correcting a defect. Stage only the files produced by
 
 **Purpose**: Establish the visual baseline, source-of-truth inventory, and scoped implementation structure without adding another framework.
 
-- [ ] T001 Create the current-state and claim baseline in `specs/001-calm-intelligent-experience/baseline.md`, covering landing content, pricing, web-only availability, workspace routes, reports, exports, and assistant availability states.
+- [X] T001 Create the current-state and claim baseline in `specs/001-calm-intelligent-experience/baseline.md`, covering landing content, pricing, web-only availability, workspace routes, reports, exports, and assistant availability states.
 - [ ] T002 [P] Create the motion-intent policy and reduced-motion helper in `apps/MoneyKai-web/src/utils/motionPolicy.ts` using the `MotionRecipe` rules from `specs/001-calm-intelligent-experience/data-model.md`.
 - [ ] T003 [P] Create focused unit coverage for motion-intent and reduced-motion fallbacks in `apps/MoneyKai-web/src/utils/motionPolicy.test.ts`.
 - [ ] T004 [P] Add the experience-state inventory and owner map in `specs/001-calm-intelligent-experience/state-inventory.md` using `WorkspaceSurfaceState` and `SavedReportExportPresentation` from `data-model.md`.
