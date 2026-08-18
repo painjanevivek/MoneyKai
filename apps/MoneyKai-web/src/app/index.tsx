@@ -21,6 +21,7 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2.mjs';
 import WalletCards from 'lucide-react/dist/esm/icons/wallet-cards.mjs';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
+import { CURRENT_PLATFORM_AVAILABILITY, LANDING_PRIMARY_CTA, pricingPlans } from '@/content/landing';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 const navLinks = [
@@ -147,33 +148,6 @@ const audiences = [
 
 gsap.registerPlugin(useGSAP);
 
-const pricingPlans = [
-  {
-    name: 'Free',
-    price: '₹0',
-    availability: 'Available at launch',
-    description: 'Build a calm, consistent money-review habit without a subscription.',
-    features: ['Manual income and expense tracking', 'Budgets and categories', 'Savings and shared expense views', 'Export your records'],
-    cta: 'Create an account',
-  },
-  {
-    name: 'Plus',
-    price: '₹249',
-    availability: 'Coming soon',
-    description: 'For richer monthly context when the next MoneyKai release is ready.',
-    features: ['Everything in Free', 'Expanded review workflows', 'More report context', 'Priority feature access'],
-    cta: 'Join the Plus waitlist',
-  },
-  {
-    name: 'Premium',
-    price: '₹449',
-    availability: 'Coming soon',
-    description: 'For the most complete MoneyKai workspace as premium limits are finalized.',
-    features: ['Everything in Plus', 'Advanced reports', 'Portfolio review depth', 'Premium support path'],
-    cta: 'Join the Premium waitlist',
-  },
-] as const;
-
 function LogoMark({ className = 'mk-logo-mark' }: { className?: string }) {
   return <img src="/brand/moneykai-symbol-logo.svg" className={className} alt="" aria-hidden="true" />;
 }
@@ -265,7 +239,7 @@ function Hero() {
         records when you need one.
       </motion.p>
       <motion.div className="mk-hero-actions" {...copyMotion} initial={false}>
-        <AppButton label="Create an account" />
+        <AppButton label={LANDING_PRIMARY_CTA} />
         <a href="#pricing">See upcoming plans</a>
       </motion.div>
     </section>
@@ -509,7 +483,7 @@ function Pricing() {
       <div className="c3-pricing-intro">
         <img className="mk-pricing-wordmark" src="/brand/moneykai-wordmark.svg" alt="MoneyKai" />
         <h2>Clear plans for the next MoneyKai release.</h2>
-        <p>There is no Android release today. These plans are for the upcoming MoneyKai web experience and are not yet available to purchase.</p>
+        <p>{CURRENT_PLATFORM_AVAILABILITY}</p>
       </div>
       <div className="c3-grid">
         {pricingPlans.map((plan, index) => (
@@ -564,7 +538,7 @@ function FinalCTA() {
           Add the records you need, then check your budgets, shared costs, and savings progress in the same review.
         </p>
         <div>
-          <AppButton label="Create an account" />
+          <AppButton label={LANDING_PRIMARY_CTA} />
           <a href="/contact" className="mk-sales-button">
             Contact MoneyKai <ChevronRight size={16} />
           </a>
