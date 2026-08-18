@@ -44,7 +44,7 @@ Use `fix(scope): ...` when correcting a defect. Stage only the files produced by
 
 **⚠️ CRITICAL**: Complete this phase before changing landing, workspace, report, settings, or assistant surfaces.
 
-- [ ] T005 Define reusable semantic experience roles and document their mapping to existing themes in `apps/MoneyKai-web/src/constants/theme.ts` without changing customer-selected theme behavior.
+- [X] T005 Define reusable semantic experience roles and document their mapping to existing themes in `apps/MoneyKai-web/src/constants/theme.ts` without changing customer-selected theme behavior.
 - [ ] T006 [P] Create a reusable truthful status/empty/error surface in `apps/MoneyKai-web/src/components/ui/SurfaceState.tsx` based on `WorkspaceSurfaceState` from `specs/001-calm-intelligent-experience/data-model.md`.
 - [ ] T007 [P] Create a reusable section and subsection heading primitive in `apps/MoneyKai-web/src/components/ui/SectionHeading.tsx` for dashboard, reports, and settings hierarchy.
 - [ ] T008 [P] Create focused presentation tests for `SurfaceState` in `apps/MoneyKai-web/src/components/ui/SurfaceState.test.tsx`, covering loading, empty, unavailable, and error semantics.
