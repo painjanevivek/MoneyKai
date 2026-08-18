@@ -47,7 +47,7 @@ Use `fix(scope): ...` when correcting a defect. Stage only the files produced by
 - [X] T005 Define reusable semantic experience roles and document their mapping to existing themes in `apps/MoneyKai-web/src/constants/theme.ts` without changing customer-selected theme behavior.
 - [X] T006 [P] Create a reusable truthful status/empty/error surface in `apps/MoneyKai-web/src/components/ui/SurfaceState.tsx` based on `WorkspaceSurfaceState` from `specs/001-calm-intelligent-experience/data-model.md`.
 - [X] T007 [P] Create a reusable section and subsection heading primitive in `apps/MoneyKai-web/src/components/ui/SectionHeading.tsx` for dashboard, reports, and settings hierarchy.
-- [ ] T008 [P] Create focused presentation tests for `SurfaceState` in `apps/MoneyKai-web/src/components/ui/SurfaceState.test.tsx`, covering loading, empty, unavailable, and error semantics.
+- [X] T008 [P] Create focused presentation tests for `SurfaceState` in `apps/MoneyKai-web/src/components/ui/SurfaceState.test.tsx`, covering loading, empty, unavailable, and error semantics.
 - [ ] T009 Wire shared semantic roles and the new UI primitives into `apps/MoneyKai-web/src/components/ui/Card.tsx`, `apps/MoneyKai-web/src/components/ui/EmptyState.tsx`, and `apps/MoneyKai-web/src/components/ui/Button.tsx` without changing their existing functional contracts.
 - [ ] T010 Validate the Phase 2 foundation against `specs/001-calm-intelligent-experience/contracts/ui-experience-contract.md` and record the result in `specs/001-calm-intelligent-experience/validation-log.md`.
 
