@@ -3,7 +3,7 @@ import {
   CURRENT_PLATFORM_AVAILABILITY,
   LANDING_PRIMARY_CTA,
   pricingPlans,
-} from '../content/landing';
+} from './landing';
 
 describe('MoneyKai landing claims', () => {
   it('keeps the primary action explicit for a new visitor', () => {
