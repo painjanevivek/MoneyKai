@@ -20,6 +20,7 @@ export type SurfaceStateProps = Readonly<{
   sourceLabel?: string;
   primaryAction?: React.ReactNode;
   secondaryAction?: React.ReactNode;
+  icon?: keyof typeof MaterialCommunityIcons.glyphMap;
   style?: ViewStyle;
   testID?: string;
 }>;
@@ -44,6 +45,7 @@ export function SurfaceState({
   sourceLabel,
   primaryAction,
   secondaryAction,
+  icon,
   style,
   testID,
 }: SurfaceStateProps) {
@@ -86,7 +88,7 @@ export function SurfaceState({
             width: 32,
           }}
         >
-          <MaterialCommunityIcons color={toneColor} name={treatment.icon} size={18} />
+          <MaterialCommunityIcons color={toneColor} name={icon ?? treatment.icon} size={18} />
         </View>
         <Text
           style={{

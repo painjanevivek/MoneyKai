@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, type ViewStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, Shadows, Spacing } from '../../constants/theme';
+import { BorderRadius, getExperienceThemeTokens, Shadows, Spacing } from '../../constants/theme';
 import { withAlpha } from '@/utils/glassStyle';
 
 interface CardProps {
@@ -21,24 +21,25 @@ export const Card: React.FC<CardProps> = ({
   padding = 'base',
   borderRadius = 'md',
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, theme } = useTheme();
+  const experience = getExperienceThemeTokens(theme);
   const isToned = tone !== 'default';
   const toneColor = {
-    default: colors.primary,
-    primary: colors.primary,
+    default: experience.emphasis.primaryAction,
+    primary: experience.emphasis.primaryAction,
     accent: colors.accent,
-    success: colors.success,
-    warning: colors.warning,
-    danger: colors.error,
-    info: colors.info,
+    success: experience.status.success,
+    warning: experience.status.warning,
+    danger: experience.status.error,
+    info: experience.status.info,
   }[tone];
   const surfaceColor = variant === 'default'
-    ? colors.card
+    ? experience.surface.base
     : variant === 'glass'
       ? colors.surface
     : variant === 'elevated'
-      ? colors.surfaceElevated
-      : colors.card;
+      ? experience.surface.raised
+      : experience.surface.base;
 
   const cardStyle: ViewStyle = {
     backgroundColor: surfaceColor,
@@ -50,15 +51,15 @@ export const Card: React.FC<CardProps> = ({
     ...(variant === 'default'
       ? {
           borderWidth: 1,
-          borderColor: isToned ? withAlpha(toneColor, isDark ? 0.28 : 0.2) : colors.borderLight,
+          borderColor: isToned ? withAlpha(toneColor, isDark ? 0.28 : 0.2) : experience.divider,
         }
       : variant === 'outlined'
-      ? { borderWidth: 1, borderColor: colors.borderLight, backgroundColor: 'transparent' }
+      ? { borderWidth: 1, borderColor: experience.divider, backgroundColor: 'transparent' }
       : variant === 'elevated'
-        ? { borderWidth: 1, borderColor: colors.borderLight, ...Shadows.sm, shadowColor: colors.shadowColor }
+        ? { borderWidth: 1, borderColor: experience.divider, ...Shadows.sm, shadowColor: colors.shadowColor }
         : {
             borderWidth: 1,
-            borderColor: isToned ? withAlpha(toneColor, isDark ? 0.34 : 0.24) : colors.borderLight,
+            borderColor: isToned ? withAlpha(toneColor, isDark ? 0.34 : 0.24) : experience.divider,
           }
     ),
   };
