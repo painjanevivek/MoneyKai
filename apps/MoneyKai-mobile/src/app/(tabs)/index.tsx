@@ -25,6 +25,8 @@ import {
   buildCategoryBudgetCards,
   buildDashboardInsight,
   buildSavingsGoalSnapshot,
+  buildSpendingTrendInsight,
+  filterComparablePreviousMonthTransactions,
   filterTransactionsByMonth,
   getMonthLabel,
   getPreviousMonthKey,
@@ -60,6 +62,10 @@ export default function DashboardScreen() {
     () => filterTransactionsByMonth(transactions, previousMonthKey),
     [transactions, previousMonthKey]
   );
+  const comparablePreviousMonthTransactions = useMemo(
+    () => filterComparablePreviousMonthTransactions(transactions, selectedMonthKey),
+    [transactions, selectedMonthKey]
+  );
 
   const monthCategoryTotals = monthSummary.categoryTotals;
   const categoryCards = useMemo(
@@ -85,6 +91,10 @@ export default function DashboardScreen() {
   const dashboardInsight = useMemo(
     () => buildDashboardInsight(monthExpenseTotal, previousMonthExpenseTotal, monthlyAllowance),
     [monthExpenseTotal, previousMonthExpenseTotal, monthlyAllowance]
+  );
+  const spendingTrendInsight = useMemo(
+    () => buildSpendingTrendInsight(monthTransactions, comparablePreviousMonthTransactions),
+    [monthTransactions, comparablePreviousMonthTransactions]
   );
   const showDashboardInsight = dashboardInsight.title !== 'Set your monthly budget';
   const savingsSnapshot = useMemo(
@@ -296,6 +306,8 @@ export default function DashboardScreen() {
             categoryTotals={monthCategoryTotals}
             totalSpent={monthExpenseTotal}
             onPressViewMore={() => router.push('/(tabs)/budget' as never)}
+            trendInsight={spendingTrendInsight}
+            onPressTrendInsight={() => router.push('/(tabs)/budget' as never)}
           />
         </View>
 
