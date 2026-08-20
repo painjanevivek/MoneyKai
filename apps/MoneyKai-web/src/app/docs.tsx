@@ -166,7 +166,7 @@ const DocsHeader = ({ compact }: { compact: boolean }) => (
           }}
         >
           <Image
-            source={{ uri: '/brand/moneykai-mark-96.png' }}
+            source={{ uri: '/brand/moneykai-symbol-logo.svg' }}
             contentFit="contain"
             accessibilityLabel="MoneyKai logo"
             style={{ width: 30, height: 30 }}

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, ComponentTokens, Shadows, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, getExperienceThemeTokens, Shadows, Typography } from '../../constants/theme';
 import { withAlpha } from '@/utils/glassStyle';
 
 interface ButtonProps {
@@ -43,7 +43,8 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   testID,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, theme } = useTheme();
+  const experience = getExperienceThemeTokens(theme);
 
   const sizeStyles = {
     sm: { minHeight: ComponentTokens.controlHeight.sm, paddingHorizontal: ComponentTokens.controlPaddingX.sm, fontSize: Typography.fontSize.sm, iconSize: 16 },
@@ -60,17 +61,17 @@ export const Button: React.FC<ButtonProps> = ({
         danger: { bg: 'rgba(255, 225, 229, 0.94)', text: '#7F1D1D', hoverBg: '#FFFFFF', hoverBorder: 'rgba(255, 255, 255, 0.6)' },
       }
     : {
-    primary: { bg: colors.primary, text: colors.textInverse, hoverBg: colors.primaryDark, hoverBorder: withAlpha(colors.primaryLight, isDark ? 0.7 : 0.32) },
+    primary: { bg: experience.emphasis.primaryAction, text: experience.text.inverse, hoverBg: colors.primaryDark, hoverBorder: withAlpha(colors.primaryLight, isDark ? 0.7 : 0.32) },
     secondary: { bg: colors.primaryBg, text: colors.primaryDark, hoverBg: withAlpha(colors.primary, isDark ? 0.2 : 0.12), hoverBorder: withAlpha(colors.primary, 0.28) },
-    outline: { bg: colors.surface, text: colors.textPrimary, border: colors.borderLight, hoverBg: colors.surfaceElevated, hoverBorder: withAlpha(colors.primary, 0.34) },
-    ghost: { bg: 'transparent', text: colors.textSecondary, hoverBg: withAlpha(colors.primary, 0.1), hoverBorder: withAlpha(colors.primary, 0.2) },
-    danger: { bg: colors.emergency, text: colors.textInverse, hoverBg: `${colors.emergency}E6`, hoverBorder: colors.emergency },
+    outline: { bg: experience.surface.base, text: experience.text.primary, border: experience.divider, hoverBg: experience.surface.raised, hoverBorder: withAlpha(colors.primary, 0.34) },
+    ghost: { bg: 'transparent', text: experience.text.secondary, hoverBg: withAlpha(colors.primary, 0.1), hoverBorder: withAlpha(colors.primary, 0.2) },
+    danger: { bg: colors.emergency, text: experience.text.inverse, hoverBg: `${colors.emergency}E6`, hoverBorder: colors.emergency },
   };
 
   const s = sizeStyles[size];
   const v = variantStyles[variant];
   const isUnavailable = disabled || loading;
-  const contentColor = isUnavailable ? colors.textTertiary : v.text;
+  const contentColor = isUnavailable ? experience.text.tertiary : v.text;
 
   return (
     <Pressable
@@ -84,7 +85,7 @@ export const Button: React.FC<ButtonProps> = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: isUnavailable ? colors.surfaceElevated : !isUnavailable && hovered ? v.hoverBg : v.bg,
+          backgroundColor: isUnavailable ? experience.surface.raised : !isUnavailable && hovered ? v.hoverBg : v.bg,
           minHeight: s.minHeight,
           minWidth: 0,
           maxWidth: '100%',
@@ -95,7 +96,7 @@ export const Button: React.FC<ButtonProps> = ({
           transform: pressed ? [{ scale: ComponentTokens.pressedScale }] : !isUnavailable && hovered ? [{ translateY: -1 }] : [{ translateY: 0 }],
           borderWidth: 1,
           borderColor: isUnavailable
-            ? colors.borderLight
+            ? experience.divider
             : focused
               ? colors.primary
               : hovered

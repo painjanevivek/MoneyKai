@@ -123,15 +123,15 @@ export const Colors = {
     accentLight: '#E7F1EB',
     emergency: '#B42318',
     emergencyBg: '#FDECEC',
-    background: '#F8F5F0',
-    surface: '#FFFFFF',
-    surfaceElevated: '#FBFAF7',
-    card: '#FFFFFF',
-    border: '#D9D6CE',
-    borderLight: '#E8E5DE',
-    textPrimary: '#1F1F1D',
-    textSecondary: '#5F5E59',
-    textTertiary: '#85827A',
+    background: '#F7F1EA',
+    surface: '#FFFDFA',
+    surfaceElevated: '#FBF6F0',
+    card: '#FFFDFA',
+    border: '#DED2C6',
+    borderLight: '#E7DBCF',
+    textPrimary: '#28211C',
+    textSecondary: '#70665D',
+    textTertiary: '#786D63',
     textInverse: '#FFFFFF',
     success: '#047857',
     warning: '#B45309',
@@ -583,6 +583,54 @@ export const Colors = {
     glassBorder: 'rgba(37, 99, 235, 0.2)',
   },
 } as const;
+
+// Semantic aliases over the active customer-selected palette. These let screens
+// describe visual intent without creating a second or competing theme system.
+export type ExperienceSurfaceRole = 'canvas' | 'base' | 'raised' | 'muted' | 'overlay';
+export type ExperienceTextRole = 'primary' | 'secondary' | 'tertiary' | 'inverse';
+export type ExperienceEmphasisRole = 'quiet' | 'standard' | 'primaryAction' | 'critical';
+export type ExperienceStatusRole = 'success' | 'warning' | 'error' | 'info';
+
+export type ExperienceThemeTokens = Readonly<{
+  surface: Record<ExperienceSurfaceRole, string>;
+  text: Record<ExperienceTextRole, string>;
+  emphasis: Record<ExperienceEmphasisRole, string>;
+  status: Record<ExperienceStatusRole, string>;
+  divider: string;
+}>;
+
+export function getExperienceThemeTokens(theme: ThemeMode): ExperienceThemeTokens {
+  const palette = Colors[theme];
+
+  return {
+    surface: {
+      canvas: palette.background,
+      base: palette.surface,
+      raised: palette.surfaceElevated,
+      muted: palette.primaryBg,
+      overlay: palette.overlay,
+    },
+    text: {
+      primary: palette.textPrimary,
+      secondary: palette.textSecondary,
+      tertiary: palette.textTertiary,
+      inverse: palette.textInverse,
+    },
+    emphasis: {
+      quiet: palette.textSecondary,
+      standard: palette.textPrimary,
+      primaryAction: palette.primary,
+      critical: palette.error,
+    },
+    status: {
+      success: palette.success,
+      warning: palette.warning,
+      error: palette.error,
+      info: palette.info,
+    },
+    divider: palette.borderLight,
+  };
+}
 
 // ─── Typography ──────────────────────────────────────────────────────────────
 export const Typography = {

@@ -25,7 +25,7 @@ export function CashflowDashboardHeader({
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: isCompact ? 'flex-start' : 'flex-end',
-        gap: Spacing.sm,
+        gap: Spacing.md,
         flex: isCompact ? undefined : 1,
         minWidth: 0,
       }}

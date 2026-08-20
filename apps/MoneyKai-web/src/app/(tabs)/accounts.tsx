@@ -426,11 +426,6 @@ export default function AccountsScreen() {
               { label: 'Credit used', value: formatCurrency(summary.creditUsed), tone: summary.creditUsed > 0 ? 'warning' : 'default' },
               { label: 'Last sync', value: formatSyncTime(summary.lastSyncedAt) },
             ]}
-            chips={[
-              { icon: 'shield-check-outline', label: 'Consent-aware' },
-              { icon: 'source-branch', label: 'Duplicate-safe import' },
-              { icon: 'filter-variant', label: 'Account filters enabled' },
-            ]}
             actions={
               <>
                 <Button title="Connect live bank" icon="bank-plus" onPress={handleConnectLiveBank} loading={isProviderActionPending} variant="outline" />

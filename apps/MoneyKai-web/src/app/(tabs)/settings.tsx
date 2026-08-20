@@ -239,6 +239,26 @@ const SettingItem: React.FC<SettingItemProps> = ({ icon, iconColor, iconBg, titl
   );
 };
 
+function SettingsSubsection({
+  title,
+  description,
+  children,
+}: React.PropsWithChildren<{ title: string; description: string }>) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={{ marginBottom: Spacing.lg }}>
+      <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+        {title}
+      </Text>
+      <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+        {description}
+      </Text>
+      <View style={{ marginTop: Spacing.sm }}>{children}</View>
+    </View>
+  );
+}
+
 function ExportFormatOption({
   icon,
   title,
@@ -683,101 +703,107 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={true}>
-        <Card style={{ marginBottom: Spacing.lg }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-            <UserAvatar name={user?.full_name} email={user?.email} avatarUrl={user?.avatar_url} size={56} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{user?.full_name || 'Your profile'}</Text>
-              <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>{user?.email || 'No email available'}</Text>
+        <SettingsSubsection title="Account" description="Manage the identity and sign-in method for your MoneyKai account.">
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+              <UserAvatar name={user?.full_name} email={user?.email} avatarUrl={user?.avatar_url} size={56} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{user?.full_name || 'Your profile'}</Text>
+                <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>{user?.email || 'No email available'}</Text>
+              </View>
+              <Pressable
+                onPress={() => router.push('/profile-edit' as any)}
+                style={({ hovered, pressed }: any) => ({
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: hovered ? `${colors.primary}14` : 'transparent',
+                  transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
+                })}
+              >
+                <MaterialCommunityIcons name="pencil-outline" size={20} color={colors.primary} />
+              </Pressable>
             </View>
-            <Pressable
-              onPress={() => router.push('/profile-edit' as any)}
-              style={({ hovered, pressed }: any) => ({
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: hovered ? `${colors.primary}14` : 'transparent',
-                transform: hovered && !pressed ? [{ translateY: -1 }] : [{ translateY: 0 }],
-              })}
-            >
-              <MaterialCommunityIcons name="pencil-outline" size={20} color={colors.primary} />
-            </Pressable>
-          </View>
-        </Card>
+          </Card>
+          <Card style={{ marginTop: Spacing.sm }}>
+            <SettingItem
+              icon="lock-reset"
+              iconColor="#0F766E"
+              iconBg="#DDF7F1"
+              title="Password & sign-in"
+              subtitle={user?.auth_provider === 'google' ? 'You sign in securely with Google' : 'Update your password from Settings'}
+              onPress={openChangePasswordSheet}
+            />
+          </Card>
+        </SettingsSubsection>
 
-        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Preferences</Text>
-        <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem
-            icon="currency-usd"
-            iconColor="#707070"
-            iconBg="#F1F1F1"
-            title="Display Currency"
-            subtitle={`${currency} (${currencySymbol}) from INR${exchangeRatesUpdatedAt ? `, rates ${new Date(exchangeRatesUpdatedAt).toLocaleDateString()}` : ''}`}
-            onPress={() => setShowCurrencyPicker(true)}
-          />
-        </Card>
+        <SettingsSubsection title="Connected accounts" description="Choose which trusted services can link to your MoneyKai workspace.">
+          <GmailConnectionCard />
+        </SettingsSubsection>
 
-        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Notifications</Text>
-        <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem
-            icon="bell-outline"
-            iconColor="#8A8A8A"
-            iconBg="#F2F2F2"
-            title="Push Notifications"
-            subtitle={notificationsEnabled ? 'Enabled' : 'Disabled'}
-            right={
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={handleNotificationsToggle}
-                trackColor={switchTrack}
-                thumbColor={switchThumb}
-                ios_backgroundColor={colors.borderLight}
-              />
-            }
-          />
-          <SettingItem
-            icon="vibrate"
-            iconColor="#A3A3A3"
-            iconBg="#F2F2F2"
-            title="Haptic Feedback"
-            subtitle={hapticEnabled ? 'Enabled' : 'Disabled'}
-            right={
-              <Switch
-                value={hapticEnabled}
-                onValueChange={toggleHaptic}
-                trackColor={switchTrack}
-                thumbColor={switchThumb}
-                ios_backgroundColor={colors.borderLight}
-              />
-            }
-          />
-        </Card>
+        <SettingsSubsection title="Preferences" description="Set how MoneyKai displays information and communicates with you.">
+          <Card>
+            <SettingItem
+              icon="currency-usd"
+              iconColor="#707070"
+              iconBg="#F1F1F1"
+              title="Display Currency"
+              subtitle={`${currency} (${currencySymbol}) from INR${exchangeRatesUpdatedAt ? `, rates ${new Date(exchangeRatesUpdatedAt).toLocaleDateString()}` : ''}`}
+              onPress={() => setShowCurrencyPicker(true)}
+            />
+            <SettingItem
+              icon="bell-outline"
+              iconColor="#8A8A8A"
+              iconBg="#F2F2F2"
+              title="Push Notifications"
+              subtitle={notificationsEnabled ? 'Enabled' : 'Disabled'}
+              right={
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={handleNotificationsToggle}
+                  trackColor={switchTrack}
+                  thumbColor={switchThumb}
+                  ios_backgroundColor={colors.borderLight}
+                />
+              }
+            />
+            <SettingItem
+              icon="vibrate"
+              iconColor="#A3A3A3"
+              iconBg="#F2F2F2"
+              title="Haptic Feedback"
+              subtitle={hapticEnabled ? 'Enabled' : 'Disabled'}
+              right={
+                <Switch
+                  value={hapticEnabled}
+                  onValueChange={toggleHaptic}
+                  trackColor={switchTrack}
+                  thumbColor={switchThumb}
+                  ios_backgroundColor={colors.borderLight}
+                />
+              }
+            />
+          </Card>
+        </SettingsSubsection>
 
-        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>Data & Privacy</Text>
-        <GmailConnectionCard />
-        <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem icon="download-outline" iconColor="#111111" iconBg="#F4F4F4" title="Export Data" subtitle="Download transactions as Word, Excel, or PDF tables" onPress={() => setShowExportSheet(true)} />
-          <SettingItem icon="cloud-upload-outline" iconColor="#2B2B2B" iconBg="#F2F2F2" title="Cloud backups" subtitle="Save to or restore a cloud backup" onPress={() => setShowBackupSheet(true)} />
-          <SettingItem
-            icon="lock-reset"
-            iconColor="#0F766E"
-            iconBg="#DDF7F1"
-            title="Password & sign-in"
-            subtitle={user?.auth_provider === 'google' ? 'You sign in securely with Google' : 'Update your password from Settings'}
-            onPress={openChangePasswordSheet}
-          />
-          <SettingItem icon="shield-lock-outline" iconColor="#444444" iconBg="#ECECEC" title="Privacy Policy" subtitle="Open the privacy policy" onPress={handlePrivacy} />
-          <SettingItem icon="delete-outline" iconColor={colors.emergency} iconBg={colors.emergencyBg} title="Delete Account" subtitle="Permanently remove your account and stored data" onPress={() => setShowDeleteAccountSheet(true)} />
-        </Card>
+        <SettingsSubsection title="Data & privacy" description="Control copies of your data, your privacy information, and account removal.">
+          <Card>
+            <SettingItem icon="download-outline" iconColor="#111111" iconBg="#F4F4F4" title="Export Data" subtitle="Download transactions as Word, Excel, or PDF tables" onPress={() => setShowExportSheet(true)} />
+            <SettingItem icon="cloud-upload-outline" iconColor="#2B2B2B" iconBg="#F2F2F2" title="Cloud backups" subtitle="Save to or restore a cloud backup" onPress={() => setShowBackupSheet(true)} />
+            <SettingItem icon="shield-lock-outline" iconColor="#444444" iconBg="#ECECEC" title="Privacy Policy" subtitle="Open the privacy policy" onPress={handlePrivacy} />
+            <SettingItem icon="delete-outline" iconColor={colors.emergency} iconBg={colors.emergencyBg} title="Delete Account" subtitle="Permanently remove your account and stored data" onPress={() => setShowDeleteAccountSheet(true)} />
+          </Card>
+        </SettingsSubsection>
 
-        <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.sm }}>About</Text>
-        <Card style={{ marginBottom: Spacing.lg }}>
-          <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="MoneyKai v1.0.0" />
-          <SettingItem icon="star-outline" iconColor="#5A5A5A" iconBg="#EFEFEF" title="Rate the App" onPress={handleRate} />
-          <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" subtitle="Email support or report a bug" onPress={handleSupport} />
-        </Card>
+        <SettingsSubsection title="Help & about" description="Find support, share feedback, and view the app version.">
+          <Card>
+            <SettingItem icon="information-outline" iconColor="#6B7280" iconBg="#F3F3F3" title="Version" subtitle="MoneyKai v1.0.0" />
+            <SettingItem icon="star-outline" iconColor="#5A5A5A" iconBg="#EFEFEF" title="Rate the App" onPress={handleRate} />
+            <SettingItem icon="help-circle-outline" iconColor="#707070" iconBg="#F1F1F1" title="Help & Support" subtitle="Email support or report a bug" onPress={handleSupport} />
+          </Card>
+        </SettingsSubsection>
 
         <Pressable
           onPress={() => setShowSignOutSheet(true)}

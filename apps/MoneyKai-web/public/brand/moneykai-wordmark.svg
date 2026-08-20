@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="200" viewBox="0 0 1000 200" role="img" aria-labelledby="title">
+  <title id="title">MoneyKai</title>
+  <rect width="200" height="200" fill="#000000"/>
+  <g transform="scale(.390625)">
+    <path d="M249 15 249 132 146 234 18 234Z" fill="#ffffff"/>
+    <path d="M271 15 271 132 373 234 501 234Z" fill="#ffffff"/>
+    <path d="M18 256 146 256 249 359 249 483Z" fill="#ffffff"/>
+    <path d="M501 256 373 256 271 359 271 483Z" fill="#ffffff"/>
+  </g>
+  <text x="232" y="128" fill="#13211D" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="700" letter-spacing="8">MONEYKAI</text>
+</svg>

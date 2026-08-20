@@ -10,49 +10,67 @@ import { useTheme } from '@/hooks/useTheme';
 
 const PLANS = [
   {
-    name: 'Current Android release',
-    price: 'Free',
-    note: 'For local personal expense and budget tracking on your device.',
-    cta: 'Open app',
+    name: 'Free',
+    price: '₹0',
+    note: 'For building a calm, consistent money-review habit without a subscription.',
+    cta: 'Create an account',
     highlighted: true,
     planKey: null,
-    features: ['Manual transactions', 'Budget workspace', 'Savings and trend insights', 'Local diagnostics', 'Encrypted backup files'],
+    features: ['Manual transactions', 'Budget workspace', 'Savings and shared expense views', 'Export your records'],
+  },
+  {
+    name: 'Plus',
+    price: '₹249',
+    note: 'Planned for richer monthly context when the next MoneyKai release is ready.',
+    cta: 'Join the Plus waitlist',
+    highlighted: false,
+    planKey: 'plus',
+    features: ['Everything in Free', 'Expanded review workflows', 'More report context', 'Priority feature access'],
+  },
+  {
+    name: 'Premium',
+    price: '₹449',
+    note: 'Planned for the most complete MoneyKai workspace as premium limits are finalized.',
+    cta: 'Join the Premium waitlist',
+    highlighted: false,
+    planKey: 'premium',
+    features: ['Everything in Plus', 'Advanced reports', 'Portfolio review depth', 'Premium support path'],
   },
 ] as const;
 
 const VALUE_MOMENTS = [
   {
-    icon: 'cellphone-check',
-    title: 'Local-first scope',
-    body: 'The Android release stores finance records on the device and does not include backend sync or account billing.',
+    icon: 'web',
+    title: 'Web release in progress',
+    body: 'MoneyKai does not have an Android release today. The first public web experience is being prepared.',
   },
   {
     icon: 'chart-box-outline',
-    title: 'Manual records first',
-    body: 'Transactions, budgets, and summaries are based on what the user enters locally.',
+    title: 'Pricing is clear before launch',
+    body: 'Free, Plus, and Premium are shown now so the planned scope is easy to understand.',
   },
   {
     icon: 'file-lock-outline',
-    title: 'Backup files by choice',
-    body: 'Users can export plaintext JSON to the clipboard or create a password-encrypted backup file through device flows.',
+    title: 'No charge today',
+    body: 'Paid plans are not yet available to purchase. We will announce availability before checkout opens.',
   },
 ] as const;
 
 const TRUST_MARKERS = [
   {
     icon: 'credit-card-off-outline',
-    title: 'No Android payments',
-    body: 'The current Android release does not include in-app purchases, subscriptions, checkout, or payment processing.',
+    title: 'No checkout today',
+    body: 'There are no subscriptions, in-app purchases, or payment processing available today.',
   },
   {
     icon: 'cloud-off-outline',
-    title: 'No cloud backup',
-    body: 'The current Android release does not use Firebase cloud backup or MoneyKai backend sync.',
+    title: 'No Android release',
+    body: 'MoneyKai is not currently available as an Android app.',
   },
   {
     icon: 'robot-off-outline',
-    title: 'No Financial AI',
-    body: 'The current Android release does not provide AI financial review, classification, investment, tax, or legal advice.',
+    title: 'No financial advice',
+    body: 'MoneyKai does not provide investment, tax, legal, or other financial advice.',
   },
 ] as const;
 
@@ -67,10 +85,10 @@ export default function PricingPage() {
   return (
     <>
       <SeoHead
-        title="MoneyKai Pricing | Current Android release scope"
-        description="The current MoneyKai Android release is free and local-first, with manual tracking, budgets, savings insights, diagnostics, and encrypted backup files."
+        title="MoneyKai Pricing | Upcoming web plans"
+        description="MoneyKai is preparing a web release with Free, Plus, and Premium plans. Paid plans are not yet available to purchase, and there is no Android release today."
         path="/pricing"
-        keywords={['MoneyKai pricing', 'free budget app', 'local expense tracker']}
+        keywords={['MoneyKai pricing', 'upcoming budget app', 'money review plans']}
       />
       <PublicShell>
         <View style={{ gap: Spacing['4xl'] }}>
@@ -85,13 +103,13 @@ export default function PricingPage() {
             }}
           >
             <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: 'rgba(255,255,255,0.66)' }}>
-              CURRENT ANDROID RELEASE
+              UPCOMING WEB RELEASE
             </Text>
             <Text style={{ maxWidth: 880, fontSize: isWide ? 52 : 36, lineHeight: isWide ? 58 : 42, fontFamily: Typography.fontFamily.display, color: '#FFFFFF' }}>
-              Free local tracking. No paid Android plan in this release.
+              Clear pricing, before launch.
             </Text>
             <Text style={{ maxWidth: 720, fontSize: Typography.fontSize.md, lineHeight: 26, color: 'rgba(255,255,255,0.74)' }}>
-              MoneyKai 1.0.1 focuses on local expense tracking, budgeting, savings visibility, local diagnostics, and user-controlled encrypted backup files.
+              MoneyKai is preparing its first public web experience. Free, Plus, and Premium are planned; paid access is not available to purchase today.
             </Text>
           </View>
 
@@ -116,7 +134,7 @@ export default function PricingPage() {
                   </View>
                   <View style={{ paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: BorderRadius.full, backgroundColor: colors.primaryBg }}>
                     <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
-                      Play-safe scope
+                      {plan.name === 'Free' ? 'Available at launch' : 'Coming soon'}
                     </Text>
                   </View>
                 </View>
@@ -164,16 +182,16 @@ export default function PricingPage() {
             <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.xl, alignItems: isWide ? 'center' : 'stretch' }}>
               <View style={{ flex: 0.9 }}>
                 <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary }}>
-                  UPGRADE PATH
+                  WHAT HAPPENS NEXT
                 </Text>
               <Text style={{ marginTop: Spacing.sm, fontSize: Typography.fontSize['2xl'], lineHeight: 34, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>
-                  Future paid or cloud features need a fresh policy review.
+                  We will publish plan availability before paid access opens.
                 </Text>
                 <Text style={{ marginTop: Spacing.md, fontSize: Typography.fontSize.sm, lineHeight: 22, color: colors.textSecondary }}>
-                  Before MoneyKai ships subscriptions, payments, cloud sync, Gmail sync, SMS capture, bank sync, or AI features, the app behavior, privacy policy, Play declarations, and store listing must be updated together.
+                  Before MoneyKai opens subscriptions, payments, cloud sync, Gmail sync, SMS capture, bank sync, or AI features, the app behavior, privacy policy, and public product copy will be updated together.
                 </Text>
                 <Button
-                  title="Open MoneyKai"
+                  title="Create an account"
                   onPress={() => router.push('/(auth)/signup')}
                   icon="arrow-right"
                   iconPosition="right"
@@ -218,9 +236,9 @@ export default function PricingPage() {
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.lg }}>
               {[
-                ['No paid tiers in Android release', 'The public Android copy should not imply subscriptions or in-app purchases.'],
-                ['No card handling in the app', 'The current Android build does not collect payment details.'],
-                ['No cloud entitlement checks', 'There is no remote account service or backend gate in this release.'],
+                ['No Android app today', 'MoneyKai is not currently available as an Android release.'],
+                ['No paid checkout today', 'Plan prices are public, but subscriptions and payment processing are not available.'],
+                ['Plans are marked by availability', 'Free begins at launch; Plus and Premium are explicitly marked as coming soon.'],
               ].map(([title, body]) => (
                 <View key={title} style={{ flexBasis: 240, flexGrow: 1 }}>
                   <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>{title}</Text>

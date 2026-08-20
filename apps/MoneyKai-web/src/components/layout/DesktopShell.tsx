@@ -17,6 +17,8 @@ type NavItem = {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 };
 
+type ReportNavItem = NavItem;
+
 type NavLayout = {
   x: number;
   y: number;
@@ -33,6 +35,11 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/reports', label: 'Reports', icon: 'chart-bar' },
 ] as const;
 
+const REPORT_NAV_ITEMS: ReportNavItem[] = [
+  { href: '/reports', label: 'Statement intelligence', icon: 'text-box-search-outline' },
+  { href: '/reports/saved', label: 'Saved reports & exports', icon: 'folder-download-outline' },
+] as const;
+
 const MOBILE_APK_DOWNLOAD_URL: string | null = null;
 
 const ROUTE_META: { href: string; title: string; subtitle: string; icon?: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
@@ -43,6 +50,7 @@ const ROUTE_META: { href: string; title: string; subtitle: string; icon?: keyof 
   { href: '/goals', title: 'Goals', subtitle: 'Stay focused on savings progress' },
   { href: '/wealth', title: 'Wealth', subtitle: 'Net worth, allocation, and AI portfolio review' },
   { href: '/portfolio', title: 'Portfolio', subtitle: 'Track holdings, allocation, and account value in one place' },
+  { href: '/reports/saved', title: 'Saved reports & exports', subtitle: 'Review saved summaries and export options', icon: 'folder-download-outline' },
   { href: '/reports', title: 'Reports', subtitle: 'Spot patterns in your spending' },
   { href: '/accounts', title: 'Accounts', subtitle: 'Linked balances, sync health, and account controls' },
   { href: '/categories', title: 'Categories', subtitle: 'See where money goes by category' },
@@ -58,7 +66,7 @@ const ROUTE_META: { href: string; title: string; subtitle: string; icon?: keyof 
 function MoneyKaiBrandMark({ size }: { size: number }) {
   return (
     <Image
-      source={{ uri: '/brand/moneykai-mark-96.png' }}
+      source={{ uri: '/brand/moneykai-symbol-logo.svg' }}
       contentFit="contain"
       contentPosition="center"
       accessibilityIgnoresInvertColors
@@ -74,6 +82,52 @@ const isRouteActive = (pathname: string, href: string) => {
   if (href === '/dashboard') return normalized === '/dashboard';
   return normalized === href || normalized.startsWith(`${href}/`);
 };
+
+const isExactRouteActive = (pathname: string, href: string) => normalizePath(pathname) === href;
+
+function ReportsSubnav({ pathname }: { pathname: string }) {
+  const { colors } = useTheme();
+
+  return (
+    <View
+      accessibilityRole="menu"
+      accessibilityLabel="Reports navigation"
+      style={{ marginTop: -Spacing.sm, marginBottom: Spacing.lg, marginLeft: Spacing.sm, gap: 2 }}
+    >
+      <Text style={{ marginLeft: Spacing.sm, marginBottom: 4, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.textTertiary }}>
+        REPORTS
+      </Text>
+      {REPORT_NAV_ITEMS.map((item) => {
+        const active = isExactRouteActive(pathname, item.href);
+        return (
+          <Pressable
+            key={item.href}
+            accessibilityRole="link"
+            accessibilityLabel={`Open ${item.label}`}
+            accessibilityState={{ selected: active }}
+            aria-selected={active}
+            onPress={() => router.push(item.href as any)}
+            style={({ hovered, pressed }: any) => ({
+              minHeight: 38,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: Spacing.sm,
+              paddingHorizontal: Spacing.sm,
+              borderRadius: BorderRadius.sm,
+              backgroundColor: active ? withAlpha(colors.primary, 0.1) : hovered ? withAlpha(colors.primary, 0.06) : 'transparent',
+              transform: hovered && !pressed ? [{ translateX: 2 }] : [{ translateX: 0 }],
+            })}
+          >
+            <MaterialCommunityIcons name={item.icon} size={16} color={active ? colors.primary : colors.textSecondary} />
+            <Text style={{ flex: 1, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: active ? colors.primary : colors.textSecondary }}>
+              {item.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 function SlidingNavItems({ pathname, orientation }: { pathname: string; orientation: 'horizontal' | 'vertical' }) {
   const { colors } = useTheme();
@@ -501,6 +555,7 @@ export function DesktopShell({ children }: PropsWithChildren) {
             </Pressable>
 
             <SlidingNavItems pathname={pathname} orientation="vertical" />
+            {isRouteActive(pathname, '/reports') ? <ReportsSubnav pathname={pathname} /> : null}
 
             <View
               style={{
