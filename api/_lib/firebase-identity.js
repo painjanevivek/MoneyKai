@@ -263,6 +263,36 @@ const createEmailPasswordUser = async ({ email, password, displayName }) => {
   };
 };
 
+const changeEmailPassword = async ({ email, currentPassword, newPassword }) => {
+  const normalizedEmail = normalizeEmail(email);
+  assertValidEmail(normalizedEmail);
+  assertValidPassword(newPassword);
+
+  if (typeof currentPassword !== 'string' || currentPassword.length === 0 || currentPassword.length > 128) {
+    throw new FirebaseIdentityError('Enter your current password.', {
+      code: 'INVALID_CURRENT_PASSWORD',
+      status: 400,
+    });
+  }
+
+  const signInResult = await firebaseRequest('signInWithPassword', {
+    email: normalizedEmail,
+    password: currentPassword,
+    returnSecureToken: true,
+  });
+
+  const updateResult = await firebaseRequest('update', {
+    idToken: signInResult.idToken,
+    password: newPassword,
+    returnSecureToken: true,
+  });
+
+  return {
+    uid: signInResult.localId,
+    email: updateResult.email || signInResult.email || normalizedEmail,
+  };
+};
+
 const sendPasswordResetEmail = async ({ email }) => {
   const normalizedEmail = normalizeEmail(email);
   assertValidEmail(normalizedEmail);
@@ -333,6 +363,7 @@ const getPublicFirebaseAuthError = (error, fallback = 'Authentication request fa
 
 module.exports = {
   FirebaseIdentityError,
+  changeEmailPassword,
   createEmailPasswordUser,
   getFirebaseIdentitySetupStatus,
   getPublicFirebaseAuthError,

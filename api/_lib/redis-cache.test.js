@@ -74,7 +74,6 @@ test('builds namespaced Redis keys and hashes sensitive identifiers', () => {
   assert.equal(cooldownKey.includes(ipAddress), false);
 });
 
-
 test('recognizes Vercel Upstash Redis environment variable aliases', () => {
   const originalUpstashUrl = process.env.UPSTASH_REDIS_REST_URL;
   const originalUpstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -256,6 +255,7 @@ test('production auth and paid AI routes opt into distributed-only enforcement',
     ['api/v1/auth/email/sign-in.js', 2],
     ['api/v1/auth/email/sign-up.js', 2],
     ['api/v1/auth/email/password-reset.js', 2],
+    ['api/v1/auth/email/change-password.js', 2],
     ['api/_lib/google-oauth-router.js', 4],
     ['api/v1/ai/attachments/analyze.js', 2],
     ['api/monitoring.js', 1],

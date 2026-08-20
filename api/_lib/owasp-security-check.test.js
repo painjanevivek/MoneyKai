@@ -37,7 +37,7 @@ const createDeploymentFixture = () => {
   );
 
   const ignoredV1Routes = trackedFiles.filter((file) => file.startsWith('api/v1/'));
-  assert.equal(ignoredV1Routes.length, 30, 'fixture must match the complete v1 removal set');
+  assert.equal(ignoredV1Routes.length, 31, 'fixture must match the complete v1 removal set');
 
   const deployedApiEntrypoints = trackedFiles.filter(
     (file) =>
