@@ -12,21 +12,14 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
-import { CashflowBudgetPressure } from '@/components/dashboard/CashflowBudgetPressure';
-import { CashflowCategorySpending } from '@/components/dashboard/CashflowCategorySpending';
-import { CashflowCommitments } from '@/components/dashboard/CashflowCommitments';
-import { CashflowDashboardHeader } from '@/components/dashboard/CashflowDashboardHeader';
-import { CashflowGoalList } from '@/components/dashboard/CashflowGoalList';
-import { CashflowRecentTransactions } from '@/components/dashboard/CashflowRecentTransactions';
-import { CashflowSummaryStrip } from '@/components/dashboard/CashflowSummaryStrip';
-import { CashflowTimeline } from '@/components/dashboard/CashflowTimeline';
+import { AnalyticsDashboard } from '@/components/dashboard/analytics';
 import { useReportingMonth } from '@/components/layout/ReportingMonthContext';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
-import { formatCurrency } from '@/utils/formatCurrency';
 import { buildCashflowPlan } from '@/utils/cashflowPlan';
+import { formatCurrency } from '@/utils/formatCurrency';
 
-type ActivationStep = {
+export type ActivationStep = {
   done: boolean;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   title: string;
@@ -35,7 +28,7 @@ type ActivationStep = {
   onPress: () => void;
 };
 
-function ActivationPanel({ steps }: { steps: ActivationStep[] }) {
+export function ActivationPanel({ steps }: { steps: ActivationStep[] }) {
   const { colors } = useTheme();
   const completed = steps.filter((step) => step.done).length;
   if (completed >= steps.length) {
@@ -116,7 +109,7 @@ function ActivationPanel({ steps }: { steps: ActivationStep[] }) {
   );
 }
 
-type ReviewQueueItem = {
+export type ReviewQueueItem = {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   title: string;
   body: string;
@@ -125,7 +118,7 @@ type ReviewQueueItem = {
   href: string;
 };
 
-function ReviewQueuePanel({ items }: { items: ReviewQueueItem[] }) {
+export function ReviewQueuePanel({ items }: { items: ReviewQueueItem[] }) {
   const { colors } = useTheme();
   const toneColor = (tone: ReviewQueueItem['tone']) => {
     if (tone === 'warning') return colors.warning;
@@ -218,6 +211,7 @@ export default function DashboardScreen() {
   const tourCompletedByUserId = useSettingsStore((state) => state.tourCompletedByUserId);
   const setTourCompletedForUser = useSettingsStore((state) => state.setTourCompletedForUser);
   const transactions = useTransactionStore((state) => state.transactions);
+  const updateTransaction = useTransactionStore((state) => state.updateTransaction);
   const { settings } = useBudgetStore();
   const groups = useGroupStore((state) => state.groups);
   const challenges = useChallengeStore((state) => state.challenges);
@@ -342,11 +336,26 @@ export default function DashboardScreen() {
   };
   const handleViewGoals = () => router.push('/goals' as any);
 
+  // The legacy sections remain available as focused components, while the BagUI-inspired
+  // analytics composition now owns the dashboard surface.
+  void isWide;
+  void selectedCycleTransactions;
+  void activeChallenges;
+  void activeGroups;
+  void budgetAvailable;
+  void legacyRemaining;
+  void actualNetFlow;
+  void firstName;
+  void reviewQueueItems;
+  void activationSteps;
+  void needsActivation;
+  void handleViewGoals;
+
   return (
     <ScrollView
       testID="cashflow-dashboard"
       showsVerticalScrollIndicator={true}
-      contentContainerStyle={{ gap: Spacing.md, paddingBottom: Spacing.xl }}
+      contentContainerStyle={{ gap: Spacing.lg, paddingBottom: Spacing['3xl'] }}
     >
       {needsActivation ? (
         <>
@@ -397,48 +406,21 @@ export default function DashboardScreen() {
           <ReviewQueuePanel items={reviewQueueItems} />
         </>
       ) : (
-        <>
-          <CashflowDashboardHeader
-            onAddTransaction={() => router.push({ pathname: '/transactions', params: { add: 'true' } } as any)}
-            onAdjustBudget={() => router.push('/budgets' as any)}
-          />
-          <CashflowSummaryStrip plan={plan} />
-          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
-            <View style={{ flex: 2, minWidth: 0 }}>
-              <CashflowTimeline
-                plan={plan}
-                onViewTransactions={() => router.push('/transactions' as any)}
-              />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <CashflowBudgetPressure
-                plan={plan}
-                monthlyAllowance={settings.monthly_allowance}
-                onAdjustBudget={() => router.push('/budgets' as any)}
-              />
-            </View>
-          </View>
-          <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
-            <CashflowGoalList
-              goals={plan.goals}
-              onViewAll={handleViewGoals}
-            />
-            {plan.isForecastAvailable ? (
-              <CashflowCommitments
-                commitments={plan.commitments}
-                onViewAll={() => router.push('/transactions' as any)}
-              />
-            ) : null}
-            <CashflowCategorySpending
-              categories={plan.categories}
-              onViewAll={() => router.push('/reports' as any)}
-            />
-          </View>
-          <CashflowRecentTransactions
-            transactions={selectedCycleTransactions}
-            onViewAll={() => router.push('/transactions' as any)}
-          />
-        </>
+        <AnalyticsDashboard
+          plan={plan}
+          transactions={transactions}
+          periodEnd={cycleEnd}
+          userId={user?.id}
+          onAddTransaction={() => router.push('/transactions' as any)}
+          onAdjustBudget={() => router.push('/budgets' as any)}
+          onStartGoal={() => router.push('/goals' as any)}
+          onOpenAiReview={() => router.push('/ai-review' as any)}
+          onOpenReports={() => router.push('/reports' as any)}
+          onViewTransactions={() => router.push('/transactions' as any)}
+          onUpdateTransactionCategory={(transactionIds, categoryId) => {
+            transactionIds.forEach((transactionId) => updateTransaction(transactionId, { category: categoryId }));
+          }}
+        />
       )}
 
       <FirstLoginTour

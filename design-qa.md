@@ -1,34 +1,67 @@
-# Design QA
+# MoneyKai BagUI analytics dashboard — design QA
 
-## Sources
+- Source visual truth: `C:\Users\ASUS\AppData\Local\Temp\codex-clipboard-1024b7cc-cce7-4547-aa43-ba9fa2c72016.png`
+- Source pixels: 2057 × 1189
+- Intended implementation route: `http://127.0.0.1:8081/dashboard`
+- Implementation screenshot path: unavailable — the local browser redirected to the authenticated sign-in screen before the dashboard could render
+- Browser state captured: `http://127.0.0.1:8081/login`
+- Browser viewport: 1280 × 720 CSS px
+- Browser density: device pixel ratio 1.65
+- Intended comparison state: authenticated MoneyKai dashboard, light theme, current reporting month
+- Captured state: unauthenticated MoneyKai sign-in screen
 
-- Dashboard source of truth: the approved 1600×1024 dark cashflow workspace screenshot supplied by the user.
-- Budget source: the source-aligned Budget recovery concept generated before implementation.
-- Comparison state: authenticated user, 15 May 2026, INR, 1600×1024, identical reviewed transactions and budget fixtures.
+## Full-view comparison evidence
 
-## Side-by-side evidence
+The BagUI source screenshot was opened and inspected. The local MoneyKai route was opened in the in-app browser, but the existing authentication guard correctly redirected the session to `/login`. Because the source and implementation did not represent the same screen or state, no visual-fidelity judgment was made from the mismatched captures.
 
-- [Dashboard reference vs implementation](docs/design-qa-dashboard-reference-vs-implementation.jpg)
-- [Budgets reference vs implementation](docs/design-qa-budgets-reference-vs-implementation.jpg)
+## Focused-region comparison evidence
 
-## Review
+Not available. Focused comparisons of the header controls, KPI cards, cashflow chart, spending donut, and money-records table require the authenticated dashboard to be rendered first.
 
-- P0: none. Navigation, primary actions, reporting-month controls, budget adjustment, and reset settings remain functional.
-- P1: none. The approved shared shell and Dashboard panel hierarchy are present in the same order and proportions.
-- P2: none remaining. Final spacing, top-row alignment, compact card density, route scroll restoration, and adjustment-table wrapping were corrected and recaptured. The final QA pass also removed the duplicate compact Budgets reporting-month control and replaced the inert custom reset toggle with the controlled React Native switch API.
-- Accepted data differences: displayed values, transaction names, month, goal labels, and category shares come from MoneyKai's real stores and deterministic fixtures rather than copying decorative values from the reference.
-- Budget category rows intentionally show actual spending share because the current data model does not contain truthful per-category budget caps.
+## Findings
 
-## Verification
+- [P0] Authenticated implementation capture is unavailable
+  - Location: local `/dashboard` preview
+  - Evidence: navigation to `/dashboard` resolves to `/login` in the available browser session.
+  - Impact: typography, spacing, colors, assets, copy, responsiveness, and interactions cannot be visually verified against the BagUI source.
+  - Fix: sign in to the visible local MoneyKai browser session, then repeat desktop and responsive captures and comparisons.
 
-- Desktop Playwright visual baseline: passed without snapshot update on the final run.
-- Mobile Dashboard and Budgets visual baselines: passed; the Budgets baseline was intentionally recaptured after removing the duplicate shell control, then passed without update mode.
-- Authenticated shell across Dashboard, Transactions, AI Review, Budgets, Goals, Wealth, Portfolio, Reports, and Accounts: passed.
-- Cashflow route, empty, no-budget, historical, future-month, keyboard, and reduced-motion checks: 10 passed in the final bounded Chromium batch.
-- Mobile Budgets now asserts one reporting-month control, a working reset switch, a working budget adjustment, and no horizontal overflow; the final shell/mobile batch passed 3 tests with 1 expected project skip.
-- Unit tests: 48 passed. Web lint and typecheck passed.
-- Production build, SEO audit, and OWASP deployment-input audit passed in the prior recorded run. They were not rerun in this focused pass because the build wrapper rewrites SEO assets and can upload source maps.
+## Validation completed before visual QA
+
+- TypeScript typecheck passed.
+- ESLint passed without warnings.
+- 58 web unit tests passed, including dashboard layout normalization, reordering, and money-record summary coverage.
+- Expo production web export passed.
+- SEO audit passed.
+- OWASP deployment-input security gate passed.
+
+## Primary interactions awaiting browser verification
+
+- Range tabs: 30 days, 3 months, 1 year
+- Dashboard search and clear action
+- KPI card filtering
+- Insight carousel navigation
+- Spending-category selection
+- New-action menu and route actions
+- Transaction type filters, sorting, selection, reset, export, and view-all navigation
+- Desktop and narrow responsive layouts
+- Browser console error review on the rendered dashboard
+- Customize-layout dialog, section reordering, restore-default action, and per-account persistence
+- Restrained container spring motion and reduced-motion behavior
+- Money Review Rail period summary on wide desktop
+- Row, select-all, and mixed-selection checkbox states
+- Selected totals and category breakdown progressive disclosure
+- Selected CSV export and same-type bulk category editing
+- Tablet inline review disclosure and mobile review bottom sheet
+
+## Comparison history
+
+- Iteration 1: blocked before comparison. The browser rendered the sign-in screen rather than the authenticated dashboard; no visual fixes were inferred from an invalid state comparison.
+- Iteration 2: customization and motion implementation passed typecheck, lint, unit, production export, SEO, and OWASP gates. Browser navigation still redirected to `/login`, so authenticated visual and interaction evidence remains blocked.
+- Iteration 3: the responsive Money Review workspace passed typecheck, lint, 58 unit tests, production export, SEO, and OWASP gates. Authenticated visual verification remains pending for desktop, tablet, and mobile review states.
 
 ## Final result
 
-passed (focused verification)
+final result: blocked
+
+Blocker: the available browser session is not signed in to MoneyKai, so the authenticated dashboard cannot be captured or compared.
