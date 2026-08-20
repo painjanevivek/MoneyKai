@@ -9,15 +9,15 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
-import { consumeAuthAttempt } from '@/services/authRateLimit';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { trackUserEvent } from '@/services/analytics';
-import { requestPasswordResetGateway } from '@/services/authGateway';
+import { changePasswordGateway } from '@/services/authGateway';
 import {
   getLatestCloudBackupMetadata,
   saveCloudBackup,
@@ -107,6 +107,20 @@ const buildBackupConfirmationMessage = (metadata: MoneyKaiBackupMetadata): strin
     '',
     'Restoring replaces the MoneyKai data on this device with the latest cloud backup.',
   ].join('\n');
+
+const getPasswordChangeErrorMessage = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : '';
+
+  if (/too many/i.test(message)) {
+    return 'Too many password change attempts. Please wait a moment and try again.';
+  }
+
+  if (/between 8 and 128 characters/i.test(message)) {
+    return 'Your new password must be between 8 and 128 characters.';
+  }
+
+  return 'We could not change your password. Confirm your current password and try again.';
+};
 
 const downloadBlob = (content: string, mimeType: string, filename: string) => {
   const blob = new Blob([content], { type: mimeType });
@@ -371,6 +385,10 @@ export default function SettingsScreen() {
   const [backupMetadataLoading, setBackupMetadataLoading] = useState(false);
   const [currencyBusy, setCurrencyBusy] = useState(false);
   const [changePasswordBusy, setChangePasswordBusy] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
   const [signOutBusy, setSignOutBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
@@ -502,8 +520,28 @@ export default function SettingsScreen() {
     router.push('/contact' as any);
   };
 
-  const handleChangePassword = async () => {
+  const clearChangePasswordForm = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setChangePasswordError(null);
+  };
+
+  const closeChangePasswordSheet = () => {
     if (changePasswordBusy) {
+      return;
+    }
+
+    clearChangePasswordForm();
+    setShowChangePasswordSheet(false);
+  };
+
+  const openChangePasswordSheet = () => {
+    if (user?.auth_provider === 'google') {
+      Alert.alert(
+        'Google sign-in account',
+        'This account signs in with Google, so its password is managed by Google. You can continue using Google to sign in to MoneyKai.'
+      );
       return;
     }
 
@@ -512,18 +550,53 @@ export default function SettingsScreen() {
       return;
     }
 
+    clearChangePasswordForm();
+    setShowChangePasswordSheet(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (changePasswordBusy) {
+      return;
+    }
+
+    if (!user?.email || user.auth_provider === 'google') {
+      setChangePasswordError('Password changes are only available for email and password accounts.');
+      return;
+    }
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setChangePasswordError('Enter your current password, new password, and confirmation.');
+      return;
+    }
+
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      setChangePasswordError('Your new password must be between 8 and 128 characters.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError('Your new password and confirmation do not match.');
+      return;
+    }
+
+    if (newPassword === currentPassword) {
+      setChangePasswordError('Choose a new password that is different from your current password.');
+      return;
+    }
+
     setChangePasswordBusy(true);
+    setChangePasswordError(null);
     try {
       const normalizedEmail = user.email.trim().toLowerCase();
-      trackUserEvent('auth_password_reset_submitted', { surface: 'settings' });
-      await consumeAuthAttempt('password-reset', normalizedEmail);
-      await requestPasswordResetGateway(normalizedEmail);
+      trackUserEvent('auth_password_change_submitted', { surface: 'settings' });
+      await changePasswordGateway(normalizedEmail, currentPassword, newPassword);
+      clearChangePasswordForm();
       setShowChangePasswordSheet(false);
-      trackUserEvent('auth_password_reset_succeeded', { surface: 'settings' });
-      Alert.alert('Reset link sent', `We sent a password reset link to ${user.email}.`);
+      trackUserEvent('auth_password_change_succeeded', { surface: 'settings' });
+      Alert.alert('Password changed', 'Your password has been updated. Use the new password the next time you sign in.');
     } catch (err) {
-      trackUserEvent('auth_password_reset_failed', { surface: 'settings' });
-      Alert.alert('Reset failed', err instanceof Error ? err.message : 'Could not send the reset link. Please try again.');
+      trackUserEvent('auth_password_change_failed', { surface: 'settings' });
+      setChangePasswordError(getPasswordChangeErrorMessage(err));
     } finally {
       setChangePasswordBusy(false);
     }
@@ -687,7 +760,14 @@ export default function SettingsScreen() {
         <Card style={{ marginBottom: Spacing.lg }}>
           <SettingItem icon="download-outline" iconColor="#111111" iconBg="#F4F4F4" title="Export Data" subtitle="Download transactions as Word, Excel, or PDF tables" onPress={() => setShowExportSheet(true)} />
           <SettingItem icon="cloud-upload-outline" iconColor="#2B2B2B" iconBg="#F2F2F2" title="Cloud backups" subtitle="Save to or restore a cloud backup" onPress={() => setShowBackupSheet(true)} />
-          <SettingItem icon="lock-reset" iconColor="#0F766E" iconBg="#DDF7F1" title="Change Password" subtitle="Send a secure reset link to your account email" onPress={() => setShowChangePasswordSheet(true)} />
+          <SettingItem
+            icon="lock-reset"
+            iconColor="#0F766E"
+            iconBg="#DDF7F1"
+            title="Password & sign-in"
+            subtitle={user?.auth_provider === 'google' ? 'You sign in securely with Google' : 'Update your password from Settings'}
+            onPress={openChangePasswordSheet}
+          />
           <SettingItem icon="shield-lock-outline" iconColor="#444444" iconBg="#ECECEC" title="Privacy Policy" subtitle="Open the privacy policy" onPress={handlePrivacy} />
           <SettingItem icon="delete-outline" iconColor={colors.emergency} iconBg={colors.emergencyBg} title="Delete Account" subtitle="Permanently remove your account and stored data" onPress={() => setShowDeleteAccountSheet(true)} />
         </Card>
@@ -852,25 +932,69 @@ export default function SettingsScreen() {
       <ModalSheet
         visible={showChangePasswordSheet}
         title="Change password"
-        subtitle="MoneyKai will send a secure password reset link to your account email."
-        onClose={() => (changePasswordBusy ? undefined : setShowChangePasswordSheet(false))}
+        subtitle="Confirm your current password, then choose a new password for MoneyKai."
+        onClose={closeChangePasswordSheet}
         footer={
           <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
-            <Button title="Cancel" onPress={() => setShowChangePasswordSheet(false)} variant="outline" style={{ flex: 1 }} disabled={changePasswordBusy} />
-            <Button title="Send Link" onPress={handleChangePassword} loading={changePasswordBusy} style={{ flex: 1 }} disabled={!user?.email} />
+            <Button title="Cancel" onPress={closeChangePasswordSheet} variant="outline" style={{ flex: 1 }} disabled={changePasswordBusy} />
+            <Button title="Update Password" onPress={handleChangePassword} loading={changePasswordBusy} style={{ flex: 1 }} disabled={!user?.email || user.auth_provider === 'google'} />
           </View>
         }
       >
         <View style={{ gap: Spacing.md }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
-            The reset email will go to {user?.email || 'your account email'}. After you change your password, use the new password the next time you sign in.
-          </Text>
+          {changePasswordError ? (
+            <Text style={{ fontSize: Typography.fontSize.sm, color: colors.emergency, lineHeight: 20 }}>
+              {changePasswordError}
+            </Text>
+          ) : null}
+          <Input
+            label="Current password"
+            placeholder="Enter your current password"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            icon="lock-outline"
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="current-password"
+            textContentType="password"
+            maxLength={128}
+            editable={!changePasswordBusy}
+            testID="change-password-current"
+          />
+          <Input
+            label="New password"
+            placeholder="Use 8–128 characters"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            icon="lock-plus-outline"
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            maxLength={128}
+            editable={!changePasswordBusy}
+            testID="change-password-new"
+          />
+          <Input
+            label="Confirm new password"
+            placeholder="Re-enter your new password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            icon="lock-check-outline"
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            maxLength={128}
+            editable={!changePasswordBusy}
+            testID="change-password-confirm"
+          />
           <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: `${colors.primary}22` }}>
             <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary, marginBottom: 4 }}>
-              Secure reset
+              Secure confirmation
             </Text>
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-              MoneyKai does not ask for or store your current password here. A protected MoneyKai auth endpoint rate-limits the request, then Firebase handles the reset link and verification.
+              MoneyKai verifies your current password before saving the new one. Passwords are never stored in MoneyKai settings, and this protected action is rate-limited.
             </Text>
           </View>
         </View>
