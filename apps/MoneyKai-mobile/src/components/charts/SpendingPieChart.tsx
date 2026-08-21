@@ -6,8 +6,10 @@ import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { useTransactionStore } from '../../stores/useTransactionStore';
 import { getCategoryById } from '../../constants/categories';
+import { SpendingTrendInsightCard } from './SpendingTrendInsightCard';
 import { formatCurrency } from '../../utils/formatCurrency';
 import type { CategoryTotal } from '../../types/transaction';
+import type { SpendingTrendInsight } from '../../utils/dashboard';
 import { BorderRadius, Shadows, Typography, Spacing } from '../../constants/theme';
 
 interface SpendingPieChartProps {
@@ -15,13 +17,27 @@ interface SpendingPieChartProps {
   totalSpent?: number;
   onPressViewMore?: () => void;
   actionLabel?: string;
+  trendInsight?: SpendingTrendInsight | null;
+  onPressTrendInsight?: () => void;
 }
+
+type PieDataItem = {
+  category: string;
+  label: string;
+  value: number;
+  percentage: number;
+  color: string;
+};
+
+const MAX_VISIBLE_CATEGORIES = 6;
 
 export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
   categoryTotals: categoryTotalsProp,
   totalSpent: totalSpentProp,
   onPressViewMore,
   actionLabel = 'View budget details',
+  trendInsight,
+  onPressTrendInsight,
 }) => {
   const { colors } = useTheme();
   const storeCategoryTotals = useTransactionStore((s) => s.getCategoryTotals());
@@ -34,16 +50,53 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
     () => [colors.chart1, colors.chart2, colors.chart3, colors.chart4, colors.chart5, colors.chart6, colors.chart7, colors.chart8],
     [colors]
   );
+  const totalForChart = React.useMemo(() => {
+    const categoryTotal = categoryTotals.reduce(
+      (sum, category) => sum + (Number.isFinite(category.total) && category.total > 0 ? category.total : 0),
+      0
+    );
+    return Math.max(0, totalSpent, categoryTotal);
+  }, [categoryTotals, totalSpent]);
 
-  const pieData = React.useMemo(
-    () =>
-      categoryTotals.slice(0, 6).map((cat, index) => ({
-        category: cat.category,
-        value: cat.total,
-        color: chartColors[index % chartColors.length],
-      })),
-    [categoryTotals, chartColors]
-  );
+  const pieData = React.useMemo<PieDataItem[]>(() => {
+    const positiveCategories = categoryTotals.filter((category) => Number.isFinite(category.total) && category.total > 0);
+    const categorizedTotal = positiveCategories.reduce((sum, category) => sum + category.total, 0);
+    const categoriesWithRemainder = totalForChart > categorizedTotal
+      ? [
+          ...positiveCategories,
+          {
+            category: 'unassigned-spend',
+            total: totalForChart - categorizedTotal,
+            percentage: 0,
+            count: 0,
+          },
+        ]
+      : positiveCategories;
+    const visibleCategories = categoriesWithRemainder.length > MAX_VISIBLE_CATEGORIES
+      ? [
+          ...categoriesWithRemainder.slice(0, MAX_VISIBLE_CATEGORIES - 1),
+          {
+            category: 'other-categories',
+            total: categoriesWithRemainder.slice(MAX_VISIBLE_CATEGORIES - 1).reduce((sum, category) => sum + category.total, 0),
+            percentage: 0,
+            count: 0,
+          },
+        ]
+      : categoriesWithRemainder;
+
+    return visibleCategories.map((category, index) => ({
+      category: category.category,
+      label:
+        category.category === 'other-categories'
+          ? 'Other categories'
+          : category.category === 'unassigned-spend'
+            ? 'Uncategorised spend'
+            : getCategoryById(category.category)?.name ?? category.category,
+      value: category.total,
+      percentage: totalForChart > 0 ? (category.total / totalForChart) * 100 : 0,
+      color: chartColors[index % chartColors.length],
+    }));
+  }, [categoryTotals, chartColors, totalForChart]);
 
   return (
     <Card
@@ -85,15 +138,15 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
               <Svg width={136} height={136} viewBox="0 0 136 136" style={{ position: 'absolute' }}>
                 <Circle cx={68} cy={68} r={58} stroke={colors.borderLight} strokeWidth={18} fill="none" />
                 {pieData.reduce<{ nodes: React.ReactNode[]; offset: number }>(
-                  (acc, cat, index) => {
-                    const dash = (cat.value / Math.max(1, totalSpent)) * circumference;
+                  (acc, cat) => {
+                    const dash = (cat.value / Math.max(1, totalForChart)) * circumference;
                     acc.nodes.push(
                       <Circle
                         key={cat.category}
                         cx={68}
                         cy={68}
                         r={58}
-                        stroke={chartColors[index % chartColors.length]}
+                        stroke={cat.color}
                         strokeWidth={18}
                         fill="none"
                         strokeDasharray={`${dash} ${circumference - dash}`}
@@ -113,7 +166,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
               <View style={{ alignItems: 'center', width: 88 }}>
                 <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>Total Spent</Text>
                 <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary, textAlign: 'center' }}>
-                  {formatCurrency(totalSpent)}
+                  {formatCurrency(totalForChart)}
                 </Text>
               </View>
             </View>
@@ -137,25 +190,36 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
           )}
         </View>
 
-        <View style={{ flex: 1, gap: 7 }}>
-          {categoryTotals.slice(0, 6).map((cat, index) => {
-            const category = getCategoryById(cat.category);
+        <View style={{ flex: 1, minWidth: 0, gap: 7 }}>
+          {pieData.map((cat) => {
             return (
               <View key={cat.category} style={{ flexDirection: 'row', alignItems: 'center', minHeight: 24, gap: Spacing.sm }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: chartColors[index % chartColors.length] }} />
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: cat.color }} />
                 <Text numberOfLines={1} style={{ flex: 1, fontSize: Typography.fontSize.xs, lineHeight: 16, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>
-                  {category?.name?.split(' ')[0] || cat.category}
+                  {cat.label}
                 </Text>
-                <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 16, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary, textAlign: 'right', minWidth: 34 }}>
-                  {Math.round(cat.percentage)}%
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.82}
+                  style={{ fontSize: Typography.fontSize.xs, lineHeight: 16, fontFamily: Typography.fontFamily.semiBold, color: colors.textSecondary, textAlign: 'right', minWidth: 34 }}
+                >
+                  {formatCurrency(cat.value)}
                 </Text>
               </View>
             );
           })}
         </View>
       </View>
+      {trendInsight ? (
+        <View style={{ marginTop: Spacing.md, paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+          <SpendingTrendInsightCard insight={trendInsight} onPress={onPressTrendInsight} />
+        </View>
+      ) : null}
       <TouchableOpacity
         onPress={onPressViewMore}
+        accessibilityRole="button"
+        accessibilityLabel={actionLabel}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
