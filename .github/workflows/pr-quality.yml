@@ -1,0 +1,82 @@
+name: PR quality gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# The workflow never needs repository write access or deployment credentials.
+permissions:
+  contents: read
+
+# Keep only the newest run for a branch or pull request to avoid wasting runner time.
+concurrency:
+  group: pr-quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  static-analysis:
+    name: Static analysis and security baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint mobile and web apps
+        run: npm run lint
+
+      - name: Type-check mobile and web apps
+        run: npm run typecheck
+
+      - name: Verify web API mirrors
+        run: npm run web:api-mirrors:check
+
+      - name: Verify the OWASP security baseline
+        run: npm run security:check
+
+  behavioural-tests:
+    name: API and mobile behaviour tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run API tests
+        run: npm run api:test
+
+      - name: Run capture and privacy tests
+        run: npm run mobile:test:capture
+
+      - name: Run interaction behaviour tests
+        run: npm run mobile:test:interaction
