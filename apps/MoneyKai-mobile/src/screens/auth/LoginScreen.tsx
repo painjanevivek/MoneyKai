@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,6 +15,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { MoneyKaiBrandMark } from '@/components/branding/MoneyKaiBrandMark';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import type { AuthStackParamList } from '@/navigation/types';
 
@@ -111,11 +111,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                 shadowColor: colors.shadowColor,
               }}
             >
-              <Image
-                source={require('../../../assets/images/moneykai-logo.png')}
-                style={{ width: 44, height: 44 }}
-                resizeMode="contain"
-              />
+              <MoneyKaiBrandMark size={44} />
             </View>
             <Text
               style={{

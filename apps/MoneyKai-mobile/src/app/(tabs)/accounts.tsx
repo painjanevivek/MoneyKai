@@ -237,10 +237,6 @@ export default function AccountsScreen() {
             { label: 'Cash', value: formatCurrency(summary.cashBalance), tone: 'positive' },
             { label: 'Imported', value: String(importedCount) },
           ]}
-          chips={[
-            { icon: 'shield-check-outline', label: 'Consent-aware' },
-            { icon: 'filter-variant', label: 'Transaction filters' },
-          ]}
           actions={
             <>
               <Button title="Connect Sandbox" icon="bank-plus" onPress={handleConnectSandbox} variant="outline" />

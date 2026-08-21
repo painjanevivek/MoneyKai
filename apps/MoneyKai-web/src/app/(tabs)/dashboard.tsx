@@ -322,7 +322,7 @@ export default function DashboardScreen() {
       title: 'Add your first record',
       body: 'Start with one income or expense. Reports need reviewed data before they can help.',
       action: 'Add transaction',
-      onPress: () => router.push('/transactions' as any),
+      onPress: () => router.push({ pathname: '/transactions', params: { add: 'true' } } as any),
     },
     {
       done: transactions.length >= 3,
@@ -399,7 +399,7 @@ export default function DashboardScreen() {
       ) : (
         <>
           <CashflowDashboardHeader
-            onAddTransaction={() => router.push('/transactions' as any)}
+            onAddTransaction={() => router.push({ pathname: '/transactions', params: { add: 'true' } } as any)}
             onAdjustBudget={() => router.push('/budgets' as any)}
           />
           <CashflowSummaryStrip plan={plan} />

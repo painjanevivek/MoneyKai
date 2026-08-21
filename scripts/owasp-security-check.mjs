@@ -13,6 +13,7 @@ const optionalDeploymentSources = new Set([
   'api/v1/auth/email/sign-in.js',
   'api/v1/auth/email/sign-up.js',
   'api/v1/auth/email/password-reset.js',
+  'api/v1/auth/email/change-password.js',
 ]);
 
 const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
@@ -157,11 +158,11 @@ check(
 const forbiddenScriptSources = ["'unsafe-inline'", "'unsafe-eval'", "'wasm-unsafe-eval'", "'strict-dynamic'"];
 const presentForbiddenScriptSources = forbiddenScriptSources.filter((source) => scriptSources.includes(source));
 check(
-  'CSP executable scripts use a narrow Expo hydration hash',
-  scriptSources.includes(expoHydrationHash) && presentForbiddenScriptSources.length === 0,
+  'CSP permits same-origin Expo scripts with a narrow hydration hash',
+  scriptSources.includes("'self'") && scriptSources.includes(expoHydrationHash) && presentForbiddenScriptSources.length === 0,
   presentForbiddenScriptSources.length > 0
     ? `Forbidden script sources: ${presentForbiddenScriptSources.join(', ')}`
-    : `Expected hydration source ${expoHydrationHash}`
+    : `Expected same-origin scripts and hydration source ${expoHydrationHash}`
 );
 
 check(
@@ -349,11 +350,13 @@ const googleOAuth = readText('api/_lib/google-oauth.js');
 const authEmailSignIn = readDeploymentSource('api/v1/auth/email/sign-in.js');
 const authEmailSignUp = readDeploymentSource('api/v1/auth/email/sign-up.js');
 const authPasswordReset = readDeploymentSource('api/v1/auth/email/password-reset.js');
-const authEmailRoutesAbsent = [authEmailSignIn, authEmailSignUp, authPasswordReset]
+const authChangePassword = readDeploymentSource('api/v1/auth/email/change-password.js');
+const authEmailRoutesAbsent = [authEmailSignIn, authEmailSignUp, authPasswordReset, authChangePassword]
   .every((route) => route.absent);
 const authEmailSignInRoute = authEmailSignIn.source;
 const authEmailSignUpRoute = authEmailSignUp.source;
 const authPasswordResetRoute = authPasswordReset.source;
+const authChangePasswordRoute = authChangePassword.source;
 const googleOAuthRouter = readText('api/_lib/google-oauth-router.js');
 const authGoogleStartRoute = googleOAuthRouter;
 const authGoogleCallbackRoute = googleOAuthRouter;
@@ -437,6 +440,7 @@ check(
     containsAll(firebaseIdentity, [
       'signInWithPassword',
       'sendOobCode',
+      'changeEmailPassword',
       'createCustomToken',
       'FIREBASE_SERVICE_ACCOUNT_JSON',
       'getPublicFirebaseAuthError',
@@ -459,11 +463,18 @@ check(
           'applyRateLimitForKey',
           'sendPasswordResetEmail',
           'sendJson(res, 202',
+        ]) &&
+        containsAll(authChangePasswordRoute, [
+          'applyRateLimit(req, res',
+          'applyRateLimitForKey',
+          'changeEmailPassword',
+          'sendJson(res, 200',
         ]))) &&
     containsAll(webAuthGateway, [
       '/v1/auth/email/sign-in',
       '/v1/auth/email/sign-up',
       '/v1/auth/email/password-reset',
+      '/v1/auth/email/change-password',
       'signInWithCustomToken(firebaseAuth, response.customToken)',
     ]) &&
     containsAll(mobileAuthGateway, [
@@ -480,7 +491,10 @@ check(
       "consumeAuthAttempt('google-sign-in'",
     ]) &&
     containsAll(webForgotPassword, ["consumeAuthAttempt('password-reset'"]) &&
-    containsAll(webSettings, ["consumeAuthAttempt('password-reset'"]) &&
+    containsAll(webSettings, [
+      'changePasswordGateway(normalizedEmail, currentPassword, newPassword)',
+      "trackUserEvent('auth_password_change_submitted'",
+    ]) &&
     containsAll(mobileAuthService, [
       "assertAuthAttemptAllowed('sign-in'",
       "recordFailedAuthAttempt('sign-in'",
@@ -612,8 +626,8 @@ const passwordResetEvidence = [
     ]),
   },
   {
-    label: 'web settings gateway call',
-    ok: containsAll(webSettings, ['requestPasswordResetGateway(normalizedEmail)']),
+    label: 'web settings direct password-change gateway call',
+    ok: containsAll(webSettings, ['changePasswordGateway(normalizedEmail, currentPassword, newPassword)']),
   },
   {
     label: 'mobile auth service gateway call',
@@ -628,7 +642,7 @@ check(
   'Password reset flow is wired and enumeration-safe',
   missingPasswordResetEvidence.length === 0,
   missingPasswordResetEvidence.length === 0
-    ? 'Reset links route through the backend auth gateway, normalize email input, throttle attempts, and avoid account enumeration'
+    ? 'Reset links and signed-in password changes route through rate-limited backend auth gateways, and reset recovery avoids account enumeration'
     : `Missing password-reset evidence: ${missingPasswordResetEvidence.join(', ')}`
 );
 
@@ -650,9 +664,9 @@ check(
       "trackUserEvent('auth_password_reset_failed'",
     ]) &&
     containsAll(webSettings, [
-      "trackUserEvent('auth_password_reset_submitted'",
-      "trackUserEvent('auth_password_reset_succeeded'",
-      "trackUserEvent('auth_password_reset_failed'",
+      "trackUserEvent('auth_password_change_submitted'",
+      "trackUserEvent('auth_password_change_succeeded'",
+      "trackUserEvent('auth_password_change_failed'",
     ]),
   'High-signal auth events should emit through the sanitized analytics helper'
 );

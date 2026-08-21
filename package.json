@@ -29,6 +29,7 @@
     "typecheck": "npm run mobile:typecheck && npm run web:typecheck",
     "build": "npm run web:build",
     "bootstrap": "npm install --workspaces --include-workspace-root",
+    "brand:assets": "node ./scripts/generate-brand-assets.mjs",
     "launch:check": "node ./scripts/launch-check.mjs",
     "release:handoff-baseline": "node ./scripts/verify-handoff-baseline.mjs",
     "seo:generate": "node ./scripts/public-seo.mjs --write",

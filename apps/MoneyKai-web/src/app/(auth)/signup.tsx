@@ -137,7 +137,7 @@ export default function SignupScreen() {
                 }}
               >
                 <Image
-                  source={require('../../../assets/images/moneykai-logo.png')}
+                  source={{ uri: '/brand/moneykai-symbol-logo.svg' }}
                   style={{ width: 42, height: 42 }}
                   resizeMode="contain"
                   accessibilityLabel="MoneyKai logo"

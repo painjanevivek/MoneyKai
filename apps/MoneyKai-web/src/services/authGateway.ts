@@ -220,6 +220,18 @@ export const requestPasswordResetGateway = async (email: string): Promise<void> 
   });
 };
 
+export const changePasswordGateway = async (
+  email: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> => {
+  await requestAuthGateway<{ ok: true }>('/v1/auth/email/change-password', {
+    email: email.trim().toLowerCase(),
+    currentPassword,
+    newPassword,
+  });
+};
+
 export const startGoogleOAuthGateway = async (returnTo = '/dashboard'): Promise<string> => {
   const response = await requestAuthGateway<GoogleOAuthStartResponse>('/v1/auth/google/start', {
     platform: 'web',

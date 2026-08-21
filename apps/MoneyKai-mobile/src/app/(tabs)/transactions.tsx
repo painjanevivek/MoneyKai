@@ -128,13 +128,6 @@ export default function TransactionsScreen() {
     const availableSources = new Set(allTransactions.map((transaction) => transaction.captureSource).filter(Boolean));
     return CAPTURE_SOURCE_OPTIONS.filter((option) => availableSources.has(option.id));
   }, [allTransactions]);
-  const activeFilterCount =
-    Number(categoryFilter !== 'all') +
-    Number(paymentFilter !== 'all') +
-    Number(accountFilter !== 'all') +
-    Number(sourceFilter !== 'all') +
-    Number(dateFilter !== 'all');
-  const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest First';
   const netFlow = totalIncome - totalSpent;
 
   const displayTransactions = useMemo(() => {
@@ -305,10 +298,6 @@ export default function TransactionsScreen() {
             { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
             { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'warning' : 'positive' },
           ]}
-          chips={[
-            { icon: 'shield-check-outline', label: 'Review before action' },
-            { icon: 'filter-variant', label: `${activeFilterCount} active filters` },
-          ]}
           actions={
             <Button
               title="Capture"
@@ -376,53 +365,6 @@ export default function TransactionsScreen() {
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: Spacing.sm }}>
-          <TouchableOpacity
-            onPress={() => setShowFilterModal(true)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              minHeight: 44,
-              gap: 6,
-              paddingHorizontal: Spacing.md,
-              paddingVertical: Spacing.sm,
-              borderRadius: BorderRadius.full,
-              backgroundColor: activeFilterCount > 0 ? colors.primaryBg : colors.card,
-              borderWidth: 1,
-              borderColor: activeFilterCount > 0 ? colors.primary : colors.border,
-            }}
-          >
-            <MaterialCommunityIcons name="filter-variant" size={16} color={activeFilterCount > 0 ? colors.primary : colors.textSecondary} />
-            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: activeFilterCount > 0 ? colors.primary : colors.textSecondary }}>
-              {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setShowSortModal(true)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              minHeight: 44,
-              gap: 6,
-              paddingHorizontal: Spacing.md,
-              paddingVertical: Spacing.sm,
-              borderRadius: BorderRadius.full,
-              backgroundColor: colors.card,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            <MaterialCommunityIcons name="sort" size={16} color={colors.textSecondary} />
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.84}
-              style={{ maxWidth: 168, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}
-            >
-              {sortLabel}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 

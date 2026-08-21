@@ -1,5 +1,8 @@
 import React, { type ReactNode } from 'react';
+import { useGSAP } from '@gsap/react';
 import { Redirect } from 'expo-router';
+import { gsap } from 'gsap';
+import { motion, useReducedMotion } from 'motion/react';
 import Archive from 'lucide-react/dist/esm/icons/archive.mjs';
 import BarChart3 from 'lucide-react/dist/esm/icons/bar-chart-3.mjs';
 import Check from 'lucide-react/dist/esm/icons/check.mjs';
@@ -18,9 +21,16 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2.mjs';
 import WalletCards from 'lucide-react/dist/esm/icons/wallet-cards.mjs';
 import { SeoHead } from '@/components/marketing/SeoHead';
 import { SITE } from '@/constants/site';
+import { CURRENT_PLATFORM_AVAILABILITY, LANDING_PRIMARY_CTA, pricingPlans } from '@/content/landing';
 import { useAuthStore } from '@/stores/useAuthStore';
 
-const navLinks = ['Features', 'Pricing', 'Security', 'Learn', 'Contact'] as const;
+const navLinks = [
+  { label: 'Features', href: '#features' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'Security', href: '/security' },
+  { label: 'Learn', href: '/docs' },
+  { label: 'Contact', href: '/contact' },
+] as const;
 
 const moneyItems = [
   {
@@ -125,17 +135,21 @@ const triageCards = [
   },
 ] as const;
 
-const audiences = ['Students', 'Families', 'Couples', 'Freelancers', 'Roommates'] as const;
-
-const currentReleaseFeatures = [
-  'Manual income and expense tracking',
-  'Budgets and categories',
-  'Savings and shared expense views',
-  'Export your records',
+const audiences = [
+  'Students',
+  'First-job earners',
+  'Families',
+  'Couples',
+  'Freelancers',
+  'Roommates',
+  'Self-employed',
+  'Shared households',
 ] as const;
 
+gsap.registerPlugin(useGSAP);
+
 function LogoMark({ className = 'mk-logo-mark' }: { className?: string }) {
-  return <img src="/brand/moneykai-mark-96.png" className={className} alt="" aria-hidden="true" />;
+  return <img src="/brand/moneykai-symbol-logo.svg" className={className} alt="" aria-hidden="true" />;
 }
 
 function AppButton({ label = 'Open MoneyKai', full = false }: { label?: string; full?: boolean }) {
@@ -182,11 +196,11 @@ function Navbar() {
       <div className="mk-nav-links">
         {navLinks.map((item, index) => (
           <a
-            key={item}
-            href={item === 'Pricing' ? '#pricing' : item === 'Contact' ? '/contact' : `#${item.toLowerCase()}`}
+            key={item.label}
+            href={item.href}
             style={{ animationDelay: `${100 + index * 50}ms` }}
           >
-            {item}
+            {item.label}
           </a>
         ))}
       </div>
@@ -201,57 +215,54 @@ function Navbar() {
 }
 
 function Hero() {
+  const prefersReducedMotion = useReducedMotion();
+  const copyMotion = prefersReducedMotion
+    ? {}
+    : {
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.64, delay: 0.16, ease: [0.16, 1, 0.3, 1] as const },
+      };
+
   return (
     <section className="mk-hero" aria-labelledby="hero-title">
-      <h1
+      <motion.h1
         id="hero-title"
         className="mk-hero-title"
+        {...copyMotion}
+        initial={false}
       >
-        <span>Review expenses, budgets,</span>
-        <span className="mk-shiny-text animate-shiny">and shared bills before the month ends.</span>
-      </h1>
-      <p
-        className="mk-hero-copy"
-      >
+        <span>Review your money,</span>
+        <span className="mk-shiny-text animate-shiny">before the month moves on.</span>
+      </motion.h1>
+      <motion.p className="mk-hero-copy" {...copyMotion} initial={false}>
         Add your income and expenses, check each budget, keep shared costs organized, and export a copy of your
         records when you need one.
-      </p>
-      <div
-        className="mk-hero-actions"
-      >
-        <AppButton />
-        <span>Available on Android</span>
-      </div>
+      </motion.p>
+      <motion.div className="mk-hero-actions" {...copyMotion} initial={false}>
+        <AppButton label={LANDING_PRIMARY_CTA} />
+        <a href="#pricing">See upcoming plans</a>
+      </motion.div>
     </section>
   );
 }
 
-function MenuBar() {
-  const items = ['Expenses', 'Budgets', 'Savings', 'Backups'] as const;
-
-  return (
-    <div
-      className="mk-menu-strip"
-    >
-      <div className="mk-menu-inner">
-        <div className="mk-menu-left">
-          <LogoMark className="mk-menu-logo" />
-          <strong>MoneyKai</strong>
-          <span className="mk-strip-caption">Private money review, organized locally.</span>
-        </div>
-        <div className="mk-menu-right">
-          {items.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function MoneyMockup() {
+  const prefersReducedMotion = useReducedMotion();
+  const revealMotion = prefersReducedMotion
+    ? {}
+    : {
+        whileInView: { opacity: 1, y: 0, scale: 1 },
+        viewport: { once: true, amount: 0.2 },
+        transition: { duration: 0.72, ease: [0.16, 1, 0.3, 1] as const },
+      };
+
   return (
-    <section className="mk-mockup-section" aria-label="MoneyKai app preview">
+    <motion.section
+      className="mk-mockup-section"
+      aria-label="MoneyKai app preview"
+      {...revealMotion}
+      initial={false}
+    >
       <div className="mk-window">
         <div className="mk-titlebar">
           <div className="mk-traffic">
@@ -361,7 +372,7 @@ function MoneyMockup() {
           </div>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
@@ -403,59 +414,88 @@ function FeatureTriage() {
 }
 
 function AudienceStrip() {
+  const marqueeRef = React.useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+
+  useGSAP(
+    () => {
+      if (prefersReducedMotion || !marqueeRef.current) return;
+
+      gsap.to(marqueeRef.current, {
+        xPercent: -50,
+        duration: 32,
+        ease: 'none',
+        repeat: -1,
+      });
+    },
+    { dependencies: [prefersReducedMotion], revertOnUpdate: true, scope: marqueeRef }
+  );
+
   return (
-    <section className="mk-logo-cloud" aria-label="MoneyKai use cases">
+    <section
+      className="mk-logo-cloud"
+      aria-label={`MoneyKai supports ${audiences.join(', ')}`}
+    >
       <p>For personal budgets and shared bills</p>
-      <div>
-        {audiences.map((audience) => (
-          <span key={audience}>{audience}</span>
-        ))}
+      <div className="mk-audience-viewport">
+        <div ref={marqueeRef} className="mk-audience-track" aria-hidden="true">
+          {[0, 1].map((copy) => (
+            <div className="mk-audience-list" key={copy}>
+              {audiences.map((audience) => (
+                <span key={`${copy}-${audience}`}>{audience}</span>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
 function Pricing() {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <section id="pricing" className="c3-pricing-section">
-      <svg className="mk-noise-svg" aria-hidden="true">
-        <filter id="c3-noise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" stitchTiles="stitch" />
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.075" />
-          </feComponentTransfer>
-          <feComposite in2="SourceGraphic" operator="in" result="noise" />
-          <feBlend in="SourceGraphic" in2="noise" mode="overlay" />
-        </filter>
-      </svg>
-      <div className="c3-watermark-container">
-        <h2 className="c3-watermark-main">
-          <span className="c3-watermark-line-1">Current Android</span>
-          <span className="c3-watermark-line-2">release</span>
-        </h2>
+      <div className="c3-pricing-intro">
+        <img className="mk-pricing-wordmark" src="/brand/moneykai-wordmark.svg" alt="MoneyKai" />
+        <h2>Clear plans for the next MoneyKai release.</h2>
+        <p>{CURRENT_PLATFORM_AVAILABILITY}</p>
       </div>
-      <div className="c3-grid c3-grid-single">
-        <article className="c3-card">
-          <span className="c3-tier-small">Current Android release</span>
-          <strong className="c3-tier-large">Free</strong>
-          <p className="c3-desc">
-            Record transactions, review budgets, check savings progress, and export your records. This release has no
-            paid Android plan.
-          </p>
-          <ul className="c3-list">
-            {currentReleaseFeatures.map((feature) => (
-              <li key={feature}>
-                <span className="c3-check">
-                  <Check size={14} strokeWidth={2.4} />
-                </span>
-                {feature}
-              </li>
-            ))}
-          </ul>
-          <a className="c3-btn" href="/signup">
-            Create an account
-          </a>
-        </article>
+      <div className="c3-grid">
+        {pricingPlans.map((plan, index) => (
+          <motion.article
+            key={plan.name}
+            className={`c3-card ${plan.name === 'Premium' ? 'c3-card-featured' : ''}`}
+            initial={false}
+            whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.24 }}
+            transition={{ duration: 0.55, delay: prefersReducedMotion ? 0 : index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="c3-card-head">
+              <span className="c3-tier-small">{plan.availability}</span>
+              <strong>{plan.name}</strong>
+            </div>
+            <div className="c3-price-row">
+              <span>{plan.price}</span>
+              <small>per month</small>
+            </div>
+            <p className="c3-desc">{plan.description}</p>
+            <ul className="c3-list">
+              {plan.features.map((feature) => (
+                <li key={feature}>
+                  <span className="c3-check">
+                    <Check size={14} strokeWidth={2.4} />
+                  </span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <a className="c3-btn" href="/signup">
+              {plan.cta}
+            </a>
+          </motion.article>
+        ))}
       </div>
     </section>
   );
@@ -475,7 +515,7 @@ function FinalCTA() {
           Add the records you need, then check your budgets, shared costs, and savings progress in the same review.
         </p>
         <div>
-          <AppButton label="Create an account" />
+          <AppButton label={LANDING_PRIMARY_CTA} />
           <a href="/contact" className="mk-sales-button">
             Contact MoneyKai <ChevronRight size={16} />
           </a>
@@ -504,10 +544,10 @@ export default function LandingScreen() {
   const structuredData = [
     {
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
+      '@type': 'WebApplication',
       name: SITE.name,
       applicationCategory: 'FinanceApplication',
-      operatingSystem: 'Android',
+      operatingSystem: 'Web',
       url: SITE.url,
       description,
       offers: {
@@ -535,7 +575,6 @@ export default function LandingScreen() {
         <Navbar />
         <main id="main-content">
           <Hero />
-          <MenuBar />
           <MoneyMockup />
           <FeatureTriage />
           <AudienceStrip />

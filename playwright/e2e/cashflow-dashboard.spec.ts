@@ -47,14 +47,15 @@ test.describe('MoneyKai Cashflow Planner dashboard', () => {
     await expect(categories.getByText('Budget by category')).toBeVisible();
   });
 
-  test('preserves routes from primary dashboard actions', async ({ page }) => {
+  test('opens the shared transaction composer from the dashboard action', async ({ page }) => {
     await seedCashflowPlanner(page);
     await page.goto('/dashboard');
 
     const header = page.getByTestId('cashflow-dashboard-header');
 
     await header.getByRole('button', { name: 'Add transaction' }).click();
-    await expect(page).toHaveURL(/\/transactions$/);
+    await expect(page).toHaveURL(/\/transactions\?add=true$/);
+    await expect(page.getByText('Add Transaction', { exact: true }).last()).toBeVisible();
 
     await page.goBack();
     await header.getByRole('button', { name: 'Adjust budget' }).click();
