@@ -34,7 +34,7 @@ const exchangeGoogleOAuthCodeOnce = (callbackKey: string, code: string) => {
 };
 
 const sanitizeReturnPath = (value: string | undefined) => {
-  const fallback = '/dashboard';
+  const fallback = '/review';
   const raw = String(value || '').trim();
   let decoded = raw;
   try {

@@ -83,7 +83,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/dashboard');
+      router.replace('/review');
     }
   }, [isAuthenticated]);
 

@@ -80,6 +80,7 @@ import type {
   IncrementalSyncResponse,
   PaginatedResponse,
 } from '@/types/pagination';
+import type { ReviewActionRequest, ReviewActionResponse, ReviewFilters, ReviewItem } from '@/types/review';
 
 const backendBaseUrl = getBackendBaseUrl();
 
@@ -323,6 +324,28 @@ export const backendApi = {
     if (windowEnd) params.set('window_end', windowEnd);
     return request<IncrementalSyncResponse>(`/v1/sync?${params.toString()}`);
   },
+  listReviewItems: async (
+    filters: ReviewFilters = {},
+    limit = 25,
+    cursor?: string | null,
+  ) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (filters.status) params.set('status', filters.status);
+    if (filters.source) params.set('source', filters.source);
+    if (cursor) params.set('cursor', cursor);
+    return request<PaginatedResponse<ReviewItem>>(`/v1/reviews?${params.toString()}`);
+  },
+  getReviewItem: async (reviewId: string) =>
+    request<{ item: ReviewItem }>(`/v1/reviews/${encodeURIComponent(reviewId)}`),
+  actionReviewItem: async (
+    reviewId: string,
+    payload: ReviewActionRequest,
+    idempotencyKey = createRequestId(),
+  ) => request<ReviewActionResponse>(`/v1/reviews/${encodeURIComponent(reviewId)}/actions`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(payload),
+  }),
   createBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups', { method: 'POST' }),
   getLatestBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups/latest'),
   restoreLatestBackup: async (idempotencyKey = createRequestId()) =>

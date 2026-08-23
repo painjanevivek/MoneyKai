@@ -5,7 +5,7 @@ import { ReportingMonthProvider } from '@/components/layout/ReportingMonthContex
 import { useAuthStore } from '@/stores/useAuthStore';
 
 export const unstable_settings = {
-  initialRouteName: 'dashboard',
+  initialRouteName: 'review',
 };
 
 export default function TabsLayout() {

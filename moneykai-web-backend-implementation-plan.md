@@ -631,6 +631,8 @@ The web client may optimistically render a pending state, but only `confirmed` m
 
 ### Phase 4: Daily Review Loop
 
+**Implementation status:** Code-complete locally; deployed Firestore index/TTL validation, keyboard/screen-reader evidence, concurrent-action staging tests, and canonical-total reconciliation remain pending for `EG-4`. See [ADR-005](docs/architecture/adr-005-canonical-daily-review-loop.md).
+
 - **Objective:** Make review the primary repeatable user workflow on trustworthy foundations.
 - **Tasks:** Define the review-item contract; aggregate reconciliation and quality signals; build the review workspace; add idempotent approve/edit/ignore/defer actions; connect deterministic dashboard next actions.
 - **Dependencies:** Phases 1–3 and typed core financial commands.
@@ -785,7 +787,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 3, Phase 1.
   - Risks: Transitional schemas and partial records.
 
-- [ ] `TASK-005` — Standardize truthful UI states
+- [x] `TASK-005` — Standardize truthful UI states
   - Purpose: Make loading, empty, error, disabled, partial, and retry states consistent.
   - Dependencies: TASK-002.
   - Expected output: Shared state components and route adoption checklist.
@@ -794,7 +796,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 1.
   - Risks: Screen-specific styling drift.
 
-- [ ] `TASK-006` — Define the canonical review-item model
+- [x] `TASK-006` — Define the canonical review-item model
   - Purpose: Represent all actionable review work consistently.
   - Dependencies: TASK-001 and existing reconciliation models.
   - Expected output: Typed model covering reason, priority, provenance, status, evidence, and allowed actions.
@@ -803,7 +805,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visuals 1 and 2.
   - Risks: Over-generalization across unrelated workflows.
 
-- [ ] `TASK-007` — Implement the review aggregation service
+- [x] `TASK-007` — Implement the review aggregation service
   - Purpose: Combine quality and reconciliation signals server-side.
   - Dependencies: TASK-006 and bounded read infrastructure from Phase 3.
   - Expected output: Paginated review API with filters and stable ordering.
@@ -812,7 +814,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 2.
   - Risks: Expensive scans at larger data volumes.
 
-- [ ] `TASK-008` — Implement retry-safe review actions
+- [x] `TASK-008` — Implement retry-safe review actions
   - Purpose: Approve, edit, ignore, and defer without duplicate mutation.
   - Dependencies: TASK-007 and TASK-P0-04.
   - Expected output: Idempotent endpoints and conflict handling.
@@ -821,7 +823,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visuals 1 and 2.
   - Risks: Concurrent edits and stale browser state.
 
-- [ ] `TASK-009` — Build the web review workspace
+- [x] `TASK-009` — Build the web review workspace
   - Purpose: Make review the primary authenticated entry experience.
   - Dependencies: TASK-005, TASK-007, TASK-008.
   - Expected output: Queue, detail, evidence, action, and safe-state components.
@@ -830,7 +832,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 1.
   - Risks: Excessive density or route duplication.
 
-- [ ] `TASK-010` — Connect dashboard next actions to review state
+- [x] `TASK-010` — Connect dashboard next actions to review state
   - Purpose: Turn facts into navigable, deterministic actions.
   - Dependencies: TASK-009 and shared analytics selectors.
   - Expected output: Prioritized action resolver with deep links and preserved filters.

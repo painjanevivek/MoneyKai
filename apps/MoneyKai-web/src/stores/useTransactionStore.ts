@@ -25,6 +25,7 @@ interface TransactionState {
   // Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at'>) => void;
   upsertImportedTransactions: (transactions: Transaction[]) => void;
+  applyConfirmedTransaction: (transaction: Transaction) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   removeImportedTransactionsForAccounts: (accountIds: string[]) => void;
@@ -329,6 +330,18 @@ export const useTransactionStore = create<TransactionState>()(
 
           transactionsToSync.forEach(syncTransactionCreate);
           queueAutomaticBackup('linked account transactions imported');
+        },
+
+        applyConfirmedTransaction: (transaction) => {
+          set((state) => {
+            const existingIndex = state.transactions.findIndex((item) => item.id === transaction.id);
+            if (existingIndex < 0) {
+              return { transactions: [transaction, ...state.transactions] };
+            }
+            const transactions = [...state.transactions];
+            transactions[existingIndex] = transaction;
+            return { transactions };
+          });
         },
 
         updateTransaction: (id, updates) => {

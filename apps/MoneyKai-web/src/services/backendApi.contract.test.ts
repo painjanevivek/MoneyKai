@@ -84,4 +84,22 @@ describe('backend API authority headers', () => {
       '/v1/sync?sync_token=sync+token&cursor=page+cursor&window_end=2026-08-24T00%3A01%3A00Z',
     );
   });
+
+  it('preserves review filters and stable action idempotency', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [], page: { hasMore: false } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ item: {}, receipt: {} }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await backendApi.listReviewItems({ status: 'pending', source: 'sms' }, 25, 'signed cursor');
+    await backendApi.actionReviewItem('review/1', { action: 'ignore', expectedRevision: 2 }, 'review-stable-key');
+
+    expect(fetchMock.mock.calls[0][0]).toContain(
+      '/v1/reviews?limit=25&status=pending&source=sms&cursor=signed+cursor',
+    );
+    expect(fetchMock.mock.calls[1][0]).toContain('/v1/reviews/review%2F1/actions');
+    const headers = fetchMock.mock.calls[1][1].headers as Headers;
+    expect(headers.get('Idempotency-Key')).toBe('review-stable-key');
+  });
 });

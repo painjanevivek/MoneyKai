@@ -27,6 +27,7 @@ type NavLayout = {
 };
 
 const NAV_ITEMS: NavItem[] = [
+  { href: '/review', label: 'Review', icon: 'clipboard-text-search-outline' },
   { href: '/dashboard', label: 'Dashboard', icon: 'view-dashboard-outline' },
   { href: '/transactions', label: 'Transactions', icon: 'swap-horizontal' },
   { href: '/budgets', label: 'Budgets', icon: 'wallet-outline' },
@@ -43,6 +44,7 @@ const REPORT_NAV_ITEMS: ReportNavItem[] = [
 const MOBILE_APK_DOWNLOAD_URL: string | null = null;
 
 const ROUTE_META: { href: string; title: string; subtitle: string; icon?: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
+  { href: '/review', title: 'Daily Review', subtitle: 'Resolve evidence before it changes canonical totals' },
   { href: '/dashboard', title: 'Dashboard', subtitle: 'A clear overview of your money' },
   { href: '/transactions', title: 'Transactions', subtitle: 'Track income, expenses, and history' },
   { href: '/ai-review', title: 'AI Review', subtitle: 'Review receipt and image analysis before using it' },

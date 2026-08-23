@@ -18,6 +18,8 @@ import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { buildCashflowPlan } from '@/utils/cashflowPlan';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { buildDashboardNextActions } from '@/features/review/nextActions';
+import { useReviewPreview } from '@/features/review/useReviewPreview';
 
 export type ActivationStep = {
   done: boolean;
@@ -118,7 +120,7 @@ export type ReviewQueueItem = {
   href: string;
 };
 
-export function ReviewQueuePanel({ items }: { items: ReviewQueueItem[] }) {
+export function ReviewQueuePanel({ items, loading, error }: { items: ReviewQueueItem[]; loading?: boolean; error?: string | null }) {
   const { colors } = useTheme();
   const toneColor = (tone: ReviewQueueItem['tone']) => {
     if (tone === 'warning') return colors.warning;
@@ -138,10 +140,12 @@ export function ReviewQueuePanel({ items }: { items: ReviewQueueItem[] }) {
             What needs attention
           </Text>
         </View>
-        <Button title="Open Review" icon="arrow-right" iconPosition="right" size="sm" onPress={() => router.push('/ai-review' as any)} />
+        <Button title="Open Review" icon="arrow-right" iconPosition="right" size="sm" onPress={() => router.push('/review' as any)} />
       </View>
 
       <View style={{ borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+        {loading ? <Text accessibilityLiveRegion="polite" style={{ paddingVertical: Spacing.md, fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>Checking the review queue…</Text> : null}
+        {error ? <Text accessibilityRole="alert" style={{ paddingVertical: Spacing.md, fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.warning }}>Live review status is unavailable. Open Review to retry with a correlation ID.</Text> : null}
         {items.map((item, index) => {
           const color = toneColor(item.tone);
           return (
@@ -216,6 +220,7 @@ export default function DashboardScreen() {
   const groups = useGroupStore((state) => state.groups);
   const challenges = useChallengeStore((state) => state.challenges);
   const { selectedMonthDate } = useReportingMonth();
+  const reviewPreview = useReviewPreview();
 
   const cycleStart = new Date(Date.UTC(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth(), 1));
   const cycleEnd = new Date(Date.UTC(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth() + 1, 1));
@@ -263,44 +268,12 @@ export default function DashboardScreen() {
   const tourCompletedForUser = user?.id ? (tourCompletedByUserId[user.id] ?? tourCompleted) : false;
   const showTour = Boolean(user?.id && !isHydratingSession && !tourCompletedForUser);
 
-  const reviewQueueItems: ReviewQueueItem[] = [
-    {
-      icon: 'brain',
-      title: 'AI review desk',
-      body: 'Review receipts, findings, and draft actions.',
-      status: 'Open',
-      tone: 'primary',
-      href: '/ai-review',
-    },
-    {
-      icon: budgetUsage > 80 || legacyRemaining < 0 ? 'alert-circle-outline' : 'shield-check-outline',
-      title: 'Budget pressure',
-      body: allowance > 0
-        ? `${Math.round(budgetUsage)}% of the monthly budget is used.`
-        : 'Set a monthly budget before MoneyKai can judge pressure.',
-      status: legacyRemaining < 0 ? 'Over' : budgetUsage > 80 ? 'Watch' : 'OK',
-      tone: legacyRemaining < 0 || budgetUsage > 80 ? 'warning' : 'success',
-      href: '/budgets',
-    },
-    {
-      icon: 'swap-horizontal',
-      title: 'Money records',
-      body: transactions.length > 0
-        ? `${transactions.length} records feed reports, categories, and AI summaries.`
-        : 'Add records before review signals appear.',
-      status: transactions.length > 0 ? 'Ready' : 'Start',
-      tone: transactions.length > 0 ? 'success' : 'neutral',
-      href: '/transactions',
-    },
-    {
-      icon: 'file-chart-outline',
-      title: 'Monthly digest',
-      body: 'Use Reports for summaries, imports, and export-ready review history.',
-      status: 'Reports',
-      tone: 'neutral',
-      href: '/reports',
-    },
-  ];
+  const reviewQueueItems: ReviewQueueItem[] = buildDashboardNextActions({
+    reviews: reviewPreview.items,
+    allowance,
+    budgetUsage,
+    transactionCount: transactions.length,
+  });
   const activationSteps: ActivationStep[] = [
     {
       done: allowance > 0,
@@ -346,7 +319,6 @@ export default function DashboardScreen() {
   void legacyRemaining;
   void actualNetFlow;
   void firstName;
-  void reviewQueueItems;
   void activationSteps;
   void needsActivation;
   void handleViewGoals;
@@ -386,8 +358,8 @@ export default function DashboardScreen() {
                   style={{ flexGrow: 1, flexShrink: 1, flexBasis: 168 }}
                 />
                 <Button
-                  title="AI Review"
-                  onPress={() => router.push('/ai-review' as any)}
+                  title="Daily review"
+                  onPress={() => router.push('/review' as any)}
                   variant="outline"
                   icon="receipt-text-outline"
                   style={{ flexGrow: 1, flexShrink: 1, flexBasis: 168 }}
@@ -403,10 +375,12 @@ export default function DashboardScreen() {
             }
           />
           <ActivationPanel steps={activationSteps} />
-          <ReviewQueuePanel items={reviewQueueItems} />
+          <ReviewQueuePanel items={reviewQueueItems} loading={reviewPreview.loading} error={reviewPreview.error} />
         </>
       ) : (
-        <AnalyticsDashboard
+        <>
+          <ReviewQueuePanel items={reviewQueueItems} loading={reviewPreview.loading} error={reviewPreview.error} />
+          <AnalyticsDashboard
           plan={plan}
           transactions={transactions}
           periodEnd={cycleEnd}
@@ -420,7 +394,8 @@ export default function DashboardScreen() {
           onUpdateTransactionCategory={(transactionIds, categoryId) => {
             transactionIds.forEach((transactionId) => updateTransaction(transactionId, { category: categoryId }));
           }}
-        />
+          />
+        </>
       )}
 
       <FirstLoginTour

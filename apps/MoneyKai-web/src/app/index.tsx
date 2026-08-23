@@ -559,7 +559,7 @@ export default function LandingScreen() {
   ];
 
   if (isAuthenticated) {
-    return <Redirect href="/dashboard" />;
+    return <Redirect href="/review" />;
   }
 
   return (

@@ -54,7 +54,7 @@ export default function SignupScreen() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/dashboard');
+      router.replace('/review');
     }
   }, [isAuthenticated]);
 

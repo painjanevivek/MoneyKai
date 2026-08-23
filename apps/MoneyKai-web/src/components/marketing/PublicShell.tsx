@@ -322,7 +322,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                     />
                   </View>
                 ) : showMobileMenu ? (
-                  <ShellAction title="Open app" href="/dashboard" colors={navColors} lightMode={navLightMode} primary />
+                  <ShellAction title="Open app" href="/review" colors={navColors} lightMode={navLightMode} primary />
                 ) : null}
 
                 {isCompact && showMobileMenu ? (
