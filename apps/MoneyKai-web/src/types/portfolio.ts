@@ -1,4 +1,5 @@
 import type { OperationRecord } from './operations';
+import type { PageInfo } from './pagination';
 
 export type PortfolioProvider =
   | 'zerodha'
@@ -137,6 +138,8 @@ export interface PortfolioStateResponse {
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
   snapshot: WealthSnapshot;
+  snapshotStatus?: 'active' | 'migration_required';
+  pages?: Partial<Record<'accounts' | 'holdings' | 'transactions', PageInfo>>;
 }
 
 export interface ProviderSyncResponse {

@@ -620,6 +620,8 @@ The web client may optimistically render a pending state, but only `confirmed` m
 
 ### Phase 3: Bounded Reads, Progressive Synchronization, and Observability
 
+**Implementation status:** Code-complete locally; Firestore index/TTL deployment, read-model migration, dashboard wiring, and large-history staging evidence remain pending. See [ADR-004](docs/architecture/adr-004-bounded-bootstrap-and-incremental-sync.md) and the backend Phase 3 observability runbook.
+
 - **Objective:** Ensure startup and financial-history cost remain predictable as data grows.
 - **Tasks:** Add cursor pagination and time-range filters; replace N+1 group-expense loading; implement incremental bootstrap/sync cursors; make portfolio reads side-effect free; add correlation IDs, structured operation events, query budgets, latency/cost dashboards, and alerts.
 - **Dependencies:** Canonical ownership and operation contracts.
@@ -918,14 +920,14 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 2.
   - Risks: Existing untyped client paths.
 
-- [ ] `TASK-021` — Implement cursor pagination and incremental bootstrap (`AF-007`)
+- [x] `TASK-021` — Implement cursor pagination and incremental bootstrap (`AF-007`)
   - Purpose: Bound initial load and Firestore cost as user history grows.
   - Dependencies: TASK-001 and typed resource contracts.
   - Expected output: Cursor contracts, stable sort keys, time-range filters, incremental sync token, client progressive hydration, and compatibility rollout.
   - Acceptance criteria: Initial workspace requests have a configured maximum item/read budget and do not load all group expenses through N+1 queries.
   - Priority: P0 scalability.
 
-- [ ] `TASK-022` — Establish end-to-end operation observability
+- [x] `TASK-022` — Establish end-to-end operation observability
   - Purpose: Trace a user intent from web request through backend validation, persistence, external calls, and final status.
   - Dependencies: Mutation receipt and operation-status contracts.
   - Expected output: Correlation ID propagation, structured events, redaction rules, dashboards, alerts, and support lookup procedure.

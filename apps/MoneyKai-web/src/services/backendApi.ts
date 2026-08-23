@@ -75,6 +75,11 @@ import type {
   AiWealthInsightRequest,
   AiWealthInsightResponse,
 } from '@/types/financialAi';
+import type {
+  BootstrapResource,
+  IncrementalSyncResponse,
+  PaginatedResponse,
+} from '@/types/pagination';
 
 const backendBaseUrl = getBackendBaseUrl();
 
@@ -102,6 +107,7 @@ class BackendApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    public correlationId?: string,
   ) {
     super(message);
     this.name = 'BackendApiError';
@@ -174,7 +180,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (!response.ok) {
     const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
-    throw new BackendApiError(message, response.status);
+    throw new BackendApiError(message, response.status, response.headers.get('X-Correlation-Id') ?? undefined);
   }
 
   return (await response.json()) as T;
@@ -205,7 +211,7 @@ async function streamRequest<TCompleted extends AiChatStreamCompletedEvent>(
 
   if (!response.ok) {
     const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
-    throw new BackendApiError(message, response.status);
+    throw new BackendApiError(message, response.status, response.headers.get('X-Correlation-Id') ?? undefined);
   }
 
   if (!response.body) {
@@ -297,6 +303,26 @@ export const backendApi = {
   getOperation: async (operationId: string) =>
     request<{ operation: OperationRecord }>(`/v1/operations/${encodeURIComponent(operationId)}`),
   getBootstrap: async () => request<BackendSnapshot>('/v1/bootstrap'),
+  getBootstrapPage: async <T>(
+    resource: BootstrapResource,
+    capturedAt: string,
+    cursor: string,
+  ) => {
+    const params = new URLSearchParams({ captured_at: capturedAt, cursor });
+    return request<PaginatedResponse<T>>(
+      `/v1/bootstrap/pages/${encodeURIComponent(resource)}?${params.toString()}`,
+    );
+  },
+  getIncrementalSync: async (
+    syncToken: string,
+    cursor?: string | null,
+    windowEnd?: string | null,
+  ) => {
+    const params = new URLSearchParams({ sync_token: syncToken });
+    if (cursor) params.set('cursor', cursor);
+    if (windowEnd) params.set('window_end', windowEnd);
+    return request<IncrementalSyncResponse>(`/v1/sync?${params.toString()}`);
+  },
   createBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups', { method: 'POST' }),
   getLatestBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups/latest'),
   restoreLatestBackup: async (idempotencyKey = createRequestId()) =>
@@ -507,7 +533,7 @@ export const backendApi = {
       headers: { 'Idempotency-Key': idempotencyKey },
     }),
   listResource: async <T>(resource: 'transactions' | 'notes' | 'badges' | 'notifications') =>
-    request<{ items: T[] }>(`/v1/resources/${resource}`),
+    request<PaginatedResponse<T>>(`/v1/resources/${resource}`),
   createResource: async <T>(resource: 'transactions' | 'notes' | 'badges' | 'notifications', payload: object) =>
     request<{ item: T }>(`/v1/resources/${resource}`, {
       method: 'POST',
@@ -535,7 +561,7 @@ export const backendApi = {
     request<{ deleted: boolean }>(`/v1/linked-accounts/${accountId}`, {
       method: 'DELETE',
     }),
-  listGroups: async () => request<{ items: Group[] }>('/v1/groups'),
+  listGroups: async () => request<PaginatedResponse<Group>>('/v1/groups'),
   createGroup: async (payload: object) =>
     request<{ item: Group }>('/v1/groups', {
       method: 'POST',
@@ -558,7 +584,7 @@ export const backendApi = {
     request<{ item: Group }>(`/v1/groups/${groupId}/restore`, {
       method: 'POST',
     }),
-  listGroupExpenses: async (groupId: string) => request<{ items: GroupExpense[] }>(`/v1/groups/${groupId}/expenses`),
+  listGroupExpenses: async (groupId: string) => request<PaginatedResponse<GroupExpense>>(`/v1/groups/${groupId}/expenses`),
   createGroupExpense: async (groupId: string, payload: object) =>
     request<{ item: GroupExpense }>(`/v1/groups/${groupId}/expenses`, {
       method: 'POST',
@@ -573,7 +599,7 @@ export const backendApi = {
     request<{ deleted: boolean }>(`/v1/groups/${groupId}/expenses/${expenseId}`, {
       method: 'DELETE',
     }),
-  listChallenges: async () => request<{ items: Challenge[] }>('/v1/challenges'),
+  listChallenges: async () => request<PaginatedResponse<Challenge>>('/v1/challenges'),
   createChallenge: async (payload: object) =>
     request<{ item: Challenge }>('/v1/challenges', {
       method: 'POST',

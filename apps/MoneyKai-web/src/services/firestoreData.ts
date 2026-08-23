@@ -1,20 +1,8 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  type DocumentData,
-} from 'firebase/firestore';
-import { firebaseDb, isFirebaseConfigured } from './firebase';
 import { backendApi } from './backendApi';
-import type { Transaction } from '../types/transaction';
-import type { Note } from '../types/note';
 import type { Group, GroupExpense } from '../types/group';
-import type { Challenge } from '../types/challenge';
-import type { Badge } from '../types/badge';
-import { DEFAULT_THEME_PALETTE, getThemeModeForPalette, type ThemeMode, type ThemePaletteId } from '../constants/theme';
+import type { ThemeMode, ThemePaletteId } from '../constants/theme';
 import type { DashboardTrendChartType, DashboardTrendMetric, DashboardTrendRange } from '@/stores/useSettingsStore';
-import type { LinkedAccount } from '@moneykai/domain';
+import type { BackendSnapshot } from '@/types/backend';
 
 type AppSettingsDoc = {
   theme: ThemeMode;
@@ -43,114 +31,12 @@ type BudgetSettingsDoc = {
   resetHistory: { date: string; amount: number; carryForward: number }[];
 };
 
-export type FirestoreUserSnapshot = {
-  profile: {
-    id: string;
-    email: string;
-    full_name: string;
-    avatar_url?: string;
-    auth_provider?: string;
-    dob?: string;
-    gender?: 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'self_describe';
-  };
-  settings: {
-    app: AppSettingsDoc;
-    budget: BudgetSettingsDoc;
-  };
-  data: {
-    transactions: Transaction[];
-    notes: Note[];
-    groups: Group[];
-    groupExpenses: GroupExpense[];
-    challenges: Challenge[];
-    savings: Challenge[];
-    badges: Badge[];
-    notifications: DocumentData[];
-    linkedAccounts: LinkedAccount[];
-  };
-};
-
-const DEFAULT_APP_SETTINGS: AppSettingsDoc = {
-  theme: getThemeModeForPalette(DEFAULT_THEME_PALETTE, true),
-  themePalette: DEFAULT_THEME_PALETTE,
-  darkModeEnabled: true,
-  dashboardTrendRange: '1m',
-  dashboardTrendMetric: 'spending',
-  dashboardTrendChartType: 'line',
-  currency: 'INR',
-  currencySymbol: '₹',
-  notificationsEnabled: true,
-  hapticEnabled: true,
-  tourCompleted: false,
-};
-
-const DEFAULT_BUDGET_SETTINGS: BudgetSettingsDoc = {
-  settings: {
-    monthly_allowance: 0,
-    reset_day: 1,
-    auto_reset: true,
-    carry_forward: false,
-    currency: 'INR',
-  },
-  adjustments: [],
-  isEmergencyMode: false,
-  resetHistory: [],
-};
-
-const ensure = () => {
-  if (!isFirebaseConfigured()) {
-    throw new Error('Firebase is not configured.');
-  }
-  return firebaseDb;
-};
-
-const normalize = <T,>(docs: { id: string; data: () => DocumentData }[]): T[] =>
-  docs.map((item) => ({ id: item.id, ...item.data() })) as T[];
+export type FirestoreUserSnapshot = BackendSnapshot;
 
 export const loadUserFirestoreSnapshot = async (uid: string, profile: FirestoreUserSnapshot['profile']): Promise<FirestoreUserSnapshot> => {
-  const db = ensure();
-
-  const [transactionsSnap, notesSnap, groupsSnap, badgesSnap, notificationsSnap, savingsSnap, linkedAccountsSnap, appSettingsSnap, budgetSnap] =
-    await Promise.all([
-      getDocs(collection(db, 'users', uid, 'transactions')),
-      getDocs(collection(db, 'users', uid, 'notes')),
-      getDocs(collection(db, 'users', uid, 'groups')),
-      getDocs(collection(db, 'users', uid, 'badges')),
-      getDocs(collection(db, 'users', uid, 'notifications')),
-      getDocs(collection(db, 'users', uid, 'savings')),
-      getDocs(collection(db, 'users', uid, 'linkedAccounts')),
-      getDoc(doc(db, 'users', uid, 'settings', 'app')),
-      getDoc(doc(db, 'users', uid, 'budgets', 'current')),
-    ]);
-
-  const groupDocs = normalize<Group>(groupsSnap.docs);
-  const groupExpenses = (
-    await Promise.all(
-      groupDocs.map(async (group) => {
-        const expensesSnap = await getDocs(collection(db, 'users', uid, 'groups', group.id, 'expenses'));
-        return normalize<GroupExpense>(expensesSnap.docs);
-      })
-    )
-  ).flat();
-
-  return {
-    profile,
-    settings: {
-      app: appSettingsSnap.exists() ? ({ ...DEFAULT_APP_SETTINGS, ...(appSettingsSnap.data() as Partial<AppSettingsDoc>) } as AppSettingsDoc) : DEFAULT_APP_SETTINGS,
-      budget: budgetSnap.exists() ? ({ ...DEFAULT_BUDGET_SETTINGS, ...(budgetSnap.data() as Partial<BudgetSettingsDoc>) } as BudgetSettingsDoc) : DEFAULT_BUDGET_SETTINGS,
-    },
-    data: {
-      transactions: normalize<Transaction>(transactionsSnap.docs),
-      notes: normalize<Note>(notesSnap.docs),
-      groups: groupDocs,
-      groupExpenses,
-      challenges: normalize<Challenge>(savingsSnap.docs),
-      savings: normalize<Challenge>(savingsSnap.docs),
-      badges: normalize<Badge>(badgesSnap.docs),
-      notifications: notificationsSnap.docs.map((item) => ({ id: item.id, ...item.data() })),
-      linkedAccounts: normalize<LinkedAccount>(linkedAccountsSnap.docs),
-    },
-  };
+  void uid;
+  void profile;
+  return backendApi.getBootstrap();
 };
 
 export const saveUserAppSettings = async (uid: string, data: Partial<AppSettingsDoc>) => {

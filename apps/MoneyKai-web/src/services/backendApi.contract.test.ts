@@ -66,4 +66,22 @@ describe('backend API authority headers', () => {
     const headers = fetchMock.mock.calls[0][1].headers as Headers;
     expect(headers.get('Idempotency-Key')).toBe('restore-stable-key');
   });
+
+  it('encodes bounded continuation and incremental sync cursors', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [], page: { hasMore: false } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ events: [], page: { hasMore: false } }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await backendApi.getBootstrapPage('transactions', '2026-08-24T00:00:00Z', 'signed cursor');
+    await backendApi.getIncrementalSync('sync token', 'page cursor', '2026-08-24T00:01:00Z');
+
+    expect(fetchMock.mock.calls[0][0]).toContain(
+      '/v1/bootstrap/pages/transactions?captured_at=2026-08-24T00%3A00%3A00Z&cursor=signed+cursor',
+    );
+    expect(fetchMock.mock.calls[1][0]).toContain(
+      '/v1/sync?sync_token=sync+token&cursor=page+cursor&window_end=2026-08-24T00%3A01%3A00Z',
+    );
+  });
 });

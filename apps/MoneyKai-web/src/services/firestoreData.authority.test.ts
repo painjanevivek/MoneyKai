@@ -3,6 +3,7 @@ import {
   deleteUserDoc,
   deleteUserGroup,
   deleteUserGroupExpense,
+  loadUserFirestoreSnapshot,
   saveUserAppSettings,
   saveUserBudgetSettings,
   upsertUserDoc,
@@ -11,6 +12,7 @@ import {
 } from './firestoreData';
 
 const backendApiMock = vi.hoisted(() => ({
+  getBootstrap: vi.fn(),
   updateAppSettings: vi.fn(),
   updateBudgetSettings: vi.fn(),
   updateResource: vi.fn(),
@@ -50,6 +52,31 @@ describe('web canonical write authority', () => {
       amount: 42,
     });
     expect(backendApiMock.deleteResource).toHaveBeenCalledWith('transactions', 'tx-1');
+  });
+
+  it('loads the initial workspace through the bounded backend bootstrap', async () => {
+    const snapshot = {
+      version: 1,
+      capturedAt: '2026-08-24T00:00:00Z',
+      profile: { id: 'user-1', email: 'owner@example.com', full_name: 'Owner' },
+      settings: { app: {}, budget: {} },
+      data: {
+        transactions: [],
+        notes: [],
+        groups: [],
+        groupExpenses: [],
+        challenges: [],
+        totalXP: 0,
+        badges: [],
+        notifications: [],
+      },
+    };
+    backendApiMock.getBootstrap.mockResolvedValue(snapshot);
+
+    const result = await loadUserFirestoreSnapshot('user-1', snapshot.profile as never);
+
+    expect(result).toBe(snapshot);
+    expect(backendApiMock.getBootstrap).toHaveBeenCalledTimes(1);
   });
 
   it('routes challenge, linked-account, group, and expense writes through typed backend paths', async () => {

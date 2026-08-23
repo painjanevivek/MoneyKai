@@ -7,6 +7,7 @@ import type { Badge } from './badge';
 import type { AppNotification } from './notification';
 import type { ThemeMode, ThemePaletteId } from '@/constants/theme';
 import type { LinkedAccount } from '@moneykai/domain';
+import type { BootstrapResource, PageInfo } from './pagination';
 
 export interface BackendAppSettings {
   theme: ThemeMode;
@@ -46,6 +47,7 @@ export interface BackendSnapshot {
     groups: Group[];
     groupExpenses: GroupExpense[];
     challenges: Challenge[];
+    savings?: Challenge[];
     totalXP: number;
     badges: Badge[];
     notifications: AppNotification[];
@@ -53,12 +55,16 @@ export interface BackendSnapshot {
     backups?: unknown[];
   };
   summary?: {
+    status?: 'active' | 'migration_required';
     totalSpent: number;
     totalIncome: number;
     transactionCount: number;
-    challengeCount: number;
-    groupCount: number;
+    challengeCount?: number;
+    groupCount?: number;
+    currency?: 'INR';
   };
+  pages?: Partial<Record<BootstrapResource, PageInfo>>;
+  syncToken?: string;
 }
 
 export interface BackendBackupRecord {

@@ -15,6 +15,13 @@ import {
   captureRemoteSyncSession,
   isRemoteSyncSessionCurrent,
 } from '@moneykai/domain/syncSession';
+import {
+  clearStoredWorkspaceSyncToken,
+  getStoredWorkspaceSyncToken,
+  hydrateRemainingWorkspace,
+  storeWorkspaceSyncToken,
+  synchronizeFromToken,
+} from './workspaceHydration';
 
 const EMPTY_BUDGET_SETTINGS = {
   monthly_allowance: 0,
@@ -82,6 +89,23 @@ export const syncRemoteState = async () => {
     return;
   }
   const session = captureRemoteSyncSession(user.id);
+  const isCurrentSession = () =>
+    isRemoteSyncSessionCurrent(session, useAuthStore.getState().user?.id);
+
+  const storedSyncToken = await getStoredWorkspaceSyncToken(user.id);
+  const storesHydrated =
+    useTransactionStore.persist.hasHydrated() &&
+    useNotesStore.persist.hasHydrated() &&
+    useGroupStore.persist.hasHydrated();
+  if (storedSyncToken && storesHydrated) {
+    const nextSyncToken = await synchronizeFromToken(storedSyncToken, isCurrentSession);
+    if (!isCurrentSession()) return;
+    if (nextSyncToken) {
+      await storeWorkspaceSyncToken(user.id, nextSyncToken);
+      return;
+    }
+    await clearStoredWorkspaceSyncToken(user.id);
+  }
 
   const snapshot = await loadUserFirestoreSnapshot(user.id, {
     id: user.id,
@@ -93,7 +117,7 @@ export const syncRemoteState = async () => {
     gender: user.gender,
   });
 
-  if (!isRemoteSyncSessionCurrent(session, useAuthStore.getState().user?.id)) {
+  if (!isCurrentSession()) {
     return;
   }
 
@@ -141,10 +165,11 @@ export const syncRemoteState = async () => {
     expenses: snapshot.data.groupExpenses,
   });
 
+  const restoredChallenges = snapshot.data.savings ?? snapshot.data.challenges;
   useChallengeStore.setState({
     ...useChallengeStore.getState(),
-    challenges: snapshot.data.savings,
-    totalXP: snapshot.data.savings.reduce((sum, item) => sum + (item.xp_earned ?? 0), 0),
+    challenges: restoredChallenges,
+    totalXP: restoredChallenges.reduce((sum, item) => sum + (item.xp_earned ?? 0), 0),
   });
 
   useBadgeStore.setState({
@@ -154,8 +179,26 @@ export const syncRemoteState = async () => {
 
   useNotificationStore.getState().replaceNotifications((snapshot.data.notifications ?? []) as never[]);
   useLinkedAccountStore.getState().replaceAccounts(snapshot.data.linkedAccounts ?? []);
+
+  if (snapshot.syncToken && snapshot.pages) {
+    void hydrateRemainingWorkspace(snapshot, isCurrentSession)
+      .then(async (nextSyncToken) => {
+        if (nextSyncToken && isCurrentSession()) {
+          await storeWorkspaceSyncToken(user.id, nextSyncToken);
+        }
+      })
+      .catch((error) => {
+        if (__DEV__) {
+          console.warn('[MoneyKai] progressive workspace hydration paused:', error);
+        }
+      });
+  }
 };
 
 export const clearTransientSessionState = async () => {
+  const userId = useAuthStore.getState().user?.id;
+  if (userId) {
+    await clearStoredWorkspaceSyncToken(userId);
+  }
   await clearAutomaticBackupQueue();
 };
