@@ -192,6 +192,21 @@ export const localPortfolioApi = {
       transactions: state.transactions.filter((transaction) => transaction.accountId === syncedAccount.id),
       snapshot,
       message: getLocalSyncMessage(syncedAccount),
+      status: 'complete',
+      batch: {
+        batchId: `local-${accountId}-${Date.now()}`,
+        accountId: syncedAccount.id,
+        provider: syncedAccount.provider,
+        completeness: 'complete',
+        reconciliationStatus: 'applied',
+        observedHoldingCount: holdings.length,
+        observedTransactionCount: state.transactions.filter((transaction) => transaction.accountId === syncedAccount.id).length,
+        observedHoldingIds: holdings.map((holding) => holding.id),
+        observedTransactionIds: state.transactions
+          .filter((transaction) => transaction.accountId === syncedAccount.id)
+          .map((transaction) => transaction.id),
+        createdAt: nowIso(),
+      },
     };
   },
 

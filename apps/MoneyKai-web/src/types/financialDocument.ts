@@ -1,4 +1,5 @@
 import type { AiDocumentSummaryResponse } from '@/features/ai/types';
+import type { OperationRecord } from './operations';
 
 export type FinancialDocumentSource = 'gmail' | 'manual_upload' | 'broker_api' | 'account_aggregator';
 
@@ -81,6 +82,7 @@ export interface ParsedStatementReviewActionResponse {
   review: ParsedStatementReview;
   importedTransactionCount: number;
   importedHoldingCount: number;
+  operation?: OperationRecord | null;
 }
 
 export interface ParsedStatementRow {

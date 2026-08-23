@@ -2,6 +2,7 @@ import { firebaseAuth } from './firebase';
 import { financialFeatureEndpoints } from '@/contracts/financialFeatureContracts';
 import { getBackendBaseUrl } from '@/config/environment';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
+import type { DeletionCertificate, OperationRecord } from '@/types/operations';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { CapabilityStatusResponse } from '@/types/capabilities';
@@ -293,10 +294,16 @@ function parseSseFrame(frame: string): AiChatStreamEvent | null {
 
 export const backendApi = {
   getCapabilities: async () => request<CapabilityStatusResponse>('/v1/capabilities'),
+  getOperation: async (operationId: string) =>
+    request<{ operation: OperationRecord }>(`/v1/operations/${encodeURIComponent(operationId)}`),
   getBootstrap: async () => request<BackendSnapshot>('/v1/bootstrap'),
   createBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups', { method: 'POST' }),
   getLatestBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups/latest'),
-  restoreLatestBackup: async () => request<{ item: BackendSnapshot }>('/v1/backups/restore-latest', { method: 'POST' }),
+  restoreLatestBackup: async (idempotencyKey = createRequestId()) =>
+    request<{ item: BackendSnapshot; restored: boolean; operation: OperationRecord }>('/v1/backups/restore-latest', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+    }),
   getAiProviderStatus: async () => request<AiProviderStatus>('/v1/ai/providers/status'),
   getAiModelStatus: async () => request<AiModelStatusResponse>('/v1/ai/models/status'),
   getAiOpsStatus: async () => request<AiOpsStatusResponse>('/v1/ai/ops/status'),
@@ -405,9 +412,14 @@ export const backendApi = {
     request<ParsedStatementReviewActionResponse>(financialFeatureEndpoints.financialDocuments.ignoreReview(documentId), {
       method: 'POST',
     }),
-  importParsedStatementReview: async (documentId: string, payload: ParsedStatementImportRequest) =>
+  importParsedStatementReview: async (
+    documentId: string,
+    payload: ParsedStatementImportRequest,
+    idempotencyKey = createRequestId(),
+  ) =>
     request<ParsedStatementReviewActionResponse>(financialFeatureEndpoints.financialDocuments.importReview(documentId), {
       method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
       body: JSON.stringify(payload),
     }),
   listPdfPasswordProfiles: async () =>
@@ -432,8 +444,11 @@ export const backendApi = {
     request<{ item: PortfolioAccount }>(financialFeatureEndpoints.portfolio.pauseConnection(accountId), { method: 'POST' }),
   disconnectPortfolioConnection: async (accountId: string) =>
     request<{ item: PortfolioAccount }>(financialFeatureEndpoints.portfolio.disconnectConnection(accountId), { method: 'POST' }),
-  syncPortfolioConnection: async (accountId: string) =>
-    request<ProviderSyncResponse>(financialFeatureEndpoints.portfolio.syncConnection(accountId), { method: 'POST' }),
+  syncPortfolioConnection: async (accountId: string, idempotencyKey = createRequestId()) =>
+    request<ProviderSyncResponse>(financialFeatureEndpoints.portfolio.syncConnection(accountId), {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+    }),
   listPortfolioHoldings: async () => request<{ items: PortfolioHolding[] }>(financialFeatureEndpoints.portfolio.holdings),
   createPortfolioHolding: async (payload: PortfolioHoldingDraft) =>
     request<{ item: PortfolioHolding }>(financialFeatureEndpoints.portfolio.holdings, {
@@ -486,9 +501,10 @@ export const backendApi = {
       method: 'PUT',
       body: JSON.stringify(payload),
     }),
-  deleteAccount: async () =>
-    request<{ deleted: boolean }>('/v1/settings/account', {
+  deleteAccount: async (idempotencyKey = createRequestId()) =>
+    request<{ deleted: boolean; operation: OperationRecord; certificate: DeletionCertificate | null }>('/v1/settings/account', {
       method: 'DELETE',
+      headers: { 'Idempotency-Key': idempotencyKey },
     }),
   listResource: async <T>(resource: 'transactions' | 'notes' | 'badges' | 'notifications') =>
     request<{ items: T[] }>(`/v1/resources/${resource}`),

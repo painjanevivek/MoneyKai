@@ -455,6 +455,9 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
 export const restoreLatestCloudBackup = async () => {
   if (isBackendConfigured()) {
     const response = await backendApi.restoreLatestBackup();
+    if (!response.restored) {
+      throw new Error(response.operation.recoveryAction ?? `Restore is ${response.operation.status}. Retry when MoneyKai reports it is safe.`);
+    }
     restoreBackupSnapshot(response.item);
 
     await recordBackupNotification({

@@ -690,7 +690,12 @@ export default function SettingsScreen() {
     setDeleteBusy(true);
     setShowDeleteAccountSheet(false);
     try {
-      await backendApi.deleteAccount();
+      const result = await backendApi.deleteAccount();
+      if (!result.deleted || !result.certificate?.zeroResidue) {
+        throw new Error(
+          result.operation.recoveryAction ?? `Deletion is ${result.operation.status}; your local session was preserved.`,
+        );
+      }
       resetLocalAppState();
       await signOut({ skipFinalBackup: true });
       router.replace('/login');

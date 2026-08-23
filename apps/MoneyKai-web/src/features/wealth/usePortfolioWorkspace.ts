@@ -154,7 +154,8 @@ export function usePortfolioWorkspace(): PortfolioWorkspaceController {
       upsertAccount(response.account);
       response.holdings.forEach(upsertHolding);
       setSnapshot(response.snapshot);
-      Alert.alert('Sync complete', response.message);
+      const needsReview = response.batch.reconciliationStatus !== 'applied';
+      Alert.alert(needsReview ? 'Sync needs review' : 'Sync complete', response.message);
     } catch (error) {
       Alert.alert('Sync failed', error instanceof Error ? error.message : 'Could not sync this provider.');
     } finally {

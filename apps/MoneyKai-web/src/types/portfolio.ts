@@ -1,3 +1,5 @@
+import type { OperationRecord } from './operations';
+
 export type PortfolioProvider =
   | 'zerodha'
   | 'upstox'
@@ -144,6 +146,20 @@ export interface ProviderSyncResponse {
   snapshot: WealthSnapshot;
   status?: 'complete' | 'partial';
   message: string;
+  batch: {
+    batchId: string;
+    accountId: string;
+    provider: PortfolioProvider;
+    completeness: 'empty' | 'partial' | 'complete' | 'failed';
+    reconciliationStatus: 'applied' | 'preserved' | 'needs_review';
+    observedHoldingCount: number;
+    observedTransactionCount: number;
+    observedHoldingIds: string[];
+    observedTransactionIds: string[];
+    sourceCursor?: string | null;
+    createdAt: string;
+  };
+  operation?: OperationRecord | null;
 }
 
 export interface ZerodhaConnectStartResponse {

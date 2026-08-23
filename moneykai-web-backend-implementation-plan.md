@@ -717,28 +717,28 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Acceptance criteria: Concurrent requests across multiple processes cannot exceed configured quotas or commit the same idempotent command twice.
   - Priority: P0 release blocker for paid AI/provider operations.
 
-- [ ] `TASK-P0-05` — Implement manifest-backed deletion (`AF-004`)
+- [x] `TASK-P0-05` — Implement manifest-backed deletion (`AF-004`)
   - Purpose: Prove removal of Firestore data, object payloads, secrets, and pending operation state.
   - Dependencies: TASK-P0-03 and operation model.
   - Expected output: Deletion plan, resource manifest, purge worker, verification pass, tombstone/certificate, and retryable failure state.
   - Acceptance criteria: Seeded deletion tests leave zero user-addressable database documents, objects, provider secrets, or executable jobs.
   - Priority: P0 release blocker.
 
-- [ ] `TASK-P0-06` — Redesign restore and import as resumable operations (`AF-005`)
+- [x] `TASK-P0-06` — Redesign restore and import as resumable operations (`AF-005`)
   - Purpose: Prevent partial deletion/insertion from becoming an unrecoverable user state.
   - Dependencies: TASK-P0-04 and versioned schemas.
   - Expected output: Preflight plan, operation journal, staged apply, verification, finalization, compensation/retry procedure, and status API.
   - Acceptance criteria: Process termination at every injected checkpoint results in safe resume, safe retry, or a documented recovery action with original data preserved.
   - Priority: P0 release blocker for protected restore/import rollout.
 
-- [ ] `TASK-P0-07` — Separate portfolio reads from snapshot commands (`AF-006`)
+- [x] `TASK-P0-07` — Separate portfolio reads from snapshot commands (`AF-006`)
   - Purpose: Make portfolio state retrieval side-effect free and bound snapshot creation.
   - Dependencies: None.
   - Expected output: Pure state query, explicit snapshot command, retention policy, and regression tests.
   - Acceptance criteria: Repeated state reads create no database writes or additional snapshots.
   - Priority: P0 correctness/cost.
 
-- [ ] `TASK-P0-08` — Replace generic core-finance mutation payloads (`AF-008`)
+- [x] `TASK-P0-08` — Replace generic core-finance mutation payloads (`AF-008`)
   - Purpose: Enforce business invariants at the authoritative API boundary.
   - Dependencies: TASK-001 ownership map and canonical schema decisions.
   - Expected output: Typed transaction, budget, savings, group, and settings commands with versioned validation and migration adapters.

@@ -47,4 +47,23 @@ describe('backend API authority headers', () => {
     expect(mutationHeaders.get('X-Correlation-Id')).toBeTruthy();
     expect(mutationHeaders.get('Idempotency-Key')).toBeTruthy();
   });
+
+  it('preserves a caller-supplied idempotency key for operation retries', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          item: { data: {}, settings: {} },
+          restored: false,
+          operation: { status: 'retryable' },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await backendApi.restoreLatestBackup('restore-stable-key');
+
+    const headers = fetchMock.mock.calls[0][1].headers as Headers;
+    expect(headers.get('Idempotency-Key')).toBe('restore-stable-key');
+  });
 });
