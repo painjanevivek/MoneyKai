@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -8,8 +9,12 @@ import { useTransactionStore } from '@/stores/useTransactionStore';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { AIInsights } from '@/components/dashboard/AIInsights';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
+import { ReportingMonthPicker } from '@/components/layout/ReportingMonthPicker';
+import { useReportingMonth } from '@/components/layout/ReportingMonthContext';
 import { getCategoryById } from '@/constants/categories';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { monthFinancePeriod, summarizeTransactions } from '@/utils/financeCore';
 import { formatDate } from '@/utils/dateUtils';
 import {
   isLikelyDuplicate,
@@ -34,6 +39,7 @@ export default function ReportsScreen() {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? 'local');
+  const { selectedMonthDate } = useReportingMonth();
   const transactions = useTransactionStore((state) => state.transactions);
   const addTransaction = useTransactionStore((state) => state.addTransaction);
   const fileInputRef = useRef<any>(null);
@@ -46,7 +52,6 @@ export default function ReportsScreen() {
 
   const isWide = width >= 980;
   const allDrafts = useMemo(() => results.flatMap((result) => result.drafts), [results]);
-  const hasFinishedReportData = transactions.length > 0 || allDrafts.length > 0;
   const duplicateKeys = useMemo(() => {
     const keys = new Set<string>();
     allDrafts.forEach((draft) => {
@@ -63,40 +68,34 @@ export default function ReportsScreen() {
   );
 
   const pendingSummary = useMemo(() => summarizeStatementDrafts(allDrafts), [allDrafts]);
-  const importedSummary = useMemo(
-    () => summarizeStatementDrafts(
-      transactions.map((transaction) => ({
-        ...transaction,
-        source_file: 'MoneyKai history',
-        source_account: 'Synced account',
-        raw_description: transaction.description,
-        confidence: 1,
-        import_note: 'Already in MoneyKai history',
-      }))
-    ),
-    [transactions]
-  );
+  const importedSummary = useMemo(() => {
+    const summary = summarizeTransactions(transactions, { period: monthFinancePeriod(selectedMonthDate) });
+    return {
+      income: summary.income,
+      expense: summary.expense,
+      count: summary.count,
+      transactions: summary.transactions,
+      categoryTotals: Object.fromEntries(summary.categories.map((category) => [category.category, category.total])),
+    };
+  }, [selectedMonthDate, transactions]);
+  const hasFinishedReportData = importedSummary.count > 0 || allDrafts.length > 0;
 
   const topCategories = useMemo(() => {
-    const combined = { ...importedSummary.categoryTotals };
-    Object.entries(pendingSummary.categoryTotals).forEach(([category, total]) => {
-      combined[category] = (combined[category] ?? 0) + total;
-    });
-
-    return Object.entries(combined)
+    return Object.entries(importedSummary.categoryTotals)
       .map(([category, total]) => ({ category, total }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
-  }, [importedSummary.categoryTotals, pendingSummary.categoryTotals]);
+  }, [importedSummary.categoryTotals]);
+  const topCategoryMaximum = Math.max(...topCategories.map((item) => item.total), 1);
   const completedReports = useMemo(() => [
     {
       title: 'Monthly money digest',
-      body: transactions.length > 0
-        ? `${transactions.length} synced records summarize ${formatCurrency(importedSummary.expense)} spending and ${formatCurrency(importedSummary.income)} income.`
-        : 'No finalized transaction history yet. Import or add records before saving a digest.',
-      meta: transactions.length > 0 ? 'Ready record' : 'Waiting for records',
+      body: importedSummary.count > 0
+        ? `${importedSummary.count} reviewed records summarize ${formatCurrency(importedSummary.expense)} spending and ${formatCurrency(importedSummary.income)} income for the selected month.`
+        : 'No finalized transaction history exists in the selected month.',
+      meta: importedSummary.count > 0 ? 'Ready record' : 'Waiting for records',
       icon: 'calendar-month-outline' as const,
-      tone: transactions.length > 0 ? 'primary' as const : 'neutral' as const,
+      tone: importedSummary.count > 0 ? 'primary' as const : 'neutral' as const,
     },
     {
       title: 'Statement import review',
@@ -114,7 +113,7 @@ export default function ReportsScreen() {
       icon: 'tray-arrow-up' as const,
       tone: 'primary' as const,
     },
-  ], [allDrafts.length, duplicateKeys.size, importedSummary.expense, importedSummary.income, selectedImportDrafts.length, transactions.length]);
+  ], [allDrafts.length, duplicateKeys.size, importedSummary.count, importedSummary.expense, importedSummary.income, selectedImportDrafts.length]);
 
   const handleFiles = async (files: any[]) => {
     if (files.length === 0) return;
@@ -573,9 +572,17 @@ export default function ReportsScreen() {
         </View>
 
         <View style={{ marginTop: Spacing.md, gap: Spacing.sm }}>
-          <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            Finished reports
-          </Text>
+          <View style={{ flexDirection: isWide ? 'row' : 'column', alignItems: isWide ? 'center' : 'stretch', justifyContent: 'space-between', gap: Spacing.sm }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+                Finished reports
+              </Text>
+              <Text style={{ marginTop: 3, fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+                Finalized facts use the same selected month as Dashboard and Budgets; statement drafts remain separate.
+              </Text>
+            </View>
+            <ReportingMonthPicker compact />
+          </View>
           {hasFinishedReportData ? (
             <View style={{ borderTopWidth: 1, borderTopColor: colors.borderLight }}>
               {completedReports.map((report, index) => {
@@ -784,9 +791,11 @@ export default function ReportsScreen() {
             <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
               Category report
             </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
+              Reviewed spending in the selected month. Unimported statement rows are excluded.
+            </Text>
             {topCategories.length > 0 ? topCategories.map((item) => {
               const category = getCategoryById(item.category);
-              const max = Math.max(...topCategories.map((categoryItem) => categoryItem.total), 1);
               return (
                 <View key={item.category} style={{ gap: Spacing.xs }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md }}>
@@ -801,15 +810,19 @@ export default function ReportsScreen() {
                     </Text>
                   </View>
                   <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.surface, overflow: 'hidden' }}>
-                    <View style={{ width: `${Math.max(8, (item.total / max) * 100)}%`, height: 8, borderRadius: 4, backgroundColor: colors.primary }} />
+                    <View style={{ width: `${Math.max(8, (item.total / topCategoryMaximum) * 100)}%`, height: 8, borderRadius: 4, backgroundColor: colors.primary }} />
                   </View>
                 </View>
               );
             }) : (
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary }}>
-                Upload a statement or sync transactions from mobile to see category intelligence.
+                No reviewed spending categories exist in the selected month.
               </Text>
             )}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+              <Button title="Review budget" variant="outline" size="sm" onPress={() => router.push('/budgets' as any)} />
+              <Button title="Open savings plan" variant="ghost" size="sm" onPress={() => router.push('/savings' as any)} />
+            </View>
           </View>
 
           <View
@@ -824,9 +837,9 @@ export default function ReportsScreen() {
             }}
           >
             <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-              Latest synced history
+              Latest reviewed records in this month
             </Text>
-            {transactions.slice(0, 5).map((transaction) => {
+            {importedSummary.transactions.slice(0, 5).map((transaction) => {
               const category = getCategoryById(transaction.category);
               return (
                 <View key={transaction.id} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
@@ -856,9 +869,9 @@ export default function ReportsScreen() {
                 </View>
               );
             })}
-            {transactions.length === 0 ? (
+            {importedSummary.transactions.length === 0 ? (
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
-                Sign in with the same account used on MoneyKai Mobile, then your mobile history appears here through the shared Firebase sync.
+                No reviewed transaction records exist in the selected month.
               </Text>
             ) : null}
           </View>

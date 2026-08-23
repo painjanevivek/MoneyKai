@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart } from 'react-native-gifted-charts';
 import { useTheme } from '@/hooks/useTheme';
@@ -10,10 +11,14 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { Button } from '@/components/ui/Button';
 import { SavingsAnalyticsSnapshot } from '@/components/charts/SavingsAnalyticsSnapshot';
+import { ReportingMonthPicker } from '@/components/layout/ReportingMonthPicker';
+import { useReportingMonth } from '@/components/layout/ReportingMonthContext';
 import { getCategoryById } from '@/constants/categories';
 import { CHALLENGE_TEMPLATES } from '@/types/challenge';
 import { calculateSavingsProjection } from '@/utils/savingsEngine';
+import { financePeriodProgress, monthFinancePeriod, summarizeTransactions } from '@/utils/financeCore';
 import { convertFromInrForDisplay, formatCurrency } from '@/utils/formatCurrency';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import type { CategoryReduction } from '@/types/budget';
@@ -25,7 +30,15 @@ export default function SavingsScreen() {
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const { width } = useWindowDimensions();
   const isWide = width > 900;
-  const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
+  const transactions = useTransactionStore((state) => state.transactions);
+  const { selectedMonthDate } = useReportingMonth();
+  const financePeriod = useMemo(() => monthFinancePeriod(selectedMonthDate), [selectedMonthDate]);
+  const financeSummary = useMemo(
+    () => summarizeTransactions(transactions, { period: financePeriod }),
+    [financePeriod, transactions],
+  );
+  const periodProgress = useMemo(() => financePeriodProgress(financePeriod), [financePeriod]);
+  const categoryTotals = financeSummary.categories;
   const { settings } = useBudgetStore();
   const { startChallenge, getActiveChallenges, getDeactivatedChallenges, deactivateChallenge, reactivateChallenge, getDailyMotivation, totalXP } = useChallengeStore();
   const activeChallenges = getActiveChallenges();
@@ -37,16 +50,16 @@ export default function SavingsScreen() {
     setReductions((prev) => ({ ...prev, [category]: percent }));
   };
 
-  const categoryReductions: CategoryReduction[] = categoryTotals.map((cat) => ({
+  const categoryReductions = useMemo<CategoryReduction[]>(() => categoryTotals.map((cat) => ({
     category: cat.category,
     currentAmount: cat.total,
     reductionPercent: reductions[cat.category] || 0,
     savedAmount: 0,
-  }));
+  })), [categoryTotals, reductions]);
 
   const projection = useMemo(
-    () => calculateSavingsProjection(settings.monthly_allowance, categoryTotals, categoryReductions),
-    [settings.monthly_allowance, categoryTotals, categoryReductions]
+    () => calculateSavingsProjection(settings.monthly_allowance, categoryTotals, categoryReductions, 0, periodProgress),
+    [settings.monthly_allowance, categoryTotals, categoryReductions, periodProgress]
   );
 
   const comparisonData = React.useMemo(
@@ -88,7 +101,7 @@ export default function SavingsScreen() {
       >
         <Card style={{ flex: 1 }}>
           <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary, marginBottom: Spacing.md }}>
-            Savings Projection
+            Budget buffer projection
           </Text>
           <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg }}>
             <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: colors.borderLight }}>
@@ -117,7 +130,7 @@ export default function SavingsScreen() {
             >
               <MaterialCommunityIcons name="trending-up" size={20} color={colors.primary} />
               <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.medium, color: colors.primary }}>
-                You could save {formatCurrency(projection.improvement)} more! ({projection.improvementPercent}% improvement)
+                Your selected reductions could free {formatCurrency(projection.improvement)} more ({projection.improvementPercent}% improvement).
               </Text>
             </View>
           )}
@@ -141,7 +154,13 @@ export default function SavingsScreen() {
           </View>
         </Card>
 
-        <SavingsAnalyticsSnapshot />
+        <SavingsAnalyticsSnapshot
+          categoryTotals={categoryTotals}
+          monthlyAllowance={settings.monthly_allowance}
+          period={financePeriod}
+          totalSpent={financeSummary.expense}
+          transactions={financeSummary.transactions}
+        />
       </View>
 
       <Card style={{ marginBottom: Spacing.md }}>
@@ -160,6 +179,10 @@ export default function SavingsScreen() {
               {savingsReview.body}
             </Text>
           </View>
+        </View>
+        <View style={{ marginTop: Spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+          <Button title="Review budget" variant="outline" size="sm" onPress={() => router.push('/budgets' as any)} />
+          <Button title="Open monthly report" variant="ghost" size="sm" onPress={() => router.push('/reports' as any)} />
         </View>
       </Card>
 
@@ -414,9 +437,12 @@ export default function SavingsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md }}>
-        <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Savings & Challenges</Text>
-        <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Predict savings and take practical budget challenges.</Text>
+      <View style={{ paddingHorizontal: Spacing.base, paddingVertical: Spacing.md, flexDirection: isWide ? 'row' : 'column', alignItems: isWide ? 'center' : 'stretch', justifyContent: 'space-between', gap: Spacing.md }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={{ fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamily.display, color: colors.textPrimary }}>Savings & Challenges</Text>
+          <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.regular, color: colors.textSecondary }}>Predict budget buffer from the same reviewed monthly facts used by Dashboard, Budgets, and Reports.</Text>
+        </View>
+        <ReportingMonthPicker compact />
       </View>
 
       <View

@@ -20,6 +20,8 @@ import { buildCashflowPlan } from '@/utils/cashflowPlan';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { buildDashboardNextActions } from '@/features/review/nextActions';
 import { useReviewPreview } from '@/features/review/useReviewPreview';
+import { monthFinancePeriod, summarizeTransactions } from '@/utils/financeCore';
+import { useRecurringPlanning } from '@/features/planning/useRecurringPlanning';
 
 export type ActivationStep = {
   done: boolean;
@@ -186,26 +188,6 @@ export function ReviewQueuePanel({ items, loading, error }: { items: ReviewQueue
   );
 }
 
-const toUtcCalendarKey = (date: Date) =>
-  `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
-
-const getLiteralTransactionDateKey = (value: string) => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-
-  const year = Number(match[1]);
-  const monthIndex = Number(match[2]) - 1;
-  const day = Number(match[3]);
-  const parsed = new Date(Date.UTC(year, monthIndex, day));
-
-  return year >= 1000 &&
-    parsed.getUTCFullYear() === year &&
-    parsed.getUTCMonth() === monthIndex &&
-    parsed.getUTCDate() === day
-    ? value
-    : null;
-};
-
 export default function DashboardScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 1200;
@@ -221,6 +203,7 @@ export default function DashboardScreen() {
   const challenges = useChallengeStore((state) => state.challenges);
   const { selectedMonthDate } = useReportingMonth();
   const reviewPreview = useReviewPreview();
+  const recurringPlanning = useRecurringPlanning(user?.id);
 
   const cycleStart = new Date(Date.UTC(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth(), 1));
   const cycleEnd = new Date(Date.UTC(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth() + 1, 1));
@@ -235,8 +218,6 @@ export default function DashboardScreen() {
   const cycleStartMs = cycleStart.getTime();
   const cycleEndMs = cycleEnd.getTime();
   const reportingNowMs = reportingNow.getTime();
-  const cycleStartKey = toUtcCalendarKey(cycleStart);
-  const cycleEndKey = toUtcCalendarKey(cycleEnd);
 
   const plan = useMemo(() => buildCashflowPlan({
     transactions,
@@ -245,12 +226,13 @@ export default function DashboardScreen() {
     cycleStart: new Date(cycleStartMs),
     cycleEnd: new Date(cycleEndMs),
     now: new Date(reportingNowMs),
-  }), [transactions, settings.monthly_allowance, challenges, cycleStartMs, cycleEndMs, reportingNowMs]);
+    recurringObligations: recurringPlanning.recurringObligations,
+  }), [transactions, settings.monthly_allowance, challenges, cycleStartMs, cycleEndMs, reportingNowMs, recurringPlanning.recurringObligations]);
 
-  const selectedCycleTransactions = useMemo(() => transactions.filter((transaction) => {
-    const dateKey = getLiteralTransactionDateKey(transaction.transaction_date);
-    return dateKey !== null && dateKey >= cycleStartKey && dateKey < cycleEndKey;
-  }), [transactions, cycleStartKey, cycleEndKey]);
+  const selectedCycleTransactions = useMemo(
+    () => summarizeTransactions(transactions, { period: monthFinancePeriod(selectedMonthDate) }).transactions,
+    [transactions, selectedMonthDate],
+  );
 
   const activeChallenges = useMemo(
     () => challenges.filter((challenge) => challenge.status === 'active'),
@@ -273,6 +255,7 @@ export default function DashboardScreen() {
     allowance,
     budgetUsage,
     transactionCount: transactions.length,
+    recurrenceCandidateCount: plan.recurrenceCandidates.length,
   });
   const activationSteps: ActivationStep[] = [
     {

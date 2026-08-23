@@ -265,7 +265,7 @@ describe('buildCashflowPlan', () => {
     }
   });
 
-  it('calculates truthful budget and forecast metrics', () => {
+  it('keeps inferred recurring expenses out of financial facts until confirmed', () => {
     const transactions = [
       makeTransaction('salary', 'income', 60_000, '2026-05-01', 'Salary', 'income'),
       makeTransaction('groceries', 'expense', 5_000, '2026-05-10', 'Groceries', 'food'),
@@ -282,13 +282,62 @@ describe('buildCashflowPlan', () => {
     });
     expect(plan.metrics).toEqual({
       budgetAvailable: 45_000,
+      safeToSpend: 45_000,
+      upcomingCommitments: 0,
+      forecastNetFlow: 55_000,
+      actualIncome: 60_000,
+      actualExpense: 5_000,
+    });
+    expect(plan.commitments).toEqual([]);
+    expect(plan.recurrenceCandidates).toHaveLength(1);
+    expect(plan.recurrenceCandidates[0]).toMatchObject({
+      label: 'Apartment rent',
+      amount: 20_000,
+      confidence: 'estimated',
+    });
+    expect(plan.isForecastAvailable).toBe(true);
+  });
+
+  it('includes only a confirmed recurring obligation in safe-to-spend and forecasts', () => {
+    const transactions = [
+      makeTransaction('salary', 'income', 60_000, '2026-05-01', 'Salary', 'income'),
+      makeTransaction('groceries', 'expense', 5_000, '2026-05-10', 'Groceries', 'food'),
+      makeTransaction('rent-mar', 'expense', 20_000, '2026-03-20', 'Apartment rent', 'housing'),
+      makeTransaction('rent-apr', 'expense', 20_000, '2026-04-20', 'Apartment rent', 'housing'),
+    ];
+    const input = {
+      transactions,
+      monthlyAllowance: 50_000,
+      challenges: [],
+      cycleStart: new Date('2026-05-01T00:00:00Z'),
+      cycleEnd: new Date('2026-06-01T00:00:00Z'),
+      now: new Date('2026-05-15T12:00:00Z'),
+    };
+    const candidate = buildCashflowPlan(input).recurrenceCandidates[0]!;
+    expect(candidate).toBeDefined();
+
+    const plan = buildCashflowPlan({
+      ...input,
+      recurringObligations: [{
+        ...candidate,
+        userId: 'cashflow-user',
+        status: 'confirmed',
+        revision: 1,
+        createdAt: '2026-05-15T12:00:00Z',
+        updatedAt: '2026-05-15T12:00:00Z',
+      }],
+    });
+
+    expect(plan.metrics).toEqual({
+      budgetAvailable: 45_000,
       safeToSpend: 25_000,
       upcomingCommitments: 20_000,
       forecastNetFlow: 35_000,
       actualIncome: 60_000,
       actualExpense: 5_000,
     });
-    expect(plan.isForecastAvailable).toBe(true);
+    expect(plan.recurrenceCandidates).toEqual([]);
+    expect(plan.commitments).toHaveLength(1);
   });
 
   it('disables forecasting for a closed historical cycle', () => {
@@ -424,7 +473,7 @@ describe('buildCashflowPlan', () => {
   });
 
   it('builds cumulative actual and projected daily net-flow semantics', () => {
-    const plan = buildCashflowPlan({
+    const input = {
       transactions: [
         makeTransaction('income', 'income', 100, '2026-05-01', 'Salary', 'income'),
         makeTransaction('expense', 'expense', 30, '2026-05-02', 'Groceries', 'food'),
@@ -436,6 +485,18 @@ describe('buildCashflowPlan', () => {
       cycleStart: new Date('2026-05-01T00:00:00Z'),
       cycleEnd: new Date('2026-06-01T00:00:00Z'),
       now: new Date('2026-05-03T12:00:00Z'),
+    };
+    const candidate = buildCashflowPlan(input).recurrenceCandidates[0]!;
+    const plan = buildCashflowPlan({
+      ...input,
+      recurringObligations: [{
+        ...candidate,
+        userId: 'cashflow-user',
+        status: 'confirmed',
+        revision: 1,
+        createdAt: '2026-05-03T12:00:00Z',
+        updatedAt: '2026-05-03T12:00:00Z',
+      }],
     });
 
     expect(plan.timeline).toHaveLength(31);
@@ -447,7 +508,7 @@ describe('buildCashflowPlan', () => {
       { date: '2026-05-05', actualNetFlow: null, projectedNetFlow: 50 },
     ]);
     expect(plan.timeline[3].projectedEvents.map(({ id }) => id)).toEqual([
-      'estimated-expense|utilities|monthly bill-2026-05-04',
+      candidate.id,
     ]);
     expect(plan.timeline.at(-1)?.projectedNetFlow).toBe(50);
   });
@@ -488,7 +549,7 @@ describe('buildCashflowPlan', () => {
     });
 
     expect(reversed).toEqual(forward);
-    expect(forward.commitments.find(({ label }) => label === 'Alpha bill')?.sourceTransactionIds).toEqual([
+    expect(forward.recurrenceCandidates.find(({ label }) => label === 'Alpha bill')?.sourceTransactionIds).toEqual([
       'alpha-jan-a',
       'alpha-jan-z',
       'alpha-feb',

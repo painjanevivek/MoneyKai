@@ -15,6 +15,7 @@ import { DashboardMotionItem } from './DashboardMotionItem';
 import type { DashboardSectionId } from './dashboardLayout';
 import { rangeToDays, type AnalyticsRange } from './types';
 import { useDashboardLayout } from './useDashboardLayout';
+import { previousFinancePeriod, rollingFinancePeriod, summarizeTransactions } from '@/utils/financeCore';
 
 interface Props {
   plan: CashflowPlan;
@@ -30,7 +31,6 @@ interface Props {
   onUpdateTransactionCategory: (transactionIds: string[], categoryId: string) => void;
 }
 
-const parseDateKey = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00.000Z`) : null;
 const percentageChange = (current: number, previous: number) => previous > 0 ? ((current - previous) / previous) * 100 : current > 0 ? 100 : 0;
 const formatChange = (value: number) => `${value > 0 ? '+' : ''}${Math.round(value)}%`;
 const csvCell = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
@@ -47,32 +47,13 @@ export function AnalyticsDashboard({ plan, transactions, periodEnd, userId, onAd
   const days = rangeToDays(range);
   const periodEndMs = periodEnd.getTime();
 
-  const { visibleTransactions, previousTransactions } = React.useMemo(() => {
-    const endExclusive = periodEndMs;
-    const start = endExclusive - days * 86_400_000;
-    const previousStart = start - days * 86_400_000;
-    const query = searchQuery.trim().toLowerCase();
-    const inWindow = (transaction: Transaction, from: number, to: number) => {
-      const parsed = parseDateKey(transaction.transaction_date);
-      if (!parsed) return false;
-      const time = parsed.getTime();
-      return time >= from && time < to;
-    };
-    const matchesQuery = (transaction: Transaction) => !query || [transaction.description, transaction.category, transaction.payment_method, transaction.captureSource ?? 'manual'].some((value) => value.toLowerCase().includes(query));
-    const matchesKpi = (transaction: Transaction) => selectedKpi === 'income' ? transaction.type === 'income' : selectedKpi === 'expense' ? transaction.type === 'expense' : true;
-    return {
-      visibleTransactions: transactions.filter((transaction) => inWindow(transaction, start, endExclusive) && matchesQuery(transaction) && matchesKpi(transaction)),
-      previousTransactions: transactions.filter((transaction) => inWindow(transaction, previousStart, start)),
-    };
+  const { visibleTransactions, previousTransactions, current, previous } = React.useMemo(() => {
+    const period = rollingFinancePeriod(new Date(periodEndMs), days);
+    const type = selectedKpi === 'income' || selectedKpi === 'expense' ? selectedKpi : undefined;
+    const currentSummary = summarizeTransactions(transactions, { period, query: searchQuery, type });
+    const previousSummary = summarizeTransactions(transactions, { period: previousFinancePeriod(period), query: searchQuery, type });
+    return { visibleTransactions: currentSummary.transactions, previousTransactions: previousSummary.transactions, current: currentSummary, previous: previousSummary };
   }, [days, periodEndMs, searchQuery, selectedKpi, transactions]);
-
-  const summarize = React.useCallback((items: Transaction[]) => items.reduce((summary, transaction) => {
-    if (transaction.type === 'income') summary.income += transaction.amount;
-    else summary.expense += transaction.amount;
-    return summary;
-  }, { income: 0, expense: 0 }), []);
-  const current = React.useMemo(() => summarize(visibleTransactions), [summarize, visibleTransactions]);
-  const previous = React.useMemo(() => summarize(previousTransactions), [previousTransactions, summarize]);
   const currentNet = current.income - current.expense;
   const previousNet = previous.income - previous.expense;
   const kpis = React.useMemo<AnalyticsKpi[]>(() => [
@@ -82,16 +63,7 @@ export function AnalyticsDashboard({ plan, transactions, periodEnd, userId, onAd
     { id: 'records', label: 'Reviewed records', value: String(visibleTransactions.length), comparison: formatChange(percentageChange(visibleTransactions.length, previousTransactions.length)), trend: visibleTransactions.length - previousTransactions.length, footnote: 'Verified records in this range', icon: 'account-check-outline', tone: 'neutral' },
   ], [current.expense, current.income, currentNet, previous.expense, previous.income, previousNet, previousTransactions.length, visibleTransactions.length]);
 
-  const categories = React.useMemo(() => {
-    const expenseTotal = visibleTransactions.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + transaction.amount, 0);
-    const grouped = new Map<string, { total: number; count: number }>();
-    visibleTransactions.forEach((transaction) => {
-      if (transaction.type !== 'expense') return;
-      const currentCategory = grouped.get(transaction.category) ?? { total: 0, count: 0 };
-      grouped.set(transaction.category, { total: currentCategory.total + transaction.amount, count: currentCategory.count + 1 });
-    });
-    return [...grouped.entries()].map(([category, value]) => ({ category, total: value.total, count: value.count, percentage: expenseTotal > 0 ? (value.total / expenseTotal) * 100 : 0 })).sort((left, right) => right.total - left.total);
-  }, [visibleTransactions]);
+  const categories = React.useMemo(() => current.categories.map((item) => ({ category: item.category, total: item.total, count: item.count, percentage: item.percentage })), [current.categories]);
 
   const exportRecords = React.useCallback((records: Transaction[], scope: 'period' | 'selected') => {
     if (typeof document === 'undefined' || typeof URL === 'undefined') {
@@ -123,7 +95,7 @@ export function AnalyticsDashboard({ plan, transactions, periodEnd, userId, onAd
     signals: (
       <View style={{ flexDirection: wide ? 'row' : 'column', gap: Spacing.md }}>
         <SignalCard label="Safe to spend" value={formatCurrency(plan.metrics.safeToSpend)} detail={plan.hasBudget ? 'After reviewed expenses and recurring commitments' : 'Set a monthly budget to activate this guardrail'} tone={plan.hasBudget ? colors.success : colors.warning} />
-        <SignalCard label="Upcoming commitments" value={formatCurrency(plan.metrics.upcomingCommitments)} detail={plan.isForecastAvailable ? 'Recurring expenses inferred from reviewed history' : 'Forecasting is available for the current month'} tone={colors.warning} />
+        <SignalCard label="Upcoming commitments" value={formatCurrency(plan.metrics.upcomingCommitments)} detail={plan.isForecastAvailable ? 'Recurring expenses you confirmed' : 'Forecasting is available for the current month'} tone={colors.warning} />
         <SignalCard label="Forecast month end" value={`${plan.metrics.forecastNetFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(plan.metrics.forecastNetFlow))}`} detail="Projected net flow after known recurring activity" tone={plan.metrics.forecastNetFlow < 0 ? colors.error : colors.success} />
       </View>
     ),

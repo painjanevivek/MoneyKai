@@ -648,6 +648,7 @@ The web client may optimistically render a pending state, but only `confirmed` m
 - **Deliverables:** Shared finance calculation service/package, planning actions, and consistent reports.
 - **Acceptance criteria:** Dashboard, planning, and reports produce the same results for the same reviewed dataset, currency, timezone, and filters.
 - **Evidence gate `EG-5`:** Golden finance fixtures reconcile across every consuming surface.
+- **Implementation status (2026-08-24):** Local implementation complete. The shared golden fixture, recurring-decision replay/conflict suite, web production build, API mirror, backend authority, SEO, CSP, and OWASP gates pass. Deployed Firestore, multi-session, accessibility, and production-like lifecycle evidence remains required before declaring `EG-5` fully passed; see ADR-006.
 
 ### Phase 6: Guided Intelligence
 
@@ -841,7 +842,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 1.
   - Risks: Advice-like copy or untraceable prioritization.
 
-- [ ] `TASK-011` — Consolidate finance calculations
+- [x] `TASK-011` — Consolidate finance calculations
   - Purpose: Remove divergent totals across dashboard, budgets, and reports.
   - Dependencies: Canonical data ownership.
   - Expected output: Shared calculation package/service and test fixtures.
@@ -850,7 +851,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 3, Phase 3.
   - Risks: Currency, timezone, and transfer semantics.
 
-- [ ] `TASK-012` — Add recurring-obligation review
+- [x] `TASK-012` — Add recurring-obligation review
   - Purpose: Surface predictable upcoming commitments without pretending to move money.
   - Dependencies: TASK-011 and reviewed transaction history.
   - Expected output: Recurrence candidates, confirmation flow, and planning facts.
@@ -859,7 +860,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visuals 1 and 3.
   - Risks: Sparse history and incorrect recurrence assumptions.
 
-- [ ] `TASK-013` — Align budgets, savings, cashflow, and reports
+- [x] `TASK-013` — Align budgets, savings, cashflow, and reports
   - Purpose: Complete the reviewed-data planning loop.
   - Dependencies: TASK-011 and TASK-012.
   - Expected output: Shared periods, filters, summaries, and cross-links.

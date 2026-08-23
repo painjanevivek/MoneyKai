@@ -19,4 +19,10 @@ describe('buildDashboardNextActions', () => {
     const actions = buildDashboardNextActions({ reviews: [], allowance: 10_000, budgetUsage: 25, transactionCount: 4 });
     expect(actions).toEqual([expect.objectContaining({ title: 'Review the monthly digest', tone: 'success' })]);
   });
+
+  it('links estimated recurring patterns to confirmation without treating them as facts', () => {
+    const actions = buildDashboardNextActions({ reviews: [], allowance: 10_000, budgetUsage: 25, transactionCount: 4, recurrenceCandidateCount: 2 });
+    expect(actions[0]).toMatchObject({ title: 'Confirm recurring patterns', status: 'Review', href: '/budgets' });
+    expect(actions[0].body).toContain('before affecting safe-to-spend');
+  });
 });

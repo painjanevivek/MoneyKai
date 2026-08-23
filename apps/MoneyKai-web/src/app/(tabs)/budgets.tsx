@@ -22,6 +22,9 @@ import { useReportingMonth } from '@/components/layout/ReportingMonthContext';
 import { ReportingMonthPicker } from '@/components/layout/ReportingMonthPicker';
 import { buildCashflowPlan } from '@/utils/cashflowPlan';
 import { withAlpha } from '@/utils/glassStyle';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useRecurringPlanning } from '@/features/planning/useRecurringPlanning';
+import { RecurringObligationsPanel } from '@/features/planning/RecurringObligationsPanel';
 
 export function LegacyBudgetsScreen() {
   const { colors } = useTheme();
@@ -177,6 +180,8 @@ export default function BudgetsScreen() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { selectedMonthDate } = useReportingMonth();
+  const userId = useAuthStore((state) => state.user?.id);
+  const recurringPlanning = useRecurringPlanning(userId);
   const transactions = useTransactionStore((state) => state.transactions);
   const challenges = useChallengeStore((state) => state.challenges);
   const settings = useBudgetStore((state) => state.settings);
@@ -201,6 +206,7 @@ export default function BudgetsScreen() {
     cycleStart: new Date(cycleStartMs),
     cycleEnd: new Date(cycleEndMs),
     now: new Date(reportingNowMs),
+    recurringObligations: recurringPlanning.recurringObligations,
   });
 
   const allowance = settings.monthly_allowance;
@@ -313,6 +319,16 @@ export default function BudgetsScreen() {
           </View>
         ))}
       </View>
+
+      <RecurringObligationsPanel
+        candidates={plan.recurrenceCandidates}
+        decisions={recurringPlanning.recurringObligations}
+        status={recurringPlanning.status}
+        error={recurringPlanning.error}
+        pendingId={recurringPlanning.decisionPendingId}
+        onDecision={recurringPlanning.decide}
+        onRetry={recurringPlanning.retry}
+      />
 
       <View style={{ flexDirection: isWide ? 'row' : 'column', gap: Spacing.md }}>
         <View style={{ flex: 2, minWidth: 0 }}>

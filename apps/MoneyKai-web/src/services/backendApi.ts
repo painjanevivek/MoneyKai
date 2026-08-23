@@ -81,6 +81,7 @@ import type {
   PaginatedResponse,
 } from '@/types/pagination';
 import type { ReviewActionRequest, ReviewActionResponse, ReviewFilters, ReviewItem } from '@/types/review';
+import type { RecurringObligation, RecurringObligationCandidate, RecurringObligationDecisionResponse, RecurringObligationStatus } from '@/types/planning';
 
 const backendBaseUrl = getBackendBaseUrl();
 
@@ -346,6 +347,42 @@ export const backendApi = {
     headers: { 'Idempotency-Key': idempotencyKey },
     body: JSON.stringify(payload),
   }),
+  listRecurringObligations: async (
+    status?: RecurringObligationStatus,
+    limit = 50,
+    cursor?: string | null,
+  ) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (status) params.set('status', status);
+    if (cursor) params.set('cursor', cursor);
+    return request<PaginatedResponse<RecurringObligation>>(`/v1/planning/recurring-obligations?${params.toString()}`);
+  },
+  decideRecurringObligation: async (
+    candidate: RecurringObligationCandidate,
+    action: 'confirm' | 'dismiss',
+    expectedRevision: number,
+    idempotencyKey = createRequestId(),
+  ) => request<RecurringObligationDecisionResponse>(
+    `/v1/planning/recurring-obligations/${encodeURIComponent(candidate.id)}/decision`,
+    {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body: JSON.stringify({
+        action,
+        expectedRevision,
+        candidate: {
+          label: candidate.label,
+          category: candidate.category,
+          type: candidate.type,
+          amount: candidate.amount,
+          cadence: candidate.cadence,
+          nextDueDate: candidate.nextDueDate,
+          sourceTransactionIds: candidate.sourceTransactionIds,
+          confidence: candidate.confidence,
+        },
+      }),
+    },
+  ),
   createBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups', { method: 'POST' }),
   getLatestBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups/latest'),
   restoreLatestBackup: async (idempotencyKey = createRequestId()) =>

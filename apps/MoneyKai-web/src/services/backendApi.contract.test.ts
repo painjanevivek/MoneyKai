@@ -102,4 +102,47 @@ describe('backend API authority headers', () => {
     const headers = fetchMock.mock.calls[1][1].headers as Headers;
     expect(headers.get('Idempotency-Key')).toBe('review-stable-key');
   });
+
+  it('preserves recurring-obligation filters and stable decision idempotency', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [], page: { hasMore: false } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ item: {}, receipt: {} }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const candidate = {
+      id: 'recurring_a1b2c3d4',
+      label: 'House rent',
+      category: 'rent',
+      type: 'expense' as const,
+      amount: 20_000,
+      cadence: 'monthly' as const,
+      nextDueDate: '2026-09-01',
+      sourceTransactionIds: ['txn-1', 'txn-2'],
+      confidence: 'estimated' as const,
+    };
+
+    await backendApi.listRecurringObligations('confirmed', 25, 'planning cursor');
+    await backendApi.decideRecurringObligation(candidate, 'confirm', 0, 'planning-stable-key');
+
+    expect(fetchMock.mock.calls[0][0]).toContain(
+      '/v1/planning/recurring-obligations?limit=25&status=confirmed&cursor=planning+cursor',
+    );
+    expect(fetchMock.mock.calls[1][0]).toContain('/v1/planning/recurring-obligations/recurring_a1b2c3d4/decision');
+    const headers = fetchMock.mock.calls[1][1].headers as Headers;
+    expect(headers.get('Idempotency-Key')).toBe('planning-stable-key');
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body as string)).toEqual({
+      action: 'confirm',
+      expectedRevision: 0,
+      candidate: {
+        label: 'House rent',
+        category: 'rent',
+        type: 'expense',
+        amount: 20_000,
+        cadence: 'monthly',
+        nextDueDate: '2026-09-01',
+        sourceTransactionIds: ['txn-1', 'txn-2'],
+        confidence: 'estimated',
+      },
+    });
+  });
 });

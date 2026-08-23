@@ -1,7 +1,7 @@
 import type { ReviewItem } from '@/types/review';
 
 export interface DashboardNextAction {
-  icon: 'clipboard-alert-outline' | 'wallet-outline' | 'receipt-text-plus-outline' | 'file-chart-outline';
+  icon: 'clipboard-alert-outline' | 'calendar-sync-outline' | 'wallet-outline' | 'receipt-text-plus-outline' | 'file-chart-outline';
   title: string;
   body: string;
   status: string;
@@ -14,9 +14,10 @@ interface Inputs {
   allowance: number;
   budgetUsage: number;
   transactionCount: number;
+  recurrenceCandidateCount?: number;
 }
 
-export function buildDashboardNextActions({ reviews, allowance, budgetUsage, transactionCount }: Inputs): DashboardNextAction[] {
+export function buildDashboardNextActions({ reviews, allowance, budgetUsage, transactionCount, recurrenceCandidateCount = 0 }: Inputs): DashboardNextAction[] {
   const actions: DashboardNextAction[] = reviews.slice(0, 2).map((review) => ({
     icon: 'clipboard-alert-outline',
     title: review.title,
@@ -25,6 +26,17 @@ export function buildDashboardNextActions({ reviews, allowance, budgetUsage, tra
     tone: review.priority === 'critical' || review.priority === 'high' ? 'warning' : 'primary',
     href: `/review?status=pending&item=${encodeURIComponent(review.id)}`,
   }));
+
+  if (recurrenceCandidateCount > 0) {
+    actions.push({
+      icon: 'calendar-sync-outline',
+      title: 'Confirm recurring patterns',
+      body: `${recurrenceCandidateCount} estimated ${recurrenceCandidateCount === 1 ? 'pattern needs' : 'patterns need'} confirmation before affecting safe-to-spend.`,
+      status: 'Review',
+      tone: 'primary',
+      href: '/budgets',
+    });
+  }
 
   if (allowance <= 0) {
     actions.push({ icon: 'wallet-outline', title: 'Set a monthly budget', body: 'A budget is needed before MoneyKai can explain spending pressure.', status: 'Set up', tone: 'neutral', href: '/budgets' });

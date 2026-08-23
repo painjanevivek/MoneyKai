@@ -15,24 +15,25 @@ export const calculateSavingsProjection = (
   monthlyAllowance: number,
   categoryTotals: CategoryTotal[],
   reductions: CategoryReduction[],
-  additionalIncome: number = 0
+  additionalIncome: number = 0,
+  timing?: { daysPassed: number; daysLeft: number; totalDays: number },
 ): SavingsProjection => {
   const totalSpent = categoryTotals.reduce((sum, c) => sum + c.total, 0);
-  const daysPassed = getDaysPassed();
-  const daysLeft = getDaysLeftInMonth();
-  const totalDays = getDaysInCurrentMonth();
+  const daysPassed = Math.max(0, Math.floor(timing?.daysPassed ?? getDaysPassed()));
+  const daysLeft = Math.max(0, Math.floor(timing?.daysLeft ?? getDaysLeftInMonth()));
+  const totalDays = Math.max(1, Math.floor(timing?.totalDays ?? getDaysInCurrentMonth()));
+  const elapsedDays = Math.max(1, daysPassed);
 
-  const currentDailyAvg = daysPassed > 0 ? totalSpent / daysPassed : 0;
+  const currentDailyAvg = daysPassed > 0 ? totalSpent / elapsedDays : 0;
 
   let totalSavedFromReductions = 0;
   const recommendations: string[] = [];
 
   reductions.forEach((reduction) => {
     if (reduction.reductionPercent > 0) {
-      const projectedCategorySpend = (reduction.currentAmount / daysPassed) * totalDays;
+      const projectedCategorySpend = daysPassed > 0 ? (reduction.currentAmount / elapsedDays) * totalDays : 0;
       const savedAmount = projectedCategorySpend * (reduction.reductionPercent / 100);
       totalSavedFromReductions += savedAmount;
-      reduction.savedAmount = Math.round(savedAmount);
 
       if (savedAmount > 500) {
         const categoryName = reduction.category.charAt(0).toUpperCase() + reduction.category.slice(1);

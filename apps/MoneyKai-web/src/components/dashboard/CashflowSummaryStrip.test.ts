@@ -42,6 +42,7 @@ const plan: CashflowPlan = {
   },
   timeline: [],
   commitments: [],
+  recurrenceCandidates: [],
   categories: [],
   goals: [],
   isForecastAvailable: true,

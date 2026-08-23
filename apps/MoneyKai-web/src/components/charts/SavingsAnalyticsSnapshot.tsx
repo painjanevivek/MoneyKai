@@ -1,31 +1,36 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { addDays, endOfDay, isWithinInterval, startOfWeek } from 'date-fns';
 import { BarChart } from 'react-native-gifted-charts';
 import { useTheme } from '../../hooks/useTheme';
 import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
-import { useTransactionStore } from '../../stores/useTransactionStore';
-import { useBudgetStore } from '../../stores/useBudgetStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { getCategoryById } from '../../constants/categories';
 import { generateInsights } from '../../utils/insightEngine';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { convertFromInrForDisplay } from '@/utils/formatCurrency';
+import { calendarDateKey, type FinancePeriod } from '@/utils/financeCore';
+import type { CategoryTotal, Transaction } from '@/types/transaction';
 
-export const SavingsAnalyticsSnapshot: React.FC = () => {
+interface Props {
+  categoryTotals: CategoryTotal[];
+  monthlyAllowance: number;
+  period: FinancePeriod;
+  totalSpent: number;
+  transactions: Transaction[];
+}
+
+const DAY_MS = 86_400_000;
+
+export const SavingsAnalyticsSnapshot: React.FC<Props> = ({ categoryTotals, monthlyAllowance, period, totalSpent, transactions }) => {
   const { colors } = useTheme();
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
-  const totalSpent = useTransactionStore((s) => s.getTotalSpent());
-  const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
-  const transactions = useTransactionStore((s) => s.transactions);
-  const { settings } = useBudgetStore();
 
-  const insights = generateInsights(settings.monthly_allowance, totalSpent, categoryTotals);
+  const insights = generateInsights(monthlyAllowance, totalSpent, categoryTotals);
 
-  const remaining = settings.monthly_allowance - totalSpent;
-  const savingsRate = settings.monthly_allowance > 0 ? (remaining / settings.monthly_allowance) * 100 : 0;
+  const remaining = monthlyAllowance - totalSpent;
+  const savingsRate = monthlyAllowance > 0 ? (remaining / monthlyAllowance) * 100 : 0;
   const savingsToneColor = savingsRate >= 0 ? colors.primary : colors.emergency;
 
   const topCategory = useMemo(() => {
@@ -33,24 +38,27 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
   }, [categoryTotals]);
 
   const weeklyData = useMemo(() => {
-    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const startOrdinal = Date.parse(`${period.startDate}T00:00:00.000Z`);
+    const endOrdinal = Date.parse(`${period.endDateExclusive}T00:00:00.000Z`) - DAY_MS;
+    const now = new Date();
+    const todayOrdinal = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const chartEnd = todayOrdinal >= startOrdinal && todayOrdinal <= endOrdinal ? todayOrdinal : endOrdinal;
+    const valuesByDate = new Map<string, number>();
+    transactions.forEach((transaction) => {
+      if (transaction.type !== 'expense') return;
+      valuesByDate.set(transaction.transaction_date, (valuesByDate.get(transaction.transaction_date) ?? 0) + transaction.amount);
+    });
     return Array.from({ length: 7 }, (_, index) => {
-      const dayStart = addDays(weekStart, index);
-      const dayEnd = endOfDay(dayStart);
-      const value = transactions
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, transaction) => {
-          const date = new Date(transaction.transaction_date);
-          return isWithinInterval(date, { start: dayStart, end: dayEnd }) ? sum + transaction.amount : sum;
-        }, 0);
+      const date = new Date(chartEnd - (6 - index) * DAY_MS);
+      const dateKey = calendarDateKey(date);
 
       return {
-        value: convertFromInrForDisplay(value),
-        label: ['M', 'T', 'W', 'T', 'F', 'S', 'S'][index],
-        frontColor: index >= 5 ? colors.accent : colors.primary,
+        value: convertFromInrForDisplay(valuesByDate.get(dateKey) ?? 0),
+        label: String(date.getUTCDate()),
+        frontColor: index === 6 ? colors.accent : colors.primary,
       };
     });
-  }, [colors.accent, colors.primary, transactions]);
+  }, [colors.accent, colors.primary, period.endDateExclusive, period.startDate, transactions]);
 
   const hasWeeklyData = weeklyData.some((item) => item.value > 0);
 
@@ -79,7 +87,7 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
         </View>
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
-            Savings position
+            Budget position
           </Text>
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
             {remaining >= 0
@@ -98,7 +106,7 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
           borderWidth: 1,
           borderColor: colors.borderLight,
         }}>
-          <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Savings rate</Text>
+          <Text style={{ fontSize: 10, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary }}>Budget buffer</Text>
           <Text style={{ fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary }}>
             {Math.round(Math.max(0, savingsRate))}%
           </Text>
@@ -120,7 +128,7 @@ export const SavingsAnalyticsSnapshot: React.FC = () => {
 
       <View style={{ marginBottom: Spacing.md }}>
         <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium, color: colors.textSecondary, marginBottom: 6 }}>
-          This week
+          Last 7 days in this period
         </Text>
         {hasWeeklyData ? (
           <BarChart

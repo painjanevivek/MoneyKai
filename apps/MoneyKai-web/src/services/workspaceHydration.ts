@@ -9,6 +9,7 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useLinkedAccountStore } from '@/stores/useLinkedAccountStore';
+import { usePlanningStore } from '@/stores/usePlanningStore';
 import type { BackendSnapshot } from '@/types/backend';
 import type { Transaction } from '@/types/transaction';
 import type { Note } from '@/types/note';
@@ -17,6 +18,7 @@ import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { AppNotification } from '@/types/notification';
 import type { LinkedAccount } from '@moneykai/domain';
+import type { RecurringObligation } from '@/types/planning';
 import type {
   BootstrapResource,
   IncrementalSyncEvent,
@@ -143,6 +145,24 @@ const applyResourceItems = (resource: BootstrapResource, items: Identified[]) =>
 };
 
 const applyIncrementalEvent = (event: IncrementalSyncEvent) => {
+  if (event.resource === 'recurringObligations') {
+    const planning = usePlanningStore.getState();
+    if (!planning.ownerUserId) return;
+    if (event.action === 'upserted' && event.payload) {
+      const obligation = event.payload as unknown as RecurringObligation;
+      if (obligation.userId !== planning.ownerUserId) return;
+      usePlanningStore.setState((state) => ({
+        ...state,
+        recurringObligations: mergeById(state.recurringObligations, [obligation]),
+      }));
+    } else {
+      usePlanningStore.setState((state) => ({
+        ...state,
+        recurringObligations: state.recurringObligations.filter((item) => item.id !== event.itemId),
+      }));
+    }
+    return;
+  }
   if (event.resource === 'appSettings' && event.action === 'upserted' && event.payload) {
     useSettingsStore.setState((state) => ({ ...state, ...event.payload }));
     return;

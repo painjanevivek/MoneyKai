@@ -81,6 +81,7 @@ const makePlan = (isForecastAvailable: boolean): CashflowPlan => ({
     },
   ],
   commitments: [],
+  recurrenceCandidates: [],
   categories: [],
   goals: [],
   isForecastAvailable,

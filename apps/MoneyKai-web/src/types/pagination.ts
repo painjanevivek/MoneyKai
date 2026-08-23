@@ -29,6 +29,7 @@ export type SyncResource =
   | 'linkedAccounts'
   | 'groups'
   | 'groupExpenses'
+  | 'recurringObligations'
   | 'appSettings'
   | 'budgetSettings'
   | 'workspace';
