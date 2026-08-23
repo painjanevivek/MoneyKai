@@ -1,11 +1,9 @@
 import {
-  addDoc,
   collection,
   getDocs,
   limit,
   orderBy,
   query,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -342,36 +340,7 @@ export const saveCloudBackup = async (options: { silent?: boolean; preserveAutom
     return snapshot;
   }
 
-  if (!isFirebaseConfigured()) {
-    throw new Error('Configure Firebase to enable cloud backup.');
-  }
-
-  const snapshot = buildBackupSnapshot();
-  try {
-    await addDoc(collection(firebaseDb, 'users', snapshot.profile.id, 'backups'), {
-      backup_name: `Backup ${new Date().toLocaleString()}`,
-      snapshot,
-      createdAt: serverTimestamp(),
-      createdAtMs: Date.now(),
-    });
-  } catch (error) {
-    throw formatBackupError(error, 'save');
-  }
-
-  if (!options.silent) {
-    await recordBackupNotification({
-      title: 'Backup saved',
-      body: 'Your MoneyKai data was backed up to the cloud.',
-      type: 'backup',
-      schedule: false,
-    });
-  }
-
-  if (!options.preserveAutomaticBackupState) {
-    await markAutomaticBackupSaved(sequenceAtStart);
-  }
-
-  return snapshot;
+  throw new Error('The MoneyKai backend is required to create a durable cloud backup. No backup was saved.');
 };
 
 export const getLatestCloudBackup = async () => {

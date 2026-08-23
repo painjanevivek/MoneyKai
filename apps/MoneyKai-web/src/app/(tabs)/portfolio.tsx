@@ -11,10 +11,17 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { ReviewSummaryCard } from '@/components/ui/ReviewSummaryCard';
+import { SurfaceState } from '@/components/ui/SurfaceState';
 import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
 import { Spacing, Typography } from '@/constants/theme';
 import { usePortfolioWorkspace } from '@/features/wealth/usePortfolioWorkspace';
 import { useTheme } from '@/hooks/useTheme';
+import {
+  loadCapabilityStatus,
+  presentCapability,
+  resolveCapability,
+} from '@/services/capabilityResolver';
+import type { CapabilityStatusResponse } from '@/types/capabilities';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 const isHttpsUrl = (url: string) => {
@@ -27,6 +34,8 @@ const isHttpsUrl = (url: string) => {
 
 export default function PortfolioScreen() {
   const { colors } = useTheme();
+  const [capabilityStatus, setCapabilityStatus] = React.useState<CapabilityStatusResponse | null>(null);
+  const [capabilityError, setCapabilityError] = React.useState<string | null>(null);
   const {
     enabled,
     currencySymbol,
@@ -85,13 +94,67 @@ export default function PortfolioScreen() {
   }, [currencySymbol, holdings, overview.allocation.length, overview.snapshot.totalPnl]);
 
   React.useEffect(() => {
-    if (!enabled) {
-      router.replace('/dashboard');
-    }
+    if (!enabled) return;
+    let active = true;
+    void loadCapabilityStatus()
+      .then((status) => {
+        if (!active) return;
+        setCapabilityStatus(status);
+        setCapabilityError(null);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setCapabilityError(error instanceof Error ? error.message : 'Capability status could not be verified.');
+      });
+    return () => {
+      active = false;
+    };
   }, [enabled]);
 
+  const portfolioCapability = capabilityStatus ? resolveCapability(capabilityStatus, 'portfolio') : null;
+  const portfolioPresentation = portfolioCapability ? presentCapability(portfolioCapability) : null;
+  const zerodhaCapability = capabilityStatus ? resolveCapability(capabilityStatus, 'zerodha_sync') : null;
+
+  const stateSurface = (kind: 'loading' | 'restricted' | 'unavailable', headline: string, detail: string) => (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={[]}>
+      <ScrollView contentContainerStyle={{ padding: Spacing.base }}>
+        <SurfaceState
+          kind={kind}
+          headline={headline}
+          detail={detail}
+          sourceLabel="MoneyKai capability service"
+          primaryAction={
+            kind === 'loading' ? undefined : (
+              <Button title="Return to dashboard" onPress={() => router.replace('/dashboard')} variant="outline" />
+            )
+          }
+        />
+      </ScrollView>
+    </SafeAreaView>
+  );
+
   if (!enabled) {
-    return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={[]} />;
+    return stateSurface(
+      'restricted',
+      'Portfolio is disabled for this build',
+      'Your existing finance workspace is still available from the dashboard.',
+    );
+  }
+
+  if (capabilityError) {
+    return stateSurface('unavailable', 'Portfolio status could not be verified', capabilityError);
+  }
+
+  if (!portfolioPresentation) {
+    return stateSurface(
+      'loading',
+      'Checking portfolio availability',
+      'MoneyKai is verifying the backend and data-authority boundary.',
+    );
+  }
+
+  if (portfolioPresentation.blocking) {
+    return stateSurface(portfolioPresentation.kind === 'restricted' ? 'restricted' : 'unavailable', portfolioPresentation.headline, portfolioPresentation.detail);
   }
 
   return (
@@ -124,6 +187,15 @@ export default function PortfolioScreen() {
           }
         />
 
+        {portfolioPresentation.kind === 'partial' ? (
+          <SurfaceState
+            kind="partial"
+            headline={portfolioPresentation.headline}
+            detail={portfolioPresentation.detail}
+            sourceLabel="MoneyKai capability service"
+          />
+        ) : null}
+
         {holdings.length > 0 ? <PortfolioSummaryCard snapshot={overview.snapshot} currencySymbol={currencySymbol} /> : null}
         <ReviewSummaryCard
           eyebrow="PORTFOLIO REVIEW"
@@ -138,7 +210,16 @@ export default function PortfolioScreen() {
           busyAccountId={busyAccountId}
           onAddManual={() => setShowManualEntry(true)}
           onCreateManualAccount={handleCreateManualAccount}
-          onStartZerodha={handleStartZerodha}
+          onStartZerodha={() => {
+            if (zerodhaCapability && presentCapability(zerodhaCapability).blocking) {
+              Alert.alert(
+                zerodhaCapability.state === 'setup_required' ? 'Broker setup required' : 'Broker sync unavailable',
+                zerodhaCapability.message,
+              );
+              return;
+            }
+            void handleStartZerodha();
+          }}
           onExploreAccountAggregator={handleExploreAa}
           onSync={handleSyncAccount}
           onPause={handlePauseAccount}

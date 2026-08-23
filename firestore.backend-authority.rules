@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Staged Phase 1 target: Firebase Admin SDK bypasses these client rules.
+    // Deploy only after the mobile compatibility window is explicitly closed.
+    match /gmail_oauth_states/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /provider_oauth_states/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+
+      match /transactions/{document} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
+      match /notes/{document} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
+      match /savings/{document} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
+      match /badges/{document} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
+      match /notifications/{document} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
+      match /groups/{groupId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+
+        match /expenses/{expenseId} {
+          allow read: if isOwner(userId);
+          allow write: if false;
+        }
+      }
+
+      match /settings/{document} {
+        allow read: if isOwner(userId) && document == "app";
+        allow write: if false;
+      }
+
+      match /budgets/{document} {
+        allow read: if isOwner(userId) && document == "current";
+        allow write: if false;
+      }
+
+      match /backups/{document} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
+      match /linkedAccounts/{document} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -4,6 +4,8 @@ import { getBackendBaseUrl } from '@/config/environment';
 import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
+import type { CapabilityStatusResponse } from '@/types/capabilities';
+import type { LinkedAccount } from '@moneykai/domain';
 import type {
   AiAttachmentAnalyzeRequest,
   AiAttachmentAnalyzeResponse,
@@ -75,6 +77,24 @@ import type {
 
 const backendBaseUrl = getBackendBaseUrl();
 
+const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+const createRequestId = (): string => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+  return `mk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+};
+
+const applyAuthorityHeaders = (headers: Headers, method = 'GET'): void => {
+  if (!headers.has('X-Correlation-Id')) {
+    headers.set('X-Correlation-Id', createRequestId());
+  }
+  if (MUTATION_METHODS.has(method.toUpperCase()) && !headers.has('Idempotency-Key')) {
+    headers.set('Idempotency-Key', createRequestId());
+  }
+};
+
 export const isBackendConfigured = (): boolean => backendBaseUrl.length > 0;
 
 class BackendApiError extends Error {
@@ -142,6 +162,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const isFormDataBody = typeof FormData !== 'undefined' && init.body instanceof FormData;
   headers.set('Authorization', `Bearer ${token}`);
+  applyAuthorityHeaders(headers, init.method);
   if (!isFormDataBody && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
@@ -173,6 +194,7 @@ async function streamRequest<TCompleted extends AiChatStreamCompletedEvent>(
   headers.set('Authorization', `Bearer ${token}`);
   headers.set('Content-Type', 'application/json');
   headers.set('Accept', 'text/event-stream');
+  applyAuthorityHeaders(headers, init.method);
 
   const response = await fetch(`${backendBaseUrl}${path}`, {
     ...init,
@@ -270,6 +292,7 @@ function parseSseFrame(frame: string): AiChatStreamEvent | null {
 }
 
 export const backendApi = {
+  getCapabilities: async () => request<CapabilityStatusResponse>('/v1/capabilities'),
   getBootstrap: async () => request<BackendSnapshot>('/v1/bootstrap'),
   createBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups', { method: 'POST' }),
   getLatestBackup: async () => request<{ item: BackendBackupRecord }>('/v1/backups/latest'),
@@ -485,6 +508,15 @@ export const backendApi = {
     }),
   deleteResource: async (resource: 'transactions' | 'notes' | 'badges' | 'notifications', itemId: string) =>
     request<{ deleted: boolean }>(`/v1/resources/${resource}/${itemId}`, {
+      method: 'DELETE',
+    }),
+  updateLinkedAccount: async (accountId: string, payload: object) =>
+    request<{ item: LinkedAccount }>(`/v1/linked-accounts/${accountId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  deleteLinkedAccount: async (accountId: string) =>
+    request<{ deleted: boolean }>(`/v1/linked-accounts/${accountId}`, {
       method: 'DELETE',
     }),
   listGroups: async () => request<{ items: Group[] }>('/v1/groups'),

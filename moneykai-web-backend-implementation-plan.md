@@ -756,7 +756,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 2.
   - Risks: Hidden direct-Firestore paths or stale local stores.
 
-- [ ] `TASK-002` — Define the unified capability-status contract
+- [x] `TASK-002` — Define the unified capability-status contract
   - Purpose: Eliminate frontend/backend/provider flag drift.
   - Dependencies: TASK-001.
   - Expected output: Typed backend response and frontend resolver.

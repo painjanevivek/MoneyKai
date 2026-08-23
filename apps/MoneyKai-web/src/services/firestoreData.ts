@@ -1,13 +1,12 @@
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
-  setDoc,
   type DocumentData,
 } from 'firebase/firestore';
 import { firebaseDb, isFirebaseConfigured } from './firebase';
+import { backendApi } from './backendApi';
 import type { Transaction } from '../types/transaction';
 import type { Note } from '../types/note';
 import type { Group, GroupExpense } from '../types/group';
@@ -155,44 +154,70 @@ export const loadUserFirestoreSnapshot = async (uid: string, profile: FirestoreU
 };
 
 export const saveUserAppSettings = async (uid: string, data: Partial<AppSettingsDoc>) => {
-  const db = ensure();
-  await setDoc(doc(db, 'users', uid, 'settings', 'app'), data, { merge: true });
+  void uid;
+  await backendApi.updateAppSettings(data);
 };
 
 export const saveUserBudgetSettings = async (uid: string, data: Partial<BudgetSettingsDoc>) => {
-  const db = ensure();
-  await setDoc(doc(db, 'users', uid, 'budgets', 'current'), data, { merge: true });
+  void uid;
+  await backendApi.updateBudgetSettings(data);
 };
 
 export const upsertUserDoc = async <T extends { id: string }>(collectionName: string, uid: string, value: T) => {
-  const db = ensure();
-  await setDoc(doc(db, 'users', uid, collectionName, value.id), value, { merge: true });
+  void uid;
+  if (collectionName === 'savings') {
+    await backendApi.updateChallenge(value.id, value);
+    return;
+  }
+  if (collectionName === 'linkedAccounts') {
+    await backendApi.updateLinkedAccount(value.id, value);
+    return;
+  }
+  if (isBackendResource(collectionName)) {
+    await backendApi.updateResource(collectionName, value.id, value);
+    return;
+  }
+  throw new Error(`Unsupported backend-owned collection: ${collectionName}`);
 };
 
 export const deleteUserDoc = async (collectionName: string, uid: string, id: string) => {
-  const db = ensure();
-  await deleteDoc(doc(db, 'users', uid, collectionName, id));
+  void uid;
+  if (collectionName === 'savings') {
+    await backendApi.deleteChallenge(id);
+    return;
+  }
+  if (collectionName === 'linkedAccounts') {
+    await backendApi.deleteLinkedAccount(id);
+    return;
+  }
+  if (isBackendResource(collectionName)) {
+    await backendApi.deleteResource(collectionName, id);
+    return;
+  }
+  throw new Error(`Unsupported backend-owned collection: ${collectionName}`);
 };
 
 export const upsertUserGroup = async <T extends Group>(uid: string, value: T) => {
-  const db = ensure();
-  await setDoc(doc(db, 'users', uid, 'groups', value.id), value, { merge: true });
+  void uid;
+  await backendApi.createGroup(value);
 };
 
 export const deleteUserGroup = async (uid: string, id: string) => {
-  const db = ensure();
-  const groupRef = doc(db, 'users', uid, 'groups', id);
-  const expenses = await getDocs(collection(db, 'users', uid, 'groups', id, 'expenses'));
-  await Promise.all(expenses.docs.map((expense) => deleteDoc(expense.ref)));
-  await deleteDoc(groupRef);
+  void uid;
+  await backendApi.deleteGroup(id);
 };
 
 export const upsertUserGroupExpense = async <T extends GroupExpense>(uid: string, groupId: string, value: T) => {
-  const db = ensure();
-  await setDoc(doc(db, 'users', uid, 'groups', groupId, 'expenses', value.id), value, { merge: true });
+  void uid;
+  await backendApi.createGroupExpense(groupId, value);
 };
 
 export const deleteUserGroupExpense = async (uid: string, groupId: string, expenseId: string) => {
-  const db = ensure();
-  await deleteDoc(doc(db, 'users', uid, 'groups', groupId, 'expenses', expenseId));
+  void uid;
+  await backendApi.deleteGroupExpense(groupId, expenseId);
 };
+
+const isBackendResource = (
+  collectionName: string,
+): collectionName is 'transactions' | 'notes' | 'badges' | 'notifications' =>
+  ['transactions', 'notes', 'badges', 'notifications'].includes(collectionName);
