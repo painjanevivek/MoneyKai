@@ -22,6 +22,10 @@ export interface GmailConnection {
   lastHistoryId?: string;
   syncMode: 'manual' | 'scheduled' | 'watch';
   allowedCategories: FinancialEmailCategory[];
+  revocationPending?: boolean;
+  lastSyncOutcome?: 'completed' | 'partial' | 'failed';
+  lastSyncScannedCount?: number;
+  lastSyncStoredCount?: number;
 }
 
 export interface FinancialEmailRecord {
@@ -72,6 +76,12 @@ export interface GmailSyncSummary {
   needsReviewCount: number;
   query: string;
   items: FinancialEmailRecord[];
+}
+
+export interface GmailDisconnectResponse {
+  disconnected: boolean;
+  revocationPending: boolean;
+  retryable: boolean;
 }
 
 export interface GmailConnectStartResponse {

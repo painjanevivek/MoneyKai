@@ -43,6 +43,7 @@ import type {
 import type {
   FinancialEmailListResponse,
   GmailConnectStartResponse,
+  GmailDisconnectResponse,
   GmailSyncRequest,
   GmailSyncStatus,
   GmailSyncSummary,
@@ -456,7 +457,10 @@ export const backendApi = {
     request<GmailConnectStartResponse>(
       financialFeatureEndpoints.gmail.connectStart(metadataScanAcceptedAt, returnTo)
     ),
-  disconnectGmail: async () => request<{ disconnected: boolean }>(financialFeatureEndpoints.gmail.disconnect, { method: 'POST' }),
+  disconnectGmail: async () => request<GmailDisconnectResponse>(
+    financialFeatureEndpoints.gmail.disconnect,
+    { method: 'POST' },
+  ),
   syncGmail: async (payload: GmailSyncRequest) =>
     request<GmailSyncSummary>(financialFeatureEndpoints.gmail.sync, {
       method: 'POST',

@@ -80,6 +80,8 @@ export const GmailConnectionCard: React.FC = () => {
   const metadataAccepted = Boolean(consent.metadataScanAcceptedAt);
   const attachmentDownloadsAccepted = Boolean(consent.attachmentDownloadAcceptedAt);
   const isConnected = connection?.status === 'connected';
+  const revocationPending = Boolean(connection?.revocationPending);
+  const syncNeedsAttention = connection?.lastSyncOutcome === 'partial' || connection?.lastSyncOutcome === 'failed';
   const setupItems = status.manualSetupRequired ?? status.checklist ?? [];
   const restrictedScopes = status.restrictedScopes ?? ['https://www.googleapis.com/auth/gmail.metadata'];
 
@@ -261,9 +263,14 @@ export const GmailConnectionCard: React.FC = () => {
   const handleDisconnect = async () => {
     setBusy('disconnect');
     try {
-      await gmailSyncApi.disconnect();
-      resetGmailSync();
+      const result = await gmailSyncApi.disconnect();
+      if (result.disconnected) {
+        resetGmailSync();
+      } else {
+        await hydrateStatus();
+      }
     } catch (error) {
+      await hydrateStatus();
       Alert.alert('Disconnect failed', error instanceof Error ? error.message : 'Could not disconnect Gmail.');
     } finally {
       setBusy(null);
@@ -359,6 +366,46 @@ export const GmailConnectionCard: React.FC = () => {
             </Text>
           </View>
         ) : null}
+        {revocationPending ? (
+          <View
+            style={{
+              marginTop: Spacing.md,
+              padding: Spacing.md,
+              borderRadius: BorderRadius.md,
+              borderWidth: 1,
+              borderColor: `${colors.warning}55`,
+              backgroundColor: `${colors.warning}12`,
+              gap: Spacing.xs,
+            }}
+          >
+            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              Disconnect needs confirmation
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+              MoneyKai could not confirm Google token revocation. No sync will run; retry Disconnect to finish securely.
+            </Text>
+          </View>
+        ) : null}
+        {syncNeedsAttention ? (
+          <View
+            style={{
+              marginTop: Spacing.md,
+              padding: Spacing.md,
+              borderRadius: BorderRadius.md,
+              borderWidth: 1,
+              borderColor: `${colors.warning}44`,
+              backgroundColor: `${colors.warning}0D`,
+              gap: Spacing.xs,
+            }}
+          >
+            <Text style={{ fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily.semiBold, color: colors.textPrimary }}>
+              Last sync {connection?.lastSyncOutcome}
+            </Text>
+            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
+              Stored {connection?.lastSyncStoredCount ?? 0} of {connection?.lastSyncScannedCount ?? 0} scanned messages. Saved results remain available and retrying will not duplicate them.
+            </Text>
+          </View>
+        ) : null}
         <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.md }}>
           <Button
             title={providerReady ? 'Consent' : 'Setup'}
@@ -368,11 +415,11 @@ export const GmailConnectionCard: React.FC = () => {
             style={{ flexGrow: 1 }}
           />
           <Button
-            title={isConnected ? 'Refresh' : 'Connect'}
+            title={isConnected ? 'Refresh' : revocationPending ? 'Reconnect blocked' : 'Connect'}
             icon={isConnected ? 'refresh' : 'link-variant'}
             onPress={isConnected ? refreshStatus : handleConnect}
             loading={busy === 'connect' || busy === 'refresh'}
-            disabled={!providerReady || !metadataAccepted}
+            disabled={!providerReady || !metadataAccepted || revocationPending}
             style={{ flexGrow: 1 }}
           />
           {!isConnected ? (
@@ -406,7 +453,7 @@ export const GmailConnectionCard: React.FC = () => {
           />
           {connection ? (
             <Button
-              title="Disconnect"
+              title={revocationPending ? 'Retry Disconnect' : 'Disconnect'}
               icon="link-variant-off"
               onPress={handleDisconnect}
               loading={busy === 'disconnect'}

@@ -3,6 +3,7 @@ import { backendApi } from './backendApi';
 import type {
   FinancialEmailRecord,
   GmailConnectStartResponse,
+  GmailDisconnectResponse,
   GmailSyncRequest,
   GmailSyncStatus,
   GmailSyncSummary,
@@ -86,11 +87,11 @@ export const gmailSyncApi = {
     }
   },
 
-  disconnect: async (): Promise<void> => {
+  disconnect: async (): Promise<GmailDisconnectResponse> => {
     if (!isGmailSyncEnabled()) {
-      return;
+      return { disconnected: true, revocationPending: false, retryable: false };
     }
-    await backendApi.disconnectGmail();
+    return backendApi.disconnectGmail();
   },
 
   syncMetadata: async (payload: GmailSyncRequest): Promise<GmailSyncSummary> => {

@@ -668,6 +668,7 @@ The web client may optimistically render a pending state, but only `confirmed` m
 - **Deliverables:** One production-ready pilot integration with an evidence package and repair tooling.
 - **Acceptance criteria:** No provider response directly deletes canonical data; revocation works; retries do not duplicate data; partial data is visible; support and rollback procedures are validated.
 - **Evidence gate `EG-7`:** Bounded internal rollout completes without unexplained data divergence or unresolved deletion residue.
+- **Implementation status (2026-08-24):** Local implementation complete. The bounded bank-statement document pilot and Gmail metadata-only external pilot now have validated consent/scope contracts, truthful retryable revocation, encrypted token lifecycle, bounded distributed quotas, stable-ID retry behavior, partial-sync visibility, terminal raw-object cleanup, OpenAPI breaking-change automation, web consumer contracts, support/rollback procedures, and authority-closure evidence. Google restricted-scope/legal approval, deployed multi-instance storage/coordination evidence, accessibility/support rehearsal, and the bounded internal cohort remain required before declaring `EG-7` fully passed; see ADR-008, the controlled-integrations runbook, and the Phase 7 evidence package.
 
 ### Cross-Phase Execution Lanes
 
@@ -897,7 +898,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 3, Evidence Gate 4.
   - Risks: Provider drift, cost variability, unsafe explanations.
 
-- [ ] `TASK-017` — Prepare financial-document pilot
+- [x] `TASK-017` — Prepare financial-document pilot
   - Purpose: Validate consent, encrypted processing, review, import, and cleanup.
   - Dependencies: Review workflow, TASK-P0-03, TASK-P0-04, TASK-P0-05, TASK-P0-06, and operational gate.
   - Expected output: One bounded statement format pilot and evidence package.
@@ -906,7 +907,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 2.
   - Risks: Parser errors and sensitive document exposure.
 
-- [ ] `TASK-018` — Select and prepare one external integration pilot
+- [x] `TASK-018` — Select and prepare one external integration pilot
   - Purpose: Avoid simultaneous Gmail, Account Aggregator, and broker rollout.
   - Dependencies: Business/provider decision, completed consent review, non-destructive reconciliation, resumable sync, and distributed operational controls.
   - Expected output: Decision record, adapter readiness checklist, support and rollback plan.
@@ -915,7 +916,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 3, Phase 5.
   - Risks: Provider approval delays and support load.
 
-- [ ] `TASK-019` — Establish contract compatibility automation
+- [x] `TASK-019` — Establish contract compatibility automation
   - Purpose: Protect future mobile synchronization and independent deployments.
   - Dependencies: Stable `/v1` schemas.
   - Expected output: OpenAPI diff/check and consumer contract tests.
@@ -938,7 +939,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Acceptance criteria: A support operator can determine whether a reported mutation is pending, confirmed, rejected, conflicted, or failed without viewing sensitive payloads.
   - Priority: P0 operations.
 
-- [ ] `TASK-023` — Close transitional direct Firestore writes
+- [x] `TASK-023` — Close transitional direct Firestore writes
   - Purpose: Complete the backend-first persistence migration without losing divergent client data.
   - Dependencies: TASK-001, typed backend commands, migration reconciler, and verified rollback.
   - Expected output: Reconciliation report, client cutover, staged rules update, compatibility window, and removal checklist for obsolete write helpers.

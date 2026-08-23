@@ -145,4 +145,48 @@ describe('backend API authority headers', () => {
       },
     });
   });
+
+  it('keeps Gmail sync consent and disconnect contracts aligned with backend v1', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            scannedMessageCount: 0,
+            financialEmailCount: 0,
+            ignoredEmailCount: 0,
+            needsReviewCount: 0,
+            query: 'statement',
+            items: [],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ disconnected: true, revocationPending: false, retryable: false }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await backendApi.syncGmail({
+      metadataScanAcceptedAt: '2026-06-13T00:00:00Z',
+      allowedCategories: ['bank_statement'],
+      syncWindow: '30d',
+      maxResults: 25,
+    });
+    const disconnect = await backendApi.disconnectGmail();
+
+    expect(fetchMock.mock.calls[0][0]).toContain('/v1/gmail/sync');
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body as string)).toEqual({
+      metadataScanAcceptedAt: '2026-06-13T00:00:00Z',
+      allowedCategories: ['bank_statement'],
+      syncWindow: '30d',
+      maxResults: 25,
+    });
+    expect((fetchMock.mock.calls[0][1].headers as Headers).get('Idempotency-Key')).toBeTruthy();
+    expect(fetchMock.mock.calls[1][0]).toContain('/v1/gmail/disconnect');
+    expect(disconnect).toEqual({ disconnected: true, revocationPending: false, retryable: false });
+  });
 });
