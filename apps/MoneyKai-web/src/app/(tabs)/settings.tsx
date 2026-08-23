@@ -105,7 +105,8 @@ const buildBackupConfirmationMessage = (metadata: MoneyKaiBackupMetadata): strin
     `Groups and goals: ${formatBackupCount(metadata.groupCount, 'group')}, ${formatBackupCount(metadata.challengeCount, 'savings goal')}`,
     `Totals: ${formatCurrency(metadata.totalIncome, metadata.currency, true)} income, ${formatCurrency(metadata.totalExpense, metadata.currency, true)} expenses`,
     '',
-    'Restoring replaces the MoneyKai data on this device with the latest cloud backup.',
+    'Protected restore: this operation replaces your current cloud and device data with the latest backup.',
+    'Keep a separate export before continuing. If restore is interrupted, do not retry until MoneyKai shows a clear recovery result.',
   ].join('\n');
 
 const getPasswordChangeErrorMessage = (error: unknown): string => {
@@ -647,7 +648,7 @@ export default function SettingsScreen() {
     setBackupBusy(true);
     try {
       await restoreLatestCloudBackup();
-      Alert.alert('Backup restored', 'Your latest cloud backup is now on this device.');
+      Alert.alert('Backup restored', 'Your latest cloud backup replaced the current cloud and device data successfully.');
       setShowBackupSheet(false);
     } catch (err) {
       Alert.alert('Restore failed', err instanceof Error ? err.message : 'Could not restore a cloud backup.');

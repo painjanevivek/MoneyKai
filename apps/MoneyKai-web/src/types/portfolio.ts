@@ -142,6 +142,7 @@ export interface ProviderSyncResponse {
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
   snapshot: WealthSnapshot;
+  status?: 'complete' | 'partial';
   message: string;
 }
 

@@ -61,6 +61,8 @@ const remoteOrLocal = async <T>(remote: () => Promise<T>, local: () => Promise<T
   }
 };
 
+const remoteMutation = async <T>(mutation: () => Promise<T>): Promise<T> => mutation();
+
 const isLocalZerodhaPayload = (payload: ZerodhaConnectCallbackRequest): boolean =>
   payload.state.startsWith('local-zerodha-sandbox');
 
@@ -121,99 +123,72 @@ export const portfolioApi = {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
 
-    return remoteOrLocal(
-      async () => (await backendApi.createPortfolioConnection(payload)).item,
-      () => localPortfolioApi.createConnectionMetadata(payload)
-    );
+    return remoteMutation(async () => (await backendApi.createPortfolioConnection(payload)).item);
   },
 
   updateConnection: async (accountId: string, payload: ProviderConnectionUpdate): Promise<PortfolioAccount> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return remoteOrLocal(
-      async () => (await backendApi.updatePortfolioConnection(accountId, payload)).item,
-      () => localPortfolioApi.updateConnection(accountId, payload)
-    );
+    return remoteMutation(async () => (await backendApi.updatePortfolioConnection(accountId, payload)).item);
   },
 
   pauseConnection: async (accountId: string): Promise<PortfolioAccount> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return remoteOrLocal(
-      async () => (await backendApi.pausePortfolioConnection(accountId)).item,
-      () => localPortfolioApi.pauseConnection(accountId)
-    );
+    return remoteMutation(async () => (await backendApi.pausePortfolioConnection(accountId)).item);
   },
 
   disconnectConnection: async (accountId: string): Promise<PortfolioAccount> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return remoteOrLocal(
-      async () => (await backendApi.disconnectPortfolioConnection(accountId)).item,
-      () => localPortfolioApi.disconnectConnection(accountId)
-    );
+    return remoteMutation(async () => (await backendApi.disconnectPortfolioConnection(accountId)).item);
   },
 
   syncConnection: async (accountId: string): Promise<ProviderSyncResponse> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return remoteOrLocal(
-      () => backendApi.syncPortfolioConnection(accountId),
-      () => localPortfolioApi.syncConnection(accountId)
-    );
+    return remoteMutation(() => backendApi.syncPortfolioConnection(accountId));
   },
 
   createHolding: async (payload: PortfolioHoldingDraft): Promise<PortfolioHolding> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return remoteOrLocal(
-      async () => (await backendApi.createPortfolioHolding(payload)).item,
-      () => localPortfolioApi.createHolding(payload)
-    );
+    return remoteMutation(async () => (await backendApi.createPortfolioHolding(payload)).item);
   },
 
   updateHolding: async (holdingId: string, payload: PortfolioHoldingUpdate): Promise<PortfolioHolding> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return remoteOrLocal(
-      async () => (await backendApi.updatePortfolioHolding(holdingId, payload)).item,
-      () => localPortfolioApi.updateHolding(holdingId, payload)
-    );
+    return remoteMutation(async () => (await backendApi.updatePortfolioHolding(holdingId, payload)).item);
   },
 
   deleteHolding: async (holdingId: string): Promise<void> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    await remoteOrLocal(
-      async () => {
-        await backendApi.deletePortfolioHolding(holdingId);
-      },
-      () => localPortfolioApi.deleteHolding(holdingId)
-    );
+    await remoteMutation(async () => {
+      await backendApi.deletePortfolioHolding(holdingId);
+    });
   },
 
   createSnapshot: async (): Promise<WealthSnapshot> => {
     if (!isWealthTabEnabled()) {
       return disabledState().snapshot;
     }
-    return remoteOrLocal(() => backendApi.createWealthSnapshot(), () => localPortfolioApi.createSnapshot());
+    return remoteMutation(() => backendApi.createWealthSnapshot());
   },
 
   importParsedDocumentHoldings: async (documentId: string): Promise<{ items: PortfolioHolding[]; importedCount: number }> => {
     if (!isWealthTabEnabled()) {
       throw new Error('Wealth monitoring is disabled for this build.');
     }
-    return remoteOrLocal(
-      () => backendApi.importParsedDocumentHoldings(documentId),
-      () => localPortfolioApi.importParsedDocumentHoldings()
-    );
+    return remoteMutation(() => backendApi.importParsedDocumentHoldings(documentId));
   },
 
   startZerodhaConnect: async (): Promise<ZerodhaConnectStartResponse> => {
