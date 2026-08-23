@@ -1,7 +1,9 @@
+import type { GuardedInsightCard, InsightTone } from '@/types/insight';
+
 export type AiChatTask = 'general_chat' | 'transaction_insights' | 'budget_coach' | 'portfolio_explainer';
 export type AiAttachmentAnalyzeTask = 'receipt_extract' | 'image_analysis';
 export type AiDocumentSummaryType = 'financial_statement' | 'general';
-export type AiInsightTone = 'info' | 'warning' | 'success';
+export type AiInsightTone = InsightTone;
 
 export interface AiChatMessage {
   role: 'user' | 'assistant';
@@ -195,15 +197,7 @@ export interface AiCategoryTotalInput {
   percentage?: number | null;
 }
 
-export interface AiInsightCard {
-  id: string;
-  tone: AiInsightTone;
-  title: string;
-  body: string;
-  actionLabel?: string | null;
-  metricLabel?: string | null;
-  metricValue?: string | null;
-}
+export type AiInsightCard = GuardedInsightCard;
 
 export interface AiTransactionInsightsRequest {
   month: string;
@@ -223,6 +217,7 @@ export interface AiTransactionInsightsResponse {
   source: 'ai' | 'deterministic';
   cached: boolean;
   model?: string | null;
+  contractVersion: 'insight.v1';
 }
 
 export interface AiBudgetCoachRequest {
@@ -245,6 +240,7 @@ export interface AiBudgetCoachResponse {
   source: 'ai' | 'deterministic';
   cached: boolean;
   model?: string | null;
+  contractVersion: 'insight.v1';
 }
 
 export interface AiRuntimeCounters {

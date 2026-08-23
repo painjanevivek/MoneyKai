@@ -658,6 +658,7 @@ The web client may optimistically render a pending state, but only `confirmed` m
 - **Deliverables:** Insight contract, deterministic engine, review-only AI explanations, evaluation set, cost controls, and operations runbook.
 - **Acceptance criteria:** Disabling AI preserves the core experience; AI cannot write canonical data; quota, storage, evaluation, and security gates pass.
 - **Evidence gate `EG-6`:** Multi-instance quota tests, redaction tests, evaluation thresholds, and kill-switch drill pass.
+- **Implementation status (2026-08-24):** Local implementation complete. Versioned deterministic rules, the guarded web/backend contract, explicit opt-in AI explanation, review-only document-summary persistence, metadata-only output audit, redacted evaluation fixtures, cross-instance quota tests, attachment lifecycle tests, production build, and security gates pass locally. Staging provider evaluation, deployed multi-instance coordination/storage, scheduled cleanup, accessibility evidence, and the production-like kill-switch drill remain required before declaring `EG-6` fully passed; see ADR-007 and the guided-intelligence operations runbook.
 
 ### Phase 7: Controlled Integrations
 
@@ -869,7 +870,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 1.
   - Risks: Existing local-only goal or budget state.
 
-- [ ] `TASK-014` — Establish deterministic insight rules
+- [x] `TASK-014` — Establish deterministic insight rules
   - Purpose: Provide useful insights without AI dependency.
   - Dependencies: Stable finance calculations.
   - Expected output: Versioned rules with explanation and test coverage.
@@ -878,7 +879,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 3, Phase 4.
   - Risks: Rules presented as personalized advice.
 
-- [ ] `TASK-015` — Define the guarded insight response contract
+- [x] `TASK-015` — Define the guarded insight response contract
   - Purpose: Separate facts, explanations, caveats, provenance, and actions.
   - Dependencies: TASK-014 and existing AI contracts.
   - Expected output: Typed schema shared by web and backend.
@@ -887,7 +888,7 @@ No lane may bypass a dependency by duplicating persistence or business rules in 
   - Relevant visual: Visual 2.
   - Risks: Model output variability.
 
-- [ ] `TASK-016` — Build the AI evaluation and operations gate
+- [x] `TASK-016` — Build the AI evaluation and operations gate
   - Purpose: Decide with evidence whether guarded AI can be enabled.
   - Dependencies: TASK-015, provider configuration, security review.
   - Expected output: Redacted evaluation set, accuracy/safety review, quota and incident runbook.

@@ -7,10 +7,10 @@ import { Card } from '../ui/Card';
 import { ProgressBar } from '../ui/ProgressBar';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { getCategoryById } from '../../constants/categories';
-import { generateInsights } from '../../utils/insightEngine';
+import { generateDeterministicInsights } from '../../utils/insightEngine';
 import { Typography, Spacing, BorderRadius } from '../../constants/theme';
 import { convertFromInrForDisplay } from '@/utils/formatCurrency';
-import { calendarDateKey, type FinancePeriod } from '@/utils/financeCore';
+import { calendarDateKey, financePeriodProgress, summarizeTransactions, type FinancePeriod } from '@/utils/financeCore';
 import type { CategoryTotal, Transaction } from '@/types/transaction';
 
 interface Props {
@@ -27,7 +27,13 @@ export const SavingsAnalyticsSnapshot: React.FC<Props> = ({ categoryTotals, mont
   const { colors } = useTheme();
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
 
-  const insights = generateInsights(monthlyAllowance, totalSpent, categoryTotals);
+  const financeSummary = useMemo(() => summarizeTransactions(transactions, { period }), [period, transactions]);
+  const insights = useMemo(() => generateDeterministicInsights({
+    monthlyAllowance,
+    current: financeSummary,
+    period,
+    progress: financePeriodProgress(period),
+  }), [financeSummary, monthlyAllowance, period]);
 
   const remaining = monthlyAllowance - totalSpent;
   const savingsRate = monthlyAllowance > 0 ? (remaining / monthlyAllowance) * 100 : 0;
@@ -179,14 +185,19 @@ export const SavingsAnalyticsSnapshot: React.FC<Props> = ({ categoryTotals, mont
               }}
             >
               <MaterialCommunityIcons
-                name={(insight.icon || 'lightbulb-outline') as any}
+                name={(insight.tone === 'warning' ? 'alert-outline' : insight.tone === 'success' ? 'check-circle-outline' : 'lightbulb-outline') as any}
                 size={16}
-                color={insight.type === 'warning' ? colors.accent : insight.type === 'achievement' ? colors.primaryLight : colors.primary}
+                color={insight.tone === 'warning' ? colors.accent : insight.tone === 'success' ? colors.primaryLight : colors.primary}
                 style={{ marginTop: 2 }}
               />
-              <Text style={{ flex: 1, fontSize: Typography.fontSize.xs, color: colors.textPrimary, lineHeight: 18 }}>
-                {insight.message}
-              </Text>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textPrimary, lineHeight: 18 }}>
+                  {insight.body}
+                </Text>
+                <Text style={{ fontSize: 10, color: colors.textTertiary, lineHeight: 15 }}>
+                  {insight.caveat}
+                </Text>
+              </View>
             </View>
           ))}
         </View>

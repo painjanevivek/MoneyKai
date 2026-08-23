@@ -4,12 +4,38 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useAiBudgetCoach, useAiProviderStatus } from '@/features/ai/hooks';
 import type { AiBudgetCoachRequest, AiInsightCard } from '@/features/ai/types';
+import type { InsightEvidenceCode } from '@/types/insight';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { isRenderableInsightCard } from '@/types/insight';
+
+type LocalCardDraft = Omit<AiInsightCard, 'caveat' | 'provenance' | 'actions' | 'generatedBy'>;
+
+const completeLocalCard = (
+  card: LocalCardDraft,
+  month: string,
+  evidenceCodes: InsightEvidenceCode[],
+): AiInsightCard => ({
+  ...card,
+  caveat: 'This deterministic guide uses reviewed aggregate inputs and is not personalized financial advice.',
+  provenance: evidenceCodes.map((evidenceCode) => ({
+    source: evidenceCode === 'monthly_allowance'
+      ? 'budget_settings'
+      : evidenceCode === 'period_progress'
+        ? 'deterministic_rule'
+        : 'reviewed_transactions',
+    evidenceCode,
+    period: month,
+    ruleId: `${card.id}.v1`,
+  })),
+  actions: [],
+  generatedBy: 'deterministic',
+});
 
 const buildLocalBudgetCoachCards = ({
   monthlyAllowance,
@@ -17,10 +43,11 @@ const buildLocalBudgetCoachCards = ({
   daysElapsed,
   daysRemaining,
   categoryTotals,
+  month,
 }: AiBudgetCoachRequest): AiInsightCard[] => {
   if (monthlyAllowance <= 0) {
     return [
-      {
+      completeLocalCard({
         id: 'local-budget-start',
         tone: 'info',
         title: 'Set a monthly guardrail',
@@ -28,8 +55,8 @@ const buildLocalBudgetCoachCards = ({
         actionLabel: null,
         metricLabel: 'Budget',
         metricValue: 'Not set',
-      },
-      {
+      }, month, ['monthly_allowance']),
+      completeLocalCard({
         id: 'local-first-records',
         tone: 'info',
         title: 'Add a few reviewed records',
@@ -37,7 +64,7 @@ const buildLocalBudgetCoachCards = ({
         actionLabel: null,
         metricLabel: 'Tracked spend',
         metricValue: formatCurrency(totalSpent),
-      },
+      }, month, ['total_spent']),
     ];
   }
 
@@ -50,7 +77,7 @@ const buildLocalBudgetCoachCards = ({
   const dailyRoom = daysRemaining > 0 ? remaining / daysRemaining : remaining;
   const cards: AiInsightCard[] = [];
 
-  cards.push({
+  cards.push(completeLocalCard({
     id: 'local-budget-pace',
     tone: spendRatio > monthProgress + 0.12 ? 'warning' : 'success',
     title: spendRatio > monthProgress + 0.12 ? 'Spending is ahead of pace' : 'Budget pace looks manageable',
@@ -60,9 +87,9 @@ const buildLocalBudgetCoachCards = ({
     actionLabel: null,
     metricLabel: paceDelta > 0 ? 'Ahead by' : 'Under pace by',
     metricValue: formatCurrency(Math.abs(paceDelta)),
-  });
+  }, month, ['monthly_allowance', 'total_spent', 'period_progress']));
 
-  cards.push({
+  cards.push(completeLocalCard({
     id: 'local-daily-room',
     tone: dailyRoom <= 0 ? 'warning' : 'info',
     title: daysRemaining > 0 ? 'Use a daily spending lane' : 'Month-end review time',
@@ -72,11 +99,11 @@ const buildLocalBudgetCoachCards = ({
     actionLabel: null,
     metricLabel: 'Daily room',
     metricValue: formatCurrency(Math.max(0, dailyRoom)),
-  });
+  }, month, ['monthly_allowance', 'total_spent', 'period_progress']));
 
   if (topCategory) {
     const topCategoryPercentage = topCategory.percentage ?? 0;
-    cards.push({
+    cards.push(completeLocalCard({
       id: 'local-top-category',
       tone: topCategoryPercentage > 45 ? 'warning' : 'info',
       title: `Watch ${topCategory.category}`,
@@ -86,7 +113,7 @@ const buildLocalBudgetCoachCards = ({
       actionLabel: null,
       metricLabel: 'Share',
       metricValue: `${Math.round(topCategoryPercentage)}%`,
-    });
+    }, month, ['category_totals']));
   }
 
   return cards.slice(0, 3);
@@ -130,10 +157,13 @@ export const BudgetCoachPanel: React.FC = () => {
   ]);
   const providerStatus = useAiProviderStatus(true);
   const canUseAiCoach = Boolean(providerStatus.data?.enabled && providerStatus.data.configured);
-  const { data, loading } = useAiBudgetCoach(coachPayload, canUseAiCoach);
+  const ai = useAiBudgetCoach(coachPayload, false);
   const localCards = React.useMemo(() => buildLocalBudgetCoachCards(coachPayload), [coachPayload]);
-  const cards = data?.cards?.length ? data.cards.slice(0, 3) : localCards;
-  const usingAiCoach = Boolean(data?.cards?.length && data.source === 'ai');
+  const aiCards = ai.data?.contractVersion === 'insight.v1' && ai.data.source === 'ai'
+    ? ai.data.cards.filter(isRenderableInsightCard).slice(0, 3)
+    : [];
+  const cards = aiCards.length ? [...localCards.slice(0, 2), ...aiCards.slice(0, 1)] : localCards;
+  const usingAiCoach = aiCards.length > 0;
 
   const iconByTone: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
     info: 'compass-outline',
@@ -157,9 +187,9 @@ export const BudgetCoachPanel: React.FC = () => {
             Practical pacing guidance from your current budget and category mix.
           </Text>
         </View>
-        <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>
-          {loading ? 'Coaching...' : usingAiCoach ? 'AI assisted' : 'Local guide'}
-        </Text>
+        {canUseAiCoach ? (
+          <Button title={usingAiCoach ? 'Refresh AI' : 'Explain with AI'} variant="outline" size="sm" loading={ai.loading} onPress={() => void ai.refresh().catch(() => undefined)} />
+        ) : <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Local guide</Text>}
       </View>
 
       {cards.length ? (
@@ -192,6 +222,9 @@ export const BudgetCoachPanel: React.FC = () => {
                   {card.title}
                 </Text>
               </View>
+              <Text style={{ marginBottom: 5, fontSize: 10, fontFamily: Typography.fontFamily.semiBold, color: colorByTone[card.tone] }}>
+                {card.generatedBy === 'ai' ? 'AI EXPLANATION' : 'DETERMINISTIC RULE'}
+              </Text>
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
                 {card.body}
               </Text>
@@ -200,6 +233,9 @@ export const BudgetCoachPanel: React.FC = () => {
                   {card.metricLabel}: {card.metricValue}
                 </Text>
               ) : null}
+              <Text style={{ marginTop: 8, fontSize: 11, lineHeight: 16, color: colors.textTertiary }}>
+                Caveat: {card.caveat}
+              </Text>
             </View>
           ))}
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>

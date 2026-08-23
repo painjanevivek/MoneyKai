@@ -47,8 +47,10 @@ export interface FinancialDocument {
   passwordMode?: 'user_entered' | 'saved_pattern' | 'not_required';
   pageCount?: number;
   parsedSummary?: FinancialDocumentSummary;
+  aiReviewSummary?: AiDocumentSummaryResponse;
   createdAt: string;
   parsedAt?: string;
+  aiSummarizedAt?: string;
 }
 
 export interface PdfPasswordProfile {
