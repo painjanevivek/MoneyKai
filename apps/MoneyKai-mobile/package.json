@@ -47,7 +47,7 @@
     "@types/react": "~19.2.2",
     "@types/react-native-vector-icons": "^6.4.18",
     "babel-plugin-module-resolver": "^5.0.3",
-    "eslint": "^9.39.4",
+    "eslint": "^10.8.1",
     "reusify": "^1.1.0",
     "run-parallel": "^1.2.0",
     "typescript": "~6.0.3",
