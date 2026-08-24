@@ -53,6 +53,9 @@ jobs:
       - name: Verify the OWASP security baseline
         run: npm run security:check
 
+      - name: Validate deployment configuration contract
+        run: npm run release:deployment-preflight:test && npm run release:deployment-preflight -- --require-sensitive-disabled
+
   behavioural-tests:
     name: API and mobile behaviour tests
     runs-on: ubuntu-latest
