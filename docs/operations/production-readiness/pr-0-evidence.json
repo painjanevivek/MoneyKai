@@ -1,44 +1,64 @@
 {
   "gate": "PR-EG0",
-  "captured_at": "2026-08-24T08:32:06+05:30",
+  "captured_at": "2026-08-24T08:53:58+05:30",
   "status": "pass_with_exception",
   "mobile_modified": false,
   "repositories": {
     "web": {
       "id": "R_kgDOS277AA",
       "owner_id": "MDQ6VXNlcjM0MDM0MjM4",
-      "head": "80f1a630a09f6ca8622ebeb01817e985506c7da9",
-      "remote_head": "80f1a630a09f6ca8622ebeb01817e985506c7da9",
-      "required_check": "App checks",
+      "head": "aeeb72b7d7f1f408e17e7dfb1e39b6d4ddd57579",
+      "remote_head": "aeeb72b7d7f1f408e17e7dfb1e39b6d4ddd57579",
+      "required_checks": [
+        "App checks",
+        "Static analysis and security baseline",
+        "API and mobile behaviour tests"
+      ],
       "branch_protection_enforced_for_admins": true
     },
     "backend": {
       "id": "R_kgDOS3Rg8w",
       "owner_id": "MDQ6VXNlcjM0MDM0MjM4",
-      "head": "13036e98a1efed5459ec51a5f4cf861d99c050af",
-      "remote_head": "13036e98a1efed5459ec51a5f4cf861d99c050af",
+      "head": "dc1ca6b1c473f461ad6b2fdb611d912883f6069b",
+      "remote_head": "dc1ca6b1c473f461ad6b2fdb611d912883f6069b",
       "required_check": "Backend checks",
       "branch_protection_enforced_for_admins": false,
       "compensating_control": "PR-only workflow with manually verified Backend checks",
       "risk_acceptance": "docs/operations/production-readiness/pr-0-risk-acceptance.md"
     }
   },
+  "pull_requests": {
+    "web": {
+      "url": "https://github.com/painjanevivek/MoneyKai/pull/17",
+      "head": "cabe32a49f25d84c7f338a776502f2b4e9bf309f",
+      "merge": "aeeb72b7d7f1f408e17e7dfb1e39b6d4ddd57579",
+      "merged_at": "2026-08-24T03:19:45Z",
+      "checks": "pass"
+    },
+    "backend": {
+      "url": "https://github.com/painjanevivek/MoneyKai-backend/pull/1",
+      "head": "8a9cf9bcae6292bb2c1ae64f0906f34e1e8a76c1",
+      "merge": "dc1ca6b1c473f461ad6b2fdb611d912883f6069b",
+      "merged_at": "2026-08-24T03:19:45Z",
+      "checks": "pass_with_manual_backend_enforcement"
+    }
+  },
   "deployments": {
     "web_production": {
       "project_id": "prj_i7uKxFmYfNMvNYRg5YUdzkxghn81",
-      "deployment_id": "dpl_57FTXm9EtEGcDqKVXxnLczQEUweG",
-      "source": "80f1a63",
-      "health": "pass"
+      "deployment_id": "dpl_32wk2g27hd4cWMkYkHVmWr3b8YQ9",
+      "source": "aeeb72b7d7f1f408e17e7dfb1e39b6d4ddd57579",
+      "health": "pass_landing_and_api_health_200"
     },
     "backend_production": {
       "project_id": "prj_vhX2oHe8ZCirdh0eHAjxQY5jpV85",
-      "deployment_id": "dpl_8bEUHfSqarysYjzEpg4NSZkS94pE",
-      "source": "1275d6d",
-      "health": "fail_404_empty_artifact"
+      "deployment_id": "dpl_8xJmzF1t8SsNbSdEXcvoqrXBmaRQ",
+      "source": "dc1ca6b1c473f461ad6b2fdb611d912883f6069b",
+      "health": "pass_root_health_and_openapi_200"
     },
-    "backend_preview": {
-      "deployment_id": "dpl_58Cm6xRracUaGTVVYL3DsuVDomtA",
-      "health": "pass_authenticated_smoke"
+    "rollback_candidates": {
+      "web": "dpl_57FTXm9EtEGcDqKVXxnLczQEUweG",
+      "backend": "dpl_58Cm6xRracUaGTVVYL3DsuVDomtA"
     }
   },
   "dependency_alerts": {
