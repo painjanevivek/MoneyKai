@@ -11,10 +11,10 @@
   },
   "alert_inventory": {
     "github_open_initial": 54,
-    "github_open_final": 24,
+    "github_open_final": 23,
     "final_by_manifest": {
       "package-lock.json": {
-        "high": 3,
+        "high": 2,
         "moderate": 2
       },
       "apps/MoneyKai-mobile/package-lock.json": {
@@ -24,7 +24,7 @@
     },
     "npm_audit": {
       "critical": 0,
-      "high": 5,
+      "high": 4,
       "moderate": 23,
       "low": 1,
       "policy_violations": 0
@@ -38,13 +38,6 @@
       "id": "PR1-EXPO56-IMAGE-SIZE",
       "severity": "high",
       "scope": "repository-controlled Expo 56 Metro build chain",
-      "review_by": "2026-09-24",
-      "runtime_reachable": false
-    },
-    {
-      "id": "PR1-MOBILE-DEFERRED-SHELL-QUOTE",
-      "severity": "high",
-      "scope": "deferred mobile workspace",
       "review_by": "2026-09-24",
       "runtime_reachable": false
     }
@@ -85,6 +78,11 @@
       "url": "https://github.com/painjanevivek/MoneyKai/pull/32",
       "head": "9ec6322ad9b5d72600cae126a7e7073d723dd4f4",
       "merge": "e7bda66f492101d0ceee8256d3fcb9bbb9044748"
+    },
+    "web_grouped_security_update": {
+      "url": "https://github.com/painjanevivek/MoneyKai/pull/40",
+      "head": "c1057cff841650940b4e23fa484bf6951c4318dd",
+      "merge": "b094975162cdfcba963ebc2dca6bc01b28ba5da4"
     },
     "backend_runtime": {
       "url": "https://github.com/painjanevivek/MoneyKai-backend/pull/2",
