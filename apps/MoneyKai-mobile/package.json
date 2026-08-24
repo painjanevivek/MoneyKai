@@ -20,7 +20,7 @@
     "@sentry/react-native": "^8.2.0",
     "date-fns": "^4.3.0",
     "react": "19.2.3",
-    "react-hook-form": "^7.76.1",
+    "react-hook-form": "^7.85.0",
     "react-native": "0.85.3",
     "react-native-biometrics": "^3.0.1",
     "react-native-contacts": "^8.0.10",
