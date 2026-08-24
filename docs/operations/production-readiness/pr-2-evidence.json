@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "phase": "PR-2",
+  "evidence_gate": "PR-EG2",
+  "captured_at": "2026-08-24T11:14:47+05:30",
+  "status": "blocked_at_account_holder_gate",
+  "scope": {
+    "web": "evidence_only",
+    "backend": "implemented_in_private_repository",
+    "mobile": "deferred_unchanged"
+  },
+  "implementation": {
+    "environment_isolation": "pass",
+    "firebase_admin_fail_closed": "pass",
+    "durable_sensitive_storage": "pass",
+    "distributed_quota_and_idempotency": "pass",
+    "bounded_lifecycle_cleanup": "pass",
+    "ttl_desired_state": "pass",
+    "private_bucket_desired_state": "pass",
+    "bounded_key_rotation": "pass",
+    "production_refusing_staging_gate": "pass"
+  },
+  "validation": {
+    "backend_tests": 291,
+    "python_runtime_known_vulnerabilities": 0,
+    "python_development_known_vulnerabilities": 0,
+    "dependency_lock_drift": "pass",
+    "dependency_license_manifest": "pass",
+    "infrastructure_policy": "pass",
+    "openapi_v1_compatibility": "pass",
+    "synthetic_groups": {
+      "storage": "pass",
+      "coordination": "pass",
+      "cleanup": "pass",
+      "interruption": "pass",
+      "canonical_data": "pass"
+    },
+    "github_backend_checks": "pass",
+    "vercel_preview": "pass"
+  },
+  "pull_request": {
+    "url": "https://github.com/painjanevivek/MoneyKai-backend/pull/11",
+    "head": "5f5615f",
+    "merge": "908cc95bc4f8f37636bc262683e8f962640f9a9d"
+  },
+  "live_staging_gate": {
+    "status": "blocked",
+    "preflight_commit": "908cc95bc4f8f37636bc262683e8f962640f9a9d",
+    "issues": [
+      "production_target_refused",
+      "staging_bucket_required",
+      "staging_coordination_required",
+      "staging_environment_required",
+      "staging_project_confirmation_missing",
+      "staging_write_approval_missing"
+    ],
+    "required_account_holder_actions": [
+      "provide protected staging cloud credentials",
+      "approve billing-affecting storage, Firestore TTL, scheduler, and monitoring configuration",
+      "enter or rotate staging cron and token-encryption secrets in the protected provider store",
+      "confirm the exact staging project and authorize staging writes"
+    ],
+    "unproven_until_resumed": [
+      "live private bucket policy",
+      "live Firestore TTL activation",
+      "live scheduler delivery",
+      "live monitoring success and failure alert routing",
+      "live two-instance backup, restore, interrupted deletion, and zero-residue evidence"
+    ]
+  },
+  "operational_notes": {
+    "backend_visibility": "private",
+    "backend_branch_protection_exception": "accepted_through_2026-09-24",
+    "production_mutations_performed": false,
+    "billing_changes_performed": false,
+    "secrets_recorded": false,
+    "phase_complete": false
+  }
+}
