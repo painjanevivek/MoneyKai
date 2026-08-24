@@ -7,7 +7,14 @@ updates:
       day: monday
       time: "04:17"
       timezone: Asia/Kolkata
-    open-pull-requests-limit: 10
+    # Routine version bumps are handled in planned maintenance windows. Keep
+    # security updates enabled, but collapse them into one reviewable branch.
+    open-pull-requests-limit: 0
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
     labels:
       - dependencies
       - security
