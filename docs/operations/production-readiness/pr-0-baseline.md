@@ -1,6 +1,6 @@
 # PR-0 release-control baseline
 
-**Captured:** 2026-08-24T08:32:06+05:30  
+**Captured:** 2026-08-24T08:53:58+05:30
 **Status:** Passed with time-bounded backend branch-protection exception  
 **Scope:** MoneyKai web and FastAPI backend; mobile/Android unchanged
 
@@ -21,13 +21,13 @@ TTL, bucket policy, and staging isolation therefore remain PR-2 evidence items.
 
 | Surface | Intended source | Remote match | Deployed artifact/source | Health |
 |---|---|---|---|---|
-| Web | `80f1a630a09f6ca8622ebeb01817e985506c7da9` | Yes | `dpl_57FTXm9EtEGcDqKVXxnLczQEUweG`, source `80f1a63` | `moneykai.com` and `/api/health` return 200 |
-| Backend | `13036e98a1efed5459ec51a5f4cf861d99c050af` | Yes | Production `dpl_8bEUHfSqarysYjzEpg4NSZkS94pE`, source `1275d6d` | Production alias returns 404; artifact contains no function |
-| Backend corrected preview | PR-0 working tree | Not committed | `dpl_58Cm6xRracUaGTVVYL3DsuVDomtA` | Protected preview `/` and `/health` pass through authenticated Vercel curl |
+| Web | `aeeb72b7d7f1f408e17e7dfb1e39b6d4ddd57579` | Yes | `dpl_32wk2g27hd4cWMkYkHVmWr3b8YQ9` | `moneykai.com` rendered HTML and `/api/health` return 200 |
+| Backend | `dc1ca6b1c473f461ad6b2fdb611d912883f6069b` | Yes | `dpl_8xJmzF1t8SsNbSdEXcvoqrXBmaRQ` | `/`, `/health`, and `/openapi.json` return 200 |
+| Backend rollback preview | `8a9cf9bcae6292bb2c1ae64f0906f34e1e8a76c1` | Yes | `dpl_58Cm6xRracUaGTVVYL3DsuVDomtA` | Protected preview `/` and `/health` passed through authenticated Vercel curl |
 
 The backend Vercel project framework preset was corrected from `Other` to `FastAPI`.
-The previous value (`null`) is the configuration rollback. The latest working preview is
-the deployment rollback candidate until a reviewed commit is deployed.
+The previous value (`null`) is not a healthy rollback because it creates an empty 404
+artifact. The passing FastAPI preview above remains the tested application rollback.
 
 ## Capability and infrastructure state
 
@@ -52,8 +52,9 @@ the deployment rollback candidate until a reviewed commit is deployed.
 - The production web build separately reported 11 high, 23 moderate, and 1 low npm
   findings from its deployed dependency graph; PR-1 will reconcile the inventories.
 - Dependabot alerts are disabled for the private backend repository.
-- Web `main` CI passed both `App checks` and the PR quality workflows at the baseline hash.
-- Backend `main` CI passed `Backend checks` at the baseline hash.
+- Web PR #17 passed `App checks`, `Static analysis and security baseline`,
+  `API and mobile behaviour tests`, and Vercel preview checks before squash merge.
+- Backend PR #1 passed `Backend checks` and Vercel preview checks before squash merge.
 
 ## Release-control state
 
@@ -77,15 +78,14 @@ the deployment rollback candidate until a reviewed commit is deployed.
 | Tested rollback reference for web and backend | Pass: web production artifact and authenticated working backend preview recorded |
 | Required CI checks enforceable before merge | Web pass; backend accepted exception with mandatory manual PR/check evidence |
 
-`PR-EG0` passes with the founder-owned, time-bounded backend exception. Both repositories
-must still merge PR-0 through pull requests after their required checks pass.
+`PR-EG0` passes with the founder-owned, time-bounded backend exception. Web PR #17 and
+backend PR #1 were merged at `2026-08-24T03:19:45Z` after all hosted checks passed, and
+both resulting production artifacts passed canonical smoke tests.
 
 ## Rollback
 
 - Web: promote `dpl_57FTXm9EtEGcDqKVXxnLczQEUweG` and reset feature variables to the
   recorded disabled profile.
-- Backend framework setting: change Vercel project framework from `fastapi` back to
-  `null` only if the new runtime cannot build; this recreates the known 404 state and is
-  therefore an emergency configuration rollback, not a healthy application rollback.
-- Backend application: after PR-0 is reviewed, retain the last passing FastAPI preview
-  deployment ID before production promotion.
+- Backend: promote the tested FastAPI artifact `dpl_58Cm6xRracUaGTVVYL3DsuVDomtA`.
+- Do not set the backend framework to `null`; that setting is recorded only as the
+  diagnosed cause of the former empty 404 production artifact.
