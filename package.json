@@ -34,6 +34,8 @@
     "brand:assets": "node ./scripts/generate-brand-assets.mjs",
     "launch:check": "node ./scripts/launch-check.mjs",
     "release:handoff-baseline": "node ./scripts/verify-handoff-baseline.mjs",
+    "release:deployment-preflight": "node ./scripts/deployment-preflight.mjs",
+    "release:deployment-preflight:test": "node --test ./scripts/deployment-preflight.test.mjs",
     "seo:generate": "node ./scripts/public-seo.mjs --write",
     "seo:audit": "node ./scripts/public-seo.mjs --audit-dist",
     "seo:geo:audit": "node ./scripts/seo-geo-audit.mjs",

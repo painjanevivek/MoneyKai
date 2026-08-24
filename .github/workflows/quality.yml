@@ -48,5 +48,8 @@ jobs:
       - name: Check web release security
         run: npm run security:check
 
+      - name: Validate deployment configuration contract
+        run: npm run release:deployment-preflight:test && npm run release:deployment-preflight -- --require-sensitive-disabled
+
       - name: SMS production policy tests
         run: npm run mobile:test:capture

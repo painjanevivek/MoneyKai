@@ -1,0 +1,60 @@
+{
+  "gate": "PR-EG0",
+  "captured_at": "2026-08-24T08:32:06+05:30",
+  "status": "pass_with_exception",
+  "mobile_modified": false,
+  "repositories": {
+    "web": {
+      "id": "R_kgDOS277AA",
+      "owner_id": "MDQ6VXNlcjM0MDM0MjM4",
+      "head": "80f1a630a09f6ca8622ebeb01817e985506c7da9",
+      "remote_head": "80f1a630a09f6ca8622ebeb01817e985506c7da9",
+      "required_check": "App checks",
+      "branch_protection_enforced_for_admins": true
+    },
+    "backend": {
+      "id": "R_kgDOS3Rg8w",
+      "owner_id": "MDQ6VXNlcjM0MDM0MjM4",
+      "head": "13036e98a1efed5459ec51a5f4cf861d99c050af",
+      "remote_head": "13036e98a1efed5459ec51a5f4cf861d99c050af",
+      "required_check": "Backend checks",
+      "branch_protection_enforced_for_admins": false,
+      "compensating_control": "PR-only workflow with manually verified Backend checks",
+      "risk_acceptance": "docs/operations/production-readiness/pr-0-risk-acceptance.md"
+    }
+  },
+  "deployments": {
+    "web_production": {
+      "project_id": "prj_i7uKxFmYfNMvNYRg5YUdzkxghn81",
+      "deployment_id": "dpl_57FTXm9EtEGcDqKVXxnLczQEUweG",
+      "source": "80f1a63",
+      "health": "pass"
+    },
+    "backend_production": {
+      "project_id": "prj_vhX2oHe8ZCirdh0eHAjxQY5jpV85",
+      "deployment_id": "dpl_8bEUHfSqarysYjzEpg4NSZkS94pE",
+      "source": "1275d6d",
+      "health": "fail_404_empty_artifact"
+    },
+    "backend_preview": {
+      "deployment_id": "dpl_58Cm6xRracUaGTVVYL3DsuVDomtA",
+      "health": "pass_authenticated_smoke"
+    }
+  },
+  "dependency_alerts": {
+    "web": {"high": 36, "medium": 18},
+    "backend": {"status": "dependabot_disabled"}
+  },
+  "data_baseline": {
+    "status": "not_collected",
+    "reason": "No bounded sanitized production reconciliation identity is available"
+  },
+  "secret_values_recorded": false,
+  "accepted_exception": {
+    "owner": "MoneyKai founder/account holder",
+    "accepted_at": "2026-08-24",
+    "review_by": "2026-09-24",
+    "repository_must_remain_private": true,
+    "removal_condition": "Enable private-repository protection when the account plan supports it"
+  }
+}
