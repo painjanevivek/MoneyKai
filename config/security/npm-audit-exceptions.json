@@ -14,20 +14,6 @@
         "The vulnerable library is absent from the emitted web application bundle.",
         "Every pull request runs clean-install, audit-policy, test, and production-export gates."
       ]
-    },
-    {
-      "id": "PR1-MOBILE-DEFERRED-SHELL-QUOTE",
-      "packages": ["shell-quote"],
-      "scope": "mobile-deferred",
-      "owner": "MoneyKai founder/account holder",
-      "review_by": "2026-09-24",
-      "maximum_severity": "high",
-      "removal_condition": "Remove during the mobile synchronization phase before any mobile release.",
-      "compensating_controls": [
-        "Mobile delivery is explicitly deferred and outside the current production release surface.",
-        "The package is absent from the emitted web application bundle.",
-        "A mobile release remains prohibited until its dependency gate passes."
-      ]
     }
   ]
 }
