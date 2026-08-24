@@ -63,4 +63,7 @@ jobs:
         run: npm ci
 
       - name: Audit production and development dependencies
-        run: node scripts/audit-npm-dependencies.mjs
+        run: npm run security:audit-dependencies:test && npm run security:audit-dependencies
+
+      - name: Verify lockfile and dependency manifest reproducibility
+        run: npm run security:lockfile-drift && npm run security:dependency-manifest:check

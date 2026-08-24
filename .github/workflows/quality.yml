@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify dependency policy and lockfile evidence
+        run: npm run security:lockfile-drift && npm run security:audit-dependencies:test && npm run security:audit-dependencies && npm run security:dependency-manifest:check
+
       - name: Typecheck mobile
         run: npm run mobile:typecheck
 
