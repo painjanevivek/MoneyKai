@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "phase": "PR-1",
+  "evidence_gate": "PR-EG1",
+  "captured_at": "2026-08-24T10:13:37+05:30",
+  "status": "pass_with_time_bounded_exceptions",
+  "scope": {
+    "web": "included",
+    "backend": "included_private_repository",
+    "mobile": "deferred_unchanged"
+  },
+  "alert_inventory": {
+    "github_open_initial": 54,
+    "github_open_final": 24,
+    "final_by_manifest": {
+      "package-lock.json": {
+        "high": 3,
+        "moderate": 2
+      },
+      "apps/MoneyKai-mobile/package-lock.json": {
+        "high": 11,
+        "moderate": 8
+      }
+    },
+    "npm_audit": {
+      "critical": 0,
+      "high": 5,
+      "moderate": 23,
+      "low": 1,
+      "policy_violations": 0
+    },
+    "backend_runtime_pip_audit_known_vulnerabilities": 0,
+    "backend_development_pip_audit_known_vulnerabilities": 0,
+    "github_alerts_dismissed": 0
+  },
+  "exceptions": [
+    {
+      "id": "PR1-EXPO56-IMAGE-SIZE",
+      "severity": "high",
+      "scope": "repository-controlled Expo 56 Metro build chain",
+      "review_by": "2026-09-24",
+      "runtime_reachable": false
+    },
+    {
+      "id": "PR1-MOBILE-DEFERRED-SHELL-QUOTE",
+      "severity": "high",
+      "scope": "deferred mobile workspace",
+      "review_by": "2026-09-24",
+      "runtime_reachable": false
+    }
+  ],
+  "reproducibility": {
+    "npm_lockfile_drift": "pass",
+    "python_lockfile_drift": "pass",
+    "npm_dependency_license_manifest_packages": 1436,
+    "python_dependency_license_manifest_packages": 84,
+    "unknown_licenses": 0
+  },
+  "validation": {
+    "web_typecheck": "pass",
+    "web_unit_tests": 102,
+    "api_tests": 43,
+    "backend_tests": 263,
+    "backend_cross_platform_lock_tests": 2,
+    "production_web_export": "pass",
+    "seo_csp_owasp": "pass",
+    "production_browser_smoke": {
+      "base_url": "https://moneykai.com",
+      "routes": [
+        "/",
+        "/features",
+        "/api/health"
+      ],
+      "console_errors": 0,
+      "status": "pass"
+    }
+  },
+  "pull_requests": {
+    "web_security_and_automation": {
+      "url": "https://github.com/painjanevivek/MoneyKai/pull/19",
+      "head": "2a624b6f2c1ca05eaf501a2528c56acaf04f693d",
+      "merge": "2d1b615bcb0e3b8136997beabfe27ed50f672b64"
+    },
+    "web_lock_and_dependabot_closure": {
+      "url": "https://github.com/painjanevivek/MoneyKai/pull/32",
+      "head": "9ec6322ad9b5d72600cae126a7e7073d723dd4f4",
+      "merge": "e7bda66f492101d0ceee8256d3fcb9bbb9044748"
+    },
+    "backend_runtime": {
+      "url": "https://github.com/painjanevivek/MoneyKai-backend/pull/2",
+      "head": "cc475be28a7bc961b1ab2ad1b5e0ee82060d5ca6",
+      "merge": "572c67767c4a7434602bf82ad9b3d9fe514736fc"
+    },
+    "backend_tooling": {
+      "url": "https://github.com/painjanevivek/MoneyKai-backend/pull/3",
+      "head": "d71e7ebc00bdc10ac868315edb1f925f458f8edd",
+      "merge": "6cc3c2e140b24993766f40165bbf15b4fde82617"
+    },
+    "backend_automation": {
+      "url": "https://github.com/painjanevivek/MoneyKai-backend/pull/4",
+      "head": "a3808ff4129bc9b4afedf4aa446869c24e941617",
+      "merge": "87fc6d075bc27cdc9c1c9251994caadf79cdbae2"
+    },
+    "backend_dependabot_grouping": {
+      "url": "https://github.com/painjanevivek/MoneyKai-backend/pull/9",
+      "head": "5cd8a1736e917b26f4cb4b019903dcad534a7c4b",
+      "merge": "1ba3d69a7085bec61d7d0f57a73cb2081f47dc90"
+    },
+    "backend_cross_platform_lock_check": {
+      "url": "https://github.com/painjanevivek/MoneyKai-backend/pull/10",
+      "head": "d0fd4e5f1026e708981c7f593f689e3dee4a1e76",
+      "merge": "084d79ebb12d45fb8e2fdd781d61fff0f25a64a4"
+    }
+  },
+  "deployments": {
+    "web": {
+      "id": "dpl_5geUfgs9BuTYt2bwuY6xNgxjTVNm",
+      "status": "ready"
+    },
+    "backend": {
+      "id": "dpl_A6cLUJaGcRcFaZobzDzGnShmY4gm",
+      "url": "https://money-kai-backend.vercel.app",
+      "status": "ready"
+    }
+  },
+  "operational_notes": {
+    "backend_visibility": "private",
+    "backend_branch_protection_exception": "accepted_through_2026-09-24",
+    "mandatory_ci": "pass",
+    "auxiliary_preview_status": "account_rate_limited_after_successful_runtime_deployments",
+    "dependabot_routine_updates": "maintenance_windowed",
+    "dependabot_security_updates": "enabled_and_grouped"
+  }
+}
