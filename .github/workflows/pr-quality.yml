@@ -47,8 +47,11 @@ jobs:
       - name: Type-check mobile and web apps
         run: npm run typecheck
 
-      - name: Verify web API mirrors
-        run: npm run web:api-mirrors:check
+      - name: Verify canonical API boundary
+        run: npm run web:api-boundary:check
+
+      - name: Verify generated API client contract
+        run: npm run api-client:check
 
       - name: Verify the OWASP security baseline
         run: npm run security:check

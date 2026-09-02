@@ -1,8 +1,7 @@
-const SERVICE_NAME = 'MoneyKai Backend';
+const SERVICE_NAME = 'MoneyKai Web Edge';
 const HEALTH_ENDPOINTS = [
   '/api/health',
-  '/api/v1/auth/google/setup-status',
-  '/api/v1/auth/google/start',
+  '/api/monitoring',
 ];
 
 const getHealthPayload = () => ({
@@ -121,7 +120,7 @@ const renderHealthHtml = (payload) => {
   <main>
     <div class="status"><span class="dot"></span>${escapeHtml(payload.status)}</div>
     <h1>${escapeHtml(payload.service)}</h1>
-    <p>The backend is reachable. Use the endpoints below for machine-readable health and auth setup checks.</p>
+    <p>The public web edge is reachable. Product API health is reported by the canonical FastAPI deployment.</p>
     <dl>
       <dt>Checked</dt>
       <dd>${escapeHtml(payload.timestamp)}</dd>

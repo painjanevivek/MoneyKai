@@ -12,6 +12,7 @@ const release =
 const required = ['SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT'];
 const missing = required.filter((key) => !process.env[key]);
 const keepPublicSourceMaps = process.env.MONEYKAI_KEEP_PUBLIC_SOURCE_MAPS === 'true';
+const stripOnly = process.argv.includes('--strip-only');
 
 const log = (message) => console.log(`[sentry-sourcemaps] ${message}`);
 
@@ -58,6 +59,12 @@ walk(distDir);
 
 if (!mapFiles.length) {
   log('Skipping upload; no .map files were emitted by the web build.');
+  process.exit(0);
+}
+
+if (stripOnly) {
+  deletePublicSourceMaps();
+  log('Strip-only mode completed without contacting Sentry.');
   process.exit(0);
 }
 

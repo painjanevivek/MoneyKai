@@ -39,8 +39,11 @@ jobs:
       - name: Lint web
         run: npm run web:lint
 
-      - name: Check Vercel API mirrors
-        run: npm run web:api-mirrors:check
+      - name: Check canonical API boundary
+        run: npm run web:api-boundary:check
+
+      - name: Check generated API client contract
+        run: npm run api-client:check
 
       - name: Test Vercel API handlers
         run: npm run api:test

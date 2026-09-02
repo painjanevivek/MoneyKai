@@ -1,4 +1,5 @@
 import type { GuardedInsightCard, InsightTone } from '@/types/insight';
+import type { AiPolicyAcknowledgement as GeneratedAiPolicyAcknowledgement } from '@moneykai/api-client';
 
 export type AiChatTask = 'general_chat' | 'transaction_insights' | 'budget_coach' | 'portfolio_explainer';
 export type AiAttachmentAnalyzeTask = 'receipt_extract' | 'image_analysis';
@@ -10,11 +11,14 @@ export interface AiChatMessage {
   content: string;
 }
 
+export type AiPolicyAcknowledgement = GeneratedAiPolicyAcknowledgement;
+
 export interface AiChatRequest {
   task?: AiChatTask;
   messages: AiChatMessage[];
   context?: Record<string, unknown>;
   model?: string;
+  aiPolicy: AiPolicyAcknowledgement;
 }
 
 export interface AiUsage {
@@ -140,6 +144,7 @@ export interface AiAttachmentAnalyzeRequest {
   inlineAttachments?: AiInlineAttachment[];
   task?: AiAttachmentAnalyzeTask;
   context?: Record<string, unknown>;
+  aiPolicy: AiPolicyAcknowledgement;
 }
 
 export interface AiAttachmentFileAnalyzeRequest {
@@ -171,6 +176,7 @@ export interface AiDocumentSummarizeRequest {
   summaryType?: AiDocumentSummaryType;
   userConsent: boolean;
   password?: string;
+  aiPolicy: AiPolicyAcknowledgement;
 }
 
 export interface AiDocumentDetectedFields {
@@ -208,6 +214,7 @@ export interface AiTransactionInsightsRequest {
   previousMonthSpent?: number | null;
   previousMonthCategoryTotals?: AiCategoryTotalInput[];
   context?: Record<string, unknown>;
+  aiPolicy: AiPolicyAcknowledgement;
 }
 
 export interface AiTransactionInsightsResponse {
@@ -231,6 +238,7 @@ export interface AiBudgetCoachRequest {
   emergencyMode?: boolean;
   targetSavings?: number | null;
   context?: Record<string, unknown>;
+  aiPolicy: AiPolicyAcknowledgement;
 }
 
 export interface AiBudgetCoachResponse {

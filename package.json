@@ -4,6 +4,7 @@
   "workspaces": [
     "apps/MoneyKai-mobile",
     "apps/MoneyKai-web",
+    "packages/api-client",
     "packages/domain"
   ],
   "scripts": {
@@ -23,10 +24,12 @@
     "mobile:release:android:verify": "npm --prefix apps/MoneyKai-mobile run android:verify:release-permissions --",
     "web:start": "npm --prefix apps/MoneyKai-web run start",
     "web:lint": "npm --prefix apps/MoneyKai-web run lint",
-    "web:api-mirrors:check": "node ./scripts/check-web-api-mirrors.mjs",
+    "web:api-boundary:check": "node ./scripts/verify-canonical-api-boundary.mjs",
     "web:authority-rules:check": "node ./scripts/verify-firestore-authority-rules.mjs",
     "web:typecheck": "npm --prefix apps/MoneyKai-web run typecheck",
     "web:build": "npm --prefix apps/MoneyKai-web run build",
+    "api-client:generate": "openapi-typescript ./contracts/openapi/v1.json --output ./packages/api-client/src/schema.d.ts --alphabetize --immutable --export-type --read-write-markers",
+    "api-client:check": "npm run api-client:generate -- --check && npm --prefix packages/api-client run typecheck",
     "lint": "npm run mobile:lint && npm run web:lint",
     "typecheck": "npm run mobile:typecheck && npm run web:typecheck",
     "build": "npm run web:build",
@@ -61,7 +64,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",
-    "cypress": "^15.17.0"
+    "browserslist": "4.28.8",
+    "cypress": "^15.17.0",
+    "openapi-typescript": "7.13.0"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0"
@@ -72,6 +77,7 @@
     },
     "@grpc/proto-loader": {
       "protobufjs": "7.6.5"
-    }
+    },
+    "browserslist": "4.28.8"
   }
 }

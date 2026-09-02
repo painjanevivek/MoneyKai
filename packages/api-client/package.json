@@ -1,0 +1,21 @@
+{
+  "name": "@moneykai/api-client",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generated, runtime-free TypeScript contract for the canonical MoneyKai FastAPI v1 API.",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}
