@@ -47,31 +47,7 @@ const getSessionStorage = (): Storage | null => {
   }
 };
 
-const withApiPrefix = (path: string): string =>
-  path.startsWith('/api/') ? path : `/api${path}`;
-
-const getRuntimeOrigin = (): string =>
-  typeof window === 'undefined' ? '' : window.location.origin;
-
-const appendUnique = (values: string[], value: string) => {
-  if (value && !values.includes(value)) {
-    values.push(value);
-  }
-};
-
-const getAuthGatewayUrls = (path: string): string[] => {
-  const urls: string[] = [];
-  const runtimeOrigin = getRuntimeOrigin();
-
-  if (runtimeOrigin) {
-    appendUnique(urls, `${runtimeOrigin}${withApiPrefix(path)}`);
-  }
-
-  appendUnique(urls, `${backendBaseUrl}${path}`);
-  appendUnique(urls, `${backendBaseUrl}${withApiPrefix(path)}`);
-
-  return urls;
-};
+const getAuthGatewayUrl = (path: string): string => `${backendBaseUrl}${path}`;
 
 const readMessage = (value: unknown): string | null => {
   if (typeof value === 'string' && value.trim()) {
@@ -141,48 +117,26 @@ const requestAuthGateway = async <T,>(path: string, payload: object): Promise<T>
     },
     body: JSON.stringify(payload),
   };
-  const urls = getAuthGatewayUrls(path);
-  let lastResponse: Response | null = null;
-  let lastNetworkError: unknown = null;
-  let lastGatewayError: AuthGatewayError | null = null;
-
-  for (const url of urls) {
-    try {
-      const response = await fetchAuthGateway(url, requestInit);
-      lastResponse = response;
-
-      if (response.ok) {
-        const payload = await parseSuccessResponse<T>(response);
-        if (payload) {
-          return payload;
-        }
-        lastGatewayError = new AuthGatewayError(AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE, 502);
-        continue;
-      }
-
-      if (![404, 405].includes(response.status)) {
-        break;
-      }
-    } catch (error) {
-      lastNetworkError = error;
-    }
+  let response: Response;
+  try {
+    response = await fetchAuthGateway(getAuthGatewayUrl(path), requestInit);
+  } catch (error) {
+    throw new AuthGatewayError(
+      error instanceof Error ? error.message : 'Authentication service is unreachable.',
+      0,
+    );
   }
 
-  if (lastGatewayError) {
-    throw lastGatewayError;
+  if (!response.ok) {
+    const message = await parseErrorMessage(response, `Authentication request failed with ${response.status}.`);
+    throw new AuthGatewayError(message, response.status);
   }
 
-  if (lastResponse) {
-    const message = await parseErrorMessage(lastResponse, `Authentication request failed with ${lastResponse.status}.`);
-    throw new AuthGatewayError(message, lastResponse.status);
+  const responsePayload = await parseSuccessResponse<T>(response);
+  if (!responsePayload) {
+    throw new AuthGatewayError(AUTH_GATEWAY_INVALID_RESPONSE_MESSAGE, 502);
   }
-
-  throw new AuthGatewayError(
-    lastNetworkError instanceof Error
-      ? lastNetworkError.message
-      : 'Authentication service is unreachable.',
-    0,
-  );
+  return responsePayload;
 };
 
 const signInWithGatewayToken = async (response: AuthGatewayResponse): Promise<UserCredential> => {

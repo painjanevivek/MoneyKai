@@ -1,4 +1,4 @@
-# The frontend deploy is a static Expo export. Runtime feature APIs live on the
-# MoneyKai backend, so do not package duplicate v1 API entrypoints here. Google
-# OAuth fallback routes are dispatched by api/auth-google.js.
+# The frontend deploy is a static Expo export. Runtime feature APIs, including
+# Google OAuth, live on the canonical private FastAPI backend. Do not package
+# duplicate v1 API entrypoints in the web deployment.
 api/v1/**
