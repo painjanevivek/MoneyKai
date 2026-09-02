@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { backendApi } from './backendApi';
+import { backendApi, BackendApiError } from './backendApi';
 
 vi.mock('@/config/environment', () => ({ getBackendBaseUrl: () => 'https://backend.example.test' }));
 vi.mock('./firebase', () => ({
@@ -46,6 +46,35 @@ describe('backend API authority headers', () => {
     expect(readHeaders.get('Idempotency-Key')).toBeNull();
     expect(mutationHeaders.get('X-Correlation-Id')).toBeTruthy();
     expect(mutationHeaders.get('Idempotency-Key')).toBeTruthy();
+  });
+
+  it('preserves canonical error codes and request ids from the API envelope', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'The request did not satisfy the API contract.',
+              requestId: 'request-from-body',
+            },
+            detail: [],
+          }),
+          { status: 422, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+
+    const request = backendApi.getCapabilities();
+
+    await expect(request).rejects.toBeInstanceOf(BackendApiError);
+    await expect(request).rejects.toMatchObject({
+      status: 422,
+      code: 'VALIDATION_ERROR',
+      correlationId: 'request-from-body',
+      message: 'The request did not satisfy the API contract.',
+    });
   });
 
   it('preserves a caller-supplied idempotency key for operation retries', async () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { type ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import SurfaceState from './SurfaceState';
+import { SurfaceState } from './SurfaceState';
 
 interface EmptyStateProps {
   icon?: keyof typeof MaterialCommunityIcons.glyphMap;

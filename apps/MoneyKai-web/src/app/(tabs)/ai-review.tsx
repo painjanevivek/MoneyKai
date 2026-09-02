@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { ProgressFlow } from '@/components/ui/ProgressFlow';
 import { AiModelConsole } from '@/components/ai/AiModelConsole';
+import { AiConsentPrompt } from '@/components/ai/AiConsentPrompt';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import {
@@ -21,6 +22,7 @@ import {
   useAiAttachmentFileAnalysis,
   useAiProviderStatus,
 } from '@/features/ai/hooks';
+import { useAiPolicyConsent } from '@/features/ai/consent';
 import { formatAiResponseText, withPlainTextAiStyle } from '@/features/ai/responseText';
 import type { AiAttachmentAnalyzeTask } from '@/features/ai/types';
 import { useStagedProgress, type ProgressFlowStep } from '@/hooks/useStagedProgress';
@@ -115,6 +117,7 @@ export default function AiReviewScreen() {
   const canLoadAiStatus = !isHydratingSession && isAuthenticated;
   const { data: providerStatus, error: providerError, loading: loadingProviderStatus } = useAiProviderStatus(canLoadAiStatus);
   const analyzeState = useAiAttachmentFileAnalysis();
+  const aiConsent = useAiPolicyConsent();
   const analysisProgress = useStagedProgress({ steps: AI_REVIEW_PROGRESS_STEPS });
 
   const attachmentsReady = Boolean(
@@ -125,7 +128,7 @@ export default function AiReviewScreen() {
   );
   const analysisPending = analyzeState.loading;
   const analysisError = analyzeState.error;
-  const canAnalyze = Boolean(selectedAsset) && attachmentsReady && !requiresSignIn && !analysisPending;
+  const canAnalyze = Boolean(selectedAsset) && attachmentsReady && aiConsent.accepted && !requiresSignIn && !analysisPending;
   const deskWide = width >= 1180;
   const deskCompact = width < 760;
   const deskColors = colors;
@@ -339,7 +342,7 @@ export default function AiReviewScreen() {
   };
 
   const analyzeSelectedAsset = async () => {
-    if (!selectedAsset) {
+    if (!selectedAsset || !aiConsent.acknowledgement) {
       return;
     }
 
@@ -361,6 +364,7 @@ export default function AiReviewScreen() {
             surface: 'web_ai_review',
             filename: selectedAsset.filename,
           },
+          aiPolicy: aiConsent.acknowledgement,
         },
       });
 
@@ -694,6 +698,10 @@ export default function AiReviewScreen() {
               style={{ marginBottom: 0 }}
             />
 
+            {attachmentsReady && !requiresSignIn && !aiConsent.accepted ? (
+              <AiConsentPrompt onAccept={aiConsent.accept} compact />
+            ) : null}
+
             <Button
               title="Analyze for review"
               icon="brain"
@@ -704,7 +712,7 @@ export default function AiReviewScreen() {
             <ProgressFlow
               activeStepIndex={analysisProgress.activeStepIndex}
               errorMessage={analysisError}
-              onRetry={selectedAsset && attachmentsReady && !requiresSignIn ? analyzeSelectedAsset : undefined}
+              onRetry={selectedAsset && attachmentsReady && aiConsent.accepted && !requiresSignIn ? analyzeSelectedAsset : undefined}
               progress={analysisProgress.progress}
               retryLabel="Try analysis again"
               status={analysisProgress.status}

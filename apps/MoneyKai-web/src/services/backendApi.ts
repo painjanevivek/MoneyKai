@@ -7,6 +7,7 @@ import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { CapabilityStatusResponse } from '@/types/capabilities';
 import type { LinkedAccount } from '@moneykai/domain';
+import type { ApiErrorEnvelope } from '@moneykai/api-client';
 import type {
   AiAttachmentAnalyzeRequest,
   AiAttachmentAnalyzeResponse,
@@ -111,6 +112,7 @@ class BackendApiError extends Error {
     message: string,
     public status: number,
     public correlationId?: string,
+    public code?: string,
   ) {
     super(message);
     this.name = 'BackendApiError';
@@ -138,19 +140,33 @@ const messageFromPayload = (payload: any, fallback: string): string => {
   );
 };
 
-const parseErrorMessage = async (response: Response, fallback: string): Promise<string> => {
+interface ParsedBackendError {
+  message: string;
+  code?: string;
+  requestId?: string;
+}
+
+const parseErrorPayload = async (response: Response, fallback: string): Promise<ParsedBackendError> => {
   const text = await response.text().catch(() => '');
   if (!text) {
-    return fallback;
+    return { message: fallback };
   }
 
   try {
-    return messageFromPayload(JSON.parse(text), fallback);
+    const payload = JSON.parse(text) as Partial<ApiErrorEnvelope> & Record<string, any>;
+    return {
+      message: messageFromPayload(payload, fallback),
+      code: typeof payload.error?.code === 'string' ? payload.error.code : undefined,
+      requestId: typeof payload.error?.requestId === 'string' ? payload.error.requestId : undefined,
+    };
   } catch {
     if (response.status === 404 && /NOT_FOUND|The page could not be found/i.test(text)) {
-      return 'MoneyKai backend route was not found. Check EXPO_PUBLIC_BACKEND_BASE_URL and deploy the backend API that includes this feature.';
+      return {
+        message: 'MoneyKai backend route was not found. Check EXPO_PUBLIC_BACKEND_BASE_URL and deploy the backend API that includes this feature.',
+        code: 'NOT_FOUND',
+      };
     }
-    return text;
+    return { message: text };
   }
 };
 
@@ -182,8 +198,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
 
   if (!response.ok) {
-    const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
-    throw new BackendApiError(message, response.status, response.headers.get('X-Correlation-Id') ?? undefined);
+    const error = await parseErrorPayload(response, `Backend request failed with ${response.status}.`);
+    throw new BackendApiError(
+      error.message,
+      response.status,
+      response.headers.get('X-Correlation-Id') ?? error.requestId,
+      error.code,
+    );
   }
 
   return (await response.json()) as T;
@@ -213,8 +234,13 @@ async function streamRequest<TCompleted extends AiChatStreamCompletedEvent>(
   });
 
   if (!response.ok) {
-    const message = await parseErrorMessage(response, `Backend request failed with ${response.status}.`);
-    throw new BackendApiError(message, response.status, response.headers.get('X-Correlation-Id') ?? undefined);
+    const error = await parseErrorPayload(response, `Backend request failed with ${response.status}.`);
+    throw new BackendApiError(
+      error.message,
+      response.status,
+      response.headers.get('X-Correlation-Id') ?? error.requestId,
+      error.code,
+    );
   }
 
   if (!response.body) {

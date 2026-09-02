@@ -5,9 +5,11 @@ import { router } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { AiConsentPrompt } from '@/components/ai/AiConsentPrompt';
 import { useReportingMonth } from '@/components/layout/ReportingMonthContext';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { useAiProviderStatus, useAiTransactionInsights } from '@/features/ai/hooks';
+import { useAiPolicyConsent } from '@/features/ai/consent';
 import type { AiInsightCard, AiTransactionInsightsRequest } from '@/features/ai/types';
 import { useTheme } from '@/hooks/useTheme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -31,6 +33,7 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ showFooterLink = true, s
   const settings = useBudgetStore((state) => state.settings);
   const { selectedMonthDate } = useReportingMonth();
   const [expanded, setExpanded] = React.useState(false);
+  const aiConsent = useAiPolicyConsent();
 
   const { period, current, previous, progress } = React.useMemo(() => {
     const selectedPeriod = monthFinancePeriod(selectedMonthDate);
@@ -50,7 +53,7 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ showFooterLink = true, s
     progress,
   }), [current, period, previous, progress, settings.monthly_allowance]);
 
-  const aiPayload = React.useMemo<AiTransactionInsightsRequest | null>(() => current.count > 0 ? ({
+  const aiPayload = React.useMemo<AiTransactionInsightsRequest | null>(() => current.count > 0 && aiConsent.acknowledgement ? ({
     month: period.startDate.slice(0, 7),
     currency: 'INR',
     totalSpent: current.expense,
@@ -59,11 +62,13 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ showFooterLink = true, s
     previousMonthSpent: previous.expense,
     previousMonthCategoryTotals: previous.categories.slice(0, 8),
     context: { surface },
-  }) : null, [current, period.startDate, previous, surface]);
+    aiPolicy: aiConsent.acknowledgement,
+  }) : null, [aiConsent.acknowledgement, current, period.startDate, previous, surface]);
 
   const providerStatus = useAiProviderStatus(true);
   const ai = useAiTransactionInsights(aiPayload, false);
-  const canEnhance = Boolean(aiPayload && providerStatus.data?.enabled && providerStatus.data.configured);
+  const providerCanEnhance = Boolean(current.count > 0 && providerStatus.data?.enabled && providerStatus.data.configured);
+  const canEnhance = Boolean(aiPayload && providerCanEnhance);
   const guardedAiCards = ai.data?.contractVersion === 'insight.v1' && ai.data.source === 'ai'
     ? ai.data.cards.filter((card) => isRenderableInsightCard(card) && isEnglishFacingCard(card))
     : [];
@@ -106,6 +111,10 @@ export const AIInsights: React.FC<AIInsightsProps> = ({ showFooterLink = true, s
           <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textTertiary }}>LOCAL RULES</Text>
         )}
       </View>
+
+      {providerCanEnhance && !aiConsent.accepted ? (
+        <AiConsentPrompt onAccept={aiConsent.accept} compact />
+      ) : null}
 
       {ai.error ? (
         <Text accessibilityRole="alert" style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.warning }}>

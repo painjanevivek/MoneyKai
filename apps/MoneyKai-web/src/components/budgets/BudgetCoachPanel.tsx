@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useAiBudgetCoach, useAiProviderStatus } from '@/features/ai/hooks';
+import { useAiPolicyConsent } from '@/features/ai/consent';
 import type { AiBudgetCoachRequest, AiInsightCard } from '@/features/ai/types';
 import type { InsightEvidenceCode } from '@/types/insight';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
@@ -11,10 +12,12 @@ import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { AiConsentPrompt } from '@/components/ai/AiConsentPrompt';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { isRenderableInsightCard } from '@/types/insight';
 
 type LocalCardDraft = Omit<AiInsightCard, 'caveat' | 'provenance' | 'actions' | 'generatedBy'>;
+type BudgetCoachInputs = Omit<AiBudgetCoachRequest, 'aiPolicy'>;
 
 const completeLocalCard = (
   card: LocalCardDraft,
@@ -44,7 +47,7 @@ const buildLocalBudgetCoachCards = ({
   daysRemaining,
   categoryTotals,
   month,
-}: AiBudgetCoachRequest): AiInsightCard[] => {
+}: BudgetCoachInputs): AiInsightCard[] => {
   if (monthlyAllowance <= 0) {
     return [
       completeLocalCard({
@@ -124,13 +127,14 @@ export const BudgetCoachPanel: React.FC = () => {
   const { settings } = useBudgetStore();
   const totalSpent = useTransactionStore((s) => s.getTotalSpent());
   const categoryTotals = useTransactionStore((s) => s.getCategoryTotals());
+  const aiConsent = useAiPolicyConsent();
 
   const now = new Date();
   const month = now.toISOString().slice(0, 7);
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const daysElapsed = Math.min(now.getDate(), daysInMonth);
   const daysRemaining = Math.max(daysInMonth - daysElapsed, 0);
-  const coachPayload = React.useMemo<AiBudgetCoachRequest>(() => ({
+  const coachPayload = React.useMemo<BudgetCoachInputs>(() => ({
     month,
     currency: settings.currency || 'INR',
     monthlyAllowance: settings.monthly_allowance,
@@ -155,9 +159,14 @@ export const BudgetCoachPanel: React.FC = () => {
     settings.monthly_allowance,
     totalSpent,
   ]);
+  const aiPayload = React.useMemo<AiBudgetCoachRequest | null>(
+    () => aiConsent.acknowledgement ? { ...coachPayload, aiPolicy: aiConsent.acknowledgement } : null,
+    [aiConsent.acknowledgement, coachPayload],
+  );
   const providerStatus = useAiProviderStatus(true);
-  const canUseAiCoach = Boolean(providerStatus.data?.enabled && providerStatus.data.configured);
-  const ai = useAiBudgetCoach(coachPayload, false);
+  const providerCanUseAiCoach = Boolean(providerStatus.data?.enabled && providerStatus.data.configured);
+  const canUseAiCoach = Boolean(providerCanUseAiCoach && aiPayload);
+  const ai = useAiBudgetCoach(aiPayload, false);
   const localCards = React.useMemo(() => buildLocalBudgetCoachCards(coachPayload), [coachPayload]);
   const aiCards = ai.data?.contractVersion === 'insight.v1' && ai.data.source === 'ai'
     ? ai.data.cards.filter(isRenderableInsightCard).slice(0, 3)
@@ -191,6 +200,12 @@ export const BudgetCoachPanel: React.FC = () => {
           <Button title={usingAiCoach ? 'Refresh AI' : 'Explain with AI'} variant="outline" size="sm" loading={ai.loading} onPress={() => void ai.refresh().catch(() => undefined)} />
         ) : <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary }}>Local guide</Text>}
       </View>
+
+      {providerCanUseAiCoach && !aiConsent.accepted ? (
+        <View style={{ marginBottom: Spacing.md }}>
+          <AiConsentPrompt onAccept={aiConsent.accept} compact />
+        </View>
+      ) : null}
 
       {cards.length ? (
         <View style={{ gap: Spacing.sm }}>

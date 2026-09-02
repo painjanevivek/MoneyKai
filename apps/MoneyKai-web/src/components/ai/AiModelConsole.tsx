@@ -3,8 +3,10 @@ import { Text, View, type ViewStyle } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { AiConsentPrompt } from '@/components/ai/AiConsentPrompt';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useAiChat } from '@/features/ai/hooks';
+import { useAiPolicyConsent } from '@/features/ai/consent';
 import { formatAiResponseText, withPlainTextAiStyle } from '@/features/ai/responseText';
 import type { AiProviderStatus } from '@/features/ai/types';
 import { useTheme } from '@/hooks/useTheme';
@@ -21,11 +23,12 @@ export function AiModelConsole({ containerStyle, providerStatus, requiresSignIn 
 
   const backendReady = Boolean(providerStatus?.enabled && providerStatus.configured);
   const chat = useAiChat();
-  const canAsk = backendReady && !requiresSignIn && prompt.trim().length > 0 && !chat.loading;
+  const aiConsent = useAiPolicyConsent();
+  const canAsk = backendReady && aiConsent.accepted && !requiresSignIn && prompt.trim().length > 0 && !chat.loading;
 
   const handleAsk = async () => {
     const message = prompt.trim();
-    if (!message) {
+    if (!message || !aiConsent.acknowledgement) {
       return;
     }
 
@@ -36,6 +39,7 @@ export function AiModelConsole({ containerStyle, providerStatus, requiresSignIn 
         context: {
           surface: 'web_ai_model_console',
         },
+        aiPolicy: aiConsent.acknowledgement,
       });
     } catch {
       // The hook stores the user-facing error state.
@@ -61,6 +65,10 @@ export function AiModelConsole({ containerStyle, providerStatus, requiresSignIn 
         numberOfLines={3}
         autoCapitalize="sentences"
       />
+
+      {backendReady && !requiresSignIn && !aiConsent.accepted ? (
+        <AiConsentPrompt onAccept={aiConsent.accept} compact />
+      ) : null}
 
       <Button
         title="Ask AI"

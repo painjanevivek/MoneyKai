@@ -3,8 +3,10 @@ import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Card } from '@/components/ui/Card';
+import { AiConsentPrompt } from '@/components/ai/AiConsentPrompt';
 import { Spacing, Typography, BorderRadius } from '@/constants/theme';
 import { useAiStreamingChat } from '@/features/ai/hooks';
+import { useAiPolicyConsent } from '@/features/ai/consent';
 import { formatAiResponseText, withPlainTextAiStyle } from '@/features/ai/responseText';
 import type { AiChatMessage } from '@/features/ai/types';
 import { useTheme } from '@/hooks/useTheme';
@@ -20,6 +22,7 @@ export const AiAssistantPanel: React.FC = () => {
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const { send, cancel, loading, error, partialMessage, aborted } = useAiStreamingChat();
+  const aiConsent = useAiPolicyConsent();
 
   const context = useMemo(
     () => ({
@@ -40,7 +43,7 @@ export const AiAssistantPanel: React.FC = () => {
 
   const submit = async () => {
     const content = draft.trim();
-    if (!content || loading) {
+    if (!content || loading || !aiConsent.acknowledgement) {
       return;
     }
 
@@ -57,6 +60,7 @@ export const AiAssistantPanel: React.FC = () => {
             : message
         )),
         context,
+        aiPolicy: aiConsent.acknowledgement,
       });
       setMessages((current) => [...current, { role: 'assistant', content: response.message }]);
     } catch {
@@ -146,6 +150,8 @@ export const AiAssistantPanel: React.FC = () => {
         </Text>
       )}
 
+      {!aiConsent.accepted ? <AiConsentPrompt onAccept={aiConsent.accept} compact /> : null}
+
       <View
         style={{
           borderRadius: BorderRadius.lg,
@@ -175,7 +181,7 @@ export const AiAssistantPanel: React.FC = () => {
           </Text>
           <TouchableOpacity
             onPress={loading ? cancel : submit}
-            disabled={!loading && !draft.trim()}
+            disabled={!loading && (!draft.trim() || !aiConsent.accepted)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
