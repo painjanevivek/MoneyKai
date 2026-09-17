@@ -12,6 +12,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
+import { isDiagnosticsUploadEnabled } from '@/config/environment';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
 import { captureDiagnosticEvent, captureException, configureDiagnosticsContext } from '@/services/diagnosticsService';
 import { installDiagnosticsUploadSink } from '@/services/diagnosticsUploadService';
@@ -132,7 +133,9 @@ export default function RootLayout() {
       platform: Platform.OS,
       appVersion: Constants.expoConfig?.version,
     });
-    installDiagnosticsUploadSink();
+    if (isDiagnosticsUploadEnabled()) {
+      installDiagnosticsUploadSink();
+    }
   }, []);
 
   useEffect(() => {

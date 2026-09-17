@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { recordAppNotification } from '@/services/notificationService';
+import { isNotificationCaptureEnabled } from '@/config/environment';
 import { DEFAULT_SMS_IMPORT_RANGE_ID } from '@/constants/smsImportRanges';
 import {
   buildMonitoredAccount,
@@ -32,7 +33,7 @@ const MAX_CAPTURED_SIGNALS = 100;
 const MAX_DRAFTS = 100;
 const DEFAULT_CAPTURE_SETTINGS: CaptureSettings = {
   autoCaptureEnabled: false,
-  notificationCaptureEnabled: true,
+  notificationCaptureEnabled: isNotificationCaptureEnabled(),
   reviewNotificationsEnabled: true,
   smsResearchModeEnabled: false,
   aiSmsAssistEnabled: false,
@@ -206,7 +207,12 @@ export const useCaptureStore = create<CaptureState>()(
         set((state) => ({ settings: { ...state.settings, autoCaptureEnabled: enabled } })),
 
       setNotificationCaptureEnabled: (enabled) =>
-        set((state) => ({ settings: { ...state.settings, notificationCaptureEnabled: enabled } })),
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            notificationCaptureEnabled: isNotificationCaptureEnabled() && enabled,
+          },
+        })),
 
       setReviewNotificationsEnabled: () =>
         set((state) => ({ settings: { ...state.settings, reviewNotificationsEnabled: true } })),

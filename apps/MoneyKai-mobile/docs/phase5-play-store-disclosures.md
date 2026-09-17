@@ -1,6 +1,6 @@
 # Phase 5E Play Store-Safe Disclosure Package
 
-Last reviewed: 2026-06-26
+Last reviewed: 2026-09-18
 
 ## Release scope
 
@@ -8,21 +8,17 @@ The Play-distributed app is **MoneyKai**. It is intended for Play Console intern
 
 The separate local APK referred to as **Original MoneyKai** is for direct/internal use only. It includes native SMS Research Mode and restricted SMS permissions, so it must not be uploaded to Play unless a separate SMS permission declaration, policy review, legal/privacy review, and release signoff are completed.
 
-## Prominent disclosure copy
+## Public Play build boundary
 
-Use this copy in tester instructions, reviewer notes, or any in-app disclosure where concise policy-safe wording is needed:
+The public Play AAB keeps authenticated cloud sync and backups, but excludes device-sensitive experimentation. It does not include native SMS access, notification-listener capture, contacts, Gmail sync, PDF statement parsing, wealth integrations, Financial AI, remote Sentry reporting, or remote diagnostic uploads.
 
-> MoneyKai can use Android notification access to detect supported bank and payment transaction alerts. Captured alerts become reviewable drafts only. MoneyKai does not automatically confirm transactions, and you can disable Auto Capture or clear capture drafts at any time.
-
-For SMS:
-
-> The Play Store build does not read your SMS inbox and does not request SMS permissions. SMS Research Mode in this build supports only manually pasted SMS text that you choose to provide for parsing into a reviewable draft.
+Optional app notifications are distinct from notification-listener access. The app can show its own reminders or alerts only after the user grants the normal Android notification permission; it never reads another app’s notifications in this release.
 
 ## Play reviewer notes
 
-MoneyKai requests Android notification listener access so users can optionally convert supported bank/payment transaction notifications into reviewable budget drafts. Notification capture is opt-in, disabled by user controls, and never auto-confirms transactions.
+MoneyKai is a cloud-sync personal-finance app. Users authenticate with Firebase and can sync finance data such as profile details, transactions, budgets, settings, group expenses, and backups to MoneyKai backend services for their authenticated account. The app retains a local working copy for offline resilience.
 
-The Play Store build does not include restricted SMS permissions, does not register the MoneyKai SMS receiver, and does not read the SMS inbox. A separate internal-only APK exists for native SMS research, but that APK is not intended for Play distribution.
+The Play Store build does not include restricted SMS permissions, does not read the SMS inbox, does not request notification-listener access, does not register a notification-listener service, and does not request contacts, microphone, or legacy external-storage access. Native SMS research remains separate from this Play artifact and must not be uploaded.
 
 Before uploading a production AAB to Play Console, run the release permission verifier against the exact downloaded/upload candidate artifact:
 
@@ -31,31 +27,29 @@ npm.cmd --prefix apps\MoneyKai-mobile run android:verify:release-permissions -- 
 npm.cmd --prefix apps\MoneyKai-mobile run android:capture:handoff -- --aab path\to\production.aab --build-id <eas-build-id> --eas-url <eas-build-url>
 ```
 
-The upload must be blocked if the verifier reports `READ_SMS`, `RECEIVE_MMS`, `RECEIVE_SMS`, `RECEIVE_WAP_PUSH`, `SEND_SMS`, or `WRITE_SMS`. The handoff capture must also block Android debug signing. Paste the capture output into `docs/phase5-internal-release-signoff.md` so the final artifact hash, signer certificate, commit, build ID, signing expectation, and permission result are recorded before submit.
+The upload must be blocked if the verifier reports an SMS, contacts, legacy-storage, microphone, or notification-listener manifest entry. The handoff capture must also block Android debug signing. Paste the capture output into `docs/phase5-internal-release-signoff.md` so the final artifact hash, signer certificate, commit, build ID, signing expectation, and permission result are recorded before submit.
 
 ## Data Safety notes
 
-- **Account/profile data:** Firebase Authentication identifies the signed-in user. Profile data can sync to the backend when cloud features are configured.
-- **Financial app data:** Transactions, budgets, notes, savings, groups, app settings, and backups may sync to the backend for authenticated users.
-- **Notifications:** Notification access is optional and used only to create reviewable transaction drafts from supported financial notifications. Raw notification content is minimized; stored capture data uses sanitized snippets and parser explanations.
-- **SMS:** Play builds do not request SMS permissions and do not read the SMS inbox. Manual SMS paste is user-initiated, parsed into reviewable drafts, and raw pasted SMS text is not included in cloud backup snapshots.
-- **Diagnostics:** Warning/error/fatal diagnostics can be sent to the authenticated backend. Diagnostics redact SMS and notification content fields before upload, and the backend applies server-side redaction again.
-- **Contacts:** Contact access is requested only for selecting people in split-bill/group workflows.
-- **Photos/camera:** Image picker/camera access is used for user-selected receipt/profile-related images where applicable.
-- **Notifications permission:** Push/local notifications are optional and used for app alerts.
+- **Account/profile data:** Firebase Authentication identifies the signed-in user. Account identifiers and profile data are processed to provide the service.
+- **Financial app data:** Transactions, budgets, savings, groups, app settings, and backups sync to MoneyKai backend services for authenticated users.
+- **Data sharing:** The app sends this information to Firebase for authentication and MoneyKai backend services for account, sync, backup, and group-expense functionality. It is not sold or used for advertising.
+- **Notifications permission:** Optional app reminders and alerts may use Android’s normal notification permission. The release does not request notification-listener access or read notifications from other apps.
+- **Excluded sources:** SMS, contacts, camera, microphone, location, legacy shared storage, Gmail, PDF statements, wealth integrations, and Financial AI are not part of this public Play AAB.
+- **Diagnostics:** Remote Sentry reporting and diagnostic-event uploads are disabled in this release.
 
 ## Screenshot checklist
 
 Capture screenshots only from the Play-safe MoneyKai build:
 
-- Settings page showing Auto Capture controls and optional notification access.
-- Auto Capture page showing drafts as reviewable, not automatic transactions.
-- Notification access explainer before opening Android settings.
-- Privacy Policy or Privacy Details screen showing local processing, backup exclusions, and user controls.
-- Manual SMS paste flow only if it clearly shows user-provided text and does not imply automatic SMS inbox access.
+- Simple dashboard or expense-entry screen.
+- Sign-in or account screen that establishes the cloud-sync value without exposing secrets.
+- Cloud sync or backup screen showing the user-controlled action.
+- Privacy Policy screen that explains data processing and deletion contact.
+- Optional app-notification setting, if shown, without presenting notification-listener or auto-capture controls.
 
-Do not use screenshots from Original MoneyKai or any screen showing native SMS permissions, SMS inbox import, or automatic SMS receiver behavior for Play listing/reviewer materials.
+Do not use screenshots from Original MoneyKai or any screen showing native SMS permissions, notification-listener access, contacts, Gmail, PDF, wealth, AI, or automatic-capture behavior for Play listing/reviewer materials.
 
 ## Current status
 
-Phase 5E is ready for internal testing materials. Final Play Console Data Safety answers still need to be entered and reviewed in Play Console before a closed or production release. The next Play-safe production AAB must pass the repository release permission verifier and handoff capture before upload; the historical Phase 5A AAB is SMS-permission clean but debug-signed and must not be uploaded to Play.
+Phase 5E is ready for cloud-sync minimal internal-testing materials. Final Play Console Data Safety answers still need to be entered and reviewed in Play Console before a closed or production release. The next Play-safe production AAB must pass the repository release permission verifier and handoff capture before upload; the historical Phase 5A AAB is debug-signed and must not be uploaded to Play.

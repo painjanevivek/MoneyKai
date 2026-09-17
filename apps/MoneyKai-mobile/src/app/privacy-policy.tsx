@@ -13,15 +13,15 @@ export default function PrivacyPolicyScreen() {
   return (
     <>
       <SeoHead
-        title="MoneyKai Privacy Policy | Local Android data handling"
-        description="Read MoneyKai's privacy policy for the current local-only Android release, including device storage, local export, encrypted backup files, and unsupported cloud features."
+        title="MoneyKai Privacy Policy | Cloud sync for your finance data"
+        description="Read how MoneyKai uses account and finance data to provide authenticated cloud sync in its Android app."
         path="/privacy-policy"
-        keywords={['privacy policy', 'MoneyKai privacy', 'local finance app data policy']}
+        keywords={['privacy policy', 'MoneyKai privacy', 'cloud-sync finance app']}
       />
       <PublicShell
         eyebrow="Privacy"
-        title="MoneyKai's current Android release keeps personal finance data local."
-        description="This page explains the privacy model for the local-only Android release in plain language so people can understand what the app does before using it."
+        title="MoneyKai syncs the finance data you choose to save."
+        description="A plain-language summary of the public Android Play release."
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -30,43 +30,35 @@ export default function PrivacyPolicyScreen() {
           {[
             {
               title: 'Last reviewed',
-              body: 'This policy was reviewed on June 30, 2026 for the current Flutter Android release.',
+              body: 'This policy was reviewed on September 18, 2026 for the cloud-sync minimal Android Play release.',
             },
             {
-              title: 'Data we store',
-              body: 'The current Android release stores user-entered profile details, transactions, budgets, theme settings, encrypted backup metadata, and local diagnostics on the device.',
+              title: 'What MoneyKai processes',
+              body: 'MoneyKai processes the account identifiers you use to sign in, the profile details and finance data you enter, including transactions, budgets, savings goals, group expenses, settings, and backup snapshots.',
             },
             {
-              title: 'How data is used',
-              body: 'MoneyKai uses local data to show expense tracking, monthly budgets, dashboard summaries, savings and trend insights, settings, local diagnostics, and backup or restore actions that you start.',
+              title: 'Why we process it',
+              body: 'MoneyKai uses this data to provide your signed-in account, cloud sync, Firebase cloud backup, shared-expense features, and a local working copy that remains useful during a temporary connection interruption.',
             },
             {
-              title: 'Local export',
-              body: 'When you choose local export, MoneyKai copies a plaintext JSON snapshot of profile, transactions, budget, and theme settings to the clipboard. You control where that copied data goes next.',
+              title: 'Where it goes',
+              body: 'Firebase provides authentication. MoneyKai backend services process the synced data needed for your authenticated account. MoneyKai does not sell personal or sensitive user data and does not use financial data for advertising.',
             },
             {
-              title: 'Encrypted backup files',
-              body: 'When you choose encrypted backup, MoneyKai creates a password-protected JSON file through Android file or share flows. When you restore, MoneyKai reads only the backup file you select.',
+              title: 'Public Play release limits',
+              body: 'This public Play release does not read SMS, access contacts, camera, microphone, location, or legacy shared storage, and it does not read notifications from other apps. Optional notification capture, Gmail sync, PDF statement parsing, wealth integrations, Financial AI, remote Sentry reporting, and remote diagnostic-event uploads are disabled. Optional local diagnostics remain on-device and are not uploaded.',
             },
             {
-              title: 'What MoneyKai does not collect in this release',
-              body: 'The current Android release does not send app data to MoneyKai servers and does not include backend sync, Firebase cloud backup, analytics SDKs, remote crash reporting, ads, payment processing, bank sync, Gmail sync, SMS reading, notification capture, or Financial AI.',
+              title: 'Notifications',
+              body: 'If you enable app notifications, MoneyKai may show reminders or app alerts on this device. It does not request notification-listener access or inspect notifications from other apps.',
             },
             {
-              title: 'Android permissions',
-              body: 'The current Android release does not request SMS, notification listener, contacts, camera, microphone, location, storage, all-files access, accessibility service, package visibility, or install-package permissions.',
+              title: 'Retention and deletion',
+              body: 'Local data remains until you delete it, clear app storage, or uninstall the app. Synced data is retained while your account is active to provide sync and backups. You can request account and synced-data deletion through support.',
             },
             {
-              title: 'Deletion and retention',
-              body: 'Local app data remains on your device until you delete or reset it, clear local diagnostics, or uninstall the app. Backup files that you export are stored wherever you choose to save or share them.',
-            },
-            {
-              title: 'Sharing and selling',
-              body: 'MoneyKai does not sell personal finance data. The current Android release does not share app data with MoneyKai or third parties unless you choose to export or share a backup file outside the app.',
-            },
-            {
-              title: 'Future features',
-              body: 'If MoneyKai later ships cloud sync, real authentication, analytics, crash reporting, bank sync, Gmail sync, SMS or notification capture, AI features, ads, or payments, the app, Play disclosures, and this policy must be updated before those features are released.',
+              title: 'Support contact',
+              body: `Questions about privacy or deletion requests can be sent to ${SITE.supportEmail}.`,
             },
             {
               title: 'Support contact',

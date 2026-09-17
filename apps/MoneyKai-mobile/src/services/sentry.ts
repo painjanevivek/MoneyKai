@@ -8,6 +8,7 @@ type SentryBreadcrumb = Parameters<typeof Sentry.addBreadcrumb>[0];
 const packageInfo = require('../../package.json') as { name?: string; version?: string };
 
 let initialized = false;
+let sentryEnabled = false;
 
 const SENSITIVE_KEY_PATTERN = /(password|passcode|token|secret|authorization|otp|pin|card|cvv|pan|aadhaar|sms|notification|raw|body|message)/i;
 const SENSITIVE_VALUE_PATTERN = /(otp|one[-\s]?time|password|passcode|cvv|card|aadhaar|upi pin|authorization|bearer)/i;
@@ -68,12 +69,16 @@ export const initMoneyKaiSentry = () => {
     return;
   }
 
-  initialized = true;
-
   const dsn = appEnvironment.sentry.dsn;
   const environment = appEnvironment.sentry.environment || (__DEV__ ? 'development' : 'production');
   const isProduction = environment === 'production' && !__DEV__;
   const enabled = Boolean(dsn) && appEnvironment.sentry.enabled !== 'false';
+
+  initialized = true;
+  if (!enabled) {
+    return;
+  }
+  sentryEnabled = true;
 
   Sentry.init({
     dsn,
@@ -173,6 +178,9 @@ export const initMoneyKaiSentry = () => {
 };
 
 export const syncSentryUser = (user: User | null) => {
+  if (!sentryEnabled) {
+    return;
+  }
   if (!user) {
     Sentry.setUser(null);
     Sentry.setTag('auth.provider', 'anonymous');
@@ -187,7 +195,7 @@ export const syncSentryUser = (user: User | null) => {
 };
 
 export const addSentryBreadcrumb = (breadcrumb: SentryBreadcrumb) => {
-  if (!shouldDropBreadcrumb(breadcrumb)) {
+  if (sentryEnabled && !shouldDropBreadcrumb(breadcrumb)) {
     Sentry.addBreadcrumb(breadcrumb);
   }
 };
@@ -200,6 +208,9 @@ export const captureSentryException = (
     level?: Sentry.SeverityLevel;
   } = {},
 ) => {
+  if (!sentryEnabled) {
+    return;
+  }
   Sentry.withScope((scope) => {
     Object.entries(context.tags ?? {}).forEach(([key, value]) => scope.setTag(key, value));
     if (context.level) {
@@ -215,4 +226,4 @@ export const captureSentryException = (
 export const startSentrySpan = <T>(
   options: Parameters<typeof Sentry.startSpan>[0],
   callback: () => T,
-): T => Sentry.startSpan(options, callback);
+): T => (sentryEnabled ? Sentry.startSpan(options, callback) : callback());

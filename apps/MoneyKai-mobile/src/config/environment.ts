@@ -16,6 +16,7 @@ const publicEnv: Record<string, string | undefined> = {
   EXPO_PUBLIC_BACKEND_BASE_URL: process.env.EXPO_PUBLIC_BACKEND_BASE_URL,
   EXPO_PUBLIC_SMS_RESEARCH_BUILD: process.env.EXPO_PUBLIC_SMS_RESEARCH_BUILD,
   EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD: process.env.EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD,
+  EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED: process.env.EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED,
   EXPO_PUBLIC_GMAIL_SYNC_ENABLED: process.env.EXPO_PUBLIC_GMAIL_SYNC_ENABLED,
   EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED: process.env.EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED,
   EXPO_PUBLIC_WEALTH_TAB_ENABLED: process.env.EXPO_PUBLIC_WEALTH_TAB_ENABLED,
@@ -30,6 +31,7 @@ const publicEnv: Record<string, string | undefined> = {
   EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE,
   EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_REPLAY_ERROR_SAMPLE_RATE,
   EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE: process.env.EXPO_PUBLIC_SENTRY_ERROR_SAMPLE_RATE,
+  EXPO_PUBLIC_DIAGNOSTICS_UPLOAD_ENABLED: process.env.EXPO_PUBLIC_DIAGNOSTICS_UPLOAD_ENABLED,
   EXPO_PUBLIC_DEBUG: process.env.EXPO_PUBLIC_DEBUG,
   EXPO_PUBLIC_DEMO_MODE: process.env.EXPO_PUBLIC_DEMO_MODE,
 };
@@ -103,6 +105,7 @@ const backendBaseUrl = normalizeBackendBaseUrl(readPublicEnv('EXPO_PUBLIC_BACKEN
 const isDevRuntime = (): boolean => typeof __DEV__ !== 'undefined' && __DEV__;
 const smsResearchBuildValue = readPublicEnv('EXPO_PUBLIC_SMS_RESEARCH_BUILD');
 const nativeSmsResearchBuildValue = readPublicEnv('EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD');
+const notificationCaptureEnabledValue = readPublicEnv('EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED');
 const gmailSyncEnabledValue = readPublicEnv('EXPO_PUBLIC_GMAIL_SYNC_ENABLED');
 const pdfStatementParsingEnabledValue = readPublicEnv('EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED');
 const wealthTabEnabledValue = readPublicEnv('EXPO_PUBLIC_WEALTH_TAB_ENABLED');
@@ -132,10 +135,12 @@ export const appEnvironment = {
   demoMode: readPublicEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
   smsResearchBuild: smsResearchBuildValue === 'true',
   nativeSmsResearchBuild: nativeSmsResearchBuildValue === 'true',
+  notificationCaptureEnabled: notificationCaptureEnabledValue === 'true',
   gmailSyncEnabled: gmailSyncEnabledValue === 'true',
   pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
   wealthTabEnabled: wealthTabEnabledValue === '' ? true : wealthTabEnabledValue === 'true',
   financialAiEnabled: financialAiEnabledValue === 'true',
+  diagnosticsUploadEnabled: readPublicEnv('EXPO_PUBLIC_DIAGNOSTICS_UPLOAD_ENABLED') === 'true',
   sentry: sentryEnv,
 };
 
@@ -168,6 +173,14 @@ export const isSmsResearchBuildEnabled = (): boolean =>
 export const isNativeSmsResearchBuildEnabled = (): boolean =>
   appEnvironment.nativeSmsResearchBuild;
 
+/**
+ * Notification listener capture is opt-in at build time. The public Play
+ * profile keeps it off so the distributed artifact never asks for access to
+ * other apps' notifications.
+ */
+export const isNotificationCaptureEnabled = (): boolean =>
+  appEnvironment.notificationCaptureEnabled;
+
 export const isGmailSyncEnabled = (): boolean =>
   appEnvironment.gmailSyncEnabled;
 
@@ -179,6 +192,9 @@ export const isWealthTabEnabled = (): boolean =>
 
 export const isFinancialAiEnabled = (): boolean =>
   appEnvironment.financialAiEnabled;
+
+export const isDiagnosticsUploadEnabled = (): boolean =>
+  appEnvironment.diagnosticsUploadEnabled;
 
 export const getBackendBaseUrl = (): string => {
   if (appEnvironment.backendBaseUrl.length > 0) {

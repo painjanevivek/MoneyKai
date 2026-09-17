@@ -36,7 +36,11 @@ import {
   setNativeCaptureSourcesEnabled,
   type NativeCaptureStatus,
 } from '@/services/nativeCaptureBridge';
-import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
+import {
+  isNativeSmsResearchBuildEnabled,
+  isNotificationCaptureEnabled,
+  isSmsResearchBuildEnabled,
+} from '@/config/environment';
 import type { CaptureSourceStatus } from '@/types/capture';
 import { formatCurrency } from '@/utils/formatCurrency';
 
@@ -170,6 +174,8 @@ export default function MoreScreen() {
 
   const smsResearchBuildEnabled = isSmsResearchBuildEnabled();
   const nativeSmsResearchBuildEnabled = isNativeSmsResearchBuildEnabled();
+  const notificationCaptureBuildEnabled = isNotificationCaptureEnabled();
+  const captureFeaturesAvailable = notificationCaptureBuildEnabled || smsResearchBuildEnabled;
   const switchTrack = { false: colors.border, true: colors.primary } as const;
   const switchThumb = colors.textInverse;
   const backupConfigured = isFirebaseConfigured() || isBackendConfigured();
@@ -198,6 +204,7 @@ export default function MoreScreen() {
   }, [backupConfigured]);
 
   const notificationSourceStatus = useMemo<CaptureSourceStatus>(() => {
+    if (!notificationCaptureBuildEnabled) return 'unsupported';
     if (Platform.OS !== 'android') return 'unsupported';
     if (!captureSettings.autoCaptureEnabled || !captureSettings.notificationCaptureEnabled) return 'disabled';
     if ((nativeCaptureStatus?.notificationAccess ?? captureSettings.notificationAccessStatus) !== 'granted') {
@@ -209,6 +216,7 @@ export default function MoreScreen() {
     captureSettings.notificationAccessStatus,
     captureSettings.notificationCaptureEnabled,
     nativeCaptureStatus?.notificationAccess,
+    notificationCaptureBuildEnabled,
   ]);
 
   const smsSourceStatus = useMemo<CaptureSourceStatus>(() => {
@@ -606,30 +614,35 @@ export default function MoreScreen() {
           </View>
         </MoreSection>
 
-        <MoreSection title="Transaction Capture">
-          <Card>
+        {captureFeaturesAvailable ? (
+          <MoreSection title="Transaction Capture">
+            <Card>
             <View style={{ paddingBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
               <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 20 }}>
                 Capture creates reviewable drafts from supported transaction signals. Nothing becomes a transaction until you confirm it.
               </Text>
             </View>
-            <MoreItem
-              icon="radar"
-              iconColor="#111111"
-              iconBg="#F4F4F4"
-              title="Automatic Capture"
-              subtitle={captureSettings.autoCaptureEnabled ? `${pendingCaptureDrafts} drafts waiting for review` : 'Create drafts from supported transaction alerts'}
-              right={<Switch value={captureSettings.autoCaptureEnabled} onValueChange={handleAutoCaptureToggle} trackColor={switchTrack} thumbColor={switchThumb} ios_backgroundColor={colors.borderLight} />}
-            />
-            <MoreItem
-              icon="bell-badge-outline"
-              iconColor="#444444"
-              iconBg="#ECECEC"
-              title="Bank Notifications"
-              subtitle={`${sourceStatusLabel[notificationSourceStatus]} | Optional transaction notification source`}
-              right={<Switch value={captureSettings.notificationCaptureEnabled} onValueChange={setNotificationCaptureEnabled} disabled={!captureSettings.autoCaptureEnabled || Platform.OS !== 'android'} trackColor={switchTrack} thumbColor={switchThumb} ios_backgroundColor={colors.borderLight} />}
-            />
-            {Platform.OS === 'android' ? (
+            {notificationCaptureBuildEnabled ? (
+              <MoreItem
+                icon="radar"
+                iconColor="#111111"
+                iconBg="#F4F4F4"
+                title="Automatic Capture"
+                subtitle={captureSettings.autoCaptureEnabled ? `${pendingCaptureDrafts} drafts waiting for review` : 'Create drafts from supported transaction alerts'}
+                right={<Switch value={captureSettings.autoCaptureEnabled} onValueChange={handleAutoCaptureToggle} trackColor={switchTrack} thumbColor={switchThumb} ios_backgroundColor={colors.borderLight} />}
+              />
+            ) : null}
+            {notificationCaptureBuildEnabled ? (
+              <MoreItem
+                icon="bell-badge-outline"
+                iconColor="#444444"
+                iconBg="#ECECEC"
+                title="Bank Notifications"
+                subtitle={`${sourceStatusLabel[notificationSourceStatus]} | Optional transaction notification source`}
+                right={<Switch value={captureSettings.notificationCaptureEnabled} onValueChange={setNotificationCaptureEnabled} disabled={!captureSettings.autoCaptureEnabled || Platform.OS !== 'android'} trackColor={switchTrack} thumbColor={switchThumb} ios_backgroundColor={colors.borderLight} />}
+              />
+            ) : null}
+            {notificationCaptureBuildEnabled && Platform.OS === 'android' ? (
               <MoreItem
                 icon="cellphone-cog"
                 iconColor="#444444"
@@ -670,8 +683,9 @@ export default function MoreScreen() {
               subtitle={`${pendingCaptureDrafts} pending`}
               onPress={() => router.push('/(tabs)/notifications' as any)}
             />
-          </Card>
-        </MoreSection>
+            </Card>
+          </MoreSection>
+        ) : null}
 
         <MoreSection title="Financial Imports">
           <GmailConnectionCard />
