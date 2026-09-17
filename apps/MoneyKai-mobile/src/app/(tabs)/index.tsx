@@ -11,6 +11,7 @@ import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { MonthlyBudgetSummaryCard } from '@/components/dashboard/MonthlyBudgetSummaryCard';
+import { WeeklySpendingRunwayCard } from '@/components/dashboard/WeeklySpendingRunwayCard';
 import { SpendingPieChart } from '@/components/charts/SpendingPieChart';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { SavingsGoalCard } from '@/components/dashboard/SavingsGoalCard';
@@ -32,6 +33,7 @@ import {
   getPreviousMonthKey,
 } from '@/utils/dashboard';
 import { getMonthSummary } from '@/utils/monthAnalytics';
+import { buildSpendingRunway } from '@/utils/spendingRunway';
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
@@ -95,6 +97,10 @@ export default function DashboardScreen() {
   const spendingTrendInsight = useMemo(
     () => buildSpendingTrendInsight(monthTransactions, comparablePreviousMonthTransactions),
     [monthTransactions, comparablePreviousMonthTransactions]
+  );
+  const spendingRunway = useMemo(
+    () => buildSpendingRunway(monthlyAllowance, monthExpenseTotal, monthCategoryTotals, selectedMonthKey),
+    [monthlyAllowance, monthExpenseTotal, monthCategoryTotals, selectedMonthKey]
   );
   const showDashboardInsight = dashboardInsight.title !== 'Set your monthly budget';
   const savingsSnapshot = useMemo(
@@ -308,6 +314,13 @@ export default function DashboardScreen() {
             onPressViewMore={() => router.push('/(tabs)/budget' as never)}
             trendInsight={spendingTrendInsight}
             onPressTrendInsight={() => router.push('/(tabs)/budget' as never)}
+          />
+        </View>
+
+        <View style={{ paddingHorizontal: Spacing.base, marginBottom: Spacing.base }}>
+          <WeeklySpendingRunwayCard
+            runway={spendingRunway}
+            onPress={() => router.push(spendingRunway.state === 'no-spending' ? '/(tabs)/transactions' as never : '/(tabs)/budget' as never)}
           />
         </View>
 
