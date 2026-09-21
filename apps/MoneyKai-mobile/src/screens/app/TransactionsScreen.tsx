@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { ScreenState } from '@/components/ui/ScreenState';
+import { Disclosure } from '@/components/ui/Disclosure';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -291,7 +292,11 @@ export function TransactionsScreen() {
               })}
             </View>
 
-            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
+            <Disclosure
+              title="Filter and sort"
+              summary={activeFilterCount > 0 ? `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'} · ${sortLabel}` : sortLabel}
+            >
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
               <PressableScale
                 accessibilityRole="button"
                 accessibilityLabel="Open transaction filters"
@@ -343,6 +348,7 @@ export function TransactionsScreen() {
                 </Text>
               </PressableScale>
             </View>
+            </Disclosure>
 
             <Button title="Add transaction" onPress={() => navigation.navigate('Add')} icon="plus" style={{ marginBottom: Spacing.base }} />
           </>

@@ -1,10 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { HomeScreen } from '@/screens/app/HomeScreen';
+import { HomeOverviewScreen } from '@/screens/app/HomeOverviewScreen';
 import { TransactionsScreen } from '@/screens/app/TransactionsScreen';
 import { AddTransactionScreen } from '@/screens/app/AddTransactionScreen';
 import { BudgetScreen } from '@/screens/app/BudgetScreen';
-import { MoreScreen } from '@/screens/app/MoreScreen';
+import { MoreHubScreen } from '@/screens/app/MoreHubScreen';
 import { useNotificationStore } from '@/stores/useNotificationStore';
 import { useAppMotion } from '@/hooks/useAppMotion';
 import { useTheme } from '@/hooks/useTheme';
@@ -29,11 +29,11 @@ export function ProductionAppTabs() {
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeOverviewScreen} />
       <Tab.Screen name="Transactions" component={TransactionsScreen} />
       <Tab.Screen name="Add" component={AddTransactionScreen} />
       <Tab.Screen name="Budget" component={BudgetScreen} />
-      <Tab.Screen name="More" component={MoreScreen} options={{ tabBarBadge: unreadCount > 0 ? unreadCount : undefined }} />
+      <Tab.Screen name="More" component={MoreHubScreen} options={{ tabBarBadge: unreadCount > 0 ? unreadCount : undefined }} />
     </Tab.Navigator>
   );
 }

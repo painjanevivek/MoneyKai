@@ -12,13 +12,16 @@ import { useAppMotion } from '@/hooks/useAppMotion';
 import { ProfileEditScreen } from '@/screens/app/ProfileEditScreen';
 import { NotificationsScreen } from '@/screens/app/NotificationsScreen';
 import { NotesScreen } from '@/screens/app/NotesScreen';
-import { GroupsScreen } from '@/screens/app/GroupsScreen';
+import { GroupsHubScreen } from '@/screens/app/GroupsHubScreen';
 import { LearnScreen } from '@/screens/app/LearnScreen';
 import { SavingsScreen } from '@/screens/app/SavingsScreen';
 import { AiReviewScreen } from '@/screens/app/AiReviewScreen';
-import { SettingsScreen } from '@/screens/app/SettingsScreen';
+import { SettingsScreen as AdvancedSettingsScreen } from '@/screens/app/SettingsScreen';
+import { SettingsOverviewScreen } from '@/screens/app/SettingsOverviewScreen';
 import { AutoCaptureScreen } from '@/screens/app/AutoCaptureScreen';
 import { SubscriptionsScreen } from '@/screens/app/SubscriptionsScreen';
+import { AccountScreen } from '@/screens/app/AccountScreen';
+import { TrustCenterScreen } from '@/screens/app/TrustCenterScreen';
 import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordinator';
 import { SyncCoordinator } from '@/components/sync/SyncCoordinator';
 
@@ -77,13 +80,16 @@ export function RootNavigator() {
               <Stack.Screen name="App" component={ProductionAppTabs} />
             </Stack.Group>
             <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+            <Stack.Screen name="Account" component={AccountScreen} />
+            <Stack.Screen name="TrustCenter" component={TrustCenterScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Notes" component={NotesScreen} />
-            <Stack.Screen name="Groups" component={GroupsScreen} />
+            <Stack.Screen name="Groups" component={GroupsHubScreen} />
             <Stack.Screen name="Learn" component={LearnScreen} />
             <Stack.Screen name="Savings" component={SavingsScreen} />
             <Stack.Screen name="AiReview" component={AiReviewScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Settings" component={SettingsOverviewScreen} />
+            <Stack.Screen name="AdvancedSettings" component={AdvancedSettingsScreen} />
             <Stack.Screen name="AutoCapture" component={AutoCaptureScreen} />
             <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
           </>
