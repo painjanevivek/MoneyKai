@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const mobileRoot = resolve(process.cwd(), 'apps/MoneyKai-mobile/src');
+const mobileRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = (path: string) => readFileSync(resolve(mobileRoot, path), 'utf8');
 
 describe('production progressive disclosure routes', () => {

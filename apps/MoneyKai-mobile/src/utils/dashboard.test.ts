@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Transaction } from '../types/transaction';
+
+vi.mock('./formatCurrency', () => ({
+  formatCurrency: (amount: number) => `INR ${amount}`,
+}));
+
 import {
   buildSpendingTrendInsight,
   filterComparablePreviousMonthTransactions,

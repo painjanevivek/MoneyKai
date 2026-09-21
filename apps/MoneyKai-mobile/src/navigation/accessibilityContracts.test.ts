@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-native', () => ({
@@ -9,7 +10,7 @@ vi.mock('react-native', () => ({
 
 import { ComponentTokens, Motion, SemanticColors } from '../constants/theme';
 
-const mobileRoot = resolve(process.cwd(), 'apps/MoneyKai-mobile/src');
+const mobileRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const activeSources = [
   'navigation/GlassTabBar.tsx',
   'screens/auth/ProgressiveLoginScreen.tsx',
