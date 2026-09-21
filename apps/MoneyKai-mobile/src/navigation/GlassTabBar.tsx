@@ -108,8 +108,8 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: BottomTa
                   {badge ? <View style={[styles.badge, { backgroundColor: colors.error }]} /> : null}
                 </View>
                 <Text
-                  maxFontSizeMultiplier={1.3}
-                  numberOfLines={1}
+                  maxFontSizeMultiplier={2}
+                  numberOfLines={2}
                   style={[
                     styles.label,
                     { color: selected ? colors.textPrimary : colors.textSecondary },

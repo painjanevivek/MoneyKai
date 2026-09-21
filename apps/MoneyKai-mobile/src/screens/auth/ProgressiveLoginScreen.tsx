@@ -98,7 +98,7 @@ export function ProgressiveLoginScreen({ navigation }: Props) {
 
           <View style={{ alignItems: 'center', marginTop: Spacing.lg }}>
             <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm }}>New to MoneyKai?</Text>
-            <PressableScale accessibilityRole="button" onPress={() => navigation.navigate('Signup')} style={{ justifyContent: 'center', minHeight: 44 }}>
+            <PressableScale accessibilityRole="button" onPress={() => navigation.navigate('Signup')} style={{ justifyContent: 'center', minHeight: 48 }}>
               <Text style={{ color: colors.primary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.base }}>Create an account</Text>
             </PressableScale>
           </View>

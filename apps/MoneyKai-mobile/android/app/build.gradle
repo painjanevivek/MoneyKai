@@ -4,7 +4,7 @@ apply plugin: "com.facebook.react"
 
 def vectorIconsPackageDir = new File(["node", "--print", "require.resolve('react-native-vector-icons/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
 project.ext.vectoricons = [
-    iconFontNames: ["MaterialCommunityIcons.ttf"],
+    iconFontNames: ["MaterialCommunityIcons.ttf", "Feather.ttf"],
     iconFontsDir: new File(vectorIconsPackageDir, "Fonts").getAbsolutePath(),
 ]
 def vectorIconsFontsGradle = new File(["node", "--print", "require.resolve('react-native-vector-icons/fonts.gradle')"].execute(null, rootDir).text.trim())

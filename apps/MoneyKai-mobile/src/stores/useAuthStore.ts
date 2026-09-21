@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { invalidateRemoteSyncSession } from '@moneykai/domain/syncSession';
+import { invalidateRemoteSyncSession } from '@moneykai/domain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createUserWithEmail,

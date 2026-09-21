@@ -37,9 +37,9 @@ class MoneyKaiProfileMediaModule(
         return
       }
 
-      val flags = data.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-      runCatching {
-        reactContext.contentResolver.takePersistableUriPermission(uri, flags and Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      val hasReadGrant = data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0
+      if (hasReadGrant) runCatching {
+        reactContext.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
       }
 
       promise.resolve(

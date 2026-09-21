@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Layout, Spacing, Typography } from '@/constants/theme';
 
 export const createAppScreenStyles = (colors: {
   background: string;
@@ -24,7 +24,7 @@ export const createAppScreenStyles = (colors: {
     scrollContent: {
       paddingHorizontal: Spacing.lg,
       paddingTop: Spacing.sm,
-      paddingBottom: Spacing['2xl'],
+      paddingBottom: Layout.tabBarHeight + Spacing['3xl'],
     },
     header: {
       marginBottom: Spacing.base,
