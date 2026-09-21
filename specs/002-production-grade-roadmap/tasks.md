@@ -28,7 +28,7 @@ Every file-changing task must be validated, committed, and pushed before the nex
 
 - [x] M02.1 Inventory screens/states, duplicate styles, accessibility defects, and raw visual constants. ([evidence](../../docs/operations/roadmap/M02/M02.1-ui-inventory.md))
 - [x] M02.2 Establish solid color, type, spacing, shape, elevation, icon, and motion tokens with no gradient/dark path. ([evidence](../../docs/operations/roadmap/M02/M02.2-design-tokens.md))
-- [ ] M02.3 Build reusable navigation, field, button, card, sheet, disclosure, feedback, and state components.
+- [x] M02.3 Build reusable navigation, field, button, card, sheet, disclosure, feedback, and state components. ([evidence](../../docs/operations/roadmap/M02/M02.3-component-system.md))
 - [ ] M02.4 Apply progressive disclosure to onboarding, dashboard, transactions, budgets, groups, account, Trust Center, and settings.
 - [ ] M02.5 Validate WCAG AA, screen readers, focus, 200% text, reduced motion, touch targets, and glass legibility.
 - [ ] M02.GATE Pass all design/accessibility/UX gates; push `feat(milestone-02) : complete design system and progressive disclosure`.

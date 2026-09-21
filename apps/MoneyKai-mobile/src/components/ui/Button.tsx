@@ -2,15 +2,16 @@ import React from 'react';
 import {
   Text,
   ActivityIndicator,
+  type AccessibilityProps,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, ComponentTokens, Shadows, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, IconSize, Typography } from '../../constants/theme';
 import { PressableScale } from './PressableScale';
+import { AppIcon } from './AppIcon';
 
-interface ButtonProps {
+interface ButtonProps extends Pick<AccessibilityProps, 'accessibilityHint' | 'accessibilityLabel'> {
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -23,6 +24,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  testID?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -38,29 +40,32 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   style,
   textStyle,
+  accessibilityHint,
+  accessibilityLabel,
+  testID,
 }) => {
   const { colors } = useTheme();
 
   const sizeStyles = {
-    sm: { minHeight: ComponentTokens.controlHeight.sm, paddingHorizontal: ComponentTokens.controlPaddingX.sm, fontSize: Typography.fontSize.sm, iconSize: 16 },
-    md: { minHeight: ComponentTokens.controlHeight.md, paddingHorizontal: ComponentTokens.controlPaddingX.md, fontSize: Typography.fontSize.base, iconSize: 18 },
-    lg: { minHeight: ComponentTokens.controlHeight.lg, paddingHorizontal: ComponentTokens.controlPaddingX.lg, fontSize: Typography.fontSize.md, iconSize: 20 },
+    sm: { minHeight: ComponentTokens.controlHeight.sm, paddingHorizontal: ComponentTokens.controlPaddingX.sm, fontSize: Typography.fontSize.sm, iconSize: IconSize.xs },
+    md: { minHeight: ComponentTokens.controlHeight.md, paddingHorizontal: ComponentTokens.controlPaddingX.md, fontSize: Typography.fontSize.base, iconSize: IconSize.sm },
+    lg: { minHeight: ComponentTokens.controlHeight.lg, paddingHorizontal: ComponentTokens.controlPaddingX.lg, fontSize: Typography.fontSize.md, iconSize: IconSize.md },
   };
 
   const variantStyles: Record<string, { bg: string; text: string; border?: string }> = tone === 'onDark'
     ? {
-        primary: { bg: 'rgba(255, 255, 255, 0.94)', text: colors.primaryDark, border: 'rgba(255, 255, 255, 0.38)' },
-        secondary: { bg: 'rgba(255, 255, 255, 0.16)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.28)' },
-        outline: { bg: 'rgba(255, 255, 255, 0.14)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.28)' },
-        ghost: { bg: 'transparent', text: 'rgba(255, 255, 255, 0.84)', border: 'transparent' },
-        danger: { bg: 'rgba(255, 225, 229, 0.94)', text: '#7F1D1D', border: 'rgba(255, 255, 255, 0.38)' },
+        primary: { bg: colors.surface, text: colors.primaryDark, border: colors.borderLight },
+        secondary: { bg: colors.surfaceSupport, text: colors.textPrimary, border: colors.border },
+        outline: { bg: 'transparent', text: colors.textInverse, border: colors.textInverse },
+        ghost: { bg: 'transparent', text: colors.textInverse, border: 'transparent' },
+        danger: { bg: colors.errorBg, text: colors.error, border: colors.error },
       }
     : {
-        primary: { bg: colors.primary, text: colors.textInverse },
-        secondary: { bg: colors.primaryBg, text: colors.primary },
-        outline: { bg: colors.card, text: colors.primary, border: colors.borderLight },
+        primary: { bg: colors.action, text: colors.onAction, border: colors.action },
+        secondary: { bg: colors.primaryBg, text: colors.primaryDark, border: colors.primaryBg },
+        outline: { bg: colors.card, text: colors.primaryDark, border: colors.border },
         ghost: { bg: 'transparent', text: colors.textSecondary },
-        danger: { bg: colors.emergency, text: colors.textInverse },
+        danger: { bg: colors.error, text: colors.textInverse, border: colors.error },
       };
 
   const s = sizeStyles[size];
@@ -71,6 +76,8 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <PressableScale
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ busy: loading, disabled: isUnavailable }}
       onPress={onPress}
       disabled={isUnavailable}
@@ -86,20 +93,20 @@ export const Button: React.FC<ButtonProps> = ({
           borderRadius: BorderRadius.sm,
           opacity: isUnavailable ? ComponentTokens.disabledOpacity : 1,
           gap: 8,
-          borderWidth: 1,
+          borderWidth: ComponentTokens.borderWidth,
           borderColor: isUnavailable ? colors.borderLight : (v.border ?? 'transparent'),
-          ...(variant === 'primary' && !isUnavailable ? { ...Shadows.sm, shadowColor: colors.shadowColor } : {}),
           ...(fullWidth ? { width: '100%' } : {}),
         },
         style,
       ]}
+      testID={testID}
     >
       {loading ? (
         <ActivityIndicator size="small" color={contentColor} />
       ) : (
         <>
           {icon && iconPosition === 'left' && (
-            <MaterialCommunityIcons name={icon} size={s.iconSize} color={contentColor} />
+            <AppIcon name={icon} size={s.iconSize} color={contentColor} />
           )}
           <Text
             style={[
@@ -114,7 +121,7 @@ export const Button: React.FC<ButtonProps> = ({
             {title}
           </Text>
           {icon && iconPosition === 'right' && (
-            <MaterialCommunityIcons name={icon} size={s.iconSize} color={contentColor} />
+            <AppIcon name={icon} size={s.iconSize} color={contentColor} />
           )}
         </>
       )}

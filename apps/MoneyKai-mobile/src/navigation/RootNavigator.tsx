@@ -7,7 +7,8 @@ import { Colors } from '@/constants/theme';
 import { ScreenState } from '@/components/ui/ScreenState';
 import type { RootStackParamList } from './types';
 import { AuthNavigator } from './AuthNavigator';
-import { AppTabs } from './AppTabs';
+import { ProductionAppTabs } from './ProductionAppTabs';
+import { useAppMotion } from '@/hooks/useAppMotion';
 import { ProfileEditScreen } from '@/screens/app/ProfileEditScreen';
 import { NotificationsScreen } from '@/screens/app/NotificationsScreen';
 import { NotesScreen } from '@/screens/app/NotesScreen';
@@ -25,6 +26,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const colors = Colors.light;
+  const { reduceMotion } = useAppMotion();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isHydratingSession = useAuthStore((state) => state.isHydratingSession);
   const hydrateSession = useAuthStore((state) => state.hydrateSession);
@@ -63,7 +65,7 @@ export function RootNavigator() {
           headerShown: false,
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
-          animation: 'ios_from_right',
+          animation: reduceMotion ? 'none' : 'slide_from_right',
           gestureEnabled: true,
           headerBackTitle: 'Back',
           headerTransparent: false,
@@ -72,7 +74,7 @@ export function RootNavigator() {
         {isAuthenticated ? (
           <>
             <Stack.Group screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="App" component={AppTabs} />
+              <Stack.Screen name="App" component={ProductionAppTabs} />
             </Stack.Group>
             <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />

@@ -11,10 +11,11 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, Shadows, Spacing, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, Shadows, Spacing, Typography } from '../../constants/theme';
+import { useAppMotion } from '../../hooks/useAppMotion';
+import { AppIcon } from './AppIcon';
 
 interface ModalSheetProps {
   visible: boolean;
@@ -57,6 +58,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   presentation = 'bottom',
 }) => {
   const { colors } = useTheme();
+  const { reduceMotion } = useAppMotion();
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isSideSheet = presentation === 'side';
@@ -69,20 +71,24 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   const closeButtonRef = useRef<any>(null);
 
   const animateIn = useCallback(() => {
+    if (reduceMotion) {
+      (isSideSheet ? translateX : translateY).setValue(0);
+      return;
+    }
     Animated.spring(isSideSheet ? translateX : translateY, {
       toValue: 0,
       useNativeDriver: true,
       tension: 70,
       friction: 10,
     }).start();
-  }, [isSideSheet, translateX, translateY]);
+  }, [isSideSheet, reduceMotion, translateX, translateY]);
 
   useEffect(() => {
     if (visible) {
       if (isSideSheet) {
-        translateX.setValue(sideSheetHiddenOffset);
+        translateX.setValue(reduceMotion ? 0 : sideSheetHiddenOffset);
       } else {
-        translateY.setValue(24);
+        translateY.setValue(reduceMotion ? 0 : 24);
       }
       requestAnimationFrame(() => {
         animateIn();
@@ -91,7 +97,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
         }
       });
     }
-  }, [visible, isSideSheet, sideSheetHiddenOffset, translateX, translateY, animateIn]);
+  }, [visible, isSideSheet, reduceMotion, sideSheetHiddenOffset, translateX, translateY, animateIn]);
 
   useEffect(() => {
     if (!visible) return;
@@ -167,7 +173,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
     <Modal
       transparent
       visible={visible}
-      animationType="fade"
+      animationType={reduceMotion ? 'none' : 'fade'}
       onRequestClose={onClose}
       statusBarTranslucent
     >
@@ -190,7 +196,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
               bottom: 0,
               left: 0,
             },
-            backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            backgroundColor: colors.overlay,
           }}
         />
 
@@ -244,9 +250,9 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  fontSize: Typography.fontSize.lg,
-                  fontFamily: Typography.fontFamily.semiBold,
-                  color: colors.textPrimary,
+                fontSize: Typography.fontSize.lg,
+                fontFamily: Typography.fontFamily.semiBold,
+                color: colors.textPrimary,
                 }}
               >
                 {title}
@@ -272,9 +278,9 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
               accessibilityLabel="Close"
               onPress={onClose}
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 17,
+                width: ComponentTokens.minTouchTarget,
+                height: ComponentTokens.minTouchTarget,
+                borderRadius: BorderRadius.full,
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: colors.surface,
@@ -282,7 +288,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
                 borderColor: colors.border,
               }}
             >
-              <MaterialCommunityIcons name="close" size={18} color={colors.textPrimary} />
+              <AppIcon name="close" size={20} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 

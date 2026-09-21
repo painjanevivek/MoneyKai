@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import {
   View,
   TextInput,
@@ -8,9 +8,9 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, ComponentTokens, Spacing, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, IconSize, Spacing, Typography } from '../../constants/theme';
+import { AppIcon } from './AppIcon';
 
 interface InputProps {
   label?: string;
@@ -18,7 +18,9 @@ interface InputProps {
   value: string;
   onChangeText: (text: string) => void;
   error?: string;
+  helperText?: string;
   icon?: string;
+  required?: boolean;
   secureTextEntry?: boolean;
   keyboardType?: 'default' | 'numeric' | 'number-pad' | 'decimal-pad' | 'email-address' | 'phone-pad';
   inputMode?: TextInputProps['inputMode'];
@@ -36,6 +38,7 @@ interface InputProps {
   returnKeyType?: TextInputProps['returnKeyType'];
   onSubmitEditing?: TextInputProps['onSubmitEditing'];
   autoCorrect?: boolean;
+  testID?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -44,7 +47,9 @@ export const Input: React.FC<InputProps> = ({
   value,
   onChangeText,
   error,
+  helperText,
   icon,
+  required = false,
   secureTextEntry = false,
   keyboardType = 'default',
   inputMode,
@@ -62,10 +67,13 @@ export const Input: React.FC<InputProps> = ({
   returnKeyType,
   onSubmitEditing,
   autoCorrect,
+  testID,
 }) => {
   const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [isSecureVisible, setIsSecureVisible] = useState(!secureTextEntry);
+  const reactId = useId();
+  const inputLabel = label ? `${label}${required ? ', required' : ''}` : placeholder;
   const resolvedAutoCorrect = autoCorrect ?? (!secureTextEntry && keyboardType !== 'email-address');
 
   const borderColor = error
@@ -79,6 +87,7 @@ export const Input: React.FC<InputProps> = ({
     <View style={[{ marginBottom: Spacing.base }, style]}>
       {label && (
         <Text
+          nativeID={`${reactId}-label`}
           style={{
             fontSize: Typography.fontSize.sm,
             fontFamily: Typography.fontFamily.semiBold,
@@ -86,7 +95,7 @@ export const Input: React.FC<InputProps> = ({
             marginBottom: Spacing.sm,
           }}
         >
-          {label}
+          {label}{required ? ' *' : ''}
         </Text>
       )}
       <View
@@ -95,7 +104,7 @@ export const Input: React.FC<InputProps> = ({
           alignItems: multiline ? 'flex-start' : 'center',
           backgroundColor: editable ? colors.surface : colors.surfaceElevated,
           borderRadius: BorderRadius.md,
-          borderWidth: 1.5,
+          borderWidth: isFocused ? 2 : ComponentTokens.borderWidth,
           borderColor,
           paddingHorizontal: Spacing.md,
           paddingVertical: multiline ? Spacing.md : 0,
@@ -104,9 +113,9 @@ export const Input: React.FC<InputProps> = ({
         }}
       >
         {icon && (
-          <MaterialCommunityIcons
+          <AppIcon
             name={icon}
-            size={20}
+            size={IconSize.sm}
             color={isFocused ? colors.primary : colors.textTertiary}
             style={{ marginRight: Spacing.sm }}
           />
@@ -124,8 +133,8 @@ export const Input: React.FC<InputProps> = ({
           </Text>
         )}
         <TextInput
-          accessibilityLabel={label ?? placeholder}
-          accessibilityHint={error ? error : undefined}
+          accessibilityLabel={inputLabel}
+          accessibilityHint={error ?? helperText}
           accessibilityState={{ disabled: !editable }}
           value={value}
           onChangeText={onChangeText}
@@ -144,6 +153,7 @@ export const Input: React.FC<InputProps> = ({
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
           autoCorrect={resolvedAutoCorrect}
+          testID={testID}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           style={[
@@ -175,10 +185,13 @@ export const Input: React.FC<InputProps> = ({
             onPress={() => setIsSecureVisible(!isSecureVisible)}
             accessibilityRole="button"
             accessibilityLabel={isSecureVisible ? 'Hide password' : 'Show password'}
+            accessibilityState={{ disabled: !editable }}
+            disabled={!editable}
+            style={{ alignItems: 'center', height: ComponentTokens.minTouchTarget, justifyContent: 'center', marginRight: -Spacing.sm, width: ComponentTokens.minTouchTarget }}
           >
-            <MaterialCommunityIcons
+            <AppIcon
               name={isSecureVisible ? 'eye-off-outline' : 'eye-outline'}
-              size={20}
+              size={IconSize.sm}
               color={colors.textTertiary}
             />
           </TouchableOpacity>
@@ -186,6 +199,7 @@ export const Input: React.FC<InputProps> = ({
       </View>
       {error && (
         <Text
+          accessibilityLiveRegion="polite"
           style={{
             fontSize: Typography.fontSize.xs,
             fontFamily: Typography.fontFamily.medium,
@@ -196,6 +210,19 @@ export const Input: React.FC<InputProps> = ({
           {error}
         </Text>
       )}
+      {!error && helperText ? (
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontFamily: Typography.fontFamily.regular,
+            fontSize: Typography.fontSize.xs,
+            lineHeight: Typography.lineHeight.sm,
+            marginTop: Spacing.xs,
+          }}
+        >
+          {helperText}
+        </Text>
+      ) : null}
     </View>
   );
 };

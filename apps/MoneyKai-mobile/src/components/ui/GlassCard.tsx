@@ -16,19 +16,10 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   color,
   padding = 'base',
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
-  const bgColor = color
-    ? `${color}15`
-    : isDark
-      ? 'rgba(30, 41, 59, 0.7)'
-      : 'rgba(255, 255, 255, 0.85)';
-
-  const borderColor = color
-    ? `${color}30`
-    : isDark
-      ? 'rgba(51, 65, 85, 0.5)'
-      : 'rgba(255, 255, 255, 0.3)';
+  const bgColor = color ? `${color}12` : colors.glassBg;
+  const borderColor = color ? `${color}33` : colors.glassBorder;
 
   return (
     <View
@@ -39,7 +30,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
           padding: Spacing[padding],
           borderWidth: 1,
           borderColor: borderColor,
-          ...Shadows.md,
+          ...Shadows.sm,
           shadowColor: colors.shadowColor,
         },
         style,
