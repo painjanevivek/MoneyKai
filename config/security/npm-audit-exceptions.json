@@ -14,6 +14,20 @@
         "The vulnerable library is absent from the emitted web application bundle.",
         "Every pull request runs clean-install, audit-policy, test, and production-export gates."
       ]
+    },
+    {
+      "id": "PR1-EXPO56-TRANSITIVE-JSON-TOOLS",
+      "packages": ["@expo/xcpretty", "@redocly/openapi-core", "@xmldom/xmldom", "js-yaml"],
+      "scope": "web-build-tooling",
+      "owner": "MoneyKai founder/account holder",
+      "review_by": "2026-09-24",
+      "maximum_severity": "high",
+      "removal_condition": "Remove once the Expo 56 and OpenAPI toolchain upgrades to patched transitive versions that no longer require the vulnerable JSON/XML parsing dependencies.",
+      "compensating_controls": [
+        "The vulnerable packages are only pulled in through the web build and OpenAPI tooling chain, not through runtime app code.",
+        "The repository does not accept unreviewed version bumps to these transitive dependencies without a full dependency audit pass.",
+        "Every PR still runs lockfile drift, dependency audit, and production export verification gates before merge."
+      ]
     }
   ]
 }
