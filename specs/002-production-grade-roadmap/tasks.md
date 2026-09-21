@@ -37,7 +37,7 @@ Every file-changing task must be validated, committed, and pushed before the nex
 
 **Depends on**: M02
 
-- [ ] M03.1 Document dependency direction across apps, domain, API client, storage, auth, UI, and platform adapters.
+- [x] M03.1 Document dependency direction across apps, domain, API client, storage, auth, UI, and platform adapters. ([evidence](../../docs/operations/roadmap/M03/M03.1-dependency-direction.md))
 - [ ] M03.2 Move duplicated financial/validation rules to `packages/domain` with contract tests.
 - [ ] M03.3 Enforce canonical OpenAPI/API-client boundaries and remove unauthorized parallel data paths.
 - [ ] M03.4 Isolate Firebase, persistence, network, analytics, and native integrations behind typed interfaces.
