@@ -37,7 +37,7 @@ interface FeatureItem {
 
 export function MoreScreen() {
   const navigation = useNavigation<MoreNavigation>();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = createAppScreenStyles(colors);
   const user = useAuthStore((state) => state.user);
   const unreadCount = useNotificationStore((state) => state.unreadCount);
@@ -115,7 +115,7 @@ export function MoreScreen() {
     {
       title: 'Settings',
       body: 'Backup, security, sync, and app preferences.',
-      metric: isDark ? 'Dark mode' : 'Light mode',
+      metric: 'Light appearance',
       icon: 'cog-outline',
       route: 'Settings',
       tone: 'primary',

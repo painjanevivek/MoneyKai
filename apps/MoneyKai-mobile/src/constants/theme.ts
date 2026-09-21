@@ -1,46 +1,35 @@
 import { Dimensions } from 'react-native';
+import {
+  ControlTokens,
+  ElevationTokens,
+  GlassTokens,
+  IconTokens,
+  MotionTokens,
+  SemanticColors,
+  ShapeTokens,
+  SpaceTokens,
+  TypeTokens,
+} from './designTokens';
+
+export {
+  BrandPalette,
+  ControlTokens,
+  ElevationTokens,
+  GlassTokens,
+  IconTokens,
+  MotionTokens,
+  SemanticColors,
+  ShapeTokens,
+  SpaceTokens,
+  TypeTokens,
+} from './designTokens';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 export const Colors = {
   light: {
-    primary: '#0F766E',
-    primaryLight: '#14B8A6',
-    primaryDark: '#134E4A',
-    primaryBg: '#DDF7F1',
-    accent: '#2563EB',
-    accentLight: '#E8F0FF',
-    emergency: '#DC2626',
-    emergencyBg: '#FEE2E2',
-    background: '#F4F7F5',
-    surface: '#FFFFFF',
-    surfaceElevated: '#FBFFFD',
-    card: '#FFFFFF',
-    border: '#C7D8D2',
-    borderLight: '#E1ECE8',
-    textPrimary: '#13211D',
-    textSecondary: '#49635B',
-    textTertiary: '#789089',
-    textInverse: '#FFFFFF',
-    success: '#059669',
-    warning: '#B7791F',
-    error: '#DC2626',
-    info: '#2563EB',
-    // Chart colors
-    chart1: '#0F766E',
-    chart2: '#2563EB',
-    chart3: '#D97706',
-    chart4: '#7C3AED',
-    chart5: '#DC2626',
-    chart6: '#059669',
-    chart7: '#64748B',
-    chart8: '#0891B2',
-    // Shadows
-    shadowColor: '#12322B',
-    overlay: 'rgba(10, 31, 26, 0.52)',
-    glassBg: 'rgba(255, 255, 255, 0.9)',
-    glassBorder: 'rgba(15, 118, 110, 0.22)',
+    ...SemanticColors,
   },
   dark: {
     primary: '#7DD3C7',
@@ -383,22 +372,11 @@ export const THEME_MODE_BY_PALETTE: Record<ThemePaletteId, { light: ThemeMode; d
   ivoryEmerald: { light: 'light', dark: 'ivoryEmeraldDark' },
 };
 
-export const isThemeModeDark = (theme: ThemeMode): boolean =>
-  theme === 'dark' || theme === 'emeraldMistDark' || theme === 'monsoonGlassDark' || theme === 'ivoryEmeraldDark';
+export const isThemeModeDark = (_theme?: unknown): false => false;
 
-export const getPaletteForThemeMode = (theme?: ThemeMode): ThemePaletteId => {
-  if (!theme) return DEFAULT_THEME_PALETTE;
-  const match = (Object.keys(THEME_MODE_BY_PALETTE) as ThemePaletteId[]).find((palette) => {
-    const modes = THEME_MODE_BY_PALETTE[palette];
-    return modes.light === theme || modes.dark === theme;
-  });
-  return match ?? DEFAULT_THEME_PALETTE;
-};
+export const getPaletteForThemeMode = (_theme?: unknown): ThemePaletteId => DEFAULT_THEME_PALETTE;
 
-export const getThemeModeForPalette = (palette: ThemePaletteId, darkModeEnabled: boolean): ThemeMode => {
-  const modes = THEME_MODE_BY_PALETTE[palette] ?? THEME_MODE_BY_PALETTE[DEFAULT_THEME_PALETTE];
-  return darkModeEnabled ? modes.dark : modes.light;
-};
+export const getThemeModeForPalette = (_palette?: unknown, _darkModeEnabled?: unknown): ThemeMode => 'light';
 
 type ThemeOption = {
   id: ThemePaletteId;
@@ -410,136 +388,43 @@ type ThemeOption = {
 
 export const THEME_OPTIONS: readonly ThemeOption[] = [
   {
-    id: 'emeraldMist',
-    label: 'Emerald Mist',
-    description: 'Light frosted mint glass',
-    icon: 'blur',
-    swatches: ['#8FE8D8', '#F7FBF7', '#A9D7FF'],
-  },
-  {
-    id: 'deepJade',
-    label: 'Deep Jade',
-    description: 'Premium low-light glass',
-    icon: 'weather-night',
-    swatches: ['#07110F', '#7DD3C7', '#D6C889'],
-  },
-  {
-    id: 'monsoonGlass',
-    label: 'Monsoon Glass',
-    description: 'Cool teal rainy depth',
-    icon: 'weather-pouring',
-    swatches: ['#7FD8E7', '#061117', '#86EFAC'],
-  },
-  {
     id: 'ivoryEmerald',
-    label: 'Ivory Emerald',
-    description: 'Warm trust-first glass',
-    icon: 'leaf-circle-outline',
-    swatches: ['#D6C889', '#FFFDF2', '#6FBBA9'],
+    label: 'MoneyKai',
+    description: 'Light-only lime, olive, and warm ivory',
+    icon: 'shield-check-outline',
+    swatches: ['#B8F25C', '#F1EAD7', '#667453'],
   },
 ] as const;
 
 // ─── Typography ──────────────────────────────────────────────────────────────
 export const Typography = {
-  fontFamily: {
-    regular: 'Poppins_400Regular',
-    medium: 'Poppins_500Medium',
-    semiBold: 'Poppins_600SemiBold',
-    bold: 'Poppins_700Bold',
-    display: 'Poppins_600SemiBold',
-  },
-  fontSize: {
-    xs: 10,
-    sm: 12,
-    base: 14,
-    md: 16,
-    lg: 18,
-    xl: 20,
-    '2xl': 24,
-    '3xl': 28,
-    '4xl': 32,
-    '5xl': 40,
-  },
-  lineHeight: {
-    xs: 14,
-    sm: 18,
-    base: 22,
-    md: 24,
-    lg: 28,
-    xl: 30,
-    '2xl': 34,
-    '3xl': 38,
-    '4xl': 42,
-    '5xl': 52,
-  },
+  ...TypeTokens,
 } as const;
 
 // ─── Spacing ─────────────────────────────────────────────────────────────────
 export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  base: 16,
-  lg: 20,
-  xl: 24,
-  '2xl': 32,
-  '3xl': 40,
-  '4xl': 48,
-  '5xl': 64,
+  ...SpaceTokens,
 } as const;
 
 // ─── Border Radius ───────────────────────────────────────────────────────────
 export const BorderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  '2xl': 24,
-  full: 9999,
+  ...ShapeTokens,
 } as const;
 
 export const ComponentTokens = {
-  controlHeight: {
-    sm: 40,
-    md: 48,
-    lg: 56,
-  },
-  controlPaddingX: {
-    sm: 14,
-    md: 18,
-    lg: 24,
-  },
-  focusRingWidth: 3,
-  disabledOpacity: 0.56,
-  pressedScale: 0.96,
+  controlHeight: ControlTokens.height,
+  controlPaddingX: ControlTokens.paddingX,
+  minTouchTarget: ControlTokens.minTouchTarget,
+  focusRingWidth: ControlTokens.focusRingWidth,
+  borderWidth: ControlTokens.borderWidth,
+  disabledOpacity: ControlTokens.disabledOpacity,
+  pressedOpacity: ControlTokens.pressedOpacity,
+  pressedScale: ControlTokens.pressedScale,
 } as const;
 
 // ─── Shadows ─────────────────────────────────────────────────────────────────
 export const Shadows = {
-  sm: {
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  md: {
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  lg: {
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  xl: {
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 10,
-  },
+  ...ElevationTokens,
   glow: (color: string) => ({
     shadowColor: color,
     shadowOffset: { width: 0, height: 0 },
@@ -553,7 +438,12 @@ export const Shadows = {
 export const Layout = {
   screenWidth: SCREEN_WIDTH,
   screenHeight: SCREEN_HEIGHT,
-  maxContentWidth: 428,
-  tabBarHeight: 80,
+  maxContentWidth: 520,
+  horizontalPadding: SpaceTokens.base,
+  tabBarHeight: 68,
   headerHeight: 56,
 } as const;
+
+export const Motion = MotionTokens;
+export const IconSize = IconTokens;
+export const Glass = GlassTokens;

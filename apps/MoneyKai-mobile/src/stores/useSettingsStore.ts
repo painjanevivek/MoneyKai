@@ -5,7 +5,6 @@ import {
   DEFAULT_THEME_PALETTE,
   getPaletteForThemeMode,
   getThemeModeForPalette,
-  isThemeModeDark,
   type ThemeMode,
   type ThemePaletteId,
 } from '../constants/theme';
@@ -64,10 +63,6 @@ interface SettingsState {
   exchangeRateError?: string;
 
   // Actions
-  toggleTheme: () => void;
-  setTheme: (theme: ThemeMode) => void;
-  setThemePalette: (themePalette: ThemePaletteId) => void;
-  setDarkModeEnabled: (enabled: boolean) => void;
   setCurrency: (currency: string, symbol: string) => void;
   refreshExchangeRates: (force?: boolean) => Promise<void>;
   toggleNotifications: () => void;
@@ -92,85 +87,6 @@ export const useSettingsStore = create<SettingsState>()(
       appLockEnabled: false,
       tourCompletedByUserId: {},
       exchangeRates: FALLBACK_INR_EXCHANGE_RATES,
-
-      toggleTheme: () =>
-        set((state) => {
-          const darkModeEnabled = !state.darkModeEnabled;
-          const theme = getThemeModeForPalette(state.themePalette, darkModeEnabled);
-          const next: PersistedAppSettings = {
-            theme,
-            themePalette: state.themePalette,
-            darkModeEnabled,
-            currency: state.currency,
-            currencySymbol: state.currencySymbol,
-            notificationsEnabled: state.notificationsEnabled,
-            hapticEnabled: state.hapticEnabled,
-            tourCompleted: state.tourCompleted,
-            appLockEnabled: state.appLockEnabled,
-          };
-          persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
-          return { theme, darkModeEnabled };
-        }),
-
-      setTheme: (theme) =>
-        set((state) => {
-          const themePalette = getPaletteForThemeMode(theme);
-          const darkModeEnabled = isThemeModeDark(theme);
-          const resolvedTheme = getThemeModeForPalette(themePalette, darkModeEnabled);
-          const next: PersistedAppSettings = {
-            theme: resolvedTheme,
-            themePalette,
-            darkModeEnabled,
-            currency: state.currency,
-            currencySymbol: state.currencySymbol,
-            notificationsEnabled: state.notificationsEnabled,
-            hapticEnabled: state.hapticEnabled,
-            tourCompleted: state.tourCompleted,
-            appLockEnabled: state.appLockEnabled,
-          };
-          persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
-          return { theme: resolvedTheme, themePalette, darkModeEnabled };
-        }),
-
-      setThemePalette: (themePalette) =>
-        set((state) => {
-          const theme = getThemeModeForPalette(themePalette, state.darkModeEnabled);
-          const next: PersistedAppSettings = {
-            theme,
-            themePalette,
-            darkModeEnabled: state.darkModeEnabled,
-            currency: state.currency,
-            currencySymbol: state.currencySymbol,
-            notificationsEnabled: state.notificationsEnabled,
-            hapticEnabled: state.hapticEnabled,
-            tourCompleted: state.tourCompleted,
-            appLockEnabled: state.appLockEnabled,
-          };
-          persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
-          return { theme, themePalette };
-        }),
-
-      setDarkModeEnabled: (darkModeEnabled) =>
-        set((state) => {
-          const theme = getThemeModeForPalette(state.themePalette, darkModeEnabled);
-          const next: PersistedAppSettings = {
-            theme,
-            themePalette: state.themePalette,
-            darkModeEnabled,
-            currency: state.currency,
-            currencySymbol: state.currencySymbol,
-            notificationsEnabled: state.notificationsEnabled,
-            hapticEnabled: state.hapticEnabled,
-            tourCompleted: state.tourCompleted,
-            appLockEnabled: state.appLockEnabled,
-          };
-          persistAppSettings(next);
-          void requestAutomaticBackup('settings updated');
-          return { theme, darkModeEnabled };
-        }),
 
       setCurrency: (currency, symbol) =>
         set((state) => {
@@ -347,7 +263,7 @@ export const useSettingsStore = create<SettingsState>()(
       merge: (persisted, current) => {
         const persistedState = persisted as Partial<SettingsState> | undefined;
         const themePalette = persistedState?.themePalette ?? getPaletteForThemeMode(persistedState?.theme);
-        const darkModeEnabled = persistedState?.darkModeEnabled ?? isThemeModeDark(persistedState?.theme ?? current.theme);
+        const darkModeEnabled = false;
         const theme = getThemeModeForPalette(themePalette, darkModeEnabled);
 
         return {
