@@ -82,7 +82,7 @@ export function HomeOverviewScreen() {
           />
         ) : null}
 
-        <View style={[styles.panel, { backgroundColor: colors.textPrimary, paddingVertical: Spacing.xl }]}> 
+        <View style={[styles.panel, { backgroundColor: colors.textPrimary, paddingVertical: Spacing.xl }]}>
           <Text style={{ color: colors.textInverse, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm }}>{available < 0 ? 'Overspent' : 'Available to spend'}</Text>
           <Text adjustsFontSizeToFit numberOfLines={1} style={{ color: available < 0 ? colors.warningBg : colors.textInverse, fontFamily: Typography.fontFamily.display, fontSize: Typography.fontSize['4xl'], lineHeight: Typography.lineHeight['4xl'], marginTop: Spacing.xs }}>{formatMoney(available)}</Text>
           <View style={{ flexDirection: 'row', gap: Spacing.xl, marginTop: Spacing.lg }}>

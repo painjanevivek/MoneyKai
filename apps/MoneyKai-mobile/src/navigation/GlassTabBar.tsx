@@ -56,7 +56,7 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: BottomTa
   if (keyboardVisible) return null;
 
   return (
-    <View pointerEvents="box-none" style={[styles.position, { bottom: Math.max(insets.bottom, Spacing.sm) }]}> 
+    <View pointerEvents="box-none" style={[styles.position, { bottom: Math.max(insets.bottom, Spacing.sm) }]}>
       <View
         style={[
           styles.dock,
@@ -76,7 +76,7 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: BottomTa
             selectionStyle,
           ]}
         />
-        <View accessibilityRole="tablist" style={[styles.row, { gap: itemGap, paddingHorizontal: horizontalPadding }]}> 
+        <View accessibilityRole="tablist" style={[styles.row, { gap: itemGap, paddingHorizontal: horizontalPadding }]}>
           {visibleRoutes.map((route) => {
             const tab = TAB_CONFIG[route.name];
             const selected = route.key === activeRouteKey;
@@ -99,7 +99,7 @@ export function GlassTabBar({ state, descriptors, navigation, insets }: BottomTa
                 style={[styles.tab, { width: tabWidth }]}
                 testID={`primary-tab-${route.name.toLowerCase()}`}
               >
-                <View style={[styles.iconBox, isAdd && { backgroundColor: colors.action }]}> 
+                <View style={[styles.iconBox, isAdd && { backgroundColor: colors.action }]}>
                   <AppIcon
                     name={tab.icon}
                     size={isAdd ? 22 : 20}

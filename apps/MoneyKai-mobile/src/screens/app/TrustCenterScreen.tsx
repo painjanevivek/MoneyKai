@@ -46,7 +46,7 @@ export function TrustCenterScreen() {
           <Text style={styles.subtitle}>Clear explanations before permissions, syncing, or sensitive account actions.</Text>
         </View>
 
-        <View style={[styles.panel, { backgroundColor: colors.primaryBg }]}> 
+        <View style={[styles.panel, { backgroundColor: colors.primaryBg }]}>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <Text style={styles.value}>You stay in control</Text>
