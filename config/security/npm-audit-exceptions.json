@@ -17,7 +17,7 @@
     },
     {
       "id": "PR1-EXPO56-TRANSITIVE-JSON-TOOLS",
-      "packages": ["@expo/xcpretty", "@redocly/openapi-core", "@xmldom/xmldom", "js-yaml"],
+      "packages": ["@redocly/openapi-core", "@xmldom/xmldom", "js-yaml"],
       "scope": "web-build-tooling",
       "owner": "MoneyKai founder/account holder",
       "review_by": "2026-09-24",
