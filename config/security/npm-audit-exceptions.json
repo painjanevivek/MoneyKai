@@ -18,6 +18,8 @@
     {
       "id": "PR1-EXPO56-TRANSITIVE-JSON-TOOLS",
       "packages": ["@redocly/openapi-core", "@xmldom/xmldom", "js-yaml"],
+      "conditionally_reported_packages": ["@expo/xcpretty"],
+      "conditional_reason": "A clean Linux CI install reports this transitive Expo build-tool advisory while the current Windows dependency graph omits it; the named coverage remains active across both environments until review.",
       "scope": "web-build-tooling",
       "owner": "MoneyKai founder/account holder",
       "review_by": "2026-09-24",
