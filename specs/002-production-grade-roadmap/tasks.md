@@ -26,7 +26,7 @@ Every file-changing task must be validated, committed, and pushed before the nex
 
 **Depends on**: M01
 
-- [ ] M02.1 Inventory screens/states, duplicate styles, accessibility defects, and raw visual constants.
+- [x] M02.1 Inventory screens/states, duplicate styles, accessibility defects, and raw visual constants. ([evidence](../../docs/operations/roadmap/M02/M02.1-ui-inventory.md))
 - [ ] M02.2 Establish solid color, type, spacing, shape, elevation, icon, and motion tokens with no gradient/dark path.
 - [ ] M02.3 Build reusable navigation, field, button, card, sheet, disclosure, feedback, and state components.
 - [ ] M02.4 Apply progressive disclosure to onboarding, dashboard, transactions, budgets, groups, account, Trust Center, and settings.
