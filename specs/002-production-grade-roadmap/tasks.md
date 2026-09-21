@@ -8,7 +8,7 @@ Every file-changing task must be validated, committed, and pushed before the nex
 
 - [x] M00.1 Ratify the engineering/product constitution with security, financial correctness, privacy, evidence, and amendment rules. ([evidence](../../docs/operations/roadmap/M00/M00.1-constitution.md))
 - [x] M00.2 Add code ownership/approval boundaries for mobile, web, domain, API, Firebase, release, and operations. ([evidence](../../docs/operations/roadmap/M00/M00.2-code-ownership.md))
-- [ ] M00.3 Add ADR, risk-register, evidence-record, and time-bounded risk-acceptance templates.
+- [x] M00.3 Add ADR, risk-register, evidence-record, and time-bounded risk-acceptance templates. ([evidence](../../docs/operations/roadmap/M00/M00.3-governance-templates.md))
 - [ ] M00.4 Define repository-wide definition of done, dependency policy, owners, and target windows for M01-M19.
 - [ ] M00.GATE Record evidence and push `feat(milestone-00) : complete governance foundation`.
 
