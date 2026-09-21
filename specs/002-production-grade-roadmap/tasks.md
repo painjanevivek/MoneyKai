@@ -17,7 +17,7 @@ Every file-changing task must be validated, committed, and pushed before the nex
 **Depends on**: M00
 
 - [x] M01.1 Approve target users, financial jobs, trust promise, and competitive differentiation. ([evidence](../../docs/operations/roadmap/M01/M01.1-product-definition.md))
-- [ ] M01.2 Freeze Android V1 launch capabilities and explicit non-goals.
+- [x] M01.2 Freeze Android V1 launch capabilities and explicit non-goals. ([evidence](../../docs/operations/roadmap/M01/M01.2-android-v1-scope.md))
 - [ ] M01.3 Define activation, retention, task success, trust, support, and guardrail metrics.
 - [ ] M01.4 Map primary journeys to owners, analytics events, and success conditions.
 - [ ] M01.GATE Pass `PROD-01`; push `feat(milestone-01) : complete product definition`.
