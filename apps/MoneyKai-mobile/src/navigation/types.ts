@@ -16,6 +16,8 @@ export type RootStackParamList = {
   Auth: undefined;
   App: undefined;
   ProfileEdit: undefined;
+  Account: undefined;
+  TrustCenter: undefined;
   Notifications: undefined;
   Notes: undefined;
   Groups: undefined;
@@ -23,6 +25,7 @@ export type RootStackParamList = {
   Savings: undefined;
   AiReview: undefined;
   Settings: undefined;
+  AdvancedSettings: undefined;
   AutoCapture: undefined;
   Subscriptions: undefined;
 };

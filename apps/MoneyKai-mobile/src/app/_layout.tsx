@@ -10,7 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { Colors, isThemeModeDark, type ColorScheme } from '@/constants/theme';
+import { Colors, Typography, type ColorScheme } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { initializeNotificationChannel, installNotificationListeners } from '@/services/notificationService';
 import { captureDiagnosticEvent, captureException, configureDiagnosticsContext } from '@/services/diagnosticsService';
@@ -68,7 +68,7 @@ class AppErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <Text style={{ fontSize: 20, fontFamily: 'Poppins_700Bold', color: colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>
+          <Text style={{ fontSize: 20, fontFamily: Typography.fontFamily.bold, color: colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>
             Something went wrong
           </Text>
           <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
@@ -76,9 +76,9 @@ class AppErrorBoundary extends React.Component<
           </Text>
           <TouchableOpacity
             onPress={this.handleRetry}
-            style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
+            style={{ backgroundColor: colors.action, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
           >
-            <Text style={{ color: colors.textInverse, fontWeight: '600', fontSize: 15 }}>Try Again</Text>
+            <Text style={{ color: colors.onAction, fontWeight: '600', fontSize: 15 }}>Try Again</Text>
           </TouchableOpacity>
         </View>
       );
@@ -111,12 +111,9 @@ function NativeNotificationResponseRouter() {
 }
 
 export default function RootLayout() {
-  const theme = useSettingsStore((s) => s.theme);
-  const darkModeEnabled = useSettingsStore((s) => s.darkModeEnabled);
   const currencyRenderToken = useSettingsStore((s) => `${s.currency}:${s.currencySymbol}:${s.exchangeRatesUpdatedAt ?? ''}`);
   const refreshExchangeRates = useSettingsStore((s) => s.refreshExchangeRates);
-  const colors = (Colors[theme] ?? Colors.light) as ColorScheme;
-  const isDark = darkModeEnabled || isThemeModeDark(theme);
+  const colors = Colors.light as ColorScheme;
   const hydrateSession = useAuthStore((s) => s.hydrateSession);
   const isHydratingSession = useAuthStore((s) => s.isHydratingSession);
 
@@ -221,7 +218,7 @@ export default function RootLayout() {
 
   return (
     <AppErrorBoundary colors={colors}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style="dark" />
       <AutoBackupCoordinator />
       <BudgetResetCoordinator />
       <AutoCaptureCoordinator />

@@ -1,14 +1,15 @@
 import React from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, Shadows, Spacing } from '../../constants/theme';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
-  variant?: 'default' | 'elevated' | 'outlined' | 'glass';
+  style?: StyleProp<ViewStyle>;
+  variant?: 'default' | 'elevated' | 'raised' | 'outlined' | 'support' | 'glass';
   padding?: keyof typeof Spacing;
   borderRadius?: keyof typeof BorderRadius;
+  testID?: string;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -16,30 +17,36 @@ export const Card: React.FC<CardProps> = ({
   style,
   variant = 'default',
   padding = 'base',
-  borderRadius = 'sm',
+  borderRadius = 'md',
+  testID,
 }) => {
   const { colors } = useTheme();
-  const isGlass = variant === 'default' || variant === 'glass';
+  const isGlass = variant === 'glass';
+  const isRaised = variant === 'elevated' || variant === 'raised';
 
   const cardStyle: ViewStyle = {
-    backgroundColor: isGlass ? colors.glassBg : variant === 'elevated' ? colors.surfaceElevated : colors.card,
+    backgroundColor: isGlass
+      ? colors.glassBg
+      : variant === 'support'
+        ? colors.surfaceSupport
+        : isRaised
+          ? colors.surface
+          : colors.card,
     borderRadius: BorderRadius[borderRadius],
     padding: Spacing[padding],
-    overflow: 'hidden',
     ...(variant === 'outlined'
-      ? { borderWidth: 1, borderColor: colors.borderLight }
-      : variant === 'elevated'
-        ? { borderWidth: 1, borderColor: colors.borderLight, ...Shadows.lg, shadowColor: colors.shadowColor }
+      ? { borderWidth: 1, borderColor: colors.border }
+      : isRaised
+        ? { borderWidth: 1, borderColor: colors.borderLight, ...Shadows.md, shadowColor: colors.shadowColor }
         : {
             borderWidth: 1,
             borderColor: isGlass ? colors.glassBorder : colors.borderLight,
-            ...Shadows.md,
-            shadowColor: colors.shadowColor,
+            ...(isGlass ? { ...Shadows.sm, shadowColor: colors.shadowColor } : {}),
           }
     ),
   };
 
-  return <View style={[cardStyle, style]}>{children}</View>;
+  return <View style={[cardStyle, style]} testID={testID}>{children}</View>;
 };
 
 export default Card;

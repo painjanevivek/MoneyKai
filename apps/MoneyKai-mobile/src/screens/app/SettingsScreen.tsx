@@ -23,7 +23,7 @@ import {
   type MoneyKaiBackupMetadata,
 } from '@/services/backupService';
 import { useTheme } from '@/hooks/useTheme';
-import { BorderRadius, Spacing, THEME_OPTIONS, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { createAppScreenStyles } from './screenStyles';
 
@@ -66,7 +66,7 @@ const buildBackupConfirmationMessage = (metadata: MoneyKaiBackupMetadata): strin
   ].join('\n');
 
 export function SettingsScreen() {
-  const { colors, darkModeEnabled, setDarkModeEnabled, setThemePalette, themePalette } = useTheme();
+  const { colors } = useTheme();
   const styles = createAppScreenStyles(colors);
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
@@ -335,65 +335,6 @@ export function SettingsScreen() {
 
         <View style={styles.panel}>
           <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={[styles.row, { marginBottom: Spacing.md }]}>
-            <Text style={styles.muted}>Dark mode</Text>
-            <Switch
-              value={darkModeEnabled}
-              onValueChange={setDarkModeEnabled}
-              trackColor={{ false: colors.border, true: colors.primaryBg }}
-              thumbColor={darkModeEnabled ? colors.primary : colors.textTertiary}
-            />
-          </View>
-          <View style={{ gap: Spacing.sm, marginBottom: Spacing.md }}>
-            <Text style={styles.muted}>Theme palette</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-              {THEME_OPTIONS.map((option) => {
-                const active = themePalette === option.id;
-                return (
-                  <TouchableOpacity
-                    key={option.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    activeOpacity={0.82}
-                    onPress={() => setThemePalette(option.id)}
-                    style={{
-                      width: '48%',
-                      minWidth: 132,
-                      flexGrow: 1,
-                      borderRadius: BorderRadius.md,
-                      borderWidth: 1,
-                      borderColor: active ? colors.primary : colors.border,
-                      backgroundColor: active ? colors.primaryBg : colors.surface,
-                      padding: Spacing.sm,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', marginBottom: Spacing.xs }}>
-                      {option.swatches.map((swatch) => (
-                        <View
-                          key={swatch}
-                          style={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: 8,
-                            backgroundColor: swatch,
-                            borderWidth: 1,
-                            borderColor: colors.borderLight,
-                            marginRight: -3,
-                          }}
-                        />
-                      ))}
-                    </View>
-                    <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm }}>
-                      {option.label}
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.xs, marginTop: 2 }} numberOfLines={2}>
-                      {option.description}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
           <View style={[styles.row, { marginBottom: Spacing.md }]}>
             <Text style={styles.muted}>Notifications</Text>
             <Switch

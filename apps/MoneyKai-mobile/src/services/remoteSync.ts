@@ -18,7 +18,7 @@ import {
   captureRemoteSyncSession,
   isRemoteSyncSessionCurrent,
   type RemoteSyncSession,
-} from '@moneykai/domain/syncSession';
+} from '@moneykai/domain';
 
 const REMOTE_SNAPSHOT_CACHE_TTL_MS = 10 * 60 * 1000;
 

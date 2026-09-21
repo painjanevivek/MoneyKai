@@ -7,6 +7,7 @@ import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenState } from '@/components/ui/ScreenState';
+import { Disclosure } from '@/components/ui/Disclosure';
 import { EXPENSE_CATEGORIES, getCategoryById } from '@/constants/categories';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -242,7 +243,7 @@ export function BudgetScreen() {
 
         <View style={styles.panel}>
           <BudgetSpendingPieChart spentTotals={spentTotals} formatMoney={formatMoney} />
-          <Text style={styles.sectionTitle}>Category limit settings</Text>
+          <Disclosure title="Category limits" summary={`${formatMoney(totalCategoryLimits)} across ${Object.keys(normalizedLimits).length} categories`}>
           <Text style={[styles.muted, { marginBottom: Spacing.md }]}>
             Give every noisy spending category a clear ceiling. Leave a field empty when you do not want a limit.
           </Text>
@@ -320,10 +321,11 @@ export function BudgetScreen() {
               );
             })}
           </View>
+          </Disclosure>
         </View>
 
         <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>Budget settings</Text>
+          <Disclosure title="Edit budget settings" summary={`${formatMoney(settings.monthly_allowance)} · resets on day ${settings.reset_day}`}>
           <Input
             label="Monthly allowance"
             value={allowance}
@@ -369,10 +371,11 @@ export function BudgetScreen() {
             />
           </View>
           <Button title="Save budget" onPress={saveBudget} />
+          </Disclosure>
         </View>
 
         <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>Manual adjustment</Text>
+          <Disclosure title="Manual adjustment" summary="Record a mid-cycle allowance change">
           <Input
             label="Amount"
             value={adjustmentAmount}
@@ -393,6 +396,7 @@ export function BudgetScreen() {
             <Button title="Add" onPress={() => saveAdjustment('add')} variant="secondary" style={{ flex: 1 }} />
             <Button title="Subtract" onPress={() => saveAdjustment('subtract')} variant="outline" style={{ flex: 1 }} />
           </View>
+          </Disclosure>
         </View>
 
         <Text style={styles.sectionTitle}>Recent adjustments</Text>

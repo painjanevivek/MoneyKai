@@ -8,6 +8,9 @@ const config = {
   watchFolders: [workspaceRoot],
   resolver: {
     blockList: [new RegExp(`${workspaceRoot.replace(/[/\\]/g, '[/\\\\]')}[/\\\\]\\.pytest_cache([/\\\\].*)?$`)],
+    extraNodeModules: {
+      '@moneykai/domain': path.resolve(workspaceRoot, 'packages/domain'),
+    },
     nodeModulesPaths: [
       path.resolve(__dirname, 'node_modules'),
       path.resolve(workspaceRoot, 'node_modules'),

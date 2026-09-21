@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, type ViewStyle } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, Shadows, Typography, Spacing } from '../../constants/theme';
+import { BorderRadius, Typography, Spacing } from '../../constants/theme';
+import { AppIcon } from './AppIcon';
 
 interface EmptyStateProps {
   icon?: string;
@@ -33,8 +33,6 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           borderWidth: 1,
           paddingVertical: Spacing['2xl'],
           paddingHorizontal: Spacing.xl,
-          ...Shadows.sm,
-          shadowColor: colors.shadowColor,
         },
         style,
       ]}
@@ -52,7 +50,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           borderColor: `${colors.primary}22`,
         }}
       >
-        <MaterialCommunityIcons name={icon} size={28} color={colors.primary} />
+        <AppIcon name={icon} size={28} color={colors.primary} />
       </View>
       <Text
         style={{

@@ -1,16 +1,19 @@
 import React from 'react';
 import { ActivityIndicator, Text, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn, Layout } from 'react-native-reanimated';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { useAppMotion } from '@/hooks/useAppMotion';
+import { AppIcon } from './AppIcon';
 import { Button } from './Button';
+import { getFeedbackPalette, SCREEN_STATE_DEFAULTS, type ScreenStateKind } from './uiContracts';
 
 type ScreenStateProps = {
   actionLabel?: string;
   body: string;
   icon?: string;
   loading?: boolean;
+  kind?: ScreenStateKind;
   onAction?: () => void;
   style?: ViewStyle;
   tone?: 'neutral' | 'primary' | 'danger';
@@ -22,19 +25,25 @@ export function ScreenState({
   body,
   icon,
   loading = false,
+  kind,
   onAction,
   style,
   tone = 'neutral',
   title,
 }: ScreenStateProps) {
   const { colors } = useTheme();
-  const toneColor = tone === 'danger' ? colors.error : tone === 'primary' ? colors.primary : colors.textSecondary;
-  const resolvedIcon = icon ?? (loading ? 'sync' : tone === 'danger' ? 'alert-circle-outline' : 'tray');
+  const { reduceMotion } = useAppMotion();
+  const resolvedKind: ScreenStateKind = loading ? 'loading' : kind ?? (tone === 'danger' ? 'error' : 'neutral');
+  const stateDefaults = SCREEN_STATE_DEFAULTS[resolvedKind];
+  const palette = getFeedbackPalette(colors, tone === 'primary' ? 'info' : stateDefaults.tone);
+  const resolvedIcon = icon ?? stateDefaults.icon;
 
   return (
     <Animated.View
-      entering={FadeIn.duration(220)}
-      layout={Layout.springify().damping(18).stiffness(180)}
+      accessibilityLiveRegion={resolvedKind === 'error' || resolvedKind === 'conflict' ? 'assertive' : 'polite'}
+      accessibilityRole={resolvedKind === 'error' || resolvedKind === 'conflict' ? 'alert' : undefined}
+      entering={reduceMotion ? undefined : FadeIn.duration(180)}
+      layout={reduceMotion ? undefined : Layout.springify().damping(18).stiffness(180)}
       style={[
         {
           alignItems: 'center',
@@ -51,19 +60,19 @@ export function ScreenState({
       <View
         style={{
           alignItems: 'center',
-          backgroundColor: tone === 'danger' ? colors.emergencyBg : colors.primaryBg,
+          backgroundColor: palette.background,
           borderRadius: BorderRadius.full,
           borderWidth: 1,
-          borderColor: tone === 'danger' ? `${colors.error}22` : `${colors.primary}22`,
+          borderColor: palette.border,
           height: 48,
           justifyContent: 'center',
           width: 48,
         }}
       >
         {loading ? (
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={palette.foreground} />
         ) : (
-          <MaterialCommunityIcons name={resolvedIcon} size={24} color={toneColor} />
+          <AppIcon name={resolvedIcon} size={24} color={palette.foreground} />
         )}
       </View>
       <Text
