@@ -1,0 +1,54 @@
+# MoneyKai code ownership
+#
+# The founder is the accountable owner until delegated owners are added. This file routes
+# review; docs/governance/code-ownership.md defines the required approval dimensions.
+* @painjanevivek
+
+# Product governance and release gates
+/.specify/memory/constitution.md @painjanevivek
+/specs/ @painjanevivek
+/docs/governance/ @painjanevivek
+/.github/CODEOWNERS @painjanevivek
+
+# Mobile applications and Android release configuration
+/apps/MoneyKai-mobile/ @painjanevivek
+/apps/MoneyKai-flutter/ @painjanevivek
+
+# Web application and deployment surface
+/apps/MoneyKai-web/ @painjanevivek
+/vercel.json @painjanevivek
+/.vercelignore @painjanevivek
+
+# Canonical financial domain and API contracts
+/packages/domain/ @painjanevivek
+/packages/api-client/ @painjanevivek
+/contracts/ @painjanevivek
+
+# API implementation, identity, billing, and lifecycle routes
+/api/ @painjanevivek
+
+# Firebase authority and data-access policy
+/firebase.json @painjanevivek
+/firestore.rules @painjanevivek
+/firestore.backend-authority.rules @painjanevivek
+/firestore.indexes.json @painjanevivek
+/supabase/ @painjanevivek
+
+# Dependency, security, CI, signing, deployment, and release controls
+/.github/workflows/ @painjanevivek
+/.github/dependabot.yml @painjanevivek
+/package.json @painjanevivek
+/package-lock.json @painjanevivek
+/config/security/ @painjanevivek
+/scripts/ @painjanevivek
+/apps/MoneyKai-mobile/app.json @painjanevivek
+/apps/MoneyKai-mobile/app.config.js @painjanevivek
+/apps/MoneyKai-mobile/eas.json @painjanevivek
+/apps/MoneyKai-web/app.json @painjanevivek
+/apps/MoneyKai-web/eas.json @painjanevivek
+
+# Operations, incident response, evidence, privacy, and support runbooks
+/docs/operations/ @painjanevivek
+/docs/*security* @painjanevivek
+/docs/*privacy* @painjanevivek
+/docs/*play* @painjanevivek
