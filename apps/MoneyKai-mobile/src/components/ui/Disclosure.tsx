@@ -1,5 +1,5 @@
-import React, { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState, type ReactNode } from 'react';
+import { AccessibilityInfo, findNodeHandle, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { AppIcon } from './AppIcon';
 import { ComponentTokens, Spacing, Typography } from '@/constants/theme';
@@ -20,6 +20,19 @@ export function Disclosure({ title, summary, children, defaultOpen = false, disa
   const [expanded, setExpanded] = useState(defaultOpen);
   const [visited, setVisited] = useState(defaultOpen);
   const [contentHeight, setContentHeight] = useState(0);
+  const triggerRef = useRef<View>(null);
+  const hasToggled = useRef(false);
+
+  useEffect(() => {
+    if (!hasToggled.current) return undefined;
+
+    const frame = requestAnimationFrame(() => {
+      const triggerHandle = findNodeHandle(triggerRef.current);
+      if (triggerHandle) AccessibilityInfo.setAccessibilityFocus(triggerHandle);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [expanded]);
 
   const contentStyle = useAnimatedStyle(
     () => ({
@@ -36,12 +49,14 @@ export function Disclosure({ title, summary, children, defaultOpen = false, disa
   return (
     <View style={[styles.container, { borderTopColor: colors.borderLight }]}>
       <Pressable
+        ref={triggerRef}
         accessibilityRole="button"
         accessibilityLabel={title}
         accessibilityHint={summary}
         accessibilityState={{ disabled, expanded }}
         disabled={disabled}
         onPress={() => {
+          hasToggled.current = true;
           setVisited(true);
           setExpanded((value) => !value);
         }}
