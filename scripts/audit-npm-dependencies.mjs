@@ -67,6 +67,16 @@ function validateException(exception) {
   if (!Array.isArray(exception.packages) || exception.packages.length === 0) {
     throw new Error(`Audit exception ${exception.id} must name at least one package.`);
   }
+  if (exception.conditionally_reported_packages !== undefined) {
+    if (!Array.isArray(exception.conditionally_reported_packages)
+      || exception.conditionally_reported_packages.length === 0
+      || exception.conditionally_reported_packages.some((packageName) => typeof packageName !== 'string' || !packageName.trim())) {
+      throw new Error(`Audit exception ${exception.id} has invalid conditionally_reported_packages.`);
+    }
+    if (typeof exception.conditional_reason !== 'string' || !exception.conditional_reason.trim()) {
+      throw new Error(`Audit exception ${exception.id} must explain conditionally reported packages.`);
+    }
+  }
   if (!Array.isArray(exception.compensating_controls) || exception.compensating_controls.length === 0) {
     throw new Error(`Audit exception ${exception.id} must document compensating controls.`);
   }
@@ -81,11 +91,16 @@ export function evaluateAuditReport(report, policy, today = new Date().toISOStri
   const exceptionByPackage = new Map();
   for (const exception of policy.exceptions) {
     validateException(exception);
-    for (const packageName of exception.packages) {
+    const packageEntries = [
+      ...exception.packages.map((packageName) => ({ packageName, requiresObservation: true })),
+      ...(exception.conditionally_reported_packages ?? [])
+        .map((packageName) => ({ packageName, requiresObservation: false })),
+    ];
+    for (const { packageName, requiresObservation } of packageEntries) {
       if (exceptionByPackage.has(packageName)) {
         throw new Error(`Package ${packageName} is covered by more than one audit exception.`);
       }
-      exceptionByPackage.set(packageName, exception);
+      exceptionByPackage.set(packageName, { exception, requiresObservation });
     }
   }
 
@@ -97,12 +112,13 @@ export function evaluateAuditReport(report, policy, today = new Date().toISOStri
   const observedExceptionPackages = new Set();
 
   for (const [packageName, vulnerability] of highRisk) {
-    const exception = exceptionByPackage.get(packageName);
-    if (!exception) {
+    const exceptionEntry = exceptionByPackage.get(packageName);
+    if (!exceptionEntry) {
       violations.push(`${vulnerability.severity}: ${packageName} has no documented exception`);
       continue;
     }
 
+    const { exception } = exceptionEntry;
     observedExceptionPackages.add(packageName);
     if (today > exception.review_by) {
       violations.push(`${vulnerability.severity}: ${packageName} exception ${exception.id} expired ${exception.review_by}`);
@@ -115,8 +131,8 @@ export function evaluateAuditReport(report, policy, today = new Date().toISOStri
     accepted.push({ packageName, severity: vulnerability.severity, exception });
   }
 
-  for (const packageName of exceptionByPackage.keys()) {
-    if (!observedExceptionPackages.has(packageName)) {
+  for (const [packageName, { requiresObservation }] of exceptionByPackage.entries()) {
+    if (requiresObservation && !observedExceptionPackages.has(packageName)) {
       violations.push(`stale exception: ${packageName} is no longer reported and must be removed`);
     }
   }

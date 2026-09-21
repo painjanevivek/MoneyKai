@@ -54,3 +54,56 @@ test('blocks a severity escalation beyond the accepted maximum', () => {
   const result = evaluateAuditReport(reportFor({ 'build-only-package': { severity: 'critical' } }), basePolicy, '2026-08-24');
   assert.match(result.violations.join('\n'), /exceeds exception/);
 });
+
+test('accepts a named conditionally reported advisory when present', () => {
+  const policy = structuredClone(basePolicy);
+  policy.exceptions[0].conditionally_reported_packages = ['platform-dependent-package'];
+  policy.exceptions[0].conditional_reason = 'The clean CI graph reports this transitive package while the local graph omits it.';
+  const result = evaluateAuditReport(
+    reportFor({
+      'build-only-package': { severity: 'high' },
+      'platform-dependent-package': { severity: 'high' },
+    }),
+    policy,
+    '2026-08-24',
+  );
+  assert.deepEqual(result.violations, []);
+});
+
+test('does not mark a named conditionally reported advisory stale when absent', () => {
+  const policy = structuredClone(basePolicy);
+  policy.exceptions[0].conditionally_reported_packages = ['platform-dependent-package'];
+  policy.exceptions[0].conditional_reason = 'The clean CI graph reports this transitive package while the local graph omits it.';
+  const result = evaluateAuditReport(reportFor({ 'build-only-package': { severity: 'high' } }), policy, '2026-08-24');
+  assert.deepEqual(result.violations, []);
+});
+
+test('still enforces expiry for a conditionally reported advisory', () => {
+  const policy = structuredClone(basePolicy);
+  policy.exceptions[0].conditionally_reported_packages = ['platform-dependent-package'];
+  policy.exceptions[0].conditional_reason = 'The clean CI graph reports this transitive package while the local graph omits it.';
+  const result = evaluateAuditReport(
+    reportFor({
+      'build-only-package': { severity: 'high' },
+      'platform-dependent-package': { severity: 'high' },
+    }),
+    policy,
+    '2026-09-25',
+  );
+  assert.match(result.violations.join('\n'), /platform-dependent-package exception EX-1 expired 2026-09-24/);
+});
+
+test('still enforces maximum severity for a conditionally reported advisory', () => {
+  const policy = structuredClone(basePolicy);
+  policy.exceptions[0].conditionally_reported_packages = ['platform-dependent-package'];
+  policy.exceptions[0].conditional_reason = 'The clean CI graph reports this transitive package while the local graph omits it.';
+  const result = evaluateAuditReport(
+    reportFor({
+      'build-only-package': { severity: 'high' },
+      'platform-dependent-package': { severity: 'critical' },
+    }),
+    policy,
+    '2026-08-24',
+  );
+  assert.match(result.violations.join('\n'), /platform-dependent-package exceeds exception EX-1 maximum high/);
+});
