@@ -11,13 +11,20 @@ const MANIFEST_PATHS = {
   '.apk': ['AndroidManifest.xml'],
 };
 
-const RESTRICTED_SMS_PERMISSIONS = [
+const PLAY_FORBIDDEN_MANIFEST_ENTRIES = [
   'android.permission.READ_SMS',
   'android.permission.RECEIVE_MMS',
   'android.permission.RECEIVE_SMS',
   'android.permission.RECEIVE_WAP_PUSH',
   'android.permission.SEND_SMS',
   'android.permission.WRITE_SMS',
+  'android.permission.READ_CONTACTS',
+  'android.permission.WRITE_CONTACTS',
+  'android.permission.READ_EXTERNAL_STORAGE',
+  'android.permission.WRITE_EXTERNAL_STORAGE',
+  'android.permission.RECORD_AUDIO',
+  'android.permission.BIND_NOTIFICATION_LISTENER_SERVICE',
+  'com.moneykai.nativecapture.MoneyKaiNotificationListenerService',
 ];
 
 function parseArgs(argv) {
@@ -72,7 +79,8 @@ Usage:
   npm run android:verify:release-permissions -- --aab android/app/build/outputs/bundle/release/app-release.aab
   MONEYKAI_ANDROID_RELEASE_ARTIFACT=path/to/app-release.aab npm run android:verify:release-permissions
 
-Checks the compiled AndroidManifest.xml inside a release AAB/APK and fails if restricted SMS permissions are present.
+Checks the compiled AndroidManifest.xml inside a release AAB/APK and fails if SMS,
+contacts, legacy storage, microphone, or notification-listener capture entries are present.
 `);
 }
 
@@ -206,14 +214,14 @@ function verifyArtifact(artifactPath) {
   }
 
   const manifestBuffer = readZipEntry(artifactBuffer, entries.get(manifestEntryName));
-  const restrictedPermissions = findPermissionStrings(manifestBuffer, RESTRICTED_SMS_PERMISSIONS);
+  const forbiddenEntries = findPermissionStrings(manifestBuffer, PLAY_FORBIDDEN_MANIFEST_ENTRIES);
   const manifestPermissionStrings = extractAndroidPermissions(manifestBuffer);
 
   return {
     absoluteArtifactPath,
     manifestPermissionStrings,
     manifestEntryName,
-    restrictedPermissions,
+    forbiddenEntries,
   };
 }
 
@@ -227,10 +235,10 @@ try {
 
   const result = verifyArtifact(options.artifactPath);
 
-  if (result.restrictedPermissions.length > 0) {
-    console.error('Restricted SMS permissions found in Android release artifact:');
-    for (const permission of result.restrictedPermissions) {
-      console.error(`- ${permission}`);
+  if (result.forbiddenEntries.length > 0) {
+    console.error('Play-forbidden privacy-sensitive manifest entries found in Android release artifact:');
+    for (const entry of result.forbiddenEntries) {
+      console.error(`- ${entry}`);
     }
     console.error(`Artifact: ${result.absoluteArtifactPath}`);
     process.exit(1);

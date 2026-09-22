@@ -117,6 +117,26 @@ function validateEasProductionConfig(failures) {
     addFailure(failures, 'build.production must not set withoutCredentials=true.');
   }
 
+  const requiredProductionEnvironment = {
+    MONEYKAI_PLAY_RELEASE: 'true',
+    EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED: 'false',
+    EXPO_PUBLIC_GMAIL_SYNC_ENABLED: 'false',
+    EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED: 'false',
+    EXPO_PUBLIC_WEALTH_TAB_ENABLED: 'false',
+    EXPO_PUBLIC_FINANCIAL_AI_ENABLED: 'false',
+    EXPO_PUBLIC_SMS_RESEARCH_BUILD: 'false',
+    EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD: 'false',
+    EXPO_PUBLIC_SENTRY_ENABLED: 'false',
+    EXPO_PUBLIC_DIAGNOSTICS_UPLOAD_ENABLED: 'false',
+  };
+
+  const environment = production.env ?? {};
+  for (const [name, expectedValue] of Object.entries(requiredProductionEnvironment)) {
+    if (environment[name] !== expectedValue) {
+      addFailure(failures, `build.production.env.${name} must be ${JSON.stringify(expectedValue)}.`);
+    }
+  }
+
   if (credentialsSource === 'local') {
     validateLocalCredentialsJson(failures);
   }
@@ -174,6 +194,10 @@ function validateGradleSigningConfig(failures) {
 
   if (!buildGradle.includes('needsUploadSigning && !hasMoneyKaiUploadSigning')) {
     addFailure(failures, 'android/app/build.gradle is missing the release/original upload-signing fail-fast guard.');
+  }
+
+  if (!buildGradle.includes('if (!moneyKaiPlayRelease)')) {
+    addFailure(failures, 'android/app/build.gradle must exclude the native capture package when MONEYKAI_PLAY_RELEASE=true.');
   }
 }
 

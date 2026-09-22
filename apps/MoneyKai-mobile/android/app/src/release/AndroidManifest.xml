@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+  <application>
+    <!-- Defense in depth: remove the listener if the native capture module is
+         accidentally linked into any release variant. -->
+    <service
+      android:name="com.moneykai.nativecapture.MoneyKaiNotificationListenerService"
+      tools:node="remove" />
+  </application>
+</manifest>

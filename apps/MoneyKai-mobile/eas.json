@@ -10,6 +10,7 @@
       "env": {
         "EXPO_PUBLIC_DEV_CLIENT_BUILD": "true",
         "EXPO_PUBLIC_BUILD_PROFILE": "development",
+        "EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED": "true",
         "EXPO_PUBLIC_GMAIL_SYNC_ENABLED": "true",
         "EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED": "true",
         "EXPO_PUBLIC_WEALTH_TAB_ENABLED": "true",
@@ -25,6 +26,7 @@
       "env": {
         "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
         "EXPO_PUBLIC_BUILD_PROFILE": "preview",
+        "EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED": "false",
         "EXPO_PUBLIC_GMAIL_SYNC_ENABLED": "true",
         "EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED": "true",
         "EXPO_PUBLIC_WEALTH_TAB_ENABLED": "true",
@@ -40,6 +42,7 @@
       "env": {
         "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
         "EXPO_PUBLIC_BUILD_PROFILE": "sms-research-local",
+        "EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED": "true",
         "EXPO_PUBLIC_GMAIL_SYNC_ENABLED": "true",
         "EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED": "true",
         "EXPO_PUBLIC_WEALTH_TAB_ENABLED": "true",
@@ -55,11 +58,16 @@
       "env": {
         "EXPO_PUBLIC_DEV_CLIENT_BUILD": "false",
         "EXPO_PUBLIC_BUILD_PROFILE": "production",
+        "MONEYKAI_PLAY_RELEASE": "true",
+        "EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED": "false",
         "EXPO_PUBLIC_GMAIL_SYNC_ENABLED": "false",
         "EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED": "false",
         "EXPO_PUBLIC_WEALTH_TAB_ENABLED": "false",
+        "EXPO_PUBLIC_FINANCIAL_AI_ENABLED": "false",
         "EXPO_PUBLIC_SMS_RESEARCH_BUILD": "false",
-        "EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD": "false"
+        "EXPO_PUBLIC_NATIVE_SMS_RESEARCH_BUILD": "false",
+        "EXPO_PUBLIC_SENTRY_ENABLED": "false",
+        "EXPO_PUBLIC_DIAGNOSTICS_UPLOAD_ENABLED": "false"
       },
       "android": {
         "buildType": "app-bundle"

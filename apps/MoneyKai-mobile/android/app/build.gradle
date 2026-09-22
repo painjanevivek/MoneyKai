@@ -91,6 +91,7 @@ def moneyKaiUploadKeyPassword = findProperty('MONEYKAI_UPLOAD_KEY_PASSWORD') ?: 
 def hasMoneyKaiUploadSigning = moneyKaiUploadStoreFile && moneyKaiUploadStorePassword && moneyKaiUploadKeyAlias && moneyKaiUploadKeyPassword
 def moneyKaiSmsResearchBuild = ((findProperty('MONEYKAI_SMS_RESEARCH_BUILD') ?: System.getenv('MONEYKAI_SMS_RESEARCH_BUILD')) ?: 'false').toBoolean()
 def moneyKaiNativeSmsResearchBuild = ((findProperty('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD') ?: System.getenv('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD')) ?: 'false').toBoolean()
+def moneyKaiPlayRelease = ((findProperty('MONEYKAI_PLAY_RELEASE') ?: System.getenv('MONEYKAI_PLAY_RELEASE')) ?: 'false').toBoolean()
 def moneyKaiUploadSigningError = "MoneyKai release/original builds require MONEYKAI_UPLOAD_STORE_FILE, MONEYKAI_UPLOAD_STORE_PASSWORD, MONEYKAI_UPLOAD_KEY_ALIAS, and MONEYKAI_UPLOAD_KEY_PASSWORD."
 
 gradle.taskGraph.whenReady { taskGraph ->
@@ -195,7 +196,12 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation project(":moneykai-native-capture")
+    // The Play profile excludes the native capture package. This keeps
+    // notification-listener services out of the public AAB instead of only
+    // hiding controls in JavaScript.
+    if (!moneyKaiPlayRelease) {
+        implementation project(":moneykai-native-capture")
+    }
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

@@ -1,4 +1,5 @@
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { isDiagnosticsUploadEnabled } from '@/config/environment';
 import { setDiagnosticEventSink, type DiagnosticEvent } from '@/services/diagnosticsService';
 
 const MAX_IN_FLIGHT_UPLOADS = 2;
@@ -8,7 +9,7 @@ let installed = false;
 let inFlightUploads = 0;
 
 const shouldUploadDiagnostic = (event: DiagnosticEvent) =>
-  isBackendConfigured() && UPLOADABLE_SEVERITIES.has(event.severity);
+  isDiagnosticsUploadEnabled() && isBackendConfigured() && UPLOADABLE_SEVERITIES.has(event.severity);
 
 export const installDiagnosticsUploadSink = () => {
   if (installed) {

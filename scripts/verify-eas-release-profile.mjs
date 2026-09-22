@@ -96,6 +96,15 @@ function validateProfile(profileName, profile) {
     if (profile.distribution === 'internal' || android.distribution === 'internal') {
       addFailure(failures, 'production must create a store AAB, not an internal-distribution artifact.');
     }
+
+    requireEnvironmentValue(failures, environment, 'MONEYKAI_PLAY_RELEASE', 'true');
+    requireEnvironmentValue(failures, environment, 'EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED', 'false');
+    requireEnvironmentValue(failures, environment, 'EXPO_PUBLIC_GMAIL_SYNC_ENABLED', 'false');
+    requireEnvironmentValue(failures, environment, 'EXPO_PUBLIC_PDF_STATEMENT_PARSING_ENABLED', 'false');
+    requireEnvironmentValue(failures, environment, 'EXPO_PUBLIC_WEALTH_TAB_ENABLED', 'false');
+    requireEnvironmentValue(failures, environment, 'EXPO_PUBLIC_FINANCIAL_AI_ENABLED', 'false');
+    requireEnvironmentValue(failures, environment, 'EXPO_PUBLIC_SENTRY_ENABLED', 'false');
+    requireEnvironmentValue(failures, environment, 'EXPO_PUBLIC_DIAGNOSTICS_UPLOAD_ENABLED', 'false');
   }
 
   return failures;

@@ -4,6 +4,7 @@ import type { DiagnosticEvent, DiagnosticEventSink } from './diagnosticsService'
 const mocks = vi.hoisted(() => ({
   createDiagnosticEvent: vi.fn(),
   isBackendConfigured: vi.fn(),
+  isDiagnosticsUploadEnabled: vi.fn(),
   setDiagnosticEventSink: vi.fn(),
 }));
 
@@ -16,6 +17,10 @@ vi.mock('@/services/backendApi', () => ({
 
 vi.mock('@/services/diagnosticsService', () => ({
   setDiagnosticEventSink: mocks.setDiagnosticEventSink,
+}));
+
+vi.mock('@/config/environment', () => ({
+  isDiagnosticsUploadEnabled: mocks.isDiagnosticsUploadEnabled,
 }));
 
 const event = (severity: DiagnosticEvent['severity']): DiagnosticEvent => ({
@@ -32,8 +37,10 @@ describe('diagnosticsUploadService', () => {
     vi.resetModules();
     mocks.createDiagnosticEvent.mockReset();
     mocks.isBackendConfigured.mockReset();
+    mocks.isDiagnosticsUploadEnabled.mockReset();
     mocks.setDiagnosticEventSink.mockReset();
     mocks.isBackendConfigured.mockReturnValue(true);
+    mocks.isDiagnosticsUploadEnabled.mockReturnValue(true);
   });
 
   it('uploads warning, error, and fatal diagnostics when backend is configured', async () => {
@@ -46,12 +53,15 @@ describe('diagnosticsUploadService', () => {
     expect(mocks.createDiagnosticEvent).toHaveBeenCalledWith(event('error'));
   });
 
-  it('skips info diagnostics and unconfigured backends', async () => {
+  it('skips info diagnostics, disabled uploads, and unconfigured backends', async () => {
     const { installDiagnosticsUploadSink } = await import('./diagnosticsUploadService');
     installDiagnosticsUploadSink();
 
     const sink = mocks.setDiagnosticEventSink.mock.calls[0][0] as DiagnosticEventSink;
     await sink(event('info'));
+    mocks.isDiagnosticsUploadEnabled.mockReturnValue(false);
+    await sink(event('error'));
+    mocks.isDiagnosticsUploadEnabled.mockReturnValue(true);
     mocks.isBackendConfigured.mockReturnValue(false);
     await sink(event('fatal'));
 
