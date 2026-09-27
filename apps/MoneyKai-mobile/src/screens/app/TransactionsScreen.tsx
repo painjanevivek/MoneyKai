@@ -1,8 +1,7 @@
 import React, { useCallback, useDeferredValue, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, SectionList, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, SectionList, Text, View, type SectionListRenderItemInfo } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { endOfDay, endOfWeek, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
@@ -10,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { ScreenState } from '@/components/ui/ScreenState';
+import { TransactionDetailSheet } from '@/components/ui/TransactionDetailSheet';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -56,6 +56,74 @@ const CAPTURE_SOURCE_OPTIONS = [
 type DateFilterOption = typeof DATE_FILTER_OPTIONS[number]['id'];
 type FilterValue = 'all' | string;
 
+interface TransactionRowProps {
+  item: Transaction;
+  formatCategory: (categoryId: string) => string;
+  formatPaymentMethod: (methodId: string) => string;
+  formatMoney: (value: number) => string;
+  onPress: (transactionId: string) => void;
+}
+
+const TransactionRow = React.memo(function TransactionRow({
+  item,
+  formatCategory,
+  formatPaymentMethod,
+  formatMoney,
+  onPress,
+}: TransactionRowProps) {
+  const { colors } = useTheme();
+  const styles = createAppScreenStyles(colors);
+
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`Open details for ${item.description || formatCategory(item.category)}`}
+      onPress={() => onPress(item.id)}
+      pressedScale={0.985}
+      style={styles.panel}
+    >
+      <View style={styles.row}>
+        <View style={{ flexDirection: 'row', flex: 1, minWidth: 0, alignItems: 'center', paddingRight: Spacing.md }}>
+          <View
+            style={{
+              alignItems: 'center',
+              backgroundColor: colors.primaryBg,
+              borderRadius: 18,
+              height: 36,
+              justifyContent: 'center',
+              marginRight: Spacing.md,
+              width: 36,
+            }}
+          >
+            <MaterialCommunityIcons
+              name={item.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'}
+              size={18}
+              color={colors.primary}
+            />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.value} numberOfLines={1}>{item.description || formatCategory(item.category)}</Text>
+            <Text style={styles.muted} numberOfLines={1}>
+              {formatCategory(item.category)} - {formatPaymentMethod(item.payment_method)} - {formatDate(item.transaction_date)}
+            </Text>
+          </View>
+        </View>
+        <View style={{ alignItems: 'flex-end', flexShrink: 0, maxWidth: 126 }}>
+          <Text
+            adjustsFontSizeToFit
+            numberOfLines={1}
+            style={{ ...styles.value, color: item.type === 'income' ? colors.success : colors.textPrimary }}
+          >
+            {item.type === 'income' ? '+' : '-'}
+            {formatMoney(item.amount)}
+          </Text>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textTertiary} style={{ marginTop: Spacing.xs }} />
+        </View>
+      </View>
+    </PressableScale>
+  );
+});
+
 export function TransactionsScreen() {
   const navigation = useNavigation<TransactionsNavigation>();
   const { colors } = useTheme();
@@ -63,7 +131,6 @@ export function TransactionsScreen() {
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const transactions = useTransactionStore((state) => state.transactions);
   const isLoading = useTransactionStore((state) => state.isLoading);
-  const deleteTransaction = useTransactionStore((state) => state.deleteTransaction);
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [type, setType] = useState<TransactionType | 'all'>('all');
@@ -75,6 +142,7 @@ export function TransactionsScreen() {
   const [sourceFilter, setSourceFilter] = useState<FilterValue>('all');
   const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const formatCategory = useCallback((categoryId: string) => getCategoryById(categoryId)?.name ?? titleCase(categoryId), []);
   const formatPaymentMethod = useCallback((methodId: string) => PAYMENT_METHODS.find((item) => item.id === methodId)?.name ?? titleCase(methodId), []);
   const categoryOptions = type === 'expense' ? EXPENSE_CATEGORIES : type === 'income' ? INCOME_CATEGORIES : [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
@@ -99,6 +167,9 @@ export function TransactionsScreen() {
     Number(sourceFilter !== 'all') +
     Number(dateFilter !== 'all');
   const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest first';
+  const selectedTransaction = selectedTransactionId
+    ? transactions.find((transaction) => transaction.id === selectedTransactionId) ?? null
+    : null;
 
   const filtered = useMemo(() => {
     const now = new Date();
@@ -179,7 +250,25 @@ export function TransactionsScreen() {
     [currentMonthKey, filtered]
   );
 
-  const formatMoney = (value: number) => `${currencySymbol}${value.toLocaleString('en-IN')}`;
+  const formatMoney = useCallback(
+    (value: number) => `${currencySymbol}${value.toLocaleString('en-IN')}`,
+    [currencySymbol]
+  );
+  const openTransaction = useCallback((transactionId: string) => {
+    setSelectedTransactionId(transactionId);
+  }, []);
+  const renderTransaction = useCallback(
+    ({ item }: SectionListRenderItemInfo<Transaction>) => (
+      <TransactionRow
+        item={item}
+        formatCategory={formatCategory}
+        formatPaymentMethod={formatPaymentMethod}
+        formatMoney={formatMoney}
+        onPress={openTransaction}
+      />
+    ),
+    [formatCategory, formatMoney, formatPaymentMethod, openTransaction]
+  );
   const resetFilters = () => {
     setType('all');
     setCategoryFilter('all');
@@ -194,13 +283,6 @@ export function TransactionsScreen() {
     setSortOption('newest');
   };
 
-  const confirmDelete = (id: string) => {
-    Alert.alert('Delete transaction?', 'This removes the saved record from this account and Firestore sync.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteTransaction(id) },
-    ]);
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <SectionList
@@ -208,6 +290,13 @@ export function TransactionsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.scrollContent}
         stickySectionHeadersEnabled={false}
+        initialNumToRender={12}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={32}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <>
             <View style={styles.header}>
@@ -372,50 +461,13 @@ export function TransactionsScreen() {
             <Text style={styles.sectionTitle}>{section.title}</Text>
           </View>
         )}
-        renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 24).duration(220)} layout={Layout.springify()} style={styles.panel}>
-            <View style={styles.row}>
-              <View style={{ flexDirection: 'row', flex: 1, minWidth: 0, alignItems: 'center', paddingRight: Spacing.md }}>
-                <View
-                  style={{
-                    alignItems: 'center',
-                    backgroundColor: colors.primaryBg,
-                    borderRadius: 18,
-                    height: 36,
-                    justifyContent: 'center',
-                    marginRight: Spacing.md,
-                    width: 36,
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name={item.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'}
-                    size={18}
-                    color={colors.primary}
-                  />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.value} numberOfLines={1}>{item.description || formatCategory(item.category)}</Text>
-                  <Text style={styles.muted} numberOfLines={1}>
-                    {formatCategory(item.category)} - {formatPaymentMethod(item.payment_method)} - {formatDate(item.transaction_date)}
-                  </Text>
-                </View>
-              </View>
-              <View style={{ alignItems: 'flex-end', flexShrink: 0, maxWidth: 126 }}>
-                <Text
-                  adjustsFontSizeToFit
-                  numberOfLines={1}
-                  style={{ ...styles.value, color: item.type === 'income' ? colors.success : colors.textPrimary }}
-                >
-                  {item.type === 'income' ? '+' : '-'}
-                  {formatMoney(item.amount)}
-                </Text>
-                <PressableScale accessibilityRole="button" onPress={() => confirmDelete(item.id)} style={{ marginTop: Spacing.sm }}>
-                  <Text style={{ ...styles.muted, color: colors.error }}>Delete</Text>
-                </PressableScale>
-              </View>
-            </View>
-          </Animated.View>
-        )}
+        renderItem={renderTransaction}
+      />
+
+      <TransactionDetailSheet
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransactionId(null)}
+        onDeleted={() => setSelectedTransactionId(null)}
       />
 
       <Modal visible={showFilterModal} animationType="fade" transparent>

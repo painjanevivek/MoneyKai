@@ -1,7 +1,7 @@
 import React from 'react';
-import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View } from 'react-native';
+import { BackHandler, Platform, ToastAndroid, View } from 'react-native';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Colors, isThemeModeDark } from '@/constants/theme';
@@ -23,6 +23,8 @@ import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordina
 import { SyncCoordinator } from '@/components/sync/SyncCoordinator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
+const DOUBLE_BACK_EXIT_WINDOW_MS = 2_000;
 
 export function RootNavigator() {
   const theme = useSettingsStore((state) => state.theme);
@@ -32,10 +34,34 @@ export function RootNavigator() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isHydratingSession = useAuthStore((state) => state.isHydratingSession);
   const hydrateSession = useAuthStore((state) => state.hydrateSession);
+  const lastRootBackPressAt = React.useRef(0);
 
   React.useEffect(() => {
     void hydrateSession();
   }, [hydrateSession]);
+
+  React.useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (navigationRef.canGoBack()) {
+        lastRootBackPressAt.current = 0;
+        return false;
+      }
+
+      const now = Date.now();
+      if (now - lastRootBackPressAt.current <= DOUBLE_BACK_EXIT_WINDOW_MS) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastRootBackPressAt.current = now;
+      ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT);
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   if (isHydratingSession) {
     return (
@@ -58,7 +84,15 @@ export function RootNavigator() {
   };
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navigationTheme}
+      onStateChange={() => {
+        if (navigationRef.canGoBack()) {
+          lastRootBackPressAt.current = 0;
+        }
+      }}
+    >
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: colors.surface },
