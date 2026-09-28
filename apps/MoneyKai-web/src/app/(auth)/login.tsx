@@ -52,6 +52,7 @@ const getFriendlyAuthMessage = (error: unknown) => {
   if (
     lower.includes('failed to fetch') ||
     lower.includes('network request failed') ||
+    lower.includes('network-request-failed') ||
     lower.includes('unreachable') ||
     lower.includes('aborted') ||
     lower.includes('aborterror') ||

@@ -10,7 +10,7 @@ import { Typography, Spacing } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { consumeAuthAttempt } from '@/services/authRateLimit';
 import { trackUserEvent } from '@/services/analytics';
-import { requestPasswordResetGateway } from '@/services/authGateway';
+import { requestPasswordResetEmailFirebase } from '@/services/firebaseEmailAuth';
 import { withAlpha } from '@/utils/glassStyle';
 
 export default function ForgotPasswordScreen() {
@@ -43,7 +43,7 @@ export default function ForgotPasswordScreen() {
     try {
       trackUserEvent('auth_password_reset_submitted', { surface: 'forgot_password' });
       await consumeAuthAttempt('password-reset', normalizedEmail);
-      await requestPasswordResetGateway(normalizedEmail);
+      await requestPasswordResetEmailFirebase(normalizedEmail);
       setSentEmail(normalizedEmail);
       setSent(true);
       trackUserEvent('auth_password_reset_succeeded', { surface: 'forgot_password' });

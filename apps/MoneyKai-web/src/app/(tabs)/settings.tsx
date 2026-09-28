@@ -17,7 +17,7 @@ import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
 import { backendApi, isBackendConfigured } from '@/services/backendApi';
 import { trackUserEvent } from '@/services/analytics';
-import { changePasswordGateway } from '@/services/authGateway';
+import { changeEmailPasswordFirebase } from '@/services/firebaseEmailAuth';
 import {
   getLatestCloudBackupMetadata,
   saveCloudBackup,
@@ -610,7 +610,7 @@ export default function SettingsScreen() {
     try {
       const normalizedEmail = user.email.trim().toLowerCase();
       trackUserEvent('auth_password_change_submitted', { surface: 'settings' });
-      await changePasswordGateway(normalizedEmail, currentPassword, newPassword);
+      await changeEmailPasswordFirebase(normalizedEmail, currentPassword, newPassword);
       clearChangePasswordForm();
       setShowChangePasswordSheet(false);
       trackUserEvent('auth_password_change_succeeded', { surface: 'settings' });
