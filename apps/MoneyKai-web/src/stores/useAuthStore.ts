@@ -115,8 +115,8 @@ export const useAuthStore = create<AuthState>()(
 
           let credentials: import('firebase/auth').UserCredential;
           try {
-            const { signInWithEmailGateway } = await import('@/services/authGateway');
-            credentials = await signInWithEmailGateway(normalizedEmail, password);
+            const { signInWithEmailFirebase } = await import('@/services/firebaseEmailAuth');
+            credentials = await signInWithEmailFirebase(normalizedEmail, password);
           } catch (authError) {
             await recordFailedAuthAttempt('sign-in', normalizedEmail);
             throw authError;
@@ -152,8 +152,8 @@ export const useAuthStore = create<AuthState>()(
           }
 
           await consumeAuthAttempt('sign-up', normalizedEmail);
-          const { createUserWithEmailGateway } = await import('@/services/authGateway');
-          const credentials = await createUserWithEmailGateway(normalizedEmail, password, fullName);
+          const { createUserWithEmailFirebase } = await import('@/services/firebaseEmailAuth');
+          const credentials = await createUserWithEmailFirebase(normalizedEmail, password, fullName);
 
           set({
             user: {

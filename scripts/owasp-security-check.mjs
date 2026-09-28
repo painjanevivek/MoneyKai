@@ -364,6 +364,7 @@ const authGoogleExchangeRoute = googleOAuthRouter;
 const authGoogleSetupStatusRoute = googleOAuthRouter;
 const webAuthStore = readText('apps/MoneyKai-web/src/stores/useAuthStore.ts');
 const webAuthGateway = readText('apps/MoneyKai-web/src/services/authGateway.ts');
+const webFirebaseEmailAuth = readText('apps/MoneyKai-web/src/services/firebaseEmailAuth.ts');
 const webGoogleCallback = readText('apps/MoneyKai-web/src/app/auth/google/callback.tsx');
 const webLogin = readText('apps/MoneyKai-web/src/app/(auth)/login.tsx');
 const webSignup = readText('apps/MoneyKai-web/src/app/(auth)/signup.tsx');
@@ -434,7 +435,7 @@ check(
 );
 
 check(
-  'Email/password auth attempts are server-gated and client-throttled',
+  'Email/password auth uses Firebase provider controls and client throttling',
   containsAll(webAuthRateLimit, ['maxAttempts', 'lockedUntil', 'moneykai:auth-rate-limit:v1']) &&
     containsAll(mobileAuthRateLimit, ['maxAttempts', 'lockedUntil', 'moneykai:auth-rate-limit:v1']) &&
     containsAll(firebaseIdentity, [
@@ -470,13 +471,14 @@ check(
           'changeEmailPassword',
           'sendJson(res, 200',
         ]))) &&
-    containsAll(webAuthGateway, [
-      '/v1/auth/email/sign-in',
-      '/v1/auth/email/sign-up',
-      '/v1/auth/email/password-reset',
-      '/v1/auth/email/change-password',
-      'signInWithCustomToken(firebaseAuth, response.customToken)',
+    containsAll(webFirebaseEmailAuth, [
+      'signInWithEmailAndPassword(firebaseAuth',
+      'createUserWithEmailAndPassword(',
+      'sendPasswordResetEmail(firebaseAuth',
+      'reauthenticateWithCredential(user, credential)',
+      'updatePassword(user, newPassword)',
     ]) &&
+    !webAuthGateway.includes('/v1/auth/email/') &&
     containsAll(mobileAuthGateway, [
       '/v1/auth/email/sign-in',
       '/v1/auth/email/sign-up',
@@ -486,13 +488,13 @@ check(
       "assertAuthAttemptAllowed('sign-in'",
       "recordFailedAuthAttempt('sign-in'",
       "consumeAuthAttempt('sign-up'",
-      'signInWithEmailGateway',
-      'createUserWithEmailGateway',
+      'signInWithEmailFirebase',
+      'createUserWithEmailFirebase',
       "consumeAuthAttempt('google-sign-in'",
     ]) &&
     containsAll(webForgotPassword, ["consumeAuthAttempt('password-reset'"]) &&
     containsAll(webSettings, [
-      'changePasswordGateway(normalizedEmail, currentPassword, newPassword)',
+      'changeEmailPasswordFirebase(normalizedEmail, currentPassword, newPassword)',
       "trackUserEvent('auth_password_change_submitted'",
     ]) &&
     containsAll(mobileAuthService, [
@@ -504,13 +506,9 @@ check(
       'requestPasswordResetGateway',
     ]) &&
     containsAll(mobileGoogleAuth, ["consumeAuthAttempt('google-sign-in'"]) &&
-    !webAuthStore.includes('signInWithEmailAndPassword') &&
-    !webAuthStore.includes('createUserWithEmailAndPassword') &&
     !mobileAuthService.includes('signInWithEmailAndPassword') &&
     !mobileAuthService.includes('createUserWithEmailAndPassword'),
-  authEmailRoutesAbsent
-    ? 'Email auth route sources are intentionally absent from the deployment input'
-    : 'Email/password and reset attempts should pass through rate-limited backend auth routes before Firebase session creation'
+  'Web email auth must use the Firebase SDK directly with local attempt throttling; mobile keeps its gateway contract'
 );
 
 check(
@@ -608,9 +606,9 @@ const passwordResetEvidence = [
         'https://moneykai.firebaseapp.com/__/firebase/init.json',
   },
   {
-    label: 'web forgot-password enumeration-safe gateway flow',
+    label: 'web forgot-password enumeration-safe Firebase flow',
     ok: containsAll(webForgotPassword, [
-      'requestPasswordResetGateway(normalizedEmail)',
+      'requestPasswordResetEmailFirebase(normalizedEmail)',
       'setSentEmail(normalizedEmail)',
       'isPasswordResetEnumerationError',
       'If a MoneyKai account can receive resets',
@@ -626,8 +624,14 @@ const passwordResetEvidence = [
     ]),
   },
   {
-    label: 'web settings direct password-change gateway call',
-    ok: containsAll(webSettings, ['changePasswordGateway(normalizedEmail, currentPassword, newPassword)']),
+    label: 'web settings reauthenticated Firebase password change',
+    ok:
+      containsAll(webSettings, ['changeEmailPasswordFirebase(normalizedEmail, currentPassword, newPassword)']) &&
+      containsAll(webFirebaseEmailAuth, [
+        'EmailAuthProvider.credential(normalizedEmail, currentPassword)',
+        'reauthenticateWithCredential(user, credential)',
+        'updatePassword(user, newPassword)',
+      ]),
   },
   {
     label: 'mobile auth service gateway call',
@@ -642,7 +646,7 @@ check(
   'Password reset flow is wired and enumeration-safe',
   missingPasswordResetEvidence.length === 0,
   missingPasswordResetEvidence.length === 0
-    ? 'Reset links and signed-in password changes route through rate-limited backend auth gateways, and reset recovery avoids account enumeration'
+    ? 'Web reset and password-change flows use Firebase directly, mobile retains its gateway, and reset recovery avoids account enumeration'
     : `Missing password-reset evidence: ${missingPasswordResetEvidence.join(', ')}`
 );
 

@@ -147,45 +147,6 @@ const signInWithGatewayToken = async (response: AuthGatewayResponse): Promise<Us
   return signInWithCustomToken(firebaseAuth, response.customToken);
 };
 
-export const signInWithEmailGateway = async (email: string, password: string): Promise<UserCredential> => {
-  const response = await requestAuthGateway<AuthGatewayResponse>('/v1/auth/email/sign-in', {
-    email: email.trim().toLowerCase(),
-    password,
-  });
-  return signInWithGatewayToken(response);
-};
-
-export const createUserWithEmailGateway = async (
-  email: string,
-  password: string,
-  displayName: string
-): Promise<UserCredential> => {
-  const response = await requestAuthGateway<AuthGatewayResponse>('/v1/auth/email/sign-up', {
-    email: email.trim().toLowerCase(),
-    password,
-    displayName: displayName.trim(),
-  });
-  return signInWithGatewayToken(response);
-};
-
-export const requestPasswordResetGateway = async (email: string): Promise<void> => {
-  await requestAuthGateway<{ ok: true }>('/v1/auth/email/password-reset', {
-    email: email.trim().toLowerCase(),
-  });
-};
-
-export const changePasswordGateway = async (
-  email: string,
-  currentPassword: string,
-  newPassword: string,
-): Promise<void> => {
-  await requestAuthGateway<{ ok: true }>('/v1/auth/email/change-password', {
-    email: email.trim().toLowerCase(),
-    currentPassword,
-    newPassword,
-  });
-};
-
 export const startGoogleOAuthGateway = async (returnTo = '/dashboard'): Promise<string> => {
   const response = await requestAuthGateway<GoogleOAuthStartResponse>('/v1/auth/google/start', {
     platform: 'web',

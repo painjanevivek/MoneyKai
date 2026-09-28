@@ -25,13 +25,25 @@ const assertBoundary = (condition, message) => {
 };
 
 const authGateway = readText('apps/MoneyKai-web/src/services/authGateway.ts');
+const firebaseEmailAuth = readText('apps/MoneyKai-web/src/services/firebaseEmailAuth.ts');
 assertBoundary(
   authGateway.includes('getAuthGatewayUrl') && authGateway.includes('getBackendBaseUrl'),
-  'Web authentication must construct requests from the canonical backend base URL.',
+  'Web Google authentication must construct requests from the canonical backend base URL.',
 );
 assertBoundary(
   !authGateway.includes('window.location.origin') && !authGateway.includes('withApiPrefix'),
   'Web authentication must not probe the web origin or an /api/v1 fallback.',
+);
+assertBoundary(
+  !authGateway.includes('/v1/auth/email/'),
+  'Web email authentication must not depend on undeployed backend email routes.',
+);
+assertBoundary(
+  firebaseEmailAuth.includes('signInWithEmailAndPassword') &&
+    firebaseEmailAuth.includes('createUserWithEmailAndPassword') &&
+    firebaseEmailAuth.includes('sendPasswordResetEmail') &&
+    firebaseEmailAuth.includes('reauthenticateWithCredential'),
+  'Web email authentication must use the Firebase web SDK directly.',
 );
 
 const vercelIgnoreRules = readText('.vercelignore')
