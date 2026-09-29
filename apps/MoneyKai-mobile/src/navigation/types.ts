@@ -13,6 +13,7 @@ export type AppTabParamList = {
 };
 
 export type RootStackParamList = {
+  NotFound: undefined;
   Auth: undefined;
   App: undefined;
   ProfileEdit: undefined;

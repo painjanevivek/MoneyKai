@@ -21,6 +21,8 @@ import { AutoCaptureScreen } from '@/screens/app/AutoCaptureScreen';
 import { SubscriptionsScreen } from '@/screens/app/SubscriptionsScreen';
 import { AutoCaptureCoordinator } from '@/components/capture/AutoCaptureCoordinator';
 import { SyncCoordinator } from '@/components/sync/SyncCoordinator';
+import { NotFoundScreen } from '@/screens/NotFoundScreen';
+import { linking } from './linking';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -58,7 +60,7 @@ export function RootNavigator() {
   };
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer theme={navigationTheme} linking={linking}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: colors.surface },
@@ -92,6 +94,7 @@ export function RootNavigator() {
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} options={{ headerShown: false }} />
         )}
+        <Stack.Screen name="NotFound" component={NotFoundScreen} />
       </Stack.Navigator>
       {isAuthenticated && (
         <>
