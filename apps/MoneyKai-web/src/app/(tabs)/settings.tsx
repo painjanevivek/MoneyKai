@@ -15,7 +15,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import { GmailConnectionCard } from '@/components/gmail/GmailConnectionCard';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
 import { isFirebaseConfigured } from '@/services/firebase';
-import { backendApi, isBackendConfigured } from '@/services/backendApi';
+import { isBackendConfigured } from '@/services/backendApi';
 import { trackUserEvent } from '@/services/analytics';
 import { changeEmailPasswordFirebase } from '@/services/firebaseEmailAuth';
 import {
@@ -26,7 +26,6 @@ import {
   type MoneyKaiBackupMetadata,
 } from '@/services/backupService';
 import { setNotificationEnabled } from '@/services/notificationService';
-import { resetLocalAppState } from '@/services/remoteSync';
 import { getStoreReviewUrl } from '@/config/environment';
 import { formatCurrency } from '@/utils/formatCurrency';
 
@@ -399,7 +398,6 @@ export default function SettingsScreen() {
   const [showChangePasswordSheet, setShowChangePasswordSheet] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [showSignOutSheet, setShowSignOutSheet] = useState(false);
-  const [showDeleteAccountSheet, setShowDeleteAccountSheet] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupMetadata, setBackupMetadata] = useState<MoneyKaiBackupMetadata | null>(null);
   const [backupMetadataError, setBackupMetadataError] = useState<string | null>(null);
@@ -411,7 +409,6 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
   const [signOutBusy, setSignOutBusy] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const switchTrack = {
     false: colors.border,
@@ -677,35 +674,6 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleDeleteAccount = async () => {
-    if (!isBackendConfigured()) {
-      Alert.alert('Delete unavailable', 'Account deletion requires the MoneyKai backend to be configured.');
-      return;
-    }
-
-    if (!user?.id || deleteBusy) {
-      return;
-    }
-
-    setDeleteBusy(true);
-    setShowDeleteAccountSheet(false);
-    try {
-      const result = await backendApi.deleteAccount();
-      if (!result.deleted || !result.certificate?.zeroResidue) {
-        throw new Error(
-          result.operation.recoveryAction ?? `Deletion is ${result.operation.status}; your local session was preserved.`,
-        );
-      }
-      resetLocalAppState();
-      await signOut({ skipFinalBackup: true });
-      router.replace('/login');
-    } catch (err) {
-      Alert.alert('Delete failed', err instanceof Error ? err.message : 'Could not delete your account right now.');
-    } finally {
-      setDeleteBusy(false);
-    }
-  };
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={true}>
@@ -799,7 +767,7 @@ export default function SettingsScreen() {
             <SettingItem icon="download-outline" iconColor="#111111" iconBg="#F4F4F4" title="Export Data" subtitle="Download transactions as Word, Excel, or PDF tables" onPress={() => setShowExportSheet(true)} />
             <SettingItem icon="cloud-upload-outline" iconColor="#2B2B2B" iconBg="#F2F2F2" title="Cloud backups" subtitle="Save to or restore a cloud backup" onPress={() => setShowBackupSheet(true)} />
             <SettingItem icon="shield-lock-outline" iconColor="#444444" iconBg="#ECECEC" title="Privacy Policy" subtitle="Open the privacy policy" onPress={handlePrivacy} />
-            <SettingItem icon="delete-outline" iconColor={colors.emergency} iconBg={colors.emergencyBg} title="Delete Account" subtitle="Permanently remove your account and stored data" onPress={() => setShowDeleteAccountSheet(true)} />
+            <SettingItem icon="delete-outline" iconColor={colors.emergency} iconBg={colors.emergencyBg} title="Delete Account" subtitle="Permanently remove your account and stored data" onPress={() => router.push('/account-deletion')} />
           </Card>
         </SettingsSubsection>
 
@@ -1049,32 +1017,6 @@ export default function SettingsScreen() {
         </Text>
       </ModalSheet>
 
-      <ModalSheet
-        visible={showDeleteAccountSheet}
-        title="Delete account"
-        subtitle="This permanently removes your MoneyKai account, stored data, and backups."
-        onClose={() => (deleteBusy ? undefined : setShowDeleteAccountSheet(false))}
-        footer={
-          <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
-            <Button title="Cancel" onPress={() => setShowDeleteAccountSheet(false)} variant="outline" style={{ flex: 1 }} disabled={deleteBusy} />
-            <Button title="Delete" onPress={handleDeleteAccount} variant="danger" loading={deleteBusy} style={{ flex: 1 }} disabled={!isBackendConfigured()} />
-          </View>
-        }
-      >
-        <View style={{ gap: Spacing.md }}>
-          <Text style={{ fontSize: Typography.fontSize.sm, color: colors.textSecondary, lineHeight: 22 }}>
-            Deleting your account removes transactions, linked accounts, notes, budgets, groups, savings goals, notifications, backups, and your profile from MoneyKai.
-          </Text>
-          <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.emergencyBg, borderWidth: 1, borderColor: `${colors.emergency}22` }}>
-            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.emergency, marginBottom: 4 }}>
-              This cannot be undone
-            </Text>
-            <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-              Make sure you have exported anything you want to keep before continuing.
-            </Text>
-          </View>
-        </View>
-      </ModalSheet>
     </SafeAreaView>
   );
 }

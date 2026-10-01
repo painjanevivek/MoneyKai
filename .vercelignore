@@ -1,4 +1,66 @@
 # The frontend deploy is a static Expo export. Runtime feature APIs, including
 # Google OAuth, live on the canonical private FastAPI backend. Do not package
 # duplicate v1 API entrypoints in the web deployment.
+api/v1
 api/v1/**
+
+# Ignore directories themselves, not just their children. The CLI archive packer
+# otherwise treats fully-filtered directories as empty and recursively packs them.
+.release
+.vercel
+.git
+.worktrees
+.pytest*
+.codex*
+.agents
+.claude
+.vscode
+.specify
+.gradle*
+.g21
+.g-splash
+.p-splash
+.p21
+android-verification
+videos
+chatgpt-project
+docs
+node_modules
+.gradle
+.cxx
+__pycache__
+.pytest_cache
+.venv
+venv
+.expo
+.expo-shared
+dist
+dist-no-ssg
+web-build
+apps/*/android
+apps/*/ios
+apps/*/modules/*/android/build
+apps/*/credentials
+apps/*/artifacts
+apps/MoneyKai-android
+apps/MoneyKai-flutter
+apps/Aura-landing
+apps/MoneyKai-mobile/assets
+outputs
+datasets
+backend
+research
+tests
+coverage
+test-results
+playwright-report
+*.apk
+*.aab
+*.apks
+*.hprof
+*.jks
+*.keystore
+*.pem
+*.key
+.env
+.env.*

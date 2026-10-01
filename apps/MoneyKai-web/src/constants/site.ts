@@ -36,6 +36,7 @@ const CORE_PUBLIC_ROUTES_AFTER_COMPARE = [
   '/security',
   '/financial-first-aid',
   '/privacy-policy',
+  '/account-deletion',
   '/terms',
 ] as const;
 

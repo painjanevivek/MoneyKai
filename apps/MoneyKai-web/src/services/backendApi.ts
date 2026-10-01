@@ -170,21 +170,28 @@ const parseErrorPayload = async (response: Response, fallback: string): Promise<
   }
 };
 
-async function getAuthToken(): Promise<string> {
+async function getAuthToken(expectedOwnerId?: string): Promise<string> {
   const currentUser = firebaseAuth.currentUser;
   if (!currentUser) {
     throw new Error('You need to be signed in to call the backend.');
   }
 
-  return currentUser.getIdToken();
+  if (expectedOwnerId && currentUser.uid !== expectedOwnerId) {
+    throw new Error('Your sign-in account changed. Review the account before deleting.');
+  }
+  const token = await currentUser.getIdToken();
+  if (expectedOwnerId && firebaseAuth.currentUser?.uid !== expectedOwnerId) {
+    throw new Error('Your sign-in account changed. Review the account before deleting.');
+  }
+  return token;
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, expectedOwnerId?: string): Promise<T> {
   if (!isBackendConfigured()) {
     throw new Error('Backend API is not configured.');
   }
 
-  const token = await getAuthToken();
+  const token = await getAuthToken(expectedOwnerId);
   const headers = new Headers(init.headers);
   const isFormDataBody = typeof FormData !== 'undefined' && init.body instanceof FormData;
   headers.set('Authorization', `Bearer ${token}`);
@@ -617,11 +624,11 @@ export const backendApi = {
       method: 'PUT',
       body: JSON.stringify(payload),
     }),
-  deleteAccount: async (idempotencyKey = createRequestId()) =>
+  deleteAccount: async (idempotencyKey = createRequestId(), expectedOwnerId?: string) =>
     request<{ deleted: boolean; operation: OperationRecord; certificate: DeletionCertificate | null }>('/v1/settings/account', {
       method: 'DELETE',
       headers: { 'Idempotency-Key': idempotencyKey },
-    }),
+    }, expectedOwnerId),
   listResource: async <T>(resource: 'transactions' | 'notes' | 'badges' | 'notifications') =>
     request<PaginatedResponse<T>>(`/v1/resources/${resource}`),
   createResource: async <T>(resource: 'transactions' | 'notes' | 'badges' | 'notifications', payload: object) =>

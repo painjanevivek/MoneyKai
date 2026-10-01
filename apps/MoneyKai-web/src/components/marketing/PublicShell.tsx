@@ -391,6 +391,8 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
 
                 {title ? (
                   <Text
+                    accessibilityRole="header"
+                    aria-level={1}
                     style={{
                       maxWidth: 860,
                       fontSize: isWide ? 52 : 36,
@@ -454,6 +456,7 @@ export function PublicShell({ eyebrow, title, description, children, tone = 'def
                   { href: '/pricing', label: 'Pricing' },
                   { href: '/news', label: 'News' },
                   { href: '/privacy-policy', label: 'Privacy policy' },
+                  { href: '/account-deletion', label: 'Account deletion' },
                   { href: '/security', label: 'Security' },
                   { href: '/terms', label: 'Terms' },
                 ].map((item) => (
