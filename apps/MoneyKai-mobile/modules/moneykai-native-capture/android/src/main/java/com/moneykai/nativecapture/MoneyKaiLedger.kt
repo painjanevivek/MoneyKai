@@ -85,7 +85,7 @@ internal object MoneyKaiLedger {
       db.execSQL("UPDATE summaries SET amount_minor=amount_minor+?,count=count+? WHERE owner=? AND month=? AND category=? AND direction=?", arrayOf(minor(row)*sign,sign,*args))
     }
   }
-  fun put(db: SQLiteDatabase, owner: String, table: String, input: JSONObject) {
+  fun put(db: SQLiteDatabase, owner: String, table: String, input: JSONObject, localEdit: Boolean = true) {
     require(table in listOf("transactions", "drafts"))
     val row = JSONObject(input.toString())
     require(row.optString("user_id",owner) == owner)
@@ -94,6 +94,11 @@ internal object MoneyKaiLedger {
     val amount = minor(row)
     row.put("amountMinor",amount).put("currency","INR").put("user_id",owner)
     val previous = existing(db,owner,table,id)
+    if(table == "transactions" && localEdit) {
+      row.put("localRevision",(previous?.optLong("localRevision") ?: 0)+1)
+      if(row.optString("captureSource") == "sms" && row.optString("reviewStatus") == "approved")
+        row.put("syncStatus",if(row.optLong("revision") > 0 || MoneyKaiCloudOutbox.consent(db,owner).optBoolean("enabled")) "pending" else "local_only")
+    }
     if (table == "transactions" && previous != null) contribution(db,owner,previous,-1)
     val identity = row.optString("importIdentity").takeIf { it.isNotBlank() }
     val columns = listOf("day","amount_minor","direction","account","category","merchant","review","sync","identity","revision","payload")
@@ -103,11 +108,18 @@ internal object MoneyKaiLedger {
       values.forEachIndexed { index,value -> when(value) { null -> it.bindNull(index+1); is Long -> it.bindLong(index+1,value); else -> it.bindString(index+1,value.toString()) } }
       it.executeInsert()
     }
-    if (table == "transactions") contribution(db,owner,row,1)
+    if (table == "transactions") {
+      contribution(db,owner,row,1)
+      MoneyKaiCloudOutbox.enqueue(db,owner,row)
+    }
   }
-  fun delete(db: SQLiteDatabase, owner: String, table: String, id: String) {
+  fun delete(db: SQLiteDatabase, owner: String, table: String, id: String, queueCloud: Boolean = true) {
     val previous = existing(db,owner,table,id) ?: return
-    if (table == "transactions") contribution(db,owner,previous,-1)
+    if (table == "transactions") {
+      contribution(db,owner,previous,-1)
+      if(queueCloud) MoneyKaiCloudOutbox.queueDelete(db,owner,previous)
+      db.execSQL("DELETE FROM outbox WHERE owner=? AND id=?",arrayOf(owner,"upload_"+id))
+    }
     db.execSQL("DELETE FROM $table WHERE owner=? AND id=?",arrayOf(owner,id))
   }
   fun page(db: SQLiteDatabase, owner: String, request: JSONObject): JSONObject {
@@ -179,6 +191,19 @@ internal object MoneyKaiLedger {
     return when(request.getString("op")) {
       "features" -> { MoneyKaiLocalImport.configure(context,request.getBoolean("enabled")); JSONObject().put("configured",true) }
       "import" -> MoneyKaiLocalImport.request(context,owner,request)
+      "cloud" -> MoneyKaiCloudOutbox.request(context,owner,request)
+      "get" -> JSONObject().put("row",existing(db,owner,request.getString("table"),request.getString("id")) ?: JSONObject.NULL)
+      "approve" -> {
+        db.beginTransaction()
+        try {
+          val row = existing(db,owner,"drafts",request.getString("id")) ?: error("Draft missing")
+          row.put("category",request.getString("category")).put("reviewStatus","approved").put("status","confirmed").put("syncStatus","pending")
+          put(db,owner,"transactions",row)
+          delete(db,owner,"drafts",row.getString("id"))
+          db.setTransactionSuccessful()
+        } finally { db.endTransaction() }
+        JSONObject().put("committed",true)
+      }
       "migrate" -> migrate(context,db,owner)
       "page" -> page(db,owner,request)
       "summaries" -> {

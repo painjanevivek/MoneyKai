@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/useAuthStore';
+import { isCloudApprovedSmsTransaction } from '@moneykai/domain/transactionImports';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
@@ -153,7 +154,7 @@ const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot, source: 'cache' | 
   useTransactionStore.setState({
     ...useTransactionStore.getState(),
     transactions: [...deviceOnlyTransactions, ...snapshot.data.transactions.filter(t =>
-      t.captureSource !== 'sms' && t.captureSource !== 'notification' && !deviceOnlyTransactions.some(local => local.id === t.id))],
+      (t.captureSource !== 'sms' || isCloudApprovedSmsTransaction(t)) && t.captureSource !== 'notification' && !deviceOnlyTransactions.some(local => local.id === t.id || (t.importIdentity && local.importIdentity === t.importIdentity)))],
     isSeeded: true,
   });
 
@@ -306,6 +307,11 @@ const performRemoteSync = async (
 };
 
 export const clearTransientSessionState = async () => {
+  const { LARGE_SMS_LOCAL_ENABLED, APPROVED_SMS_CLOUD_ENABLED } = await import('@/config/largeSmsFeatures');
+  if(LARGE_SMS_LOCAL_ENABLED || APPROVED_SMS_CLOUD_ENABLED) {
+    const { ledgerRequest } = await import('./localLedger');
+    await ledgerRequest('',{op:'owner'});
+  }
   const { useCaptureStore } = await import('@/stores/useCaptureStore');
   const { setNativeCaptureSourcesEnabled, clearNativeCaptureQueue, setNativeApprovedSmsAccounts, setPaymentNotificationPackages } = await import('@/services/nativeCaptureBridge');
   await setNativeCaptureSourcesEnabled({ notificationEnabled: false, smsEnabled: false });

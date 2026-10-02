@@ -52,3 +52,9 @@ Reviewed scoped diff; commit and normal push recorded in Git. Production activat
 36 backend money, privacy, replay, ownership, concurrency, storage and incremental-sync tests passed; additive OpenAPI compatibility and generated API-client checks passed. Cloud activation remains disabled.
 
 Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Phase 6 checkpoint
+
+179 capture regressions, 18 focused privacy/replay/session checks, 3 web manifest checks, 8 Android instrumented tests, and 38 backend tests passed; generated API-client and OpenAPI checks passed. Existing navigation and Node/DOM URL typing failures remain for Phase 7. Cloud switches remain disabled.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.

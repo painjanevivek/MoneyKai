@@ -1,4 +1,5 @@
-/** Inbox- and notification-derived data must never leave the device. */
+import { assertApprovedSmsBatch } from '@moneykai/domain/transactionImports';
+/** Inbox contents and notification-derived data must never leave the device. */
 export const isDeviceOnlyCaptureSource = (source: unknown): boolean => source === 'sms' || source === 'notification';
 export function containsDeviceOnlyData(value: unknown, seen = new Set<object>()): boolean {
   if (!value || typeof value !== 'object') return false;
@@ -17,6 +18,10 @@ export function assertCloudRouteAllowed(path: string, body?: unknown): void {
     throw new Error('Cloud SMS parsing is disabled. Use the offline on-device parser.');
   }
   if (typeof body === 'string' && body.length) {
+    if (/^\/v1\/transaction-imports\/[a-zA-Z0-9_-]{1,80}\/batches$/.test(path)) {
+      assertApprovedSmsBatch(JSON.parse(body));
+      return;
+    }
     // All ordinary backend writes use JSON. Malformed JSON must not bypass the guard.
     assertCloudPayloadAllowed(JSON.parse(body));
   }

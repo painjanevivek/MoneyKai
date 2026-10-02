@@ -5,6 +5,7 @@ import type { BackendBackupRecord, BackendSnapshot } from '@/types/backend';
 import type { DeletionCertificate, OperationRecord } from '@/types/operations';
 import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
+import type { Transaction } from '@/types/transaction';
 import type { CapabilityStatusResponse } from '@/types/capabilities';
 import type { LinkedAccount } from '@moneykai/domain';
 import type { ApiErrorEnvelope } from '@moneykai/api-client';
@@ -335,6 +336,7 @@ function parseSseFrame(frame: string): AiChatStreamEvent | null {
 }
 
 export const backendApi = {
+  getApprovedSmsTransactions: async (ids:string[]) => request<{items:Transaction[]}>('/v1/capture/approved-transactions/read',{method:'POST',body:JSON.stringify(ids)}),
   getCapabilities: async () => request<CapabilityStatusResponse>('/v1/capabilities'),
   getOperation: async (operationId: string) =>
     request<{ operation: OperationRecord }>(`/v1/operations/${encodeURIComponent(operationId)}`),

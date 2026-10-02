@@ -15,17 +15,34 @@ import { normalizeSmsInterval } from '@/constants/smsSchedule';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useConnectStore } from '@/stores/useConnectStore';
 import { PAYMENT_CONNECTIONS } from '@/constants/paymentConnections';
-import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { LARGE_SMS_LOCAL_ENABLED, APPROVED_SMS_CLOUD_ENABLED } from '@/config/largeSmsFeatures';
+import { syncApprovedSmsOnce } from '@/services/approvedSmsSync';
+import { downloadApprovedSmsOnce } from '@/services/approvedSmsDownloads';
 import { useLocalLedgerStore } from '@/stores/useLocalLedgerStore';
 import { ledgerRequest } from '@/services/localLedger';
 
 export function AutoCaptureCoordinator() {
   const userId = useAuthStore((s) => s.user?.id);
   useEffect(() => {
-    if (LARGE_SMS_LOCAL_ENABLED) void useLocalLedgerStore.getState().initialize(userId ?? '').then(() => {
-      if(userId && useLocalLedgerStore.getState().ready && useAuthStore.getState().user?.id === userId) return ledgerRequest(userId,{op:'features',enabled:true});
+    if (LARGE_SMS_LOCAL_ENABLED || APPROVED_SMS_CLOUD_ENABLED) void useLocalLedgerStore.getState().initialize(userId ?? '').then(() => {
+      if(userId && useLocalLedgerStore.getState().ready && useAuthStore.getState().user?.id === userId) return ledgerRequest(userId,{op:'features',enabled:LARGE_SMS_LOCAL_ENABLED});
     });
   }, [userId]);
+  useEffect(() => {
+    if(!APPROVED_SMS_CLOUD_ENABLED || !userId) return;
+    let stopped=false; let running=false; let nextAt=0;
+    const run=async () => {
+      if(stopped || running || Date.now()<nextAt || !useLocalLedgerStore.getState().ready) return;
+      running=true;
+      try {
+        const status=await syncApprovedSmsOnce(userId);
+        nextAt=status.retryAt || Date.now()+20000;
+        if(!stopped && !['paused_free_quota','paused_storage','coordination_unavailable','disabled_unverified'].includes(status.paused ?? '')) await downloadApprovedSmsOnce(userId);
+      } catch { nextAt=Date.now()+60000; } finally { running=false; }
+    };
+    void run(); const interval=setInterval(()=>void run(),20000);
+    return () => { stopped=true; clearInterval(interval); };
+  },[userId]);
   const selectedPackages = useConnectStore((state) => PAYMENT_CONNECTIONS
     .filter((app) => userId && state.notificationAppsByUser[userId]?.[app.id])
     .map((app) => app.packageName).join('|'));

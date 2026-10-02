@@ -25,4 +25,12 @@ describe('SMS device-only egress boundary', () => {
   it('does not change non-SMS cloud workflows while their scope is undecided', () => {
     expect(() => assertCloudPayloadAllowed({ captureSource: 'manual', amount: 100 })).not.toThrow();
   });
+  it('permits only the approved DTO on its versioned consent-controlled batch route', () => {
+    const row={id:'sms_1',importIdentity:'a'.repeat(64),accountIdentity:'b'.repeat(64),amountMinor:100,currency:'INR',type:'expense',semantics:'payment',category:'Other',description:'Merchant',payment_method:'UPI',transaction_date:'2026-10-02',parserVersion:'sms-offline-v1',reviewStatus:'approved',captureSource:'sms',expectedRevision:0};
+    const batch={consentRevision:1,idempotencyKey:'batch',transactions:[row]};
+    expect(()=>assertCloudRouteAllowed('/v1/transaction-imports/history/batches',JSON.stringify(batch))).not.toThrow();
+    for(const change of [{body:'private'}, {snippet:'private'}, {inboxId:'123'}, {reviewStatus:'pending'}, {captureSource:'notification'}])
+      expect(()=>assertCloudRouteAllowed('/v1/transaction-imports/history/batches',JSON.stringify({...batch,transactions:[{...row,...change}]}))).toThrow();
+    expect(()=>assertCloudRouteAllowed('/v1/resources/transactions',JSON.stringify(batch))).toThrow();
+  });
 });

@@ -84,7 +84,17 @@ export const synchronizeFromToken = async (
     const response = await backendApi.getIncrementalSync(syncToken, cursor, windowEnd);
     if (response.resetRequired) return null;
     if (!isCurrentSession()) return null;
-    response.events.forEach(applyIncrementalEvent);
+    for(const event of response.events) {
+      const manifest=event.resource === 'transactions' ? event.payload?.importManifest as {ids?:string[];deletedIds?:string[]} | undefined : undefined;
+      if(manifest) {
+        if(manifest.ids?.length) {
+          const imported=await backendApi.getApprovedSmsTransactions(manifest.ids);
+          if(!isCurrentSession()) return null;
+          applyResourceItems('transactions',imported.items);
+        }
+        for(const id of manifest.deletedIds ?? []) removeResourceItem('transactions',id);
+      } else applyIncrementalEvent(event);
+    }
     cursor = response.page.nextCursor;
     windowEnd = response.windowEnd;
     nextSyncToken = response.nextSyncToken;

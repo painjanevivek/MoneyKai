@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { isCloudApprovedSmsTransaction } from '@moneykai/domain/transactionImports';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
@@ -554,7 +555,11 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
 
   useTransactionStore.setState({
     ...useTransactionStore.getState(),
-    transactions: snapshot.data.transactions,
+    transactions: [
+      ...useTransactionStore.getState().transactions.filter(t=>t.captureSource === 'sms' || t.captureSource === 'notification'),
+      ...snapshot.data.transactions.filter(t=>(t.captureSource !== 'sms' || isCloudApprovedSmsTransaction(t)) && t.captureSource !== 'notification' &&
+        !useTransactionStore.getState().transactions.some(local=>(local.captureSource === 'sms' || local.captureSource === 'notification') && (local.id === t.id || (t.importIdentity && local.importIdentity === t.importIdentity)))),
+    ],
     isSeeded: true,
   });
 

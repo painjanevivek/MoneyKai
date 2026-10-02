@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => {
     backendApi: {
       getBootstrapPage: vi.fn(),
       getIncrementalSync: vi.fn(),
+      getApprovedSmsTransactions: vi.fn(),
     },
     settings: createStore({}),
     budget: createStore({}),
@@ -53,6 +54,13 @@ vi.mock('@/stores/useLinkedAccountStore', () => ({ useLinkedAccountStore: mocks.
 vi.mock('@/stores/usePlanningStore', () => ({ usePlanningStore: mocks.planning }));
 
 describe('progressive workspace hydration', () => {
+  it('resolves compact import manifests without treating them as transactions',async()=>{
+    mocks.backendApi.getApprovedSmsTransactions.mockResolvedValue({items:[{id:'sms_new',amount:10}]});
+    mocks.backendApi.getIncrementalSync.mockResolvedValue({events:[{resource:'transactions',action:'upserted',payload:{importManifest:{ids:['sms_new'],deletedIds:['tx-new']}}}],page:{nextCursor:null},windowEnd:'now',nextSyncToken:'next',resetRequired:false});
+    expect(await synchronizeFromToken('token',()=>true)).toBe('next');
+    expect(mocks.backendApi.getApprovedSmsTransactions).toHaveBeenCalledWith(['sms_new']);
+    expect(mocks.transactions.state.transactions).toEqual([{id:'sms_new',amount:10}]);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.transactions.state.transactions = [{ id: 'tx-new', amount: 10 }];
