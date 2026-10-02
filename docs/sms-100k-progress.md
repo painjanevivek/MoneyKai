@@ -46,3 +46,9 @@ Reviewed scoped diff; commit and normal push recorded in Git. Production activat
 All 179 mobile capture tests passed; six synthetic Android instrumentation tests passed for atomic 250-row commits, checkpoint recovery, repeat import, cancellation retention, encrypted migration and shared offline category behavior. Final Kotlin compile passed. The four pre-existing navigation typing errors remain isolated; local activation stays gated.
 
 Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Phase 5 checkpoint
+
+36 backend money, privacy, replay, ownership, concurrency, storage and incremental-sync tests passed; additive OpenAPI compatibility and generated API-client checks passed. Cloud activation remains disabled.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
