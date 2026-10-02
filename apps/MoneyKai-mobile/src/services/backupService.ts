@@ -1,3 +1,6 @@
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { mergeLedgerSnapshot } from './mergeLedgerSnapshot';
+import { useLocalLedgerStore } from '@/stores/useLocalLedgerStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { isCloudApprovedSmsTransaction } from '@moneykai/domain/transactionImports';
@@ -224,6 +227,7 @@ export const clearAutomaticBackupQueue = async () => {
 };
 
 export const requestAutomaticBackup = async (reason: string) => {
+  if(LARGE_SMS_LOCAL_ENABLED) return;
   const user = useAuthStore.getState().user;
   if (!user) {
     return;
@@ -510,12 +514,13 @@ export const getLatestCloudBackup = async () => {
 
 export const getLatestCloudBackupMetadata = async () => summarizeBackupSnapshot(await getLatestCloudBackup());
 
-export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
+export const restoreBackupSnapshot = async (snapshot: MoneyKaiBackupSnapshot) => {
   const user = normalizeUser();
   if (snapshot.profile.id !== user.id) {
     throw new Error('This backup belongs to a different account.');
   }
 
+  if(LARGE_SMS_LOCAL_ENABLED) await mergeLedgerSnapshot(snapshot.data.transactions);
   void clearAutomaticBackupQueue().catch(() => undefined);
   useAuthStore.setState((state) => ({
     user: state.user
@@ -555,7 +560,7 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
 
   useTransactionStore.setState({
     ...useTransactionStore.getState(),
-    transactions: [
+    transactions: LARGE_SMS_LOCAL_ENABLED ? useLocalLedgerStore.getState().transactions : [
       ...useTransactionStore.getState().transactions.filter(t=>t.captureSource === 'sms' || t.captureSource === 'notification'),
       ...snapshot.data.transactions.filter(t=>(t.captureSource !== 'sms' || isCloudApprovedSmsTransaction(t)) && t.captureSource !== 'notification' &&
         !useTransactionStore.getState().transactions.some(local=>(local.captureSource === 'sms' || local.captureSource === 'notification') && (local.id === t.id || (t.importIdentity && local.importIdentity === t.importIdentity)))),
@@ -593,7 +598,7 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
 export const restoreLatestCloudBackup = async () => {
   if (isBackendConfigured()) {
     const response = await backendApi.restoreLatestBackup();
-    restoreBackupSnapshot(response.item);
+    await restoreBackupSnapshot(response.item);
 
     await recordAppNotification({
       title: 'Backup restored',
@@ -606,7 +611,7 @@ export const restoreLatestCloudBackup = async () => {
   }
 
   const snapshot = await getLatestCloudBackup();
-  restoreBackupSnapshot(snapshot);
+  await restoreBackupSnapshot(snapshot);
 
   await recordAppNotification({
     title: 'Backup restored',

@@ -1,3 +1,6 @@
+import { useLocalLedgerStore } from '@/stores/useLocalLedgerStore';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { mergeLedgerSnapshot } from './mergeLedgerSnapshot';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { isCloudApprovedSmsTransaction } from '@moneykai/domain/transactionImports';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -115,7 +118,8 @@ export const resetLocalAppState = ({ preserveGroupStore = false }: { preserveGro
   void clearAutomaticBackupQueue();
 };
 
-const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot, source: 'cache' | 'network') => {
+const applyRemoteSnapshot = async (snapshot: FirestoreUserSnapshot, source: 'cache' | 'network') => {
+  if(LARGE_SMS_LOCAL_ENABLED) await mergeLedgerSnapshot(snapshot.data.transactions);
   const deviceOnlyTransactions = useTransactionStore.getState().transactions.filter(t => t.captureSource === 'sms' || t.captureSource === 'notification');
   const userId = useAuthStore.getState().user?.id;
   const { groups: mergedGroups, expenses: mergedExpenses } = reconcileGroupSnapshot(
@@ -153,7 +157,7 @@ const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot, source: 'cache' | 
 
   useTransactionStore.setState({
     ...useTransactionStore.getState(),
-    transactions: [...deviceOnlyTransactions, ...snapshot.data.transactions.filter(t =>
+    transactions: LARGE_SMS_LOCAL_ENABLED ? useLocalLedgerStore.getState().transactions : [...deviceOnlyTransactions, ...snapshot.data.transactions.filter(t =>
       (t.captureSource !== 'sms' || isCloudApprovedSmsTransaction(t)) && t.captureSource !== 'notification' && !deviceOnlyTransactions.some(local => local.id === t.id || (t.importIdentity && local.importIdentity === t.importIdentity)))],
     isSeeded: true,
   });
@@ -207,7 +211,7 @@ const hydrateCachedSnapshot = async (userId: string, session: RemoteSyncSession,
     return null;
   }
 
-  if (applyToStores) applyRemoteSnapshot(cached.value, 'cache');
+  if (applyToStores) await applyRemoteSnapshot(cached.value, 'cache');
   useSyncStore.getState().markCacheHydrated(cached.cachedAt);
   return cached;
 };
@@ -276,7 +280,7 @@ const performRemoteSync = async (
       useSyncStore.getState().failSync(message);
       return { source: cached ? 'cache' : 'none', synced: false, cachedAt: cached?.cachedAt, error: message };
     }
-    applyRemoteSnapshot(snapshot, 'network');
+    await applyRemoteSnapshot(snapshot, 'network');
     if (!isCurrentSession(session)) {
       return { source: 'none', synced: false };
     }

@@ -172,6 +172,7 @@ internal object MoneyKaiLocalImport {
         }
       }
       "get" -> get(db,owner,request.getString("id"))
+      "latest" -> db.rawQuery("SELECT payload FROM import_jobs WHERE owner=? ORDER BY rowid DESC LIMIT 1",arrayOf(owner)).use { JSONObject().put("job",if(it.moveToFirst()) JSONObject(it.getString(0)) else JSONObject.NULL) }
       "tick" -> tick(context,owner,request.getString("id"))
       "accounts" -> {
         val items = JSONArray()

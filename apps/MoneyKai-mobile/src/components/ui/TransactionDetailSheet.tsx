@@ -92,7 +92,7 @@ interface TransactionDetailSheetProps {
 export function TransactionDetailSheet({ transaction, onClose, onEdit, onSplit, onDeleted }: TransactionDetailSheetProps) {
   const { colors } = useTheme();
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
-  const deleteTransaction = useTransactionStore((state) => state.deleteTransaction);
+  const deleteTransaction = useTransactionStore((state) => state.deleteTransactionDurable);
   const displayName = useTransactionLabels();
   const category = getCategoryById(transaction.category)?.name ?? titleCase(transaction.category);
   const paymentMethod = PAYMENT_METHODS.find((item) => item.id === transaction.payment_method)?.name
@@ -112,9 +112,9 @@ export function TransactionDetailSheet({ transaction, onClose, onEdit, onSplit, 
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            deleteTransaction(transaction.id);
-            onDeleted();
+            onPress: async () => {
+              try { await deleteTransaction(transaction.id); onDeleted(); }
+              catch { Alert.alert('Could not remove transaction','The saved record is preserved. Try again.'); }
           },
         },
       ]

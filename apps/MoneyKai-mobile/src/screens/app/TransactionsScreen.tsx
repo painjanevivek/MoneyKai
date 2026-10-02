@@ -1,4 +1,9 @@
 import React, { useCallback, useDeferredValue, useMemo, useState } from 'react';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { useLocalLedgerStore } from '@/stores/useLocalLedgerStore';
+import { useLedgerActivity } from '@/hooks/useLedgerActivity';
+import { LedgerPaging } from '@/components/transactions/LedgerPaging';
+import { activityDateBounds } from '@/utils/activityDates';
 import { Platform, SectionList, TextInput, View, useWindowDimensions, type SectionListRenderItemInfo } from 'react-native';
 import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -151,14 +156,18 @@ export function TransactionsScreen({ graphContext, archivedOnly = false }: { gra
   const { colors } = useTheme();
   const styles = createAppScreenStyles(colors);
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
-  const allTransactions = useTransactionStore((state) => state.transactions);
+  const legacyTransactions = useTransactionStore((state) => state.transactions);
+  const ledgerTransactions=useLocalLedgerStore(s=>s.transactions);
+  const ledgerReady=useLocalLedgerStore(s=>s.ready);
+  const allTransactions=LARGE_SMS_LOCAL_ENABLED?ledgerTransactions:legacyTransactions;
   const owner = useAuthStore(state => state.user?.id);
   const transactions = useMemo(() => allTransactions.filter(item => item.user_id === owner), [allTransactions, owner]);
   const archived = useTransactionPreferencesStore(state => owner ? state.archived[owner] : undefined);
   const setArchived = useTransactionPreferencesStore(state => state.setArchived);
   const displayName = useTransactionLabels();
   const scopedTransactions = useMemo(() => graphContext ? filterGraphTransactions(transactions, graphContext) : transactions, [transactions, graphContext]);
-  const isLoading = useTransactionStore((state) => state.isLoading);
+  const legacyLoading = useTransactionStore((state) => state.isLoading);
+  const isLoading=LARGE_SMS_LOCAL_ENABLED?!ledgerReady:legacyLoading;
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [type, setType] = useState<TransactionType | 'all'>('all');
@@ -206,7 +215,16 @@ export function TransactionsScreen({ graphContext, archivedOnly = false }: { gra
     dates.id !== 'all' ? activityDateLabel(dates) : null,
   ].filter(Boolean).join(' · ');
 
+  const ledgerQuery={...activityDateBounds(dates),archived:archivedOnly,
+    ...(graphContext?.periodStart?{from:graphContext.periodStart.slice(0,10)}:{}),
+    ...(graphContext?.periodEnd?{to:new Date(new Date(graphContext.periodEnd).getTime()-86400000).toISOString().slice(0,10)}:{}),
+    ...(type!=='all'?{direction:type}:graphContext?.metric==='spending'?{direction:'expense' as const}:graphContext?.metric==='income'?{direction:'income' as const}:{}),
+    ...(categoryFilter!=='all'?{category:categoryFilter}:{}),...(paymentFilter!=='all'?{payment:paymentFilter}:{}),
+    ...(accountFilter!=='all'?{account:accountFilter}:{}),...(sourceFilter!=='all'?{source:sourceFilter}:{}),
+    ...(deferredQuery.trim()?{merchantPrefix:deferredQuery.trim()}:{}),};
+  const paging=useLedgerActivity(LARGE_SMS_LOCAL_ENABLED,ledgerQuery);
   const filtered = useMemo(() => {
+    if(LARGE_SMS_LOCAL_ENABLED) return transactions;
     const normalizedQuery = deferredQuery.trim().toLowerCase();
     const nextTransactions = scopedTransactions
       .filter(item => Boolean(archived?.[item.id]) === archivedOnly)
@@ -255,7 +273,13 @@ export function TransactionsScreen({ graphContext, archivedOnly = false }: { gra
         paymentLabel={formatPaymentMethod(item.payment_method)}
         onOpen={openTransaction}
       />;
-      return graphContext ? row : <ArchiveSwipeRow restore={archivedOnly} onArchive={() => setArchived(item, !archivedOnly)}>{row}</ArchiveSwipeRow>;
+      return graphContext ? row : <ArchiveSwipeRow restore={archivedOnly} onArchive={() => {
+        if(LARGE_SMS_LOCAL_ENABLED) {
+          void useTransactionStore.getState().updateTransactionDurable(item.id,{archived:!archivedOnly}).catch(()=>useLocalLedgerStore.setState({error:'The record could not be archived. Try again.'}));
+          return false;
+        }
+        return setArchived(item,!archivedOnly);
+      }}>{row}</ArchiveSwipeRow>;
     },
     [archivedOnly, graphContext, setArchived, formatCategory, formatMoney, formatPaymentMethod, openTransaction]
   );
@@ -345,6 +369,7 @@ export function TransactionsScreen({ graphContext, archivedOnly = false }: { gra
             </View>
           </>
         }
+        ListFooterComponent={LARGE_SMS_LOCAL_ENABLED?<LedgerPaging {...paging}/>:undefined}
         ListEmptyComponent={
           isLoading ? (
             <ScreenState loading title="Loading transactions" body="Opening your debit and credit history." tone="primary" />

@@ -20,11 +20,11 @@ import type { AppTabParamList, RootStackParamList } from '@/navigation/types';
 import { createAppScreenStyles } from './screenStyles';
 
 type MoreNavigation = CompositeNavigationProp<
-  BottomTabNavigationProp<AppTabParamList, 'More'>,
+  BottomTabNavigationProp<AppTabParamList, 'Profile'>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-type FeatureRoute = Exclude<keyof RootStackParamList, 'Auth' | 'App'>;
+type FeatureRoute = Exclude<{[K in keyof RootStackParamList]: undefined extends RootStackParamList[K] ? K : never}[keyof RootStackParamList], 'Auth' | 'App'>;
 
 interface FeatureItem {
   title: string;

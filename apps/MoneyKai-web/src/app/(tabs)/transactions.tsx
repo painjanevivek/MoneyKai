@@ -17,6 +17,8 @@ import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate, formatRelativeDate } from '@/utils/dateUtils';
 import { confirmDestructive } from '@/utils/confirmDestructive';
 import { Typography, Spacing, BorderRadius } from '@/constants/theme';
+import { useLedgerPage } from '@/features/ledger/useLedgerPage';
+import { invalidateLedgerPages } from '@/services/ledgerPages';
 import type { Transaction, TransactionCaptureSource } from '@/types/transaction';
 
 const FILTER_TABS = ['All', 'Expense', 'Income'] as const;
@@ -241,11 +243,14 @@ export default function TransactionsScreen() {
     return CAPTURE_SOURCE_OPTIONS.filter((option) => availableSources.has(option.id));
   }, [allTransactions]);
   const netFlow = totalIncome - totalSpent;
+  const today=new Date();
+  const from=dateFilter==='all'?undefined:formatDate(dateFilter==='today'?today:dateFilter==='this_week'?startOfWeek(today,{weekStartsOn:1}):dateFilter==='this_month'?startOfMonth(today):subDays(today,29),'yyyy-MM-dd');
+  const ledger=useLedgerPage({...(from?{from_date:from,to_date:getTodayDate()}:{}),...(activeTab!=='All'?{direction:activeTab==='Expense'?'expense' as const:'income' as const}:{}),...(categoryFilter!=='all'?{category:categoryFilter}:{}),...(paymentFilter!=='all'?{payment:paymentFilter}:{}),...(sourceFilter!=='all'?{source:sourceFilter}:{}),...(accountFilter!=='all'?{account:accountFilter}:{}),...(searchQuery.trim()?{merchant_prefix:searchQuery.trim()}:{}),});
   const isLedgerWide = width >= 980;
 
   const displayTransactions = useMemo(() => {
     const now = new Date();
-    let nextTransactions = [...filteredTransactions];
+    let nextTransactions = [...ledger.items];
 
     if (categoryFilter !== 'all') {
       nextTransactions = nextTransactions.filter((transaction) => transaction.category === categoryFilter);
@@ -300,7 +305,7 @@ export default function TransactionsScreen() {
       default:
         return nextTransactions.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime());
     }
-  }, [accountFilter, categoryFilter, dateFilter, filteredTransactions, paymentFilter, sortOption, sourceFilter]);
+  }, [accountFilter, categoryFilter, dateFilter, ledger.items, paymentFilter, sortOption, sourceFilter]);
 
   const resetAdvancedFilters = () => {
     setCategoryFilter('all');
@@ -587,9 +592,9 @@ export default function TransactionsScreen() {
             description="Search, filter, edit, and approve the records shaping MoneyKai reports and budget decisions."
             metrics={[
               { label: 'Visible records', value: String(displayTransactions.length) },
-              { label: 'Spent', value: formatCurrency(totalSpent), tone: 'danger' },
-              { label: 'Income', value: formatCurrency(totalIncome), tone: 'positive' },
-              { label: 'Net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'danger' : 'positive' },
+              { label: 'Page spending', value: formatCurrency(totalSpent), tone: 'danger' },
+              { label: 'Page income', value: formatCurrency(totalIncome), tone: 'positive' },
+              { label: 'Page net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'danger' : 'positive' },
             ]}
             actions={<Button title="Add Transaction" icon="plus" onPress={handleOpenAddModal} variant="outline" />}
           />
@@ -620,7 +625,7 @@ export default function TransactionsScreen() {
           >
             <MaterialCommunityIcons name="magnify" size={20} color={colors.textTertiary} />
             <TextInput
-              placeholder="Search transactions..."
+              accessibilityLabel="Search the complete synced history by merchant prefix" placeholder="Merchant starts with…"
               placeholderTextColor={colors.textTertiary}
               value={searchQuery}
               onChangeText={handleSearch}
@@ -658,6 +663,14 @@ export default function TransactionsScreen() {
           </View>
         </View>
 
+        <View style={{padding:Spacing.base,gap:Spacing.sm}}>
+          <Text accessibilityRole={ledger.error?'alert':undefined} style={{color:colors.textSecondary}}>{ledger.error || (ledger.loading?'Loading records…':'50 synced records per page · sorting applies to this page')}</Text>
+          <View style={{flexDirection:'row',flexWrap:'wrap',gap:Spacing.sm}}>
+            <Button title="First" variant="outline" disabled={ledger.loading} onPress={()=>{invalidateLedgerPages();ledger.first();}}/>
+            <Button title="Previous" variant="outline" disabled={ledger.loading || !ledger.previous} onPress={ledger.back}/>
+            <Button title="Next" variant="outline" disabled={ledger.loading || !ledger.next} onPress={ledger.forward}/>
+          </View>
+        </View>
         <View style={{ paddingHorizontal: Spacing.base, paddingTop: Spacing.md }}>
           {displayTransactions.length > 0 ? (
             <>

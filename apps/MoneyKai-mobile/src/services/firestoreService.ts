@@ -149,7 +149,7 @@ export const loadUserFirestoreSnapshot = async (
     appSettingsSnap,
     budgetSnap,
   ] = await Promise.all([
-    userDoc.collection('transactions').get(),
+    userDoc.collection('transactions').orderBy('transaction_date','desc').limit(50).get(),
     userDoc.collection('notes').get(),
     userDoc.collection('groups').get(),
     userDoc.collection('badges').get(),

@@ -3,6 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/Button';
@@ -15,7 +16,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
-import type { AppTabParamList } from '@/navigation/types';
+import type { AppTabParamList, RootStackParamList } from '@/navigation/types';
 import type { TransactionType } from '@/types/transaction';
 import { createAppScreenStyles } from './screenStyles';
 
@@ -127,7 +128,7 @@ export function AddTransactionScreen() {
               actionLabel={formError.startsWith('Set a monthly budget') ? 'Open Budget' : undefined}
               body={formError}
               icon="alert-circle-outline"
-              onAction={formError.startsWith('Set a monthly budget') ? () => navigation.navigate('Budget') : undefined}
+              onAction={formError.startsWith('Set a monthly budget') ? () => navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.navigate('Budget') : undefined}
               style={{ marginBottom: Spacing.base, padding: Spacing.base }}
               title="Needs attention"
               tone="danger"

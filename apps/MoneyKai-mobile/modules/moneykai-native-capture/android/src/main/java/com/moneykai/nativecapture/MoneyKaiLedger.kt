@@ -28,6 +28,7 @@ internal object MoneyKaiLedger {
       MoneyKaiPrivateStorage.set(context, KEY, key)
     }
     val db = SQLiteDatabase.openOrCreateDatabase(file, key, null, null, null)
+    check(db.version <= 2) { "Ledger schema is newer than this application" }
     db.enableWriteAheadLogging()
     db.execSQL("PRAGMA synchronous=FULL")
     db.execSQL("PRAGMA cipher_memory_security=ON")
@@ -53,7 +54,14 @@ internal object MoneyKaiLedger {
       db.execSQL("CREATE TABLE IF NOT EXISTS summaries(owner TEXT NOT NULL,month TEXT NOT NULL,category TEXT NOT NULL,direction TEXT NOT NULL,amount_minor INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(owner,month,category,direction))")
       db.execSQL("CREATE TABLE IF NOT EXISTS migrations(owner TEXT NOT NULL,name TEXT NOT NULL,cursor INTEGER NOT NULL,verified INTEGER NOT NULL DEFAULT 0,payload TEXT NOT NULL,PRIMARY KEY(owner,name))")
       db.execSQL("CREATE TABLE IF NOT EXISTS consent(owner TEXT PRIMARY KEY,payload TEXT NOT NULL)")
-      db.execSQL("PRAGMA user_version=1")
+      if(db.version < 2) for(table in listOf("transactions","drafts")) {
+        db.execSQL("ALTER TABLE $table ADD COLUMN source TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE $table ADD COLUMN payment TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE $table ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("UPDATE $table SET source=COALESCE(json_extract(payload,'$.captureSource'),''),payment=COALESCE(json_extract(payload,'$.payment_method'),'')")
+      }
+      for(table in listOf("transactions","drafts")) for(field in listOf("source","payment","archived")) db.execSQL("CREATE INDEX IF NOT EXISTS ${table}_$field ON $table(owner,$field,day DESC,id DESC)")
+      db.execSQL("PRAGMA user_version=2")
       db.setTransactionSuccessful()
     } finally { db.endTransaction() }
     database = db
@@ -92,6 +100,11 @@ internal object MoneyKaiLedger {
     val id = row.getString("id")
     require(id.length in 1..160)
     val amount = minor(row)
+    require(row.optString("currency","INR") == "INR" && row.getString("type") in listOf("income","expense"))
+    require(row.getString("transaction_date").matches(Regex("[0-9]{4}-[0-9]{2}-[0-9]{2}")))
+    val now=java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",java.util.Locale.US).apply { timeZone=java.util.TimeZone.getTimeZone("UTC") }.format(java.util.Date())
+    if(!row.has("created_at")) row.put("created_at",row.optString("createdAt",now))
+    if(!row.has("createdAt")) row.put("createdAt",row.getString("created_at"))
     row.put("amountMinor",amount).put("currency","INR").put("user_id",owner)
     val previous = existing(db,owner,table,id)
     if(table == "transactions" && localEdit) {
@@ -101,10 +114,10 @@ internal object MoneyKaiLedger {
     }
     if (table == "transactions" && previous != null) contribution(db,owner,previous,-1)
     val identity = row.optString("importIdentity").takeIf { it.isNotBlank() }
-    val columns = listOf("day","amount_minor","direction","account","category","merchant","review","sync","identity","revision","payload")
-    val statement = db.compileStatement("INSERT INTO $table(owner,id,${columns.joinToString(",")}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(owner,id) DO UPDATE SET ${columns.joinToString(",") { "$it=excluded.$it" }}")
+    val columns = listOf("day","amount_minor","direction","account","category","merchant","review","sync","identity","revision","payload","source","payment","archived")
+    val statement = db.compileStatement("INSERT INTO $table(owner,id,${columns.joinToString(",")}) VALUES(${List(columns.size+2) { "?" }.joinToString(",")}) ON CONFLICT(owner,id) DO UPDATE SET ${columns.joinToString(",") { "$it=excluded.$it" }}")
     statement.use {
-      val values = listOf(owner,id,row.getString("transaction_date"),amount,row.getString("type"),row.optString("accountIdentity",row.optString("captureAccountId")),row.optString("category","Other"),row.optString("counterpartyName",row.optString("description")).lowercase(),row.optString("status",row.optString("reviewStatus","approved")),row.optString("syncStatus","local_only"),identity,row.optLong("revision"),row.toString())
+      val values = listOf(owner,id,row.getString("transaction_date"),amount,row.getString("type"),row.optString("accountIdentity",row.optString("captureAccountId")),row.optString("category","Other"),row.optString("counterpartyName",row.optString("description")).lowercase(),row.optString("status",row.optString("reviewStatus","approved")),row.optString("syncStatus","local_only"),identity,row.optLong("revision"),row.toString(),row.optString("captureSource"),row.optString("payment_method"),if(row.optBoolean("archived")) 1L else 0L)
       values.forEachIndexed { index,value -> when(value) { null -> it.bindNull(index+1); is Long -> it.bindLong(index+1,value); else -> it.bindString(index+1,value.toString()) } }
       it.executeInsert()
     }
@@ -128,8 +141,9 @@ internal object MoneyKaiLedger {
     val limit = request.optInt("limit",50).coerceIn(1,100)
     val where = mutableListOf("owner=?")
     val args = mutableListOf(owner)
-    for ((input,column) in mapOf("account" to "account","category" to "category","review" to "review","sync" to "sync","direction" to "direction"))
+    for ((input,column) in mapOf("account" to "account","category" to "category","review" to "review","sync" to "sync","direction" to "direction","source" to "source","payment" to "payment"))
       if (request.has(input)) { where.add("$column=?"); args.add(request.getString(input)) }
+    if(request.has("archived")) { where.add("archived=?"); args.add(if(request.getBoolean("archived")) "1" else "0") }
     for ((input,operator) in mapOf("from" to ">=", "to" to "<="))
       if (request.has(input)) { where.add("day$operator?"); args.add(request.getString(input)) }
     if (request.has("merchantPrefix")) {
@@ -154,7 +168,7 @@ internal object MoneyKaiLedger {
   fun migrate(context: Context, db: SQLiteDatabase, owner: String): JSONObject {
     for ((name,table,field) in listOf(Triple("moneykai-transactions","transactions","transactions"),Triple("moneykai-auto-capture","drafts","drafts"))) {
       if(scalar(db,"SELECT verified FROM migrations WHERE owner=? AND name=?",arrayOf(owner,name)) == 1L) continue
-      val raw = MoneyKaiPrivateStorage.get(context,name) ?: continue
+      val raw = MoneyKaiPrivateStorage.get(context,name+"-ledger-baseline-v1") ?: MoneyKaiPrivateStorage.get(context,name) ?: continue
       val rows = JSONObject(raw).getJSONObject("state").optJSONArray(field) ?: JSONArray()
       var offset = scalar(db,"SELECT cursor FROM migrations WHERE owner=? AND name=?", arrayOf(owner,name)).toInt()
       var chunks = 0
@@ -193,6 +207,10 @@ internal object MoneyKaiLedger {
       "import" -> MoneyKaiLocalImport.request(context,owner,request)
       "cloud" -> MoneyKaiCloudOutbox.request(context,owner,request)
       "get" -> JSONObject().put("row",existing(db,owner,request.getString("table"),request.getString("id")) ?: JSONObject.NULL)
+      "digest" -> JSONObject().put("digest",java.security.MessageDigest.getInstance("SHA-256").digest(request.getString("value").toByteArray()).joinToString("") { "%02x".format(it) })
+      "counts" -> JSONObject().put("transactions",scalar(db,"SELECT count(*) FROM transactions WHERE owner=?",arrayOf(owner)))
+        .put("pending",scalar(db,"SELECT count(*) FROM drafts WHERE owner=? AND review='pending'",arrayOf(owner)))
+        .put("reviewed",scalar(db,"SELECT count(*) FROM drafts WHERE owner=? AND review<>'pending'",arrayOf(owner)))
       "approve" -> {
         db.beginTransaction()
         try {
@@ -204,11 +222,35 @@ internal object MoneyKaiLedger {
         } finally { db.endTransaction() }
         JSONObject().put("committed",true)
       }
+      "captureOutcome" -> {
+        val identity=request.getString("identity")
+        require(identity.matches(Regex("[a-f0-9]{64}")))
+        db.beginTransaction()
+        try {
+          val duplicate=scalar(db,"SELECT count(*) FROM processed_messages WHERE owner=? AND identity=?",arrayOf(owner,identity))>0
+          if(!duplicate) {
+            val row=request.optJSONObject("row")
+            if(row!=null) put(db,owner,"drafts",row)
+            db.execSQL("INSERT INTO processed_messages VALUES(?,?,?,?)",arrayOf(owner,identity,if(row==null) "ignored" else "drafted",row?.getString("id")))
+          }
+          db.setTransactionSuccessful()
+          JSONObject().put("duplicate",duplicate)
+        } finally { db.endTransaction() }
+      }
+      "mergeSnapshot" -> {
+        val rows=request.getJSONArray("rows");require(rows.length()<=50)
+        db.beginTransaction()
+        try {
+          for(index in 0 until rows.length()) MoneyKaiCloudOutbox.merge(db,owner,rows.getJSONObject(index))
+          db.setTransactionSuccessful()
+          JSONObject().put("committed",true)
+        } finally { db.endTransaction() }
+      }
       "migrate" -> migrate(context,db,owner)
       "page" -> page(db,owner,request)
       "summaries" -> {
         val items = JSONArray()
-        db.rawQuery("SELECT month,category,direction,amount_minor,count FROM summaries WHERE owner=? AND month=?",arrayOf(owner,request.getString("month"))).use {
+        db.rawQuery("SELECT month,category,direction,amount_minor,count FROM summaries WHERE owner=? AND month=? ORDER BY category LIMIT 100",arrayOf(owner,request.getString("month"))).use {
           while(it.moveToNext()) items.put(JSONObject().put("month",it.getString(0)).put("category",it.getString(1)).put("direction",it.getString(2)).put("amountMinor",it.getLong(3)).put("count",it.getLong(4)))
         }
         JSONObject().put("items",items)

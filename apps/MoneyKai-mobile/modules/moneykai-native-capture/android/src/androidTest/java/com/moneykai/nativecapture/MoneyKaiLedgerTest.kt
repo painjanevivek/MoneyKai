@@ -68,4 +68,25 @@ class MoneyKaiLedgerTest {
     try { MoneyKaiLedger.open(context); fail("Missing existing key must fail closed") } catch(_: IllegalStateException) { }
     finally { MoneyKaiPrivateStorage.set(context,"moneykai-ledger-key-v1",key) }
   }
+
+  @Test fun boundedScreenQueriesApprovalAndCapturedOutcomeReplay() {
+    val owner="views-${System.nanoTime()}";MoneyKaiLedger.setOwner(context,owner)
+    val db=MoneyKaiLedger.open(context)
+    val identity="d".repeat(64)
+    val draft=row(owner,"notify").put("captureSource","notification").put("payment_method","upi")
+    val request=JSONObject().put("op","captureOutcome").put("identity",identity).put("row",draft)
+    assertFalse(MoneyKaiLedger.request(context,owner,request).getBoolean("duplicate"))
+    assertTrue(MoneyKaiLedger.request(context,owner,request).getBoolean("duplicate"))
+    MoneyKaiLedger.request(context,owner,JSONObject().put("op","approve").put("id","notify").put("category","Food"))
+    assertNull(MoneyKaiLedger.existing(db,owner,"drafts","notify"))
+    assertEquals(1,MoneyKaiLedger.page(db,owner,JSONObject().put("source","notification").put("payment","upi")).getJSONArray("items").length())
+    val approved=MoneyKaiLedger.existing(db,owner,"transactions","notify")!!
+    approved.put("archived",true);MoneyKaiLedger.request(context,owner,JSONObject().put("op","put").put("table","transactions").put("row",approved))
+    assertEquals(0,MoneyKaiLedger.page(db,owner,JSONObject().put("archived",false)).getJSONArray("items").length())
+    db.beginTransaction()
+    try {for(index in 0 until 125)MoneyKaiLedger.put(db,owner,"transactions",row(owner,"c$index").put("category","Category$index"));db.setTransactionSuccessful()}finally{db.endTransaction()}
+    val summary=MoneyKaiLedger.request(context,owner,JSONObject().put("op","summaries").put("month","2026-10")).getJSONArray("items")
+    assertEquals(100,summary.length());assertEquals("",summary.getJSONObject(0).getString("category"))
+    assertEquals(126L*1234L,summary.getJSONObject(0).getLong("amountMinor"))
+  }
 }

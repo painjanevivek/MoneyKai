@@ -72,7 +72,7 @@ export function RecordTransactionScreen() {
   const { fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { contentPaddingBottom } = getFloatingDockLayout(fontScale, insets.bottom, basicMode);
-  const addTransaction = useTransactionStore((state) => state.addTransaction);
+  const addTransaction = useTransactionStore((state) => state.addTransactionDurable);
   const allowance = useBudgetStore((state) => state.settings.monthly_allowance);
   const [defaults] = useState(() => getTransactionDefaults(useTransactionStore.getState().transactions, user?.id ?? 'local'));
   const saveGuard = useRef(createTransactionSaveGuard());
@@ -139,7 +139,7 @@ export function RecordTransactionScreen() {
     setOpenPanel(null);
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!hasTransactionBudget(useBudgetStore.getState().settings.monthly_allowance)) {
       setFormError('Set a monthly budget before adding transactions. Your unfinished transaction is kept here.');
       return;
@@ -173,7 +173,7 @@ export function RecordTransactionScreen() {
 
     setFormError(null);
     setIsSaving(true);
-    const result = saveGuard.current.save(useBudgetStore.getState().settings.monthly_allowance, () => addTransaction({
+    const result = await saveGuard.current.saveAsync(useBudgetStore.getState().settings.monthly_allowance, () => addTransaction({
       user_id: user?.id ?? 'local',
       type,
       amount: numericAmount,

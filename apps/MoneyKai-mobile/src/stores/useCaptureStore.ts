@@ -1,5 +1,6 @@
 import { privateDeviceStorage } from '@/services/privateDeviceStorage';
 import { create } from 'zustand';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { recordAppNotification } from '@/services/notificationService';
 import { isNotificationCaptureEnabled } from '@/config/environment';
@@ -751,7 +752,7 @@ export const useCaptureStore = create<CaptureState>()(
       partialize: (state) => ({
         settings: state.settings,
         signals: state.signals,
-        drafts: state.drafts,
+        drafts: LARGE_SMS_LOCAL_ENABLED ? [] : state.drafts,
         merchantRules: state.merchantRules,
         monitoredAccounts: state.monitoredAccounts,
       }),

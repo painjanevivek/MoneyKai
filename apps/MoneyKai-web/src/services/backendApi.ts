@@ -335,7 +335,16 @@ function parseSseFrame(frame: string): AiChatStreamEvent | null {
   return payload;
 }
 
+export type MonthlyLedgerSummary={month:string;status:string;scope:'synced_cloud';partialSynchronization:boolean;items:{month:string;category:string;direction:string;amountMinor:number;count:number}[]};
 export const backendApi = {
+  getLedgerTransactions: async (filters:import('./ledgerPages').LedgerFilters={},cursor?:string) => {
+    const params=new URLSearchParams({limit:'50'});
+    Object.entries(filters).forEach(([key,value])=>{if(value)params.set(key,value);});
+    if(cursor)params.set('cursor',cursor);
+    return request<PaginatedResponse<Transaction>>(`/v1/ledger/transactions?${params}`);
+  },
+  getMonthlyLedgerSummary:(month:string)=>request<MonthlyLedgerSummary>(`/v1/ledger/summaries/${encodeURIComponent(month)}`),
+  reconcileLedgerSummary:()=>request<{phase:string;processed:number}>('/v1/ledger/summaries/reconcile',{method:'POST'}),
   getApprovedSmsTransactions: async (ids:string[]) => request<{items:Transaction[]}>('/v1/capture/approved-transactions/read',{method:'POST',body:JSON.stringify(ids)}),
   getCapabilities: async () => request<CapabilityStatusResponse>('/v1/capabilities'),
   getOperation: async (operationId: string) =>

@@ -228,7 +228,7 @@ export function HomeScreen() {
 
         <View style={[styles.row, { marginBottom: Spacing.md }]}>
           <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Quick tools</Text>
-          <PressableScale accessibilityRole="button" onPress={() => navigation.navigate('More')}>
+          <PressableScale accessibilityRole="button" onPress={() => navigation.navigate('Profile')}>
             <Text style={{ ...styles.muted, color: colors.primary }}>More</Text>
           </PressableScale>
         </View>

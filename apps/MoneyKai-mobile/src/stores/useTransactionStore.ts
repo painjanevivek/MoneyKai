@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { localLedger } from '@/services/localLedger';
+import { useLocalLedgerStore } from './useLocalLedgerStore';
 import { isDeviceOnlyCaptureSource } from '@/services/smsDeviceOnlyPolicy';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { privateDeviceStorage } from '@/services/privateDeviceStorage';
@@ -28,6 +31,9 @@ interface TransactionState {
 
   // Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at'>) => boolean;
+  addTransactionDurable: (transaction: Omit<Transaction,'id'|'created_at'>) => Promise<boolean>;
+  updateTransactionDurable: (id:string,updates:Partial<Transaction>) => Promise<void>;
+  deleteTransactionDurable: (id:string) => Promise<void>;
   upsertBackendTransaction: (transaction: Transaction) => void;
   upsertImportedTransactions: (transactions: Transaction[]) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
@@ -113,6 +119,36 @@ export const useTransactionStore = create<TransactionState>()(
       let lastCountForRecent: number = 0;
 
       return {
+        addTransactionDurable: async (input) => {
+          if(!LARGE_SMS_LOCAL_ENABLED) return get().addTransaction(input);
+          const owner=useAuthStore.getState().user?.id;
+          if(!owner || owner !== input.user_id || useBudgetStore.getState().settings.monthly_allowance <= 0) return false;
+          const row={...input,id:`txn_${Date.now()}_${Math.random().toString(36).slice(2,11)}`,created_at:new Date().toISOString()};
+          await localLedger.putTransaction(owner,row);
+          await Promise.all([useLocalLedgerStore.getState().queryTransactions(),useLocalLedgerStore.getState().refreshOverview()]);
+          if(useAuthStore.getState().user?.id === owner) set({transactions:useLocalLedgerStore.getState().transactions});
+          syncTransactionCreate(row);
+          return true;
+        },
+        updateTransactionDurable: async (id,updates) => {
+          if(!LARGE_SMS_LOCAL_ENABLED) return get().updateTransaction(id,updates);
+          const owner=useAuthStore.getState().user?.id; if(!owner) throw new Error('Owner unavailable');
+          const {row}=await localLedger.get<Transaction>(owner,'transactions',id); if(!row) throw new Error('Transaction unavailable');
+          const updated={...row,...updates,...(updates.amount !== undefined ? {amountMinor:undefined} : {})};
+          await localLedger.putTransaction(owner,updated);
+          await Promise.all([useLocalLedgerStore.getState().queryTransactions(),useLocalLedgerStore.getState().refreshOverview()]);
+          if(useAuthStore.getState().user?.id === owner) set({transactions:useLocalLedgerStore.getState().transactions});
+          if(!isDeviceOnlyCaptureSource(row.captureSource)) syncTransactionUpdate(id,updates);
+        },
+        deleteTransactionDurable: async (id) => {
+          if(!LARGE_SMS_LOCAL_ENABLED) return get().deleteTransaction(id);
+          const owner=useAuthStore.getState().user?.id; if(!owner) throw new Error('Owner unavailable');
+          const {row}=await localLedger.get<Transaction>(owner,'transactions',id); if(!row) return;
+          await localLedger.remove(owner,'transactions',id);
+          await Promise.all([useLocalLedgerStore.getState().queryTransactions(),useLocalLedgerStore.getState().refreshOverview()]);
+          if(useAuthStore.getState().user?.id === owner) set({transactions:useLocalLedgerStore.getState().transactions});
+          if(!isDeviceOnlyCaptureSource(row.captureSource)) syncTransactionDelete(id);
+        },
         // Only seed sample data on first launch (isSeeded persists across restarts).
         transactions: [],
         filter: DEFAULT_FILTER,
@@ -363,7 +399,7 @@ export const useTransactionStore = create<TransactionState>()(
       name: 'moneykai-transactions',
       storage: createJSONStorage(() => privateDeviceStorage),
       partialize: (state) => ({
-        transactions: state.transactions,
+        transactions: LARGE_SMS_LOCAL_ENABLED ? [] : state.transactions,
         isSeeded: state.isSeeded,
       }),
       onRehydrateStorage: () => (state) => {

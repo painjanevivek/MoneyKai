@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeModules } from 'react-native';
 import type { StateStorage } from 'zustand/middleware';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
 
 type DeviceCipherStore = {
   getPrivateItem: (name: string) => Promise<string | null>;
   setPrivateItem: (name: string, value: string) => Promise<void>;
   removePrivateItem: (name: string) => Promise<void>;
+  getLedgerScreenItem?: (name:string) => Promise<string|null>;
 };
 type LegacyStore = Pick<StateStorage, 'getItem' | 'setItem' | 'removeItem'>;
 
@@ -28,7 +30,9 @@ export function createPrivateDeviceStorage(native: () => DeviceCipherStore | und
   return {
     getItem: name => ordered(name, async store => {
       try {
-        const current = await store.getPrivateItem(name);
+        const screenOnly=LARGE_SMS_LOCAL_ENABLED && ['moneykai-transactions','moneykai-auto-capture'].includes(name);
+        if(screenOnly && !store.getLedgerScreenItem) throw new Error('Encrypted ledger migration unavailable');
+        const current = await (screenOnly ? store.getLedgerScreenItem!(name) : store.getPrivateItem(name));
         if (current !== null) {
           await legacy.removeItem(name);
           failedReads.delete(name);
@@ -41,7 +45,7 @@ export function createPrivateDeviceStorage(native: () => DeviceCipherStore | und
           await legacy.removeItem(name);
         }
         failedReads.delete(name);
-        return previous ?? null;
+        return screenOnly && previous != null ? store.getLedgerScreenItem!(name) : previous ?? null;
       } catch (error) {
         // A store's default empty state must not overwrite unreadable ciphertext.
         failedReads.add(name);

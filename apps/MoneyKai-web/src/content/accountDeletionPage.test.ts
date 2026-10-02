@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { URL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { PUBLIC_ROUTES, SITE } from '@/constants/site';
 

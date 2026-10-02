@@ -12,6 +12,8 @@ import { useChallengeStore } from '@/stores/useChallengeStore';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { WorkspaceHeader } from '@/components/ui/WorkspaceHeader';
+import { SyncedLedgerSummary } from '@/components/dashboard/SyncedLedgerSummary';
+import { useLedgerPage } from '@/features/ledger/useLedgerPage';
 import { AnalyticsDashboard } from '@/components/dashboard/analytics';
 import { useReportingMonth } from '@/components/layout/ReportingMonthContext';
 import { FirstLoginTour } from '@/components/onboarding/FirstLoginTour';
@@ -202,6 +204,7 @@ export default function DashboardScreen() {
   const groups = useGroupStore((state) => state.groups);
   const challenges = useChallengeStore((state) => state.challenges);
   const { selectedMonthDate } = useReportingMonth();
+  useLedgerPage();
   const reviewPreview = useReviewPreview();
   const recurringPlanning = useRecurringPlanning(user?.id);
 
@@ -312,6 +315,7 @@ export default function DashboardScreen() {
       showsVerticalScrollIndicator={true}
       contentContainerStyle={{ gap: Spacing.lg, paddingBottom: Spacing['3xl'] }}
     >
+      <SyncedLedgerSummary month={`${selectedMonthDate.getFullYear()}-${String(selectedMonthDate.getMonth()+1).padStart(2,'0')}`}/>
       {needsActivation ? (
         <>
           <WorkspaceHeader
@@ -320,12 +324,6 @@ export default function DashboardScreen() {
             title={`Welcome back, ${firstName}`}
             description="Reviewed transactions, budgets, shared spending, savings, and portfolio context in one workspace."
             variant="quiet"
-            metrics={[
-              { label: 'Budget available', value: formatCurrency(budgetAvailable), tone: legacyRemaining < 0 ? 'danger' : 'positive' },
-              { label: 'Spent', value: formatCurrency(plan.metrics.actualExpense), tone: 'warning' },
-              { label: 'Income', value: formatCurrency(plan.metrics.actualIncome), tone: 'positive' },
-              { label: 'Net flow', value: `${actualNetFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(actualNetFlow))}`, tone: actualNetFlow < 0 ? 'danger' : 'positive' },
-            ]}
             chips={[
               { icon: 'calendar-refresh-outline', label: `Reset day ${settings.reset_day}` },
               { icon: 'target', label: `${activeChallenges.length} active goal${activeChallenges.length === 1 ? '' : 's'}` },
@@ -363,21 +361,7 @@ export default function DashboardScreen() {
       ) : (
         <>
           <ReviewQueuePanel items={reviewQueueItems} loading={reviewPreview.loading} error={reviewPreview.error} />
-          <AnalyticsDashboard
-          plan={plan}
-          transactions={transactions}
-          periodEnd={cycleEnd}
-          userId={user?.id}
-          onAddTransaction={() => router.push('/transactions' as any)}
-          onAdjustBudget={() => router.push('/budgets' as any)}
-          onStartGoal={() => router.push('/goals' as any)}
-          onOpenAiReview={() => router.push('/ai-review' as any)}
-          onOpenReports={() => router.push('/reports' as any)}
-          onViewTransactions={() => router.push('/transactions' as any)}
-          onUpdateTransactionCategory={(transactionIds, categoryId) => {
-            transactionIds.forEach((transactionId) => updateTransaction(transactionId, { category: categoryId }));
-          }}
-          />
+
         </>
       )}
 

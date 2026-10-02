@@ -15,6 +15,12 @@ export function activityDateError(range: ActivityDates, now = new Date()) {
   if (range.start > range.end) return 'The end date must be on or after the start date.';
   return undefined;
 }
+export function activityDateBounds(range: ActivityDates, now = new Date()) {
+  if(range.id === 'all') return {};
+  const end=range.id === 'custom'?range.end:toLocalDateKey(now);
+  const start=range.id === 'custom'?range.start:toLocalDateKey(range.id==='today'?now:range.id==='this_week'?startOfWeek(now,{weekStartsOn:1}):startOfMonth(subMonths(now,range.id==='three_months'?2:range.id==='six_months'?5:0)));
+  return {from:start,to:end};
+}
 export function matchesActivityDate(value: string, range: ActivityDates, now = new Date()) {
   if (range.id === 'all') return true;
   const day = value.slice(0, 10);

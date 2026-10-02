@@ -1,3 +1,4 @@
+import { invalidateLedgerPages } from '@/services/ledgerPages';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -254,13 +255,14 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         addTransaction: (transaction) => {
+          invalidateLedgerPages();
           const newTransaction: Transaction = {
             ...transaction,
             id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             created_at: new Date().toISOString(),
           };
           const nextTransactions = [newTransaction, ...get().transactions];
-          set({ transactions: nextTransactions });
+          set({ transactions: nextTransactions.slice(0,50) });
           syncTransactionCreate(newTransaction);
           queueAutomaticBackup('transaction added');
 
@@ -322,7 +324,7 @@ export const useTransactionStore = create<TransactionState>()(
             });
 
             return {
-              transactions: nextTransactions.sort(
+              transactions: nextTransactions.slice(0,50).sort(
                 (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
               ),
             };
@@ -333,10 +335,11 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         applyConfirmedTransaction: (transaction) => {
+          invalidateLedgerPages();
           set((state) => {
             const existingIndex = state.transactions.findIndex((item) => item.id === transaction.id);
             if (existingIndex < 0) {
-              return { transactions: [transaction, ...state.transactions] };
+              return { transactions: [transaction, ...state.transactions].slice(0,50) };
             }
             const transactions = [...state.transactions];
             transactions[existingIndex] = transaction;
@@ -345,6 +348,7 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         updateTransaction: (id, updates) => {
+          invalidateLedgerPages();
           set((state) => ({
             transactions: state.transactions.map(t =>
               t.id === id ? { ...t, ...updates } : t
@@ -355,6 +359,7 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         deleteTransaction: (id) => {
+          invalidateLedgerPages();
           set((state) => ({
             transactions: state.transactions.filter(t => t.id !== id),
           }));
@@ -400,8 +405,9 @@ export const useTransactionStore = create<TransactionState>()(
     {
       name: 'moneykai-transactions',
       storage: createJSONStorage(() => AsyncStorage),
+      merge: (persisted,current) => ({...current,...(persisted as Partial<TransactionState>),transactions:[]}),
       partialize: (state) => ({
-        transactions: state.transactions,
+        transactions: [],
         isSeeded: state.isSeeded,
       }),
     }

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { isNativeSmsResearchBuildEnabled, isNotificationCaptureEnabled } from '@/config/environment';
 import { ingestNativeCaptureSignal } from '@/services/autoCaptureService';
+import { ingestLedgerNotification } from '@/services/ledgerNotificationCapture';
 import {
   setNativeApprovedSmsAccounts,
   configureNativeSmsSchedule,
@@ -88,7 +89,9 @@ export function AutoCaptureCoordinator() {
         const packageName = signal.rawPayload?.rawPackageName;
         if (typeof packageName !== 'string' || !selectedPackages.split('|').includes(packageName)) return;
       }
-      ingestNativeCaptureSignal(signal);
+      if(LARGE_SMS_LOCAL_ENABLED) {
+        if(signal.source==='notification') void ingestLedgerNotification(signal).catch(()=>useLocalLedgerStore.setState({error:'A notification could not be saved. Reopen Capture to retry.'}));
+      } else ingestNativeCaptureSignal(signal);
     });
 
     return () => {

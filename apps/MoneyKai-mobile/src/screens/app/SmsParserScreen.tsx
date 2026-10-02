@@ -46,7 +46,7 @@ export function SmsParserScreen() {
     saving.current = false;
     setNotice(next ? 'Check the amount, date and category below. Nothing has been saved yet.' : 'No supported completed INR transaction found. The message was discarded. You can add a transaction manually.');
   };
-  const save = (allowSimilar = false) => {
+  const save = async (allowSimilar = false) => {
     if (saving.current || saved || !preview) return;
     if (!userId || useAuthStore.getState().user?.id !== userId) {
       Alert.alert('Sign in to save', 'Your session has changed. Sign in again before saving a transaction.');
@@ -71,7 +71,9 @@ export function SmsParserScreen() {
       ], { cancelable: false });
       return;
     }
-    const added = useTransactionStore.getState().addTransaction({ ...preview, user_id: userId, amount: paise / 100, description: redactSensitiveSmsText(preview.description.trim()) });
+    let added=false;
+    try { added = await useTransactionStore.getState().addTransactionDurable({ ...preview, user_id: userId, amount: paise / 100, description: redactSensitiveSmsText(preview.description.trim()) }); }
+    catch { setNotice('Could not save this transaction. Your review remains open.'); saving.current=false; return; }
     setSaved(added);
     setNotice(added ? 'Transaction saved on this phone only. SMS-derived records are not cloud-synced or included in cloud backups.' : 'This transaction could not be added. Check for an existing record.');
     if (!added) saving.current = false;

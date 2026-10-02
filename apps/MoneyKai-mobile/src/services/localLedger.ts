@@ -3,7 +3,7 @@ import type { Transaction } from '@/types/transaction';
 import type { DraftTransaction } from '@/types/capture';
 export type LedgerCursor = { day: string; id: string };
 export type LedgerPage<T> = { items: T[]; nextCursor: LedgerCursor | null };
-export type LedgerQuery = { limit?: number; cursor?: LedgerCursor; account?: string; category?: string; review?: string; sync?: string; direction?: 'income' | 'expense'; from?: string; to?: string; merchantPrefix?: string };
+export type LedgerQuery = { limit?: number; cursor?: LedgerCursor; account?: string; category?: string; review?: string; sync?: string; direction?: 'income' | 'expense'; from?: string; to?: string; merchantPrefix?: string; source?:string; payment?:string; archived?:boolean };
 type NativeLedger = { ledgerRequest(owner: string, request: string): Promise<string> };
 export async function ledgerRequest<T>(owner: string, request: Record<string, unknown>): Promise<T> {
   const native = NativeModules.MoneyKaiNativeCapture as NativeLedger | undefined;
@@ -21,5 +21,8 @@ export const localLedger = {
   putTransaction: (owner: string, row: Transaction) => ledgerRequest(owner, { op: 'put', table: 'transactions', row }),
   putDraft: (owner: string, row: DraftTransaction) => ledgerRequest(owner, { op: 'put', table: 'drafts', row }),
   remove: (owner: string, table: 'transactions' | 'drafts', id: string) => ledgerRequest(owner, { op: 'delete', table, id }),
+  get: <T>(owner:string,table:'transactions'|'drafts',id:string) => ledgerRequest<{row:T|null}>(owner,{op:'get',table,id}),
+  approve: (owner:string,id:string,category:string) => ledgerRequest(owner,{op:'approve',id,category}),
+  counts: (owner:string) => ledgerRequest<{transactions:number;pending:number;reviewed:number}>(owner,{op:'counts'}),
   summaries: (owner: string, month: string) => ledgerRequest<{ items: { month: string; category: string; direction: string; amountMinor: number; count: number }[] }>(owner, { op: 'summaries', month }),
 };

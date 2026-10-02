@@ -41,6 +41,7 @@ const mocks = vi.hoisted(() => {
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: vi.fn(), setItem: vi.fn(), removeItem: vi.fn() },
 }));
+vi.mock('./ledgerPages',()=>({invalidateLedgerPages:vi.fn()}));
 vi.mock('./backendApi', () => ({ backendApi: mocks.backendApi }));
 vi.mock('@/stores/useSettingsStore', () => ({ useSettingsStore: mocks.settings }));
 vi.mock('@/stores/useBudgetStore', () => ({ useBudgetStore: mocks.budget }));
@@ -58,8 +59,8 @@ describe('progressive workspace hydration', () => {
     mocks.backendApi.getApprovedSmsTransactions.mockResolvedValue({items:[{id:'sms_new',amount:10}]});
     mocks.backendApi.getIncrementalSync.mockResolvedValue({events:[{resource:'transactions',action:'upserted',payload:{importManifest:{ids:['sms_new'],deletedIds:['tx-new']}}}],page:{nextCursor:null},windowEnd:'now',nextSyncToken:'next',resetRequired:false});
     expect(await synchronizeFromToken('token',()=>true)).toBe('next');
-    expect(mocks.backendApi.getApprovedSmsTransactions).toHaveBeenCalledWith(['sms_new']);
-    expect(mocks.transactions.state.transactions).toEqual([{id:'sms_new',amount:10}]);
+    expect(mocks.backendApi.getApprovedSmsTransactions).not.toHaveBeenCalled();
+    expect(mocks.transactions.state.transactions).toEqual([{id:'tx-new',amount:10}]);
   });
   beforeEach(() => {
     vi.clearAllMocks();
@@ -68,7 +69,7 @@ describe('progressive workspace hydration', () => {
     mocks.planning.state.recurringObligations = [];
   });
 
-  it('renders the bounded page first, appends continuation pages, then advances sync', async () => {
+  it('keeps transactions on demand and advances a bounded sync page', async () => {
     mocks.backendApi.getBootstrapPage.mockResolvedValue({
       items: [{ id: 'tx-old', amount: 20 }],
       page: { nextCursor: null, hasMore: false, limit: 30, documentReads: 2 },
@@ -105,15 +106,8 @@ describe('progressive workspace hydration', () => {
     const nextToken = await hydrateRemainingWorkspace(snapshot, () => true);
 
     expect(nextToken).toBe('sync-next');
-    expect(mocks.backendApi.getBootstrapPage).toHaveBeenCalledWith(
-      'transactions',
-      snapshot.capturedAt,
-      'cursor-1',
-    );
-    expect(mocks.transactions.state.transactions).toEqual([
-      { id: 'tx-new', amount: 10 },
-      { id: 'tx-old', amount: 20 },
-    ]);
+    expect(mocks.backendApi.getBootstrapPage).not.toHaveBeenCalled();
+    expect(mocks.transactions.state.transactions).toEqual([{id:'tx-new',amount:10}]);
     expect(mocks.backendApi.getIncrementalSync).toHaveBeenCalledWith('sync-initial', null, null);
   });
 

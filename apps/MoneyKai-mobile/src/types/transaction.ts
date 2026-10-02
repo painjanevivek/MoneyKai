@@ -22,6 +22,7 @@ export interface Transaction {
   reviewStatus?: 'approved' | 'pending' | 'dismissed';
   syncStatus?: 'local_only' | 'pending' | 'synced' | 'conflict' | 'pending_delete';
   revision?: number;
+  archived?:boolean;
   category: string;
   description: string;
   counterpartyName?: string;

@@ -1,3 +1,4 @@
+import { invalidateLedgerPages } from './ledgerPages';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { backendApi } from './backendApi';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -47,7 +48,7 @@ export const hydrateRemainingWorkspace = async (
 ): Promise<string | null> => {
   if (!snapshot.pages || !snapshot.syncToken) return null;
   const resources = (Object.keys(snapshot.pages) as BootstrapResource[]).filter(
-    (resource) => snapshot.pages?.[resource]?.hasMore,
+    (resource) => resource !== 'transactions' && snapshot.pages?.[resource]?.hasMore,
   );
   await runWithConcurrency(resources, HYDRATION_CONCURRENCY, async (resource) => {
     let cursor = snapshot.pages?.[resource]?.nextCursor ?? null;
@@ -75,36 +76,25 @@ export const synchronizeFromToken = async (
   syncToken: string,
   isCurrentSession: () => boolean,
 ): Promise<string | null> => {
-  let cursor: string | null = null;
-  let windowEnd: string | null = null;
-  let nextSyncToken: string | null = null;
-  let pageCount = 0;
-
-  do {
-    const response = await backendApi.getIncrementalSync(syncToken, cursor, windowEnd);
-    if (response.resetRequired) return null;
-    if (!isCurrentSession()) return null;
-    for(const event of response.events) {
-      const manifest=event.resource === 'transactions' ? event.payload?.importManifest as {ids?:string[];deletedIds?:string[]} | undefined : undefined;
-      if(manifest) {
-        if(manifest.ids?.length) {
-          const imported=await backendApi.getApprovedSmsTransactions(manifest.ids);
-          if(!isCurrentSession()) return null;
-          applyResourceItems('transactions',imported.items);
-        }
-        for(const id of manifest.deletedIds ?? []) removeResourceItem('transactions',id);
-      } else applyIncrementalEvent(event);
-    }
-    cursor = response.page.nextCursor;
-    windowEnd = response.windowEnd;
-    nextSyncToken = response.nextSyncToken;
-    pageCount += 1;
-    if (pageCount > MAX_PROGRESSIVE_PAGES_PER_RESOURCE) {
-      throw new Error('Incremental synchronization exceeded the safety page limit.');
-    }
-  } while (cursor);
-
-  return nextSyncToken;
+  const continuationKey=`${SYNC_TOKEN_PREFIX}:continuation:${syncToken}`;
+  const raw=await AsyncStorage.getItem(continuationKey);
+  const continuation=raw?JSON.parse(raw) as {cursor:string;windowEnd:string}:null;
+  const response=await backendApi.getIncrementalSync(syncToken,continuation?.cursor ?? null,continuation?.windowEnd ?? null);
+  if(!isCurrentSession())return null;
+  if(response.resetRequired){await AsyncStorage.removeItem(continuationKey);return null;}
+  for(const event of response.events) {
+    if(event.resource==='transactions') {
+      invalidateLedgerPages();
+      if(event.action==='deleted')removeResourceItem('transactions',event.itemId);
+    } else applyIncrementalEvent(event);
+  }
+  if(!isCurrentSession())return null;
+  if(response.page.nextCursor) {
+    await AsyncStorage.setItem(continuationKey,JSON.stringify({cursor:response.page.nextCursor,windowEnd:response.windowEnd}));
+    return syncToken;
+  }
+  await AsyncStorage.removeItem(continuationKey);
+  return response.nextSyncToken;
 };
 
 const applyResourceItems = (resource: BootstrapResource, items: Identified[]) => {
@@ -112,7 +102,7 @@ const applyResourceItems = (resource: BootstrapResource, items: Identified[]) =>
     case 'transactions':
       useTransactionStore.setState((state) => ({
         ...state,
-        transactions: mergeById(state.transactions, items as Transaction[]),
+        transactions: mergeById(state.transactions, items as Transaction[]).slice(0,50),
       }));
       break;
     case 'notes':

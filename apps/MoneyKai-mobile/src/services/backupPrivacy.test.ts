@@ -245,7 +245,7 @@ describe('backup privacy', () => {
     expect(JSON.stringify(metadata)).not.toContain('Restore check');
   });
 
-  it('blocks restore when the latest backup belongs to another signed-in account', () => {
+  it('blocks restore when the latest backup belongs to another signed-in account', async () => {
     const snapshot = buildBackupSnapshot();
     const otherAccountSnapshot = {
       ...snapshot,
@@ -256,7 +256,7 @@ describe('backup privacy', () => {
       },
     };
 
-    expect(() => restoreBackupSnapshot(otherAccountSnapshot)).toThrow('This backup belongs to a different account.');
+    await expect(restoreBackupSnapshot(otherAccountSnapshot)).rejects.toThrow('This backup belongs to a different account.');
     expect(mocks.authSetState).not.toHaveBeenCalled();
   });
 });

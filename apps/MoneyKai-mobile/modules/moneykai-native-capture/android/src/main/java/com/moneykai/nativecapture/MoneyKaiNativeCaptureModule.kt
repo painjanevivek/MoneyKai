@@ -69,6 +69,22 @@ class MoneyKaiNativeCaptureModule(
   }
 
   @ReactMethod
+  fun getLedgerScreenItem(name: String, promise: Promise) {
+    MoneyKaiLedger.executor.execute {
+      try {
+        val raw=MoneyKaiPrivateStorage.get(reactContext,name)
+        if(raw == null || name !in listOf("moneykai-transactions","moneykai-auto-capture")) { promise.resolve(raw); return@execute }
+        val baseline=name+"-ledger-baseline-v1"
+        if(MoneyKaiPrivateStorage.get(reactContext,baseline) == null) MoneyKaiPrivateStorage.set(reactContext,baseline,raw)
+        val root=JSONObject(raw); val state=root.getJSONObject("state")
+        state.put(if(name == "moneykai-transactions") "transactions" else "drafts",JSONArray())
+        if(name == "moneykai-auto-capture") state.put("signals",JSONArray())
+        promise.resolve(root.toString())
+      } catch(_:Exception) { promise.reject("LEDGER_UNAVAILABLE","Encrypted migration baseline could not be preserved.") }
+    }
+  }
+
+  @ReactMethod
   fun setPrivateItem(name: String, value: String, promise: Promise) {
     try { MoneyKaiPrivateStorage.set(reactContext, name, value); promise.resolve(null) }
     catch (_: Exception) { promise.reject("PRIVATE_STORAGE_UNAVAILABLE", "Encrypted device storage could not be written.") }

@@ -23,6 +23,13 @@ export function createTransactionSaveGuard() {
   let locked = false;
   return {
     reset: () => { locked = false; },
+    saveAsync: async (allowance:number,persist:()=>Promise<boolean>):Promise<TransactionSaveResult> => {
+      if(locked) return 'busy';
+      if(!hasTransactionBudget(allowance)) return 'budget-required';
+      locked=true;
+      try { if(await persist()) return 'saved'; locked=false; return 'rejected'; }
+      catch { locked=false; return 'failed'; }
+    },
     save: (allowance: number, persist: () => boolean): TransactionSaveResult => {
       if (locked) return 'busy';
       if (!hasTransactionBudget(allowance)) return 'budget-required';

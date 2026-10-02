@@ -149,7 +149,7 @@ export const syncRemoteState = async () => {
 
   useTransactionStore.setState({
     ...useTransactionStore.getState(),
-    transactions: snapshot.data.transactions,
+    transactions: snapshot.data.transactions.slice(0,50),
     isSeeded: true,
   });
 
@@ -196,6 +196,7 @@ export const syncRemoteState = async () => {
 };
 
 export const clearTransientSessionState = async () => {
+  const {resetLedgerPages}=await import('./ledgerPages');resetLedgerPages();
   const userId = useAuthStore.getState().user?.id;
   if (userId) {
     await clearStoredWorkspaceSyncToken(userId);

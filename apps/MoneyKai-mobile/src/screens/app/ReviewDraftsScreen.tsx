@@ -1,4 +1,6 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { LedgerDraftReviewScreen } from '@/components/capture/LedgerDraftReviewScreen';
 import { Alert, FlatList, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -23,6 +25,9 @@ import { draftConfirmationError, filterReviewDrafts, type DraftReviewSource, typ
 const SOURCES = [{ id: 'all', label: 'All sources' }, { id: 'sms', label: 'SMS' }, { id: 'notification', label: 'Notifications' }, { id: 'aa', label: 'Accounts' }] as const;
 
 export function ReviewDraftsScreen() {
+  return LARGE_SMS_LOCAL_ENABLED ? <LedgerDraftReviewScreen/> : <LegacyReviewDraftsScreen/>;
+}
+function LegacyReviewDraftsScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const owner = useAuthStore((state) => state.user?.id);

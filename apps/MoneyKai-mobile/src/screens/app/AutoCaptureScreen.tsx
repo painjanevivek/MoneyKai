@@ -15,6 +15,7 @@ import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled, isNotificat
 import { SMS_DISCLOSURE, hasCurrentSmsConsent } from '@/constants/smsConsent';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
+import { SmsSyncStatus } from '@/components/capture/SmsSyncStatus';
 import { useTheme } from '@/hooks/useTheme';
 import {
   clearNativeCaptureQueue,
@@ -233,6 +234,7 @@ export function AutoCaptureScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <SmsSyncStatus/>
         <View style={styles.header}>
           <CenteredPageHeader title="Capture settings" leftAction={<ScreenBackButton compact />} />
           <Text style={styles.subtitle}>Manage capture access, SMS imports and approved bank accounts.</Text>

@@ -17,6 +17,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/consta
 import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import type { Transaction, TransactionType } from '@/types/transaction';
 import { isAllowedTransactionDate } from '@/utils/calendarDates';
@@ -31,7 +32,7 @@ const validDate = isAllowedTransactionDate;
 export function EditTransactionSheet({ transaction, onClose }: { transaction: Transaction; onClose: () => void }) {
   const { colors } = useTheme();
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
-  const updateTransaction = useTransactionStore((state) => state.updateTransaction);
+  const updateTransaction = useTransactionStore((state) => state.updateTransactionDurable);
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [amount, setAmount] = useState(String(transaction.amount));
   const [description, setDescription] = useState(transaction.description);
@@ -46,8 +47,8 @@ export function EditTransactionSheet({ transaction, onClose }: { transaction: Tr
   const [error, setError] = useState<string | null>(null);
   const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
-  const save = () => {
-    if (useAuthStore.getState().user?.id !== transaction.user_id || !useTransactionStore.getState().transactions.some(item => item.id === transaction.id && item.user_id === transaction.user_id)) {
+  const save = async () => {
+    if (useAuthStore.getState().user?.id !== transaction.user_id || (!LARGE_SMS_LOCAL_ENABLED && !useTransactionStore.getState().transactions.some(item => item.id === transaction.id && item.user_id === transaction.user_id))) {
       setError('Your session or transaction changed. Reopen it from your account.'); return;
     }
     const numericAmount = Number(amount);
@@ -70,7 +71,7 @@ export function EditTransactionSheet({ transaction, onClose }: { transaction: Tr
     }
     setError(null);
     if (!useTransactionPreferencesStore.getState().setAlias(transaction, nickname)) { setError('Could not save the nickname. Try again.'); return; }
-    updateTransaction(transaction.id, {
+    try { await updateTransaction(transaction.id, {
       type,
       amount: numericAmount,
       description: description.trim(),
@@ -83,6 +84,7 @@ export function EditTransactionSheet({ transaction, onClose }: { transaction: Tr
       contact_split_mode: people.length > 1 ? splitMode : 'equal',
     });
     if (transaction.captureSource === 'sms' && (category !== transaction.category || type !== transaction.type)) useCaptureStore.getState().learnSmsCategoryFromTransaction(transaction.id);
+    } catch { setError('Could not save changes. Your previous transaction is preserved.'); return; }
     onClose();
   };
 

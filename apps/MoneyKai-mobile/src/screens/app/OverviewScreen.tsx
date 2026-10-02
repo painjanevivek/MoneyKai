@@ -1,4 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { useLocalLedgerStore } from '@/stores/useLocalLedgerStore';
 import { PanResponder, ScrollView, View, useWindowDimensions } from 'react-native';
 import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -71,7 +73,12 @@ export function OverviewScreen() {
       if (isHomeDrawerSwipe(gesture.dx, gesture.dy, 'open', 64)) openDrawer();
     },
   }), [openDrawer]);
-  const transactions = useTransactionStore((state) => state.transactions);
+  const legacyTransactions = useTransactionStore((state) => state.transactions);
+  const localRecent=useLocalLedgerStore(s=>s.recent);
+  const summaries=useLocalLedgerStore(s=>s.summaryItems);
+  const ledgerReady=useLocalLedgerStore(s=>s.ready);
+  const ledgerOwner=useLocalLedgerStore(s=>s.owner);
+  const transactions=LARGE_SMS_LOCAL_ENABLED?localRecent:legacyTransactions;
   const owner = useAuthStore(state => state.user?.id);
   const archived = useTransactionPreferencesStore(state => owner ? state.archived[owner] : undefined);
   const displayName = useTransactionLabels();
@@ -81,6 +88,7 @@ export function OverviewScreen() {
   const [today, setToday] = useState(() => new Date());
   useFocusEffect(useCallback(() => {
     setToday(new Date());
+    if(LARGE_SMS_LOCAL_ENABLED && useLocalLedgerStore.getState().ready) void useLocalLedgerStore.getState().refreshOverview().catch(()=>undefined);
     return () => setDrawerOpen(false);
   }, []));
   const syncStatus = useSyncStore((state) => state.status);
@@ -92,11 +100,11 @@ export function OverviewScreen() {
   const monthTransactions = useMemo(() => filterTransactionsByMonth(transactions, monthKey), [monthKey, transactions]);
   const budgetOverview = useMemo(() => buildMonthlyBudgetOverview(
     monthlyAllowance,
-    monthTransactions.filter((item) => item.type === 'expense').map((item) => item.amount),
+    LARGE_SMS_LOCAL_ENABLED?[summaries.filter(s=>s.category==='' && s.direction==='expense').reduce((sum,s)=>sum+s.amountMinor,0)/100]:monthTransactions.filter((item) => item.type === 'expense' && item.semantics!=='transfer').map((item) => item.amount),
     today,
-  ), [monthlyAllowance, monthTransactions, today]);
+  ), [monthlyAllowance, monthTransactions, today,summaries]);
   const monthExpenses = useMemo(() => monthTransactions.filter((item) => item.type === 'expense'), [monthTransactions]);
-  const spentThisMonth = useMemo(() => monthExpenses.reduce((total, item) => total + item.amount, 0), [monthExpenses]);
+  const spentThisMonth = useMemo(() => LARGE_SMS_LOCAL_ENABLED?summaries.filter(s=>s.category==='' && s.direction==='expense').reduce((sum,s)=>sum+s.amountMinor,0)/100:monthExpenses.reduce((total,item)=>total+item.amount,0), [monthExpenses,summaries]);
   const recentTransactions = useMemo(() => sortTransactionsForHistory(transactions.filter(item => item.user_id === owner && !archived?.[item.id]), 'newest')
     .slice(0, homeMode === 'basic' ? 10 : 4), [archived, owner, homeMode, transactions]);
   const formatMoney = (value: number) => `${currencySymbol}${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -111,7 +119,7 @@ export function OverviewScreen() {
         : `Remaining budget per day: ${formatPaise(budgetOverview.dailyAvailablePaise, currencySymbol)} until month-end.`;
   const drawerAccess = <HomeModeDrawer open={drawerOpen} mode={homeMode} onClose={closeDrawer} onOpenTool={(tool) => navigation.navigate(tool)} onSelectMode={(mode) => { setHomeMode(mode); closeDrawer(); }} />;
 
-  const hasUsableFinancialState = isDemoModeEnabled() || syncStatus === 'synced' || Boolean(cachedAt) || transactions.length > 0;
+  const hasUsableFinancialState = LARGE_SMS_LOCAL_ENABLED?(ledgerReady && ledgerOwner===owner):isDemoModeEnabled() || syncStatus === 'synced' || Boolean(cachedAt) || transactions.length > 0;
   if (!hasUsableFinancialState) {
     const loading = syncStatus !== 'failed' && isOnline;
     return (
@@ -175,6 +183,7 @@ export function OverviewScreen() {
           </>
         )}
 
+        {LARGE_SMS_LOCAL_ENABLED?<Text style={{color:colors.textSecondary,marginBottom:Spacing.md}}>Phone totals include your complete local ledger. Website totals include synchronized records.</Text>:null}
         <SectionHeading
           compact
           title="Recent transactions"
@@ -199,7 +208,7 @@ export function OverviewScreen() {
             <HomeTransactionRow key={item.id} title={displayName(item) || categoryName(item.category)} fullTitle={displayName(item)} detail={`${categoryName(item.category)} · ${formatDate(item.transaction_date)}`} amount={`${item.type === 'income' ? '+' : '-'}${formatMoney(item.amount)}`} income={item.type === 'income'} last={index === recentTransactions.length - 1} onPress={() => setSelectedTransactionId(item.id)} />
           ))}
         </FeatureCanvas>
-        {homeMode === 'advanced' ? (
+        {homeMode === 'advanced' && !LARGE_SMS_LOCAL_ENABLED ? (
           <View style={{ marginTop: Spacing.xl }}>
             <DashboardTrendCard now={today} compact onConfigure={() => navigation.navigate('GraphInsights')} graphAction={{ kind: 'graphs', onPress: () => navigation.navigate('GraphInsights') }} />
           </View>
