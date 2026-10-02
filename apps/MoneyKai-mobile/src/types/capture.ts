@@ -99,6 +99,13 @@ export interface CapturedSignal {
 }
 
 export interface DraftTransaction {
+  amountMinor?: number;
+  currency?: string;
+  parserVersion?: string;
+  importIdentity?: string;
+  accountIdentity?: string;
+  semantics?: 'payment' | 'refund' | 'reversal' | 'transfer';
+  possibleDuplicateIds?: string[];
   id: string;
   signalId: string;
   user_id: string;
@@ -147,6 +154,8 @@ export interface MerchantCategoryRule {
 }
 
 export interface CaptureParseResult {
+  parserVersion?: string;
+  semantics?: 'payment' | 'refund' | 'reversal' | 'transfer';
   amount?: number;
   type?: TransactionType;
   merchantLabel?: string;

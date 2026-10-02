@@ -72,8 +72,8 @@ export const buildSourceFingerprint = (input: CaptureSignalInput) => {
 };
 
 export const buildReferenceKey = (parsed: CaptureParseResult) =>
-  parsed.transactionReference
-    ? `ref:${normalizeDedupeText(parsed.transactionReference)}`
+  parsed.transactionReference && /\d/.test(parsed.transactionReference) && !/\[/.test(parsed.transactionReference)
+    ? `ref:${parsed.transactionReference.toLowerCase().replace(/[^a-z0-9/-]/g, '')}`
     : undefined;
 
 export const buildCanonicalTransactionKey = (
@@ -87,16 +87,17 @@ export const buildCanonicalTransactionKey = (
   const amount = parsed.amount?.toFixed(2) ?? 'unknown';
   const type = parsed.type ?? 'unknown';
   const merchant = normalizeMerchant(parsed.merchantKey ?? parsed.merchantLabel ?? input.sender ?? input.sourceApp ?? 'unknown') || 'unknown';
+  const accountScope = captureAccountId ?? (normalizeDedupeText(readRawString(input, 'smsAccountHint')) || 'unknown-account');
 
   // Native digests are computed before redaction. The bank and payment app can
   // describe the same payee differently; a shared reference, direction and
   // amount should still match across those sources.
   if (referenceHash && /^[a-f0-9]{64}$/.test(referenceHash)) {
-    return ['txn', `ref-hash:${referenceHash}`, type, amount].join(':');
+    return ['txn', `ref-hash:${referenceHash}`, accountScope, 'INR', type, amount].join(':');
   }
 
   if (referenceKey) {
-    return ['txn', referenceKey, type, amount, merchant].join(':');
+    return ['txn', referenceKey, accountScope, 'INR', type, amount].join(':');
   }
 
   // Payment apps may reuse a notification key for later payments. Without a
@@ -106,9 +107,7 @@ export const buildCanonicalTransactionKey = (
     return ['txn', 'notification', notificationId, type, amount].join(':');
   }
 
-  const accountScope = captureAccountId ?? normalizeDedupeText(readRawString(input, 'smsAccountHint') ?? input.sender ?? input.sourceApp ?? 'unknown');
-  const sameSourceBucket = timeBucketKey(input.receivedAt, 30);
-  return ['txn', input.source, accountScope, type, amount, merchant, safeDateKey(input.receivedAt), sameSourceBucket].join(':');
+  return ['txn', 'message', buildSourceFingerprint(input), accountScope, type, amount].join(':');
 };
 
 export const buildCaptureDedupeKeys = (

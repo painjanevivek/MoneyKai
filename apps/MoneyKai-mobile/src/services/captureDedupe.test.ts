@@ -46,7 +46,7 @@ describe('capture dedupe keys', () => {
     } as const;
 
     const smsKeys = buildCaptureDedupeKeys(smsInput, parseCapturedSignal(smsInput), 'sms:hdfcbk:ending4321');
-    const notificationKeys = buildCaptureDedupeKeys(notificationInput, parseCapturedSignal(notificationInput));
+    const notificationKeys = buildCaptureDedupeKeys(notificationInput, parseCapturedSignal(notificationInput), 'sms:hdfcbk:ending4321');
 
     expect(smsKeys.canonicalTransactionKey).toBe(notificationKeys.canonicalTransactionKey);
   });
@@ -68,5 +68,18 @@ describe('capture dedupe keys', () => {
     const laterKeys = buildCaptureDedupeKeys(laterInput, parseCapturedSignal(laterInput));
 
     expect(firstKeys.canonicalTransactionKey).not.toBe(laterKeys.canonicalTransactionKey);
+  });
+  it('keeps different accounts and same-amount payments without reliable references', () => {
+    const input = { source: 'sms' as const, sender: 'AX-HDFCBK', body: 'Rs 150 debited for payment to Corner Cafe.', receivedAt: '2026-10-02T10:00:00Z', rawPayload: { smsMessageId: '1', smsReferenceHash: 'a'.repeat(64) } };
+    const parsed = parseCapturedSignal(input);
+    expect(buildCaptureDedupeKeys(input,parsed,'account-a').canonicalTransactionKey).not.toBe(buildCaptureDedupeKeys(input,parsed,'account-b').canonicalTransactionKey);
+    const first = { ...input, rawPayload: { smsMessageId: '1' } };
+    const second = { ...input, rawPayload: { smsMessageId: '2' } };
+    expect(buildCaptureDedupeKeys(first,parseCapturedSignal(first)).canonicalTransactionKey).not.toBe(buildCaptureDedupeKeys(second,parseCapturedSignal(second)).canonicalTransactionKey);
+  });
+  it('does not mask distinct numeric references into the same duplicate key', () => {
+    const first = { source: 'sms' as const, body: 'Rs 150 debited for payment to Corner Cafe. UPI Ref 123456789012.' };
+    const second = { ...first, body: first.body.replace('123456789012','987654321012') };
+    expect(buildCaptureDedupeKeys(first,parseCapturedSignal(first)).canonicalTransactionKey).not.toBe(buildCaptureDedupeKeys(second,parseCapturedSignal(second)).canonicalTransactionKey);
   });
 });

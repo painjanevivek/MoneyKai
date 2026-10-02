@@ -260,6 +260,9 @@ const extractAmount = (text: string): AmountMatch => {
   for (const pattern of AMOUNT_PATTERNS) {
     const matches = [...text.matchAll(pattern.regex)];
     const match = matches.find((item) => {
+      const tail = text.slice((item.index ?? 0) + item[0].length);
+      if (/^(?:\d|\.\d)/.test(tail)) return false;
+      if (!/^(?:\d+|\d{1,3}(?:,\d{3})+|\d{1,2}(?:,\d{2})*,\d{3})(?:\.\d{1,2})?$/.test(item[1])) return false;
       // A balance/limit is not the payment amount, even when it appears first.
       const preceding = text.slice(Math.max(0, (item.index ?? 0) - 70), item.index);
       if (/\b(?:bal(?:ance)?|limit)\.?\s*(?:(?:is|of)\s*)?[:=-]?\s*$/i.test(preceding)) return false;
@@ -596,6 +599,8 @@ export const parseCapturedSignal = (
   });
 
   const result: CaptureParseResult = {
+    parserVersion: 'sms-offline-v1',
+    semantics: /\brevers(?:ed|al)\b/i.test(text) ? 'reversal' : /\brefund(?:ed)?|cashback\b/i.test(text) ? 'refund' : /\b(?:own accounts?|self transfer|internal transfer|p2p|person to person)\b/i.test(text) ? 'transfer' : 'payment',
     amount: amount.value,
     type: direction.type,
     merchantLabel: merchant.label,

@@ -8,6 +8,7 @@ version = '0.1.0'
 
 android {
   namespace "com.moneykai.nativecapture"
+  sourceSets.main.assets.srcDir new File(rootProject.projectDir, '../../../contracts/sms')
 
   compileSdkVersion rootProject.ext.has("compileSdkVersion") ? rootProject.ext.compileSdkVersion : 36
 

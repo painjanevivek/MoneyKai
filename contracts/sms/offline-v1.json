@@ -1,0 +1,13 @@
+{
+  "version": "sms-offline-v1",
+  "amount": "(?:\\b(?:inr|rupees?)\\b|rs\\.?|₹)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)(?![0-9]|\\.[0-9])",
+  "bareAmount": "\\b(?:debited|credited|spent|paid|received|sent|withdrawn|transferred|deposited)\\s+(?:by|of)?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)(?![0-9]|\\.[0-9])",
+  "debit": "\\b(?:debited|spent|paid|sent|withdrawn|withdrawal|transferred|purchased)\\b",
+  "credit": "\\b(?:credited|received|deposited|refund(?:ed)?|cashback)\\b",
+  "ignore": "\\b(?:otp|one[ -]?time password|verification code|security code|password|passcode|credential|pin|cvv|cvc|offer|coupon|failed|declined|unsuccessful|low balance|statement|mandate|autopay|scheduled|feedback|gst|gstin|cgst|sgst|igst|tax invoice|pending|collect request)\\b|will be debited|reversed before settlement|no amount is payable|sent for clearing",
+  "merchant": "\\b(?:payment\\s+(?:to|at)|paid(?:\\s+(?:inr|rs\\.?|₹)?\\s*[0-9,.]+)?\\s+to|sent(?:\\s+(?:inr|rs\\.?|₹)?\\s*[0-9,.]+)?\\s+to|transfer(?:red)?\\s+to|received(?:\\s+(?:inr|rs\\.?|₹)?\\s*[0-9,.]+)?\\s+from|credited\\s+from|at|merchant|towards)\\s+([\\p{L}\\p{M}0-9][\\p{L}\\p{M}0-9 &.'/-]{1,249}?)(?=\\s+(?:(?:via|through|using)\\s+(?:upi|imps|neft|rtgs|card|wallet)\\b|on\\s+\\d|(?:upi\\s+)?ref(?:erence)?\\b|refno\\b|rrn\\b|utr\\b)|[.;]\\s*(?:(?:upi\\s+)?ref\\b|rrn\\b|utr\\b|avl\\b|bal\\b|$)|$)",
+  "currencies": "\\b(?:aed|usd|eur|gbp|sar|qar|omr|bhd|kwd)\\b|[$€£]",
+  "refund": "\\brefund(?:ed)?|cashback\\b",
+  "reversal": "\\brevers(?:ed|al)\\b",
+  "transfer": "\\b(?:own accounts?|self transfer|internal transfer|p2p|person to person)\\b"
+}

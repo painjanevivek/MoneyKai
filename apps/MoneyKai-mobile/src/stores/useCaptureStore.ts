@@ -581,7 +581,15 @@ export const useCaptureStore = create<CaptureState>()(
         const userId = useAuthStore.getState().user?.id ?? 'local';
         const autoAdd = hasCurrentSmsConsent(settings, owner) && hasCurrentSmsAutoAddConsent(settings, owner) && settings.smsAccessStatus === 'granted';
         const reviewDecision = getCaptureReviewDecision(parsed, input.source, autoAdd);
+        const hasReliableAccountReference = Boolean(monitoredAccount?.id && (dedupeKeys.referenceKey || input.rawPayload?.smsReferenceHash));
+        const possibleDuplicateIds = hasReliableAccountReference ? [] : get().drafts.filter(item => item.user_id === userId && item.type === parsed.type && item.amount === parsed.amount &&
+          item.merchantKey === parsed.merchantKey && item.transaction_date === (parsed.transactionDate ?? new Date(input.receivedAt ?? now).toISOString().slice(0,10)) &&
+          (!item.captureAccountId || !monitoredAccount?.id || item.captureAccountId === monitoredAccount.id)).slice(0,5).map(item => item.id);
+        if (possibleDuplicateIds.length) { reviewDecision.reviewRequired = true; reviewDecision.approvedCategory = undefined; }
         const draft: DraftTransaction = {
+          parserVersion: parsed.parserVersion,
+          semantics: parsed.semantics,
+          possibleDuplicateIds,
           id: buildId('draft'),
           signalId: signal.id,
           user_id: userId,
@@ -649,6 +657,8 @@ export const useCaptureStore = create<CaptureState>()(
           user_id: draft.user_id,
           type: draft.type,
           amount: draft.amount,
+          parserVersion: draft.parserVersion,
+          semantics: draft.semantics,
           category,
           description: draft.description,
           counterpartyName: draft.counterpartyName,

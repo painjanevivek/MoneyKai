@@ -716,7 +716,7 @@ describe('useCaptureStore production safety controls', () => {
     );
   });
 
-  it('blocks one real transaction captured from SMS and notification variants', () => {
+  it('retains a cross-source candidate with unknown account for duplicate review', () => {
     useCaptureStore.setState((state) => ({
       settings: {
         ...state.settings,
@@ -747,8 +747,9 @@ describe('useCaptureStore production safety controls', () => {
     });
 
     expect(smsDraft.status).toBe('drafted');
-    expect(notificationDuplicate.status).toBe('duplicate');
-    expect(useCaptureStore.getState().drafts).toHaveLength(1);
+    expect(notificationDuplicate.status).toBe('drafted');
+    expect(useCaptureStore.getState().drafts).toHaveLength(2);
+    expect(useCaptureStore.getState().drafts[0].possibleDuplicateIds).toContain(smsDraft.draftId);
   });
 
   it('does not retain inaccessible notification content', () => {

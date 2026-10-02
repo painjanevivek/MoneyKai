@@ -34,3 +34,9 @@ Reviewed scoped diff; commit and normal push recorded in Git. Production activat
 Native Kotlin compile and unit tests passed; three synthetic Android instrumentation tests passed for SQLCipher encryption, 120 retained drafts, owner isolation, rollback, restartable 1250-record migration, exact summaries, and missing-key failure. All 177 capture regressions passed; known navigation typing errors unchanged. Native repository and bounded screen store are gated until final integration validation.
 
 Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Phase 3 checkpoint
+
+All 179 capture regressions, eight shared-rule/duplicate checks, and five Android instrumentation tests passed. Shared supported INR fixtures match native money/direction; numeric references remain distinct, duplicate identities are account-scoped, unknown-account similarities remain reviewable, and refund/reversal/transfer semantics are retained.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
