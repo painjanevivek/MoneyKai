@@ -11,6 +11,7 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
     if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
     if (!MoneyKaiNativeCaptureModule.isCaptureEnabled(context)) return
     if (!MoneyKaiNativeCaptureModule.isSmsCaptureEnabled(context)) return
+    if (MoneyKaiLocalImport.enabled(context)) { MoneyKaiLocalImport.schedule(context); return }
     // Scheduled mode reads the inbox at the selected interval, not on every SMS.
     if (MoneyKaiSmsSchedule.isScheduled(context)) return
 

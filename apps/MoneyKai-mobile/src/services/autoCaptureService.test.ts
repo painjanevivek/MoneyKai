@@ -359,3 +359,4 @@ describe('autoCaptureService SMS research gate', () => {
     expect(mocks.ingestSignal).not.toHaveBeenCalled();
   });
 });
+vi.mock('./largeSmsImport', () => ({ runLargeSmsImport: vi.fn() }));

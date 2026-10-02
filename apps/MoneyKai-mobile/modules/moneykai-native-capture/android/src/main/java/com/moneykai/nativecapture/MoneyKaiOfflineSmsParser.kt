@@ -5,8 +5,8 @@ import org.json.JSONObject
 import java.math.BigDecimal
 import java.security.MessageDigest
 import java.util.Locale
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.TimeZone
 
 /** Portable versioned rules; original text exists only during the current batch. */
 internal object MoneyKaiOfflineSmsParser {
@@ -61,7 +61,8 @@ internal object MoneyKaiOfflineSmsParser {
         try {
           val text = if(format == "dd-MMM") "$dateMatch-${day.take(4)}" else dateMatch
           val effective = if(format == "dd-MMM") "dd-MMM-uuuu" else format
-          day = LocalDate.parse(text,DateTimeFormatter.ofPattern(effective,Locale.US)).toString(); break
+          val parser = SimpleDateFormat(effective.replace("uuuu","yyyy"),Locale.US).apply { isLenient = false; timeZone = TimeZone.getTimeZone("UTC") }
+          day = MoneyKaiSmsFilters.toIsoUtc(parser.parse(text)!!.time).take(10); break
         } catch(_: Exception) { }
       }
     }

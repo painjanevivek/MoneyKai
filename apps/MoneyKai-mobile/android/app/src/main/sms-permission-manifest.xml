@@ -2,6 +2,7 @@
   <!-- Used ONLY by smsReview or explicitly configured review/approved builds. -->
   <uses-permission android:name="android.permission.READ_SMS" tools:node="replace" />
   <uses-permission android:name="android.permission.RECEIVE_SMS" tools:node="replace" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <application>
     <service android:name="com.moneykai.nativecapture.MoneyKaiSmsJobService" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE" />
     <service android:name="com.moneykai.nativecapture.MoneyKaiNotificationListenerService" tools:node="remove" />

@@ -1,7 +1,7 @@
 export type CategoryExample = { label: string; text: string };
 export type CategoryModel = { labels: string[]; vocabulary: Set<string>; counts: Record<string, Record<string, number>>; totals: Record<string, number> };
 export const categoryTokens = (text: string) => [...new Set(text.normalize('NFC').toLowerCase().match(/[\p{L}\p{M}\p{N}]+/gu) ?? [])];
-const genericTokens = new Set(['payment', 'paid', 'pay', 'fee', 'fees', 'service', 'services', 'store', 'shop', 'company', 'limited', 'pvt', 'ltd', 'enterprise', 'enterprises', 'fresh', 'new', 'city', 'home', 'digital', 'general']);
+export const genericTokens = new Set(['payment', 'paid', 'pay', 'fee', 'fees', 'service', 'services', 'store', 'shop', 'company', 'limited', 'pvt', 'ltd', 'enterprise', 'enterprises', 'fresh', 'new', 'city', 'home', 'digital', 'general']);
 
 /** Small multinomial Naive Bayes model, trained locally from inspectable labels. No I/O. */
 export function trainCategoryModel(examples: CategoryExample[]): CategoryModel {

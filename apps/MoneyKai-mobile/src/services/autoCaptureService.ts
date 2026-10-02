@@ -7,6 +7,8 @@ import type { CaptureIngestionResult, CaptureSignalInput } from '@/types/capture
 import type { SmsImportProgress, SmsImportRangeId } from '@/types/smsImport';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { hasCurrentSmsConsent } from '@/constants/smsConsent';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { runLargeSmsImport } from './largeSmsImport';
 
 export interface SmsInboxImportSummary {
   status: 'imported' | 'needs_account_approval' | 'permission_denied' | 'unsupported' | 'error' | 'ignored';
@@ -131,6 +133,7 @@ export const importRecentSmsTransactionsFromInbox = async (
     return Boolean(isScanCurrent() && owner && owner === useAuthStore.getState().user?.id && settings.autoCaptureEnabled && settings.smsResearchModeEnabled && hasCurrentSmsConsent(settings, owner) && useBudgetStore.getState().settings.monthly_allowance > 0);
   };
   if (!canContinue()) return emptySmsInboxImportSummary('ignored', 'Turn on SMS reading and accept the disclosure before checking messages.');
+  if (LARGE_SMS_LOCAL_ENABLED && owner) return runLargeSmsImport(owner,selectedRangeId,onProgress,canContinue);
   const range = getSmsImportRangeOption(selectedRangeId);
   const summary: SmsInboxImportSummary = {
     ...emptySmsInboxImportSummary('imported'),

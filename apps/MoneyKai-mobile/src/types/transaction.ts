@@ -6,6 +6,13 @@ export interface ContactAllocation {
   contactId: string;
   name: string;
   amount: number;
+}
+
+export interface Transaction {
+  id: string;
+  user_id: string;
+  type: TransactionType;
+  amount: number;
   amountMinor?: number;
   currency?: 'INR';
   parserVersion?: string;
@@ -15,13 +22,6 @@ export interface ContactAllocation {
   reviewStatus?: 'approved' | 'pending' | 'dismissed';
   syncStatus?: 'local_only' | 'pending' | 'synced' | 'conflict' | 'pending_delete';
   revision?: number;
-}
-
-export interface Transaction {
-  id: string;
-  user_id: string;
-  type: TransactionType;
-  amount: number;
   category: string;
   description: string;
   counterpartyName?: string;

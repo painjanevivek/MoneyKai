@@ -47,6 +47,7 @@ internal object MoneyKaiLedger {
       db.execSQL("CREATE TABLE IF NOT EXISTS processed_messages(owner TEXT NOT NULL, identity TEXT NOT NULL, outcome TEXT NOT NULL, record_id TEXT, PRIMARY KEY(owner,identity))")
       db.execSQL("CREATE TABLE IF NOT EXISTS import_jobs(owner TEXT NOT NULL,id TEXT NOT NULL,state TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(owner,id))")
       db.execSQL("CREATE INDEX IF NOT EXISTS import_jobs_state ON import_jobs(owner,state)")
+      db.execSQL("CREATE TABLE IF NOT EXISTS discovered_accounts(owner TEXT NOT NULL,job_id TEXT NOT NULL,account_id TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(owner,job_id,account_id))")
       db.execSQL("CREATE TABLE IF NOT EXISTS outbox(owner TEXT NOT NULL,id TEXT NOT NULL,kind TEXT NOT NULL,priority INTEGER NOT NULL,available_at INTEGER NOT NULL,consent_revision INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(owner,id))")
       db.execSQL("CREATE INDEX IF NOT EXISTS outbox_ready ON outbox(owner,available_at,priority DESC,id)")
       db.execSQL("CREATE TABLE IF NOT EXISTS summaries(owner TEXT NOT NULL,month TEXT NOT NULL,category TEXT NOT NULL,direction TEXT NOT NULL,amount_minor INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(owner,month,category,direction))")
@@ -176,6 +177,8 @@ internal object MoneyKaiLedger {
     requireOwner(context,owner)
     val db = open(context)
     return when(request.getString("op")) {
+      "features" -> { MoneyKaiLocalImport.configure(context,request.getBoolean("enabled")); JSONObject().put("configured",true) }
+      "import" -> MoneyKaiLocalImport.request(context,owner,request)
       "migrate" -> migrate(context,db,owner)
       "page" -> page(db,owner,request)
       "summaries" -> {

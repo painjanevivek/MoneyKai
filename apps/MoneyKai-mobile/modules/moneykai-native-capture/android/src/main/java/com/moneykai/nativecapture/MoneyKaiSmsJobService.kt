@@ -14,6 +14,17 @@ class MoneyKaiSmsJobService : JobService() {
   private val executor = Executors.newSingleThreadExecutor()
   private var running: Future<*>? = null
   override fun onStartJob(params: JobParameters): Boolean {
+    if(MoneyKaiLocalImport.enabled(this)) {
+      running = MoneyKaiLedger.executor.submit {
+        var more = false
+        try { more = MoneyKaiLocalImport.runBackground(this) } catch(_: Exception) { }
+        if(!Thread.currentThread().isInterrupted) Handler(Looper.getMainLooper()).post {
+          jobFinished(params,false)
+          if(more) MoneyKaiLocalImport.schedule(this)
+        }
+      }
+      return true
+    }
     running = executor.submit {
       var retry = false
       try { retry = scan() } catch (_: Exception) { retry = true } // Never log SMS or provider errors.

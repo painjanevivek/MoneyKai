@@ -30,6 +30,9 @@ class MoneyKaiOfflineSmsParserTest {
     assertEquals("Corpus mismatches: $failures",0,failures.size)
   }
   @Test fun strongIdentityAndSemantics() {
+    assertEquals("food" to true,MoneyKaiOfflineCategoryModel.classify(context,"Corner Cafe"))
+    assertEquals(null to false,MoneyKaiOfflineCategoryModel.classify(context,"Vivek Naresh Painjane"))
+    assertFalse(MoneyKaiOfflineCategoryModel.classify(context,"Swiggy Instamart").second)
     val body = "A/c XX4321 debited Rs 150 to Cafe. UPI Ref 123456789012."
     fun parse(text: String,id: String) = MoneyKaiOfflineSmsParser.parse(context,"AX-HDFCBK",text,1_780_000_000_000L,id)!!
     assertEquals(parse(body,"1").getString("importIdentity"),parse(body,"2").getString("importIdentity"))

@@ -40,3 +40,9 @@ Reviewed scoped diff; commit and normal push recorded in Git. Production activat
 All 179 capture regressions, eight shared-rule/duplicate checks, and five Android instrumentation tests passed. Shared supported INR fixtures match native money/direction; numeric references remain distinct, duplicate identities are account-scoped, unknown-account similarities remain reviewable, and refund/reversal/transfer semantics are retained.
 
 Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Phase 4 checkpoint
+
+All 179 mobile capture tests passed; six synthetic Android instrumentation tests passed for atomic 250-row commits, checkpoint recovery, repeat import, cancellation retention, encrypted migration and shared offline category behavior. Final Kotlin compile passed. The four pre-existing navigation typing errors remain isolated; local activation stays gated.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.

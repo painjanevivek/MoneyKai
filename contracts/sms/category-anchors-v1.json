@@ -1,0 +1,36 @@
+{
+  "anchors": {
+    "food": "\\b(?:swiggy|zomato|dominos|kfc|mcdonalds|starbucks|pizza|restaurant|cafe|bakery|canteen)\\b",
+    "healthcare": "\\b(?:pharmacy|medico|medical|hospital|clinic|medicines?|netmeds|pharmeasy|diagnostic)\\b",
+    "shopping": "\\b(?:amazon|flipkart|myntra|supermarket|groceries|grocery|apparel|footwear|dmart)\\b",
+    "electronics": "\\b(?:electronics|laptop|computer|appliances|croma|handset)\\b",
+    "transport": "\\b(?:uber|ola|taxi|metro|petrol|diesel|fuel|railway|rapido|toll|parking)\\b",
+    "bills": "\\b(?:recharge|electricity|broadband|utility)\\b",
+    "education": "\\b(?:school|college|university|tuition|udemy|coursera)\\b",
+    "entertainment": "\\b(?:netflix|spotify|bookmyshow|cinema|theatre|hotstar)\\b",
+    "rent": "\\b(?:rent|rental|landlord)\\b"
+  },
+  "genericTokens": [
+    "payment",
+    "paid",
+    "pay",
+    "fee",
+    "fees",
+    "service",
+    "services",
+    "store",
+    "shop",
+    "company",
+    "limited",
+    "pvt",
+    "ltd",
+    "enterprise",
+    "enterprises",
+    "fresh",
+    "new",
+    "city",
+    "home",
+    "digital",
+    "general"
+  ]
+}

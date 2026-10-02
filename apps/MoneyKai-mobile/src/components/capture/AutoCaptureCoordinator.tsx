@@ -17,11 +17,14 @@ import { useConnectStore } from '@/stores/useConnectStore';
 import { PAYMENT_CONNECTIONS } from '@/constants/paymentConnections';
 import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
 import { useLocalLedgerStore } from '@/stores/useLocalLedgerStore';
+import { ledgerRequest } from '@/services/localLedger';
 
 export function AutoCaptureCoordinator() {
   const userId = useAuthStore((s) => s.user?.id);
   useEffect(() => {
-    if (LARGE_SMS_LOCAL_ENABLED) void useLocalLedgerStore.getState().initialize(userId ?? '');
+    if (LARGE_SMS_LOCAL_ENABLED) void useLocalLedgerStore.getState().initialize(userId ?? '').then(() => {
+      if(userId && useLocalLedgerStore.getState().ready && useAuthStore.getState().user?.id === userId) return ledgerRequest(userId,{op:'features',enabled:true});
+    });
   }, [userId]);
   const selectedPackages = useConnectStore((state) => PAYMENT_CONNECTIONS
     .filter((app) => userId && state.notificationAppsByUser[userId]?.[app.id])
