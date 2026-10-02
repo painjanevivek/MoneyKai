@@ -55,6 +55,14 @@ class MoneyKaiNativeCaptureModule(
   override fun getName(): String = "MoneyKaiNativeCapture"
 
   @ReactMethod
+  fun ledgerRequest(owner: String, requestJson: String, promise: Promise) {
+    MoneyKaiLedger.executor.execute {
+      try { promise.resolve(MoneyKaiLedger.request(reactContext,owner,JSONObject(requestJson)).toString()) }
+      catch (_: Exception) { promise.reject("LEDGER_UNAVAILABLE", "Encrypted ledger operation failed. Existing records were preserved.") }
+    }
+  }
+
+  @ReactMethod
   fun getPrivateItem(name: String, promise: Promise) {
     try { promise.resolve(MoneyKaiPrivateStorage.get(reactContext, name)) }
     catch (_: Exception) { promise.reject("PRIVATE_STORAGE_UNAVAILABLE", "Encrypted device storage could not be read.") }

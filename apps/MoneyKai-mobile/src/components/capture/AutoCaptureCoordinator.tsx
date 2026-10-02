@@ -15,9 +15,14 @@ import { normalizeSmsInterval } from '@/constants/smsSchedule';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useConnectStore } from '@/stores/useConnectStore';
 import { PAYMENT_CONNECTIONS } from '@/constants/paymentConnections';
+import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
+import { useLocalLedgerStore } from '@/stores/useLocalLedgerStore';
 
 export function AutoCaptureCoordinator() {
   const userId = useAuthStore((s) => s.user?.id);
+  useEffect(() => {
+    if (LARGE_SMS_LOCAL_ENABLED) void useLocalLedgerStore.getState().initialize(userId ?? '');
+  }, [userId]);
   const selectedPackages = useConnectStore((state) => PAYMENT_CONNECTIONS
     .filter((app) => userId && state.notificationAppsByUser[userId]?.[app.id])
     .map((app) => app.packageName).join('|'));

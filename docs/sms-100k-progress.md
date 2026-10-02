@@ -28,3 +28,9 @@ Reviewed scoped diff; commit and normal push recorded in Git. Production activat
 Validated 23 backend money/privacy/authentication tests, shared money conversion test, generated API client typecheck, and additive OpenAPI compatibility. Added bounded approved-only DTOs and separate revisioned consent; ingestion remains disabled until quota validation.
 
 Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Phase 2 checkpoint
+
+Native Kotlin compile and unit tests passed; three synthetic Android instrumentation tests passed for SQLCipher encryption, 120 retained drafts, owner isolation, rollback, restartable 1250-record migration, exact summaries, and missing-key failure. All 177 capture regressions passed; known navigation typing errors unchanged. Native repository and bounded screen store are gated until final integration validation.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.

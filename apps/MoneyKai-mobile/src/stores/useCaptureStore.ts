@@ -35,7 +35,6 @@ import { useConnectStore } from './useConnectStore';
 import { PAYMENT_CONNECTIONS } from '@/constants/paymentConnections';
 
 const MAX_CAPTURED_SIGNALS = 100;
-const MAX_DRAFTS = 100;
 const DEFAULT_CAPTURE_SETTINGS: CaptureSettings = {
   autoCaptureEnabled: false,
   notificationCaptureEnabled: isNotificationCaptureEnabled(),
@@ -615,7 +614,7 @@ export const useCaptureStore = create<CaptureState>()(
 
         set((state) => ({
           signals: [signal, ...state.signals].slice(0, MAX_CAPTURED_SIGNALS),
-          drafts: [draft, ...state.drafts].slice(0, MAX_DRAFTS),
+          drafts: [draft, ...state.drafts],
         }));
 
         if (!reviewDecision.reviewRequired && reviewDecision.approvedCategory && get().confirmDraft(draft.id, reviewDecision.approvedCategory, true)) {
