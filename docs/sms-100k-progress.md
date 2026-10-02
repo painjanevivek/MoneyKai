@@ -22,3 +22,9 @@ Reviewed scoped diff; commit and normal push recorded in Git. Production activat
 Baseline: 177 mobile capture tests and 25 backend auth/finance tests passed. Four pre-existing mobile navigation typing errors recorded. Existing local dependencies reused; preview deployments disabled; original working directories preserved.
 
 Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Phase 1 checkpoint
+
+Validated 23 backend money/privacy/authentication tests, shared money conversion test, generated API client typecheck, and additive OpenAPI compatibility. Added bounded approved-only DTOs and separate revisioned consent; ingestion remains disabled until quota validation.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.

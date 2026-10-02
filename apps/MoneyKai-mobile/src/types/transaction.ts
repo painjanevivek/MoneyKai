@@ -6,6 +6,15 @@ export interface ContactAllocation {
   contactId: string;
   name: string;
   amount: number;
+  amountMinor?: number;
+  currency?: 'INR';
+  parserVersion?: string;
+  importIdentity?: string;
+  accountIdentity?: string;
+  semantics?: 'payment' | 'refund' | 'reversal' | 'transfer';
+  reviewStatus?: 'approved' | 'pending' | 'dismissed';
+  syncStatus?: 'local_only' | 'pending' | 'synced' | 'conflict' | 'pending_delete';
+  revision?: number;
 }
 
 export interface Transaction {
