@@ -1,10 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, Share, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Share, Switch, TouchableOpacity, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
+import { Disclosure } from '@/components/ui/Disclosure';
 import { Button } from '@/components/ui/Button';
+import { SystemNotificationControl } from '@/components/ui/SystemNotificationControl';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
 import { requestPasswordResetEmail } from '@/services/authService';
 import {
   collectInternalTestingReport,
@@ -12,8 +19,11 @@ import {
   formatInternalTestingReport,
 } from '@/services/internalTestingReportService';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useGroupStore } from '@/stores/useGroupStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { vibrateForImportantEvent } from '@/services/hapticsService';
 import { useSyncStore } from '@/stores/useSyncStore';
+import { useTransactionStore } from '@/stores/useTransactionStore';
 import { getFirebaseConfigStatus, isFirebaseConfigured } from '@/firebase/firebaseConfig';
 import { isBackendConfigured } from '@/services/backendApi';
 import {
@@ -23,9 +33,11 @@ import {
   type MoneyKaiBackupMetadata,
 } from '@/services/backupService';
 import { useTheme } from '@/hooks/useTheme';
-import { BorderRadius, Spacing, THEME_OPTIONS, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { countUnconfirmedGroupRecords } from '@/utils/ledgerTrust';
 import { createAppScreenStyles } from './screenStyles';
+import { authenticateDeviceOwner, canAuthenticateDeviceOwner } from '@/services/deviceOwnerAuthentication';
 
 const formatDateTime = (value: string | null) => {
   if (!value) {
@@ -66,14 +78,21 @@ const buildBackupConfirmationMessage = (metadata: MoneyKaiBackupMetadata): strin
   ].join('\n');
 
 export function SettingsScreen() {
-  const { colors, darkModeEnabled, setDarkModeEnabled, setThemePalette, themePalette } = useTheme();
+  const route = useRoute<RouteProp<RootStackParamList, 'Settings'>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const focus = route.params?.focus;
+  const focusedTitle = focus === 'notifications' ? 'Notifications & alerts'
+    : focus === 'appLock' ? 'App lock'
+      : focus === 'cloud' ? 'Backup & sync'
+        : focus === 'export' ? 'Export data'
+          : focus === 'password' ? 'Security' : 'Settings';
+  const { colors } = useTheme();
   const styles = createAppScreenStyles(colors);
   const user = useAuthStore((state) => state.user);
+  const transactions = useTransactionStore((state) => state.transactions);
   const signOut = useAuthStore((state) => state.signOut);
-  const notificationsEnabled = useSettingsStore((state) => state.notificationsEnabled);
   const hapticEnabled = useSettingsStore((state) => state.hapticEnabled);
   const appLockEnabled = useSettingsStore((state) => state.appLockEnabled);
-  const toggleNotifications = useSettingsStore((state) => state.toggleNotifications);
   const toggleHaptic = useSettingsStore((state) => state.toggleHaptic);
   const setAppLockEnabled = useSettingsStore((state) => state.setAppLockEnabled);
   const syncStatus = useSyncStore((state) => state.status);
@@ -82,6 +101,14 @@ export function SettingsScreen() {
   const syncError = useSyncStore((state) => state.error);
   const pendingCount = useSyncStore((state) => state.pendingCount);
   const isOnline = useSyncStore((state) => state.isOnline);
+  const groups = useGroupStore((state) => state.groups);
+  const groupExpenses = useGroupStore((state) => state.expenses);
+  const groupRecordsAwaitingConfirmation = groups
+    .filter((group) => group.created_by === (user?.id ?? 'local'))
+    .reduce((count, group) => {
+      const records = countUnconfirmedGroupRecords(group, groupExpenses.filter((expense) => expense.group_id === group.id));
+      return count + records.pending + records.failed;
+    }, 0);
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupMetadata, setBackupMetadata] = useState<MoneyKaiBackupMetadata | null>(null);
   const [backupMetadataError, setBackupMetadataError] = useState<string | null>(null);
@@ -89,6 +116,10 @@ export function SettingsScreen() {
   const [syncLoading, setSyncLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [showPasswordSheet, setShowPasswordSheet] = useState(false);
+  const [appLockChecking, setAppLockChecking] = useState(false);
+  useEffect(() => {
+    if (route.params?.focus === 'password') setShowPasswordSheet(true);
+  }, [route.params?.focus]);
   const [showTestingReportSheet, setShowTestingReportSheet] = useState(false);
   const [testingReportLoading, setTestingReportLoading] = useState(false);
   const [testingReportText, setTestingReportText] = useState('');
@@ -102,6 +133,23 @@ export function SettingsScreen() {
       : firebaseConfigStatus === 'web-app-id-only'
         ? 'Android app needed'
         : 'Missing';
+
+  const changeAppLock = async (enabled: boolean) => {
+    if (appLockChecking) return;
+    setAppLockChecking(true);
+    try {
+      if (!await canAuthenticateDeviceOwner()) {
+        Alert.alert('Set up a device screen lock', 'Add a PIN, pattern, password, or supported biometric in your device settings before turning on App lock.');
+        return;
+      }
+      const verified = await authenticateDeviceOwner(enabled ? 'Turn on MoneyKai App lock' : 'Turn off MoneyKai App lock');
+      if (verified) setAppLockEnabled(enabled);
+    } catch {
+      Alert.alert('Could not verify your device', 'App lock was not changed. Please try again.');
+    } finally {
+      setAppLockChecking(false);
+    }
+  };
 
   const sendPasswordLink = async () => {
     if (!user?.email) {
@@ -210,7 +258,7 @@ export function SettingsScreen() {
         import('@/services/remoteSync'),
       ]);
       await flushSyncQueue();
-      const result = await syncRemoteState({ force: true });
+      const result = await syncRemoteState({ force: true, keepLocalData: true });
       if (!result.synced) {
         throw new Error(result.error ?? 'Could not sync account data.');
       }
@@ -267,36 +315,54 @@ export function SettingsScreen() {
   };
 
   const confirmLogout = () => {
-    Alert.alert('Log out?', 'This clears local session state on this device.', [
+    Alert.alert('Sign out?', 'You will need to sign in again to access your account.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: () => void signOut() },
+      { text: 'Sign out', style: 'destructive', onPress: () => void signOut() },
     ]);
+  };
+
+  const exportTransactions = async () => {
+    if (!transactions.length) {
+      Alert.alert('No transactions yet', 'Add a transaction before exporting your history.');
+      return;
+    }
+    const escape = (value: string | number) => {
+      const text = String(value);
+      const safe = typeof value === 'string' && /^[\s]*[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
+    const header = 'Date,Type,Amount,Category,Description,Payment method';
+    const rows = transactions.map((item) => [item.transaction_date, item.type, item.amount, item.category, item.description, item.payment_method].map(escape).join(','));
+    try {
+      await Share.share({ title: 'MoneyKai transaction history', message: [header, ...rows].join('\n') });
+    } catch (error) {
+      Alert.alert('Export unavailable', error instanceof Error ? error.message : 'Could not open the share menu.');
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <ScreenBackButton />
-          <Text style={styles.title}>Settings and sync</Text>
-          <Text style={styles.subtitle}>Manage security, local preferences, and cloud backup state.</Text>
+          <CenteredPageHeader title={focusedTitle} leftAction={<ScreenBackButton compact />} />
+          {!focus ? <Text style={styles.subtitle}>Your security, preferences, and backups.</Text> : null}
         </View>
 
-        <View style={styles.panel}>
+        {!focus ? <View style={styles.panel}>
           <View style={styles.row}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <View
                 style={{
                   alignItems: 'center',
                   backgroundColor: colors.primaryBg,
-                  borderRadius: 24,
-                  height: 48,
+                  borderRadius: 20,
+                  height: 40,
                   justifyContent: 'center',
                   marginRight: Spacing.md,
-                  width: 48,
+                  width: 40,
                 }}
               >
-                <MaterialCommunityIcons name="account-outline" size={24} color={colors.primary} />
+                <MaterialCommunityIcons name="account-outline" size={20} color={colors.primaryDark} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.value}>{user?.full_name ?? 'MoneyKai user'}</Text>
@@ -304,120 +370,52 @@ export function SettingsScreen() {
               </View>
             </View>
           </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <Text style={styles.muted}>Firebase config</Text>
-            <Text style={{ ...styles.value, color: nativeFirebaseReady ? colors.primary : colors.warning }}>
-              {firebaseStatusLabel}
-            </Text>
-          </View>
-        </View>
 
-        <View style={styles.panel}>
+        </View> : null}
+
+        {!focus || focus === 'appLock' || focus === 'password' ? <View style={styles.panel}>
           <Text style={styles.sectionTitle}>Security</Text>
-          <Button
+          {!focus || focus === 'password' ? <Button
             title="Change password"
             onPress={() => setShowPasswordSheet(true)}
             icon="lock-reset"
             variant="secondary"
             style={{ marginBottom: Spacing.sm }}
-          />
-          <View style={styles.row}>
+          /> : null}
+          {!focus || focus === 'appLock' ? <View style={styles.row}>
             <Text style={styles.muted}>App lock</Text>
             <Switch
               value={appLockEnabled}
-              onValueChange={setAppLockEnabled}
+              disabled={appLockChecking}
+              onValueChange={(enabled) => void changeAppLock(enabled)}
               trackColor={{ false: colors.border, true: colors.primaryBg }}
               thumbColor={appLockEnabled ? colors.primary : colors.textTertiary}
             />
-          </View>
-        </View>
+          </View> : null}
+          {focus === 'appLock' ? <Text style={{ ...styles.muted, marginTop: Spacing.md }}>Require your device biometrics or passcode when opening MoneyKai. Authentication is handled by your device.</Text> : null}
+        </View> : null}
 
-        <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={[styles.row, { marginBottom: Spacing.md }]}>
-            <Text style={styles.muted}>Dark mode</Text>
-            <Switch
-              value={darkModeEnabled}
-              onValueChange={setDarkModeEnabled}
-              trackColor={{ false: colors.border, true: colors.primaryBg }}
-              thumbColor={darkModeEnabled ? colors.primary : colors.textTertiary}
-            />
-          </View>
-          <View style={{ gap: Spacing.sm, marginBottom: Spacing.md }}>
-            <Text style={styles.muted}>Theme palette</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
-              {THEME_OPTIONS.map((option) => {
-                const active = themePalette === option.id;
-                return (
-                  <TouchableOpacity
-                    key={option.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    activeOpacity={0.82}
-                    onPress={() => setThemePalette(option.id)}
-                    style={{
-                      width: '48%',
-                      minWidth: 132,
-                      flexGrow: 1,
-                      borderRadius: BorderRadius.md,
-                      borderWidth: 1,
-                      borderColor: active ? colors.primary : colors.border,
-                      backgroundColor: active ? colors.primaryBg : colors.surface,
-                      padding: Spacing.sm,
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', marginBottom: Spacing.xs }}>
-                      {option.swatches.map((swatch) => (
-                        <View
-                          key={swatch}
-                          style={{
-                            width: 16,
-                            height: 16,
-                            borderRadius: 8,
-                            backgroundColor: swatch,
-                            borderWidth: 1,
-                            borderColor: colors.borderLight,
-                            marginRight: -3,
-                          }}
-                        />
-                      ))}
-                    </View>
-                    <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm }}>
-                      {option.label}
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.xs, marginTop: 2 }} numberOfLines={2}>
-                      {option.description}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-          <View style={[styles.row, { marginBottom: Spacing.md }]}>
-            <Text style={styles.muted}>Notifications</Text>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={toggleNotifications}
-              trackColor={{ false: colors.border, true: colors.primaryBg }}
-              thumbColor={notificationsEnabled ? colors.primary : colors.textTertiary}
-            />
-          </View>
-          <View style={styles.row}>
+        {!focus || focus === 'notifications' ? <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>{focus === 'notifications' ? 'Alert delivery' : 'Preferences'}</Text>
+          <SystemNotificationControl />
+          {focus === 'notifications' ? <>
+            <Button title="View notification inbox" onPress={() => navigation.navigate('Notifications')} icon="bell-outline" variant="secondary" />
+          </> : null}
+          {!focus ? <View style={styles.row}>
             <Text style={styles.muted}>Haptics</Text>
             <Switch
               value={hapticEnabled}
-              onValueChange={toggleHaptic}
+              onValueChange={() => { toggleHaptic(); vibrateForImportantEvent(); }}
               trackColor={{ false: colors.border, true: colors.primaryBg }}
               thumbColor={hapticEnabled ? colors.primary : colors.textTertiary}
             />
-          </View>
-        </View>
+          </View> : null}
+        </View> : null}
 
-        <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>Cloud</Text>
+        {!focus || focus === 'cloud' ? <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Backup & sync</Text>
           <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>
-            Backups and Firestore sync are stored under your authenticated user id.
+            Sync keeps account records up to date. A backup is a saved copy you can restore later.
           </Text>
           <View
             style={{
@@ -432,28 +430,27 @@ export function SettingsScreen() {
             <View style={[styles.row, { alignItems: 'flex-start', marginBottom: Spacing.sm }]}>
               <View style={{ flex: 1, paddingRight: Spacing.md }}>
                 <Text style={styles.value}>
-                  {!isOnline ? 'Offline mode' : syncStatus === 'syncing' ? 'Syncing' : 'Cloud sync'}
+                  {!isOnline ? 'Offline mode' : syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'failed' ? 'Sync needs attention' : 'Cloud sync'}
                 </Text>
                 <Text style={styles.muted}>
                   {pendingCount > 0
                     ? `${pendingCount} change${pendingCount === 1 ? '' : 's'} waiting to upload`
-                    : syncError ?? 'Cached reads and retryable writes are active.'}
+                    : syncError ? 'Sync could not finish. Check your connection and try again.'
+                      : lastSyncedAt ? 'No account changes waiting to upload.' : 'No cloud sync has been confirmed yet.'}
                 </Text>
+                {groupRecordsAwaitingConfirmation > 0 ? <Text style={styles.muted}>{groupRecordsAwaitingConfirmation} group {groupRecordsAwaitingConfirmation === 1 ? 'record' : 'records'} awaiting confirmation.</Text> : null}
               </View>
               <MaterialCommunityIcons
-                name={!isOnline ? 'cloud-off-outline' : syncStatus === 'syncing' ? 'sync' : 'cloud-check-outline'}
+                name={!isOnline ? 'cloud-off-outline' : syncStatus === 'syncing' ? 'sync' : syncStatus !== 'synced' || syncError || !lastSyncedAt || pendingCount > 0 || groupRecordsAwaitingConfirmation > 0 ? 'cloud-outline' : 'cloud-check-outline'}
                 size={24}
-                color={!isOnline ? colors.warning : syncError ? colors.error : colors.primary}
+                color={!isOnline ? colors.warning : syncError ? colors.error : colors.primaryDark}
               />
             </View>
             <View style={[styles.row, { marginTop: Spacing.sm }]}>
               <Text style={styles.muted}>Last cloud sync</Text>
               <Text style={{ ...styles.muted, color: colors.textPrimary }}>{formatDateTime(lastSyncedAt)}</Text>
             </View>
-            <View style={[styles.row, { marginTop: Spacing.xs }]}>
-              <Text style={styles.muted}>Cache hydrated</Text>
-              <Text style={{ ...styles.muted, color: colors.textPrimary }}>{formatDateTime(lastCacheHydratedAt)}</Text>
-            </View>
+
           </View>
           <Button
             title="Sync now"
@@ -461,18 +458,23 @@ export function SettingsScreen() {
             loading={syncLoading || syncStatus === 'syncing'}
             icon="sync"
             variant="secondary"
+            disabled={!isOnline || backupLoading}
             style={{ marginBottom: Spacing.sm }}
           />
-          <View
-            style={{
-              backgroundColor: colors.surfaceElevated,
-              borderColor: backupMetadataError ? colors.error : colors.borderLight,
-              borderRadius: 12,
-              borderWidth: 1,
-              marginBottom: Spacing.md,
-              padding: Spacing.md,
-            }}
-          >
+          <Text style={{ ...styles.value, marginTop: Spacing.md }}>Latest saved backup</Text>
+          <Text accessibilityLiveRegion="polite" style={{ ...styles.muted, marginBottom: Spacing.md }}>
+            {backupMetadataLoading ? 'Checking your saved backup…' : backupMetadata ? `Saved ${formatBackupDateTime(backupMetadata.capturedAt)}` : backupMetadataError ? 'Backup details could not load. Open Backup details and restore to retry.' : 'No saved backup found for this account yet.'}
+          </Text>
+          <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>SMS messages and SMS-derived records stay on this device and are not included in cloud backups.</Text>
+          <Button
+            title="Save cloud backup"
+            onPress={runBackup}
+            loading={backupLoading}
+            icon="cloud-upload-outline"
+            disabled={!backupConfigured || !isOnline || syncLoading}
+            style={{ marginBottom: Spacing.sm }}
+          />
+          <Disclosure title="Backup details and restore" summary="Review the saved copy before replacing device data">
             <View style={[styles.row, { alignItems: 'flex-start', marginBottom: Spacing.sm }]}>
               <View style={{ flex: 1, paddingRight: Spacing.md }}>
                 <Text style={styles.value}>Latest available backup</Text>
@@ -486,17 +488,16 @@ export function SettingsScreen() {
                     <Text style={styles.muted}>
                       {formatBackupCount(backupMetadata.transactionCount, 'transaction')}, {formatBackupCount(backupMetadata.linkedAccountCount, 'linked account')}, {formatBackupCount(backupMetadata.noteCount, 'note')}, {formatBackupCount(backupMetadata.groupCount, 'group')}, and {formatBackupCount(backupMetadata.challengeCount, 'savings goal')}
                     </Text>
-                    <Text style={styles.muted}>
-                      Budget {formatCurrency(backupMetadata.monthlyAllowance, backupMetadata.currency, true)} | Income {formatCurrency(backupMetadata.totalIncome, backupMetadata.currency, true)} | Expenses {formatCurrency(backupMetadata.totalExpense, backupMetadata.currency, true)} | v{backupMetadata.version}
-                    </Text>
+                    <Text style={styles.muted}>Budget {formatCurrency(backupMetadata.monthlyAllowance, backupMetadata.currency, true)}</Text>
+                    <Text style={styles.muted}>Income {formatCurrency(backupMetadata.totalIncome, backupMetadata.currency, true)} · Expenses {formatCurrency(backupMetadata.totalExpense, backupMetadata.currency, true)}</Text>
                   </>
                 ) : (
                   <Text style={{ ...styles.muted, color: backupMetadataError ? colors.error : colors.textSecondary }}>
-                    {backupMetadataError ?? 'No cloud backup details loaded yet.'}
+                    {backupMetadataError ? 'Could not load your cloud backup. Check your connection and refresh details.' : 'No saved cloud backup is available yet.'}
                   </Text>
                 )}
               </View>
-              <MaterialCommunityIcons name="cloud-search-outline" size={24} color={colors.primary} />
+              <MaterialCommunityIcons name="cloud-search-outline" size={24} color={colors.primaryDark} />
             </View>
             <Button
               title="Refresh details"
@@ -504,42 +505,57 @@ export function SettingsScreen() {
               loading={backupMetadataLoading}
               icon="refresh"
               variant="secondary"
-              disabled={!backupConfigured}
+              disabled={!backupConfigured || !isOnline || backupLoading}
+              style={{ marginBottom: Spacing.md }}
             />
-          </View>
+          <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>Restoring replaces MoneyKai account data on this device. You will review the backup and confirm before anything is replaced.</Text>
           <Button
-            title="Save cloud backup"
-            onPress={runBackup}
-            loading={backupLoading}
-            icon="cloud-upload-outline"
-            disabled={!backupConfigured}
-            style={{ marginBottom: Spacing.sm }}
-          />
-          <Button
-            title="Restore Latest Backup"
+            title="Review backup to restore"
             onPress={runRestore}
             loading={backupLoading}
             icon="cloud-download-outline"
             variant="outline"
-            disabled={!backupConfigured}
+            disabled={!backupConfigured || !isOnline || syncLoading || backupMetadataLoading}
           />
-        </View>
+          </Disclosure>
+        </View> : null}
 
-        <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>Internal testing</Text>
+        {!focus || focus === 'export' ? <View style={styles.panel}>
+          <Text style={styles.sectionTitle}>Export data</Text>
+          <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>Share your transaction history as CSV.</Text>
+          <Button title="Export transactions" onPress={() => void exportTransactions()} icon="file-export-outline" variant="secondary" />
+        </View> : null}
+
+        {!focus ? <View style={styles.panel}>
+          <Disclosure title="Diagnostics" summary="Connection details and support reports">
+          {syncError ? <Text selectable style={{ ...styles.muted, color: colors.error, marginBottom: Spacing.md }}>Sync: {syncError}</Text> : null}
+          {backupMetadataError ? <Text selectable style={{ ...styles.muted, color: colors.error, marginBottom: Spacing.md }}>Backup: {backupMetadataError}</Text> : null}
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <Text style={styles.muted}>Firebase config</Text>
+            <Text style={{ ...styles.value, color: nativeFirebaseReady ? colors.primaryDark : colors.warning }}>
+              {firebaseStatusLabel}
+            </Text>
+          </View>            <View style={[styles.row, { marginTop: Spacing.xs }]}>
+              <Text style={styles.muted}>Cache hydrated</Text>
+              <Text style={{ ...styles.muted, color: colors.textPrimary }}>{formatDateTime(lastCacheHydratedAt)}</Text>
+            </View>
           <Text style={{ ...styles.muted, marginBottom: Spacing.md }}>
-            Copy or share sanitized release metadata, device context, capture access state, backup status, and recent diagnostics.
+            Review technical details or prepare a report for support.
           </Text>
           <Button
-            title="Testing report bundle"
+            title="Prepare support report"
             onPress={openTestingReport}
             loading={testingReportLoading && !showTestingReportSheet}
             icon="clipboard-text-outline"
             variant="secondary"
           />
-        </View>
+          </Disclosure>
+        </View> : null}
 
-        <TouchableOpacity
+        {!focus ? <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
           onPress={confirmLogout}
           style={{
             alignItems: 'center',
@@ -551,9 +567,9 @@ export function SettingsScreen() {
             minHeight: 48,
           }}
         >
-          <MaterialCommunityIcons name="logout" size={20} color={colors.error} />
-          <Text style={{ ...styles.value, color: colors.error, marginLeft: Spacing.sm }}>Log out</Text>
-        </TouchableOpacity>
+          <MaterialCommunityIcons name="logout" size={20} color="#B84050" />
+          <Text style={{ ...styles.value, color: '#B84050', marginLeft: Spacing.sm }}>Sign out</Text>
+        </TouchableOpacity> : null}
       </ScrollView>
 
       <ModalSheet
@@ -585,11 +601,11 @@ export function SettingsScreen() {
             The reset email will go to {user?.email || 'your account email'}. After you change your password, use the new password the next time you sign in.
           </Text>
           <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: `${colors.primary}22` }}>
-            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary, marginBottom: 4 }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primaryDark, marginBottom: 4 }}>
               Secure reset
             </Text>
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>
-              MoneyKai does not ask for or store your current password here. A protected MoneyKai auth endpoint rate-limits the request, then Firebase handles the reset link and verification.
+              MoneyKai never asks for your current password here. Follow the secure link sent to your account email to choose a new one.
             </Text>
           </View>
         </View>
@@ -632,7 +648,7 @@ export function SettingsScreen() {
       >
         <View style={{ gap: Spacing.md }}>
           <View style={{ padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, borderWidth: 1, borderColor: `${colors.primary}22` }}>
-            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primary, marginBottom: 4 }}>
+            <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.semiBold, color: colors.primaryDark, marginBottom: 4 }}>
               Redacted by default
             </Text>
             <Text style={{ fontSize: Typography.fontSize.xs, color: colors.textSecondary, lineHeight: 18 }}>

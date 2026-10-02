@@ -1,8 +1,11 @@
-import { Platform } from 'react-native';
-import notifee, { AndroidImportance, AuthorizationStatus, EventType } from '@notifee/react-native';
+import { AppState, Platform } from 'react-native';
+import notifee, { AndroidDefaults, AndroidImportance, AndroidVisibility, AuthorizationStatus, EventType } from '@notifee/react-native';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useNotificationStore, type NotificationType } from '@/stores/useNotificationStore';
+import { vibrateForImportantEvent } from './hapticsService';
 import { backendApi, isBackendConfigured } from './backendApi';
+import { runPermissionFlow } from './permissionFlow';
 
 const ICON_STYLES: Record<NotificationType, { icon: string; iconColor: string; iconBg: string }> = {
   budget: { icon: 'wallet-outline', iconColor: '#111111', iconBg: '#F4F4F4' },
@@ -14,20 +17,33 @@ const ICON_STYLES: Record<NotificationType, { icon: string; iconColor: string; i
 
 let listenersInstalled = false;
 let pendingBackendWrites = 0;
+const VIBRATING_CHANNEL_ID = 'moneykai-alerts-vibrating';
+const QUIET_CHANNEL_ID = 'moneykai-alerts-quiet';
+const VIBRATION_PATTERN = [200, 100, 200, 100];
 
-export const initializeNotificationChannel = async () => {
-  if (Platform.OS !== 'android') return;
+export const initializeNotificationChannel = async (hapticsEnabled = useSettingsStore.getState().hapticEnabled) => {
+  if (Platform.OS !== 'android') return undefined;
+  const channelId = hapticsEnabled ? VIBRATING_CHANNEL_ID : QUIET_CHANNEL_ID;
   await notifee.createChannel({
-    id: 'moneykai-default',
-    name: 'MoneyKai Alerts',
+    id: channelId,
+    name: hapticsEnabled ? 'MoneyKai alerts with vibration' : 'MoneyKai alerts without vibration',
     importance: AndroidImportance.HIGH,
-    vibrationPattern: [0, 200, 100, 200],
+    vibration: hapticsEnabled,
+    ...(hapticsEnabled ? { vibrationPattern: VIBRATION_PATTERN } : {}),
     lights: true,
     lightColor: '#111111',
   });
+  return channelId;
 };
 
-export const ensureNotificationPermission = async () => {
+export const ensureNotificationPermission = async (requestIfMissing = true) => {
+  // Notification delivery is not a user request to enable access. Never prompt here.
+  if (!requestIfMissing) {
+    const current = await notifee.getNotificationSettings();
+    return current.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
+      current.authorizationStatus === AuthorizationStatus.PROVISIONAL;
+  }
+  return runPermissionFlow('notifications', async () => {
   const current = await notifee.getNotificationSettings();
   if (
     current.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
@@ -41,6 +57,7 @@ export const ensureNotificationPermission = async () => {
     result.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
     result.authorizationStatus === AuthorizationStatus.PROVISIONAL
   );
+  });
 };
 
 export const setNotificationEnabled = async (enabled: boolean) => {
@@ -62,7 +79,12 @@ export const recordAppNotification = async (params: {
   actionRoute?: string;
   schedule?: boolean;
   read?: boolean;
+  localOnly?: boolean;
+  systemOnly?: boolean;
+  ownerId?: string;
+  notificationId?: string;
 }) => {
+  if (params.ownerId && useAuthStore.getState().user?.id !== params.ownerId) return;
   const type = params.type ?? 'system';
   const style = ICON_STYLES[type];
   const createdAt = new Date().toISOString();
@@ -76,11 +98,17 @@ export const recordAppNotification = async (params: {
     createdAt,
     read: params.read ?? false,
     actionRoute: params.actionRoute,
+    localOnly: params.localOnly ?? false,
   };
 
-  useNotificationStore.getState().appendNotification(notification);
+  if (!params.systemOnly) useNotificationStore.getState().appendNotification(notification);
 
-  if (isBackendConfigured()) {
+  // Foreground delivery is handled here; the OS channel handles background delivery.
+  if (!params.systemOnly && !notification.read && useSettingsStore.getState().notificationsEnabled) {
+    vibrateForImportantEvent();
+  }
+
+  if (!params.systemOnly && isBackendConfigured() && !params.localOnly) {
     pendingBackendWrites += 1;
     void backendApi
       .createResource('notifications', notification)
@@ -90,26 +118,37 @@ export const recordAppNotification = async (params: {
       });
   }
 
-  const enabled = useSettingsStore.getState().notificationsEnabled;
+  const { notificationsEnabled: enabled } = useSettingsStore.getState();
   if (!enabled || params.schedule === false) {
     return;
   }
 
-  const granted = await ensureNotificationPermission();
+  const granted = await ensureNotificationPermission(false);
   if (!granted) return;
 
-  await initializeNotificationChannel();
+  if (!useSettingsStore.getState().notificationsEnabled) return;
+  if (params.ownerId && useAuthStore.getState().user?.id !== params.ownerId) return;
+  const systemVibration = useSettingsStore.getState().hapticEnabled && (params.systemOnly || AppState.currentState !== 'active');
+  const channelId = await initializeNotificationChannel(systemVibration);
+  if (!useSettingsStore.getState().notificationsEnabled || params.ownerId && useAuthStore.getState().user?.id !== params.ownerId) return;
   await notifee.displayNotification({
+    id: params.notificationId,
     title: params.title,
     body: params.body,
-    data: { actionRoute: params.actionRoute ?? 'Notifications' },
+    data: { actionRoute: params.actionRoute ?? 'Notifications', ...(params.ownerId ? { ownerId: params.ownerId, token: params.notificationId ?? createdAt, kind: 'transaction' } : {}) },
     android: {
-      channelId: 'moneykai-default',
-      smallIcon: 'ic_launcher',
+      channelId,
+      smallIcon: 'ic_moneykai_notification',
+      visibility: AndroidVisibility.PRIVATE,
+      defaults: systemVibration ? [AndroidDefaults.VIBRATE] : [],
+      ...(systemVibration ? { vibrationPattern: VIBRATION_PATTERN } : {}),
       pressAction: {
         id: 'default',
+        launchActivity: 'default',
       },
     },
+    // iOS delivers vibration through the system alert sound, subject to device settings.
+    ios: systemVibration ? { sound: 'default' } : {},
   });
 };
 

@@ -1,6 +1,13 @@
 export type TransactionType = 'income' | 'expense';
 export type TransactionCaptureSource = 'notification' | 'sms' | 'aa' | 'gmail' | 'pdf' | 'portfolio' | 'manual';
 
+export interface ContactAllocation {
+  /** Device contact IDs are only used to re-identify a selection on this device. */
+  contactId: string;
+  name: string;
+  amount: number;
+}
+
 export interface Transaction {
   id: string;
   user_id: string;
@@ -8,7 +15,12 @@ export interface Transaction {
   amount: number;
   category: string;
   description: string;
+  counterpartyName?: string;
+  counterpartyKind?: 'merchant' | 'person' | 'unknown';
+  automaticallyRecorded?: boolean;
   payment_method: string;
+  contact_allocations?: ContactAllocation[];
+  contact_split_mode?: 'equal' | 'custom';
   captureAccountId?: string;
   captureAccountLabel?: string;
   captureBankLabel?: string;

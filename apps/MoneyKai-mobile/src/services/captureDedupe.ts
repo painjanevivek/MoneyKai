@@ -55,6 +55,10 @@ const readRawString = (input: CaptureSignalInput, key: string) => {
 };
 
 export const buildSourceFingerprint = (input: CaptureSignalInput) => {
+  const notificationId = readRawString(input, 'notificationId');
+  if (input.source === 'notification' && notificationId && /^[a-f0-9]{64}$/.test(notificationId)) {
+    return ['notification', readRawString(input, 'rawPackageName'), notificationId].join(':');
+  }
   const nativeMessageId = readRawString(input, 'smsMessageId');
   if (input.source === 'sms' && nativeMessageId) {
     return ['sms-message', normalizeDedupeText(input.sender), nativeMessageId].join(':');
@@ -77,13 +81,29 @@ export const buildCanonicalTransactionKey = (
   parsed: CaptureParseResult,
   captureAccountId?: string
 ) => {
-  const referenceKey = buildReferenceKey(parsed);
+  const referenceHash = readRawString(input, input.source === 'sms' ? 'smsReferenceHash' : 'notificationReferenceHash');
+  const referenceKey = referenceHash && /^[a-f0-9]{64}$/.test(referenceHash)
+    ? `ref-hash:${referenceHash}` : buildReferenceKey(parsed);
   const amount = parsed.amount?.toFixed(2) ?? 'unknown';
   const type = parsed.type ?? 'unknown';
   const merchant = normalizeMerchant(parsed.merchantKey ?? parsed.merchantLabel ?? input.sender ?? input.sourceApp ?? 'unknown') || 'unknown';
 
+  // Native digests are computed before redaction. The bank and payment app can
+  // describe the same payee differently; a shared reference, direction and
+  // amount should still match across those sources.
+  if (referenceHash && /^[a-f0-9]{64}$/.test(referenceHash)) {
+    return ['txn', `ref-hash:${referenceHash}`, type, amount].join(':');
+  }
+
   if (referenceKey) {
     return ['txn', referenceKey, type, amount, merchant].join(':');
+  }
+
+  // Payment apps may reuse a notification key for later payments. Without a
+  // reference, do not discard a different event merely for sharing an amount.
+  const notificationId = readRawString(input, 'notificationId');
+  if (input.source === 'notification' && notificationId && /^[a-f0-9]{64}$/.test(notificationId)) {
+    return ['txn', 'notification', notificationId, type, amount].join(':');
   }
 
   const accountScope = captureAccountId ?? normalizeDedupeText(readRawString(input, 'smsAccountHint') ?? input.sender ?? input.sourceApp ?? 'unknown');

@@ -5,7 +5,6 @@ import {
   DEFAULT_THEME_PALETTE,
   getPaletteForThemeMode,
   getThemeModeForPalette,
-  isThemeModeDark,
   type ThemeMode,
   type ThemePaletteId,
 } from '../constants/theme';
@@ -19,6 +18,7 @@ import {
   normalizeExchangeRates,
   type CurrencyExchangeRates,
 } from '@/utils/currencyConversion';
+import type { DashboardGraphMetric, DashboardGraphRange, DashboardGraphType } from '@/utils/dashboardGraph';
 
 export type PersistedAppSettings = {
   theme: ThemeMode;
@@ -62,6 +62,9 @@ interface SettingsState {
   exchangeRatesUpdatedAt?: string;
   exchangeRatesProvider?: string;
   exchangeRateError?: string;
+  dashboardTrendRange: DashboardGraphRange;
+  dashboardTrendMetric: DashboardGraphMetric;
+  dashboardTrendChartType: DashboardGraphType;
 
   // Actions
   toggleTheme: () => void;
@@ -76,6 +79,7 @@ interface SettingsState {
   setTourCompleted: (completed: boolean) => void;
   setTourCompletedForUser: (userId: string, completed: boolean) => void;
   setAppLockEnabled: (enabled: boolean) => void;
+  setDashboardTrendPreferences: (preferences: Partial<Pick<SettingsState, 'dashboardTrendRange' | 'dashboardTrendMetric' | 'dashboardTrendChartType'>>) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -92,10 +96,29 @@ export const useSettingsStore = create<SettingsState>()(
       appLockEnabled: false,
       tourCompletedByUserId: {},
       exchangeRates: FALLBACK_INR_EXCHANGE_RATES,
+      dashboardTrendRange: '1m',
+      dashboardTrendMetric: 'spending',
+      dashboardTrendChartType: 'line',
+
+      setDashboardTrendPreferences: (preferences) => set((state) => {
+        const updated = {
+          dashboardTrendRange: preferences.dashboardTrendRange ?? state.dashboardTrendRange,
+          dashboardTrendMetric: preferences.dashboardTrendMetric ?? state.dashboardTrendMetric,
+          dashboardTrendChartType: preferences.dashboardTrendChartType ?? state.dashboardTrendChartType,
+        };
+        const userId = useAuthStore.getState().user?.id;
+        if (userId) {
+          void saveUserAppSettings(userId, updated).catch((error) => {
+            if (__DEV__) console.warn('[MoneyKai] failed to sync graph settings:', error);
+          });
+          void requestAutomaticBackup('graph settings updated');
+        }
+        return updated;
+      }),
 
       toggleTheme: () =>
         set((state) => {
-          const darkModeEnabled = !state.darkModeEnabled;
+          const darkModeEnabled = false;
           const theme = getThemeModeForPalette(state.themePalette, darkModeEnabled);
           const next: PersistedAppSettings = {
             theme,
@@ -116,7 +139,7 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) =>
         set((state) => {
           const themePalette = getPaletteForThemeMode(theme);
-          const darkModeEnabled = isThemeModeDark(theme);
+          const darkModeEnabled = false;
           const resolvedTheme = getThemeModeForPalette(themePalette, darkModeEnabled);
           const next: PersistedAppSettings = {
             theme: resolvedTheme,
@@ -153,8 +176,9 @@ export const useSettingsStore = create<SettingsState>()(
           return { theme, themePalette };
         }),
 
-      setDarkModeEnabled: (darkModeEnabled) =>
+      setDarkModeEnabled: () =>
         set((state) => {
+          const darkModeEnabled = false;
           const theme = getThemeModeForPalette(state.themePalette, darkModeEnabled);
           const next: PersistedAppSettings = {
             theme,
@@ -343,11 +367,14 @@ export const useSettingsStore = create<SettingsState>()(
         exchangeRatesUpdatedAt: state.exchangeRatesUpdatedAt,
         exchangeRatesProvider: state.exchangeRatesProvider,
         exchangeRateError: state.exchangeRateError,
+        dashboardTrendRange: state.dashboardTrendRange,
+        dashboardTrendMetric: state.dashboardTrendMetric,
+        dashboardTrendChartType: state.dashboardTrendChartType,
       }),
       merge: (persisted, current) => {
         const persistedState = persisted as Partial<SettingsState> | undefined;
         const themePalette = persistedState?.themePalette ?? getPaletteForThemeMode(persistedState?.theme);
-        const darkModeEnabled = persistedState?.darkModeEnabled ?? isThemeModeDark(persistedState?.theme ?? current.theme);
+        const darkModeEnabled = false;
         const theme = getThemeModeForPalette(themePalette, darkModeEnabled);
 
         return {

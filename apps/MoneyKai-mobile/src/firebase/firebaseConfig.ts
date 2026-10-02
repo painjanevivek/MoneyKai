@@ -4,6 +4,7 @@ import {
   hasFirebaseEnvironment,
   hasFirebaseRuntimeConfig as hasFirebaseRuntimeEnvironment,
   hasFirebaseWebAppIdOnly,
+  isDemoModeEnabled,
 } from '@/config/environment';
 
 export const nativeFirebaseConfig = appEnvironment.firebase;
@@ -29,7 +30,8 @@ const hasNativeFirebaseApp = (): boolean => {
   }
 };
 
-export const isFirebaseConfigured = (): boolean => hasFirebaseRuntimeEnvironment() || hasNativeFirebaseApp();
+export const isFirebaseConfigured = (): boolean =>
+  !isDemoModeEnabled() && (hasFirebaseRuntimeEnvironment() || hasNativeFirebaseApp());
 
 export const hasFirebaseRuntimeConfig = (): boolean => hasFirebaseRuntimeEnvironment();
 

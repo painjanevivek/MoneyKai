@@ -36,6 +36,36 @@ const getDaysRemainingInSelectedMonth = (selectedMonthKey: string, referenceDate
   return Math.max(1, daysInMonth - referenceDate.getDate() + 1);
 };
 
+export type MonthlyBudgetOverview = {
+  state: 'no-budget' | 'available' | 'exhausted' | 'overspent';
+  remainingPaise: number;
+  dailyAvailablePaise: number;
+  daysRemaining: number;
+  overBudgetPaise: number;
+};
+
+/** A conservative daily amount: paise left over after division are never rounded up. */
+export const buildMonthlyBudgetOverview = (
+  monthlyAllowance: number,
+  expenseAmounts: number[],
+  referenceDate: Date = new Date()
+): MonthlyBudgetOverview => {
+  const monthKey = `${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`;
+  const daysRemaining = getDaysRemainingInSelectedMonth(monthKey, referenceDate);
+  const allowancePaise = Math.round(Math.max(0, monthlyAllowance) * 100);
+  const spentPaise = expenseAmounts.reduce((sum, amount) => sum + Math.round(amount * 100), 0);
+  const rawRemainingPaise = allowancePaise - spentPaise;
+  const remainingPaise = Math.max(0, rawRemainingPaise);
+
+  return {
+    state: allowancePaise <= 0 ? 'no-budget' : rawRemainingPaise < 0 ? 'overspent' : remainingPaise === 0 ? 'exhausted' : 'available',
+    remainingPaise,
+    dailyAvailablePaise: daysRemaining > 0 ? Math.floor(remainingPaise / daysRemaining) : 0,
+    daysRemaining,
+    overBudgetPaise: Math.max(0, -rawRemainingPaise),
+  };
+};
+
 /**
  * Turns a selected month's spending totals into one next decision. The daily
  * figure uses the unspent allowance and days left in that selected month.

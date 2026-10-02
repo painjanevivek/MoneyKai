@@ -4,13 +4,6 @@ module.exports = {
       packageName: 'com.moneykai.mobile',
     },
   },
-  dependencies: {
-    // Recipients are entered manually. Keeping this native package unlinked
-    // prevents contact permissions from entering the Play bundle.
-    'react-native-contacts': {
-      platforms: {
-        android: null,
-      },
-    },
-  },
+  // Contacts are explicitly requested by the person picker. Keep the native
+  // module autolinked; excluding Android makes every authorized read fail.
 };

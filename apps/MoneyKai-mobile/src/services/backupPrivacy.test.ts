@@ -201,6 +201,13 @@ describe('backup privacy', () => {
     expect(serialized).not.toContain('smsResearchModeEnabled');
   });
 
+  it('excludes notification-derived transactions from cloud backups', () => {
+    mocks.transactions.push({ id: 'private-notification', captureSource: 'notification', amount: 500 } as never);
+    const snapshot = buildBackupSnapshot();
+    expect(snapshot.data.transactions).toEqual([]);
+    expect(JSON.stringify(snapshot)).not.toContain('private-notification');
+  });
+
   it('summarizes latest-backup preview metadata without backup contents', () => {
     mocks.transactions.push(
       {

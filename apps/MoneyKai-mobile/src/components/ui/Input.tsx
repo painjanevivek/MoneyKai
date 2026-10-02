@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
-import {
-  View,
-  TextInput,
-  Text,
-  TouchableOpacity,
-  type TextInputProps,
-  type ViewStyle,
-  type TextStyle,
-} from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, TextInput, TouchableOpacity, type TextInputProps, type ViewStyle, type TextStyle } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { useTheme } from '../../hooks/useTheme';
 import { BorderRadius, ComponentTokens, Spacing, Typography } from '../../constants/theme';
+import { AppIcon } from './AppIcon';
 
 interface InputProps {
+  variant?: 'underline' | 'outlined';
   label?: string;
   placeholder?: string;
   value: string;
@@ -39,6 +33,7 @@ interface InputProps {
 }
 
 export const Input: React.FC<InputProps> = ({
+  variant = 'underline',
   label,
   placeholder,
   value,
@@ -71,19 +66,21 @@ export const Input: React.FC<InputProps> = ({
   const borderColor = error
     ? colors.error
     : isFocused
-      ? colors.primary
+      ? colors.accent
       : colors.border;
-  const supportingColor = error ? colors.error : isFocused ? colors.primary : colors.textSecondary;
+  const supportingColor = error ? colors.error : isFocused ? colors.accent : colors.textSecondary;
 
   return (
     <View style={[{ marginBottom: Spacing.base }, style]}>
       {label && (
         <Text
           style={{
-            fontSize: Typography.fontSize.sm,
+            fontSize: Typography.fontSize.xs,
             fontFamily: Typography.fontFamily.semiBold,
             color: supportingColor,
             marginBottom: Spacing.sm,
+            letterSpacing: variant === 'outlined' ? 0 : 0.8,
+            textTransform: variant === 'outlined' ? 'none' : 'uppercase',
           }}
         >
           {label}
@@ -93,21 +90,22 @@ export const Input: React.FC<InputProps> = ({
         style={{
           flexDirection: 'row',
           alignItems: multiline ? 'flex-start' : 'center',
-          backgroundColor: editable ? colors.surface : colors.surfaceElevated,
-          borderRadius: BorderRadius.md,
-          borderWidth: 1.5,
+          backgroundColor: variant === 'outlined' ? colors.surface : 'transparent',
+          borderBottomWidth: 1,
+          borderWidth: variant === 'outlined' ? 1 : 0,
+          borderRadius: variant === 'outlined' ? BorderRadius.md : 0,
           borderColor,
-          paddingHorizontal: Spacing.md,
+          paddingHorizontal: variant === 'outlined' ? Spacing.md : 0,
           paddingVertical: multiline ? Spacing.md : 0,
           minHeight: multiline ? 104 : ComponentTokens.controlHeight.md,
           opacity: editable ? 1 : ComponentTokens.disabledOpacity,
         }}
       >
         {icon && (
-          <MaterialCommunityIcons
+          <AppIcon
             name={icon}
             size={20}
-            color={isFocused ? colors.primary : colors.textTertiary}
+            color={isFocused ? colors.accent : colors.textTertiary}
             style={{ marginRight: Spacing.sm }}
           />
         )}
@@ -176,7 +174,7 @@ export const Input: React.FC<InputProps> = ({
             accessibilityRole="button"
             accessibilityLabel={isSecureVisible ? 'Hide password' : 'Show password'}
           >
-            <MaterialCommunityIcons
+            <AppIcon
               name={isSecureVisible ? 'eye-off-outline' : 'eye-outline'}
               size={20}
               color={colors.textTertiary}

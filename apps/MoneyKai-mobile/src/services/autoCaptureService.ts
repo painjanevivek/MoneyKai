@@ -5,6 +5,8 @@ import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
 import type { CaptureIngestionResult, CaptureSignalInput } from '@/types/capture';
 import type { SmsImportProgress, SmsImportRangeId } from '@/types/smsImport';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { hasCurrentSmsConsent } from '@/constants/smsConsent';
 
 export interface SmsInboxImportSummary {
   status: 'imported' | 'needs_account_approval' | 'permission_denied' | 'unsupported' | 'error' | 'ignored';
@@ -56,6 +58,23 @@ export const ingestCapturedTransactionSignal = (input: CaptureSignalInput): Capt
   return useCaptureStore.getState().ingestSignal(input);
 };
 
+/** Native background discovery is metadata, not a transaction to send to the parser. */
+export const ingestNativeCaptureSignal = (input: CaptureSignalInput): CaptureIngestionResult => {
+  if (input.source === 'sms') {
+    const owner = useAuthStore.getState().user?.id;
+    const store = useCaptureStore.getState();
+    const { settings } = store;
+    if (!isNativeSmsResearchBuildEnabled() || !settings.autoCaptureEnabled || !settings.smsResearchModeEnabled || !hasCurrentSmsConsent(settings, owner) || useBudgetStore.getState().settings.monthly_allowance <= 0 || (input.rawPayload?.smsOwnerId && input.rawPayload.smsOwnerId !== owner)) {
+      return { status: 'ignored', reason: 'SMS reading is off or consent is not current' };
+    }
+    if (input.rawPayload?.captureOrigin === 'android_sms_account_discovery') {
+      store.discoverSmsAccounts([input]);
+      return { status: 'ignored', reason: 'sms bank account monitoring needs approval' };
+    }
+  }
+  return ingestCapturedTransactionSignal(input);
+};
+
 export const ingestNotificationCapture = (params: {
   title?: string;
   body: string;
@@ -91,7 +110,8 @@ export const ingestSmsCapture = (params: {
 
 export const importRecentSmsTransactionsFromInbox = async (
   rangeId?: SmsImportRangeId,
-  onProgress?: (progress: SmsImportProgress) => void
+  onProgress?: (progress: SmsImportProgress) => void,
+  isScanCurrent: () => boolean = () => true
 ): Promise<SmsInboxImportSummary> => {
   if (!isNativeSmsResearchBuildEnabled()) {
     return emptySmsInboxImportSummary(
@@ -105,6 +125,12 @@ export const importRecentSmsTransactionsFromInbox = async (
   }
 
   const selectedRangeId = rangeId ?? useCaptureStore.getState().settings.smsImportRangeId ?? DEFAULT_SMS_IMPORT_RANGE_ID;
+  const owner = useAuthStore.getState().user?.id;
+  const canContinue = () => {
+    const { settings } = useCaptureStore.getState();
+    return Boolean(isScanCurrent() && owner && owner === useAuthStore.getState().user?.id && settings.autoCaptureEnabled && settings.smsResearchModeEnabled && hasCurrentSmsConsent(settings, owner) && useBudgetStore.getState().settings.monthly_allowance > 0);
+  };
+  if (!canContinue()) return emptySmsInboxImportSummary('ignored', 'Turn on SMS reading and accept the disclosure before checking messages.');
   const range = getSmsImportRangeOption(selectedRangeId);
   const summary: SmsInboxImportSummary = {
     ...emptySmsInboxImportSummary('imported'),
@@ -116,14 +142,16 @@ export const importRecentSmsTransactionsFromInbox = async (
   let discoveryScannedCount = 0;
   do {
     discoveryPageCount += 1;
+    if (!canContinue()) return { ...summary, status: 'ignored', message: 'Message check stopped.' };
     const accountPreview = await discoverRecentNativeSmsAccounts({
       rangeId: range.id,
       days: range.days,
       maxMessages: range.maxMessages,
-      pageSize: range.pageSize,
+      pageSize: Math.min(range.pageSize, range.maxMessages - discoveryScannedCount),
       cursor: discoveryCursor,
     });
 
+    if (!canContinue()) return { ...summary, status: 'ignored', message: 'Message check stopped.' };
     summary.status = accountPreview.status;
     summary.scannedCount += accountPreview.scannedCount;
     discoveryScannedCount += accountPreview.scannedCount;
@@ -165,21 +193,22 @@ export const importRecentSmsTransactionsFromInbox = async (
   summary.declinedAccountCount = currentAccounts.filter((account) => account.status === 'declined').length;
   summary.accountsSkippedCount = currentAccounts.filter((account) => account.status === 'declined' || account.status === 'paused').length;
 
-  if (summary.pendingAccountApprovalCount > 0) {
+  const approvedAccountIds = captureStore.getApprovedSmsAccountIds();
+  if (summary.pendingAccountApprovalCount > 0 && approvedAccountIds.length === 0) {
     return {
       ...summary,
       status: 'needs_account_approval',
-      message: 'Approve the found bank accounts in Notifications before importing their SMS transactions.',
+      message: 'Choose the found bank accounts in the review queue before importing their transactions.',
     };
   }
-
-  const approvedAccountIds = captureStore.getApprovedSmsAccountIds();
 
   if (approvedAccountIds.length === 0) {
     return {
       ...summary,
-      status: 'needs_account_approval',
-      message: 'Approve at least one bank account before importing SMS transactions.',
+      status: 'imported',
+      message: currentAccounts.length === 0
+        ? 'No eligible bank transaction SMS found in the selected history. Try a wider import range.'
+        : 'No bank accounts are selected. Select an account in Capture settings to import its transactions.',
     };
   }
 
@@ -188,18 +217,21 @@ export const importRecentSmsTransactionsFromInbox = async (
   let importScannedCount = 0;
   do {
     importPageCount += 1;
+    if (!canContinue()) return { ...summary, status: 'ignored', message: 'Message check stopped.' };
     const nativeResult = await importRecentNativeSmsTransactions({
       rangeId: range.id,
       days: range.days,
       maxMessages: range.maxMessages,
-      pageSize: range.pageSize,
+      pageSize: Math.min(range.pageSize, range.maxMessages - importScannedCount),
       cursor: importCursor,
       approvedAccountIds,
     });
 
+    if (!canContinue()) return { ...summary, status: 'ignored', message: 'Message check stopped.' };
     summary.status = nativeResult.status;
-    summary.scannedCount += nativeResult.scannedCount;
     importScannedCount += nativeResult.scannedCount;
+    // Discovery and parsing read the same rows; do not count both passes as extra SMS.
+    summary.scannedCount = Math.max(discoveryScannedCount, importScannedCount);
     summary.nativeImportedCount += nativeResult.importedCount;
     summary.nativeIgnoredCount += nativeResult.ignoredCount;
     summary.message = nativeResult.message;
@@ -210,6 +242,7 @@ export const importRecentSmsTransactionsFromInbox = async (
 
     const approvedSignals = nativeResult.signals.filter((signal) => useCaptureStore.getState().isSignalAccountApproved(signal));
     for (let index = 0; index < approvedSignals.length; index += 1) {
+      if (!canContinue()) return { ...summary, status: 'ignored', message: 'Message check stopped.' };
       const signal = approvedSignals[index];
       const result = ingestCapturedTransactionSignal(signal);
 
@@ -217,6 +250,8 @@ export const importRecentSmsTransactionsFromInbox = async (
         summary.duplicateCount += 1;
       } else if (result.status === 'ignored') {
         summary.parserIgnoredCount += 1;
+      } else if (result.status === 'confirmed') {
+        summary.confirmedCount += 1;
       } else if (result.status === 'drafted' && result.draftId) {
         summary.draftedCount += 1;
         summary.pendingReviewCount += 1;

@@ -5,9 +5,12 @@ import { flushSyncQueue } from '@/services/syncQueue';
 import { flushAutomaticBackup } from '@/services/backupService';
 import { syncRemoteState } from '@/services/remoteSync';
 import { useSyncStore } from '@/stores/useSyncStore';
+import { isDemoModeEnabled } from '@/config/environment';
 
 export function SyncCoordinator() {
   useEffect(() => {
+    if (isDemoModeEnabled()) return;
+
     let mounted = true;
     let wasOnline = true;
     let flushInFlight = false;
@@ -30,7 +33,7 @@ export function SyncCoordinator() {
           if (refreshRemote) {
             const pendingCount = useSyncStore.getState().pendingCount;
             if (pendingCount === 0) {
-              await syncRemoteState({ force: true });
+              await syncRemoteState({ force: true, keepLocalData: true });
             }
           }
         }

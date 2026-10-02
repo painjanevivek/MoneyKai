@@ -12,3 +12,13 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+-keep class com.rt2zz.reactnativecontacts.** { *; }
+
+# PDFBox's JPX image decoder is an optional dependency, not used by our
+# text-only statement reader. Do not suppress other missing-class diagnostics.
+# https://github.com/TomRoush/PdfBox-Android#reading-jpx-images
+-dontwarn com.gemalto.jp2.JP2Decoder
+
+# MainApplication.optionalPackage loads this package by class name at runtime.
+# Preserve this exact reflection entry point (including its no-arg constructor).
+-keep class com.moneykai.nativecapture.MoneyKaiNativeCapturePackage { *; }

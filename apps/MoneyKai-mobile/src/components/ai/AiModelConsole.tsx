@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -17,7 +18,7 @@ interface AiModelConsoleProps {
 export function AiModelConsole({ providerStatus, requiresSignIn = false }: AiModelConsoleProps) {
   const { colors } = useTheme();
   const chat = useAiChat();
-  const [prompt, setPrompt] = React.useState('Summarize three MoneyKai ways to reduce food delivery spend this week.');
+  const [prompt, setPrompt] = React.useState('');
 
   const backendReady = Boolean(providerStatus?.enabled && providerStatus.configured);
   const canAsk = backendReady && !requiresSignIn && prompt.trim().length > 0 && !chat.loading;

@@ -1,14 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, ScrollView, Switch, TouchableOpacity, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
 import { SmsImportProgressSheet } from '@/components/capture/SmsImportProgressSheet';
-import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled } from '@/config/environment';
+import { isNativeSmsResearchBuildEnabled, isSmsResearchBuildEnabled, isNotificationCaptureEnabled } from '@/config/environment';
+import { SMS_DISCLOSURE, hasCurrentSmsConsent } from '@/constants/smsConsent';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useCaptureStore } from '@/stores/useCaptureStore';
-import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTheme } from '@/hooks/useTheme';
 import {
   clearNativeCaptureQueue,
@@ -24,9 +30,9 @@ import {
 } from '@/services/autoCaptureService';
 import { SMS_IMPORT_RANGE_OPTIONS } from '@/constants/smsImportRanges';
 import { formatMonitoredAccountLabel } from '@/services/captureAccountIdentifier';
-import { getDraftCategoryOptions } from '@/services/captureCategoryRules';
 import { Spacing } from '@/constants/theme';
 import { titleCase } from '@/utils/labels';
+import { turnOffSmsAutomation, turnOnSmsAutomation } from '@/services/smsAutomation';
 import type { SmsImportProgress, SmsImportRangeId } from '@/types/smsImport';
 import { createAppScreenStyles } from './screenStyles';
 
@@ -40,16 +46,17 @@ const buildImportSummary = (summary: Awaited<ReturnType<typeof importRecentSmsTr
   }
 
   if (summary.status === 'imported') {
-    return `${summary.confirmedCount} confirmed, ${summary.pendingReviewCount} pending review, ${summary.duplicateCount} duplicate.`;
+    return `${summary.scannedCount} inbox messages checked. ${summary.pendingReviewCount} drafts ready for review; ${summary.duplicateCount} duplicates skipped.${summary.pendingAccountApprovalCount ? ' Other accounts are waiting for approval.' : ''}`;
   }
 
   return titleCase(summary.status.replace(/_/g, ' '));
 };
 
 export function AutoCaptureScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const owner = useAuthStore((state) => state.user?.id);
   const { colors } = useTheme();
   const styles = createAppScreenStyles(colors);
-  const currencySymbol = useSettingsStore((state) => state.currencySymbol);
   const settings = useCaptureStore((state) => state.settings);
   const drafts = useCaptureStore((state) => state.drafts);
   const merchantRules = useCaptureStore((state) => state.merchantRules);
@@ -62,42 +69,22 @@ export function AutoCaptureScreen() {
   const approveMonitoredAccount = useCaptureStore((state) => state.approveMonitoredAccount);
   const declineMonitoredAccount = useCaptureStore((state) => state.declineMonitoredAccount);
   const unselectMonitoredAccount = useCaptureStore((state) => state.unselectMonitoredAccount);
-  const confirmDraft = useCaptureStore((state) => state.confirmDraft);
-  const ignoreDraft = useCaptureStore((state) => state.ignoreDraft);
-  const clearCaptureInbox = useCaptureStore((state) => state.clearCaptureInbox);
   const [nativeReady, setNativeReady] = useState(false);
   const [smsText, setSmsText] = useState('');
   const [isImportingSms, setIsImportingSms] = useState(false);
+  const smsFlowBusy = useRef(false);
   const [smsImportRange, setSmsImportRange] = useState<SmsImportRangeId>('1_month');
   const [showSmsImportProgress, setShowSmsImportProgress] = useState(false);
   const [smsImportProgress, setSmsImportProgress] = useState<SmsImportProgress | undefined>();
   const [smsImportFailure, setSmsImportFailure] = useState<string | undefined>();
   const [showRangeMenu, setShowRangeMenu] = useState(false);
-  const [draftCategorySelections, setDraftCategorySelections] = useState<Record<string, string>>({});
 
-  const pendingDrafts = drafts.filter((draft) => draft.status === 'pending');
+  const pendingDrafts = drafts.filter((draft) => draft.user_id === owner && draft.status === 'pending');
   const pendingAccounts = monitoredAccounts.filter((account) => account.status === 'pending');
   const approvedAccounts = monitoredAccounts.filter((account) => account.status === 'approved');
   const selectedRange = SMS_IMPORT_RANGE_OPTIONS.find((range) => range.id === smsImportRange) ?? SMS_IMPORT_RANGE_OPTIONS[1];
   const smsResearchAvailable = isSmsResearchBuildEnabled();
   const nativeSmsAvailable = isNativeSmsResearchBuildEnabled();
-
-  useEffect(() => {
-    setDraftCategorySelections((current) => {
-      const next = { ...current };
-      pendingDrafts.forEach((draft) => {
-        if (!next[draft.id] && draft.category) {
-          next[draft.id] = draft.category;
-        }
-      });
-      Object.keys(next).forEach((draftId) => {
-        if (!pendingDrafts.some((draft) => draft.id === draftId)) {
-          delete next[draftId];
-        }
-      });
-      return next;
-    });
-  }, [drafts]);
 
   useEffect(() => {
     void getNativeCaptureStatus().then((status) => {
@@ -107,10 +94,11 @@ export function AutoCaptureScreen() {
     });
   }, [setNotificationAccessStatus, setSmsAccessStatus]);
 
-  const syncNativeSources = async (autoEnabled: boolean, notificationEnabled: boolean, smsEnabled: boolean) => {
+  const syncNativeSources = async () => {
+    const latest = useCaptureStore.getState().settings;
     await setNativeCaptureSourcesEnabled({
-      notificationEnabled: autoEnabled && notificationEnabled,
-      smsEnabled: autoEnabled && nativeSmsAvailable && smsEnabled,
+      notificationEnabled: latest.autoCaptureEnabled && isNotificationCaptureEnabled() && latest.notificationCaptureEnabled,
+      smsEnabled: latest.autoCaptureEnabled && nativeSmsAvailable && latest.smsResearchModeEnabled && hasCurrentSmsConsent(latest, useAuthStore.getState().user?.id),
     });
   };
 
@@ -124,31 +112,47 @@ export function AutoCaptureScreen() {
 
   const toggleAutoCapture = async (enabled: boolean) => {
     setAutoCaptureEnabled(enabled);
-    await syncNativeSources(enabled, settings.notificationCaptureEnabled, settings.smsResearchModeEnabled);
+    await syncNativeSources();
   };
 
   const toggleNotificationCapture = async (enabled: boolean) => {
     setNotificationCaptureEnabled(enabled);
-    await syncNativeSources(settings.autoCaptureEnabled, enabled, settings.smsResearchModeEnabled);
+    await syncNativeSources();
+  };
+
+  const confirmSmsDataUse = () => {
+    if (hasCurrentSmsConsent(useCaptureStore.getState().settings, useAuthStore.getState().user?.id)) return Promise.resolve(true);
+    return new Promise<boolean>((resolve) => {
+    Alert.alert(
+      'Review SMS transaction access',
+      SMS_DISCLOSURE,
+      [
+        { text: 'Not now', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'Agree and continue', onPress: () => { useCaptureStore.getState().acceptSmsResearchExplainer(); resolve(true); } },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) }
+    );
+    });
   };
 
   const toggleSmsResearch = async (enabled: boolean) => {
-    if (enabled && !smsResearchAvailable) {
-      Alert.alert('SMS research unavailable', 'This APK was not built with SMS Research Mode enabled.');
-      return;
-    }
-
-    if (enabled && nativeSmsAvailable) {
-      const permission = await requestNativeSmsPermission();
-      setSmsAccessStatus(permission);
-      if (permission !== 'granted') {
-        Alert.alert('SMS access needed', 'Allow SMS access to import and automatically capture bank transaction SMS.');
-        return;
-      }
-    }
-
-    setSmsResearchModeEnabled(enabled);
-    await syncNativeSources(settings.autoCaptureEnabled, settings.notificationCaptureEnabled, enabled);
+    if (smsFlowBusy.current) return;
+    smsFlowBusy.current = true;
+    try {
+    if (!enabled) { Alert.alert('Automatic SMS reading', await turnOffSmsAutomation()); return; }
+    if (!(await confirmSmsDataUse())) return;
+    setIsImportingSms(true);
+    setSmsImportProgress(undefined); setSmsImportFailure(undefined); setShowSmsImportProgress(true);
+    const message = await turnOnSmsAutomation(false, {
+      onProgress: setSmsImportProgress,
+      onResult: (result) => {
+        if (result.summary) setSmsImportProgress({ phase: 'complete', scannedCount: result.summary.scannedCount, eligibleCount: result.summary.nativeImportedCount, draftedCount: result.summary.draftedCount, duplicateCount: result.summary.duplicateCount, parserIgnoredCount: result.summary.parserIgnoredCount, pageCount: 0, message: result.message });
+      },
+    });
+    setShowSmsImportProgress(false);
+    Alert.alert('Automatic SMS reading', message);
+    } catch { setShowSmsImportProgress(false); Alert.alert('SMS check stopped', 'Could not complete the SMS operation. Try again.');
+    } finally { smsFlowBusy.current = false; setIsImportingSms(false); }
   };
 
   const pasteSms = () => {
@@ -162,14 +166,19 @@ export function AutoCaptureScreen() {
   };
 
   const importSmsInbox = async (rangeId: SmsImportRangeId = smsImportRange) => {
-    if (isImportingSms) return;
+    if (isImportingSms || smsFlowBusy.current) return;
+    smsFlowBusy.current = true;
 
     setIsImportingSms(true);
     setShowSmsImportProgress(true);
     setSmsImportProgress(undefined);
     setSmsImportFailure(undefined);
     try {
-      const permission = await requestNativeSmsPermission();
+      if (!(await confirmSmsDataUse())) {
+        setShowSmsImportProgress(false);
+        return;
+      }
+      const permission = await requestNativeSmsPermission(true);
       setSmsAccessStatus(permission);
       if (permission !== 'granted') {
         const message = 'Allow SMS inbox access, then try importing again.';
@@ -180,22 +189,24 @@ export function AutoCaptureScreen() {
 
       setAutoCaptureEnabled(true);
       setSmsResearchModeEnabled(true);
-      await syncNativeSources(true, settings.notificationCaptureEnabled, true);
+      await syncNativeSources();
       await syncApprovedSmsAccounts();
       const summary = await importRecentSmsTransactionsFromInbox(rangeId, setSmsImportProgress);
-      if (summary.status === 'permission_denied' || summary.status === 'unsupported' || summary.status === 'error') {
+      if (summary.status === 'permission_denied' || summary.status === 'unsupported' || summary.status === 'error' || summary.status === 'ignored') {
         const message = summary.message ?? 'MoneyKai could not import SMS messages right now.';
         setSmsImportFailure(message);
         Alert.alert('Import failed', message);
         return;
       }
+      setSmsImportProgress({ phase: 'complete', scannedCount: summary.scannedCount, eligibleCount: summary.nativeImportedCount, draftedCount: summary.draftedCount, duplicateCount: summary.duplicateCount, parserIgnoredCount: summary.parserIgnoredCount, pageCount: 0, message: buildImportSummary(summary) });
       Alert.alert('SMS import complete', buildImportSummary(summary));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'MoneyKai could not import SMS messages right now.';
+    } catch {
+      const message = 'MoneyKai could not import SMS messages right now. Try again.';
       setSmsImportFailure(message);
       Alert.alert('Import failed', message);
     } finally {
       setIsImportingSms(false);
+      smsFlowBusy.current = false;
     }
   };
 
@@ -219,25 +230,13 @@ export function AutoCaptureScreen() {
     Alert.alert('Identified from SMS', message || 'MoneyKai found this bank account from matching SMS metadata.');
   };
 
-  const confirmDraftWithSelectedCategory = (draftId: string) => {
-    const draft = drafts.find((item) => item.id === draftId);
-    const selectedCategory = draftCategorySelections[draftId] ?? draft?.category;
-    if (!selectedCategory) {
-      Alert.alert('Choose category', 'Select a category before confirming this transaction.');
-      return;
-    }
-    confirmDraft(draftId, selectedCategory);
-  };
-
-  const formatMoney = (value: number) => `${currencySymbol}${value.toLocaleString('en-IN')}`;
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <ScreenBackButton />
-          <Text style={styles.title}>Review captured drafts</Text>
-          <Text style={styles.subtitle}>SMS and notification captures stay as drafts until you review them.</Text>
+          <CenteredPageHeader title="Capture settings" leftAction={<ScreenBackButton compact />} />
+          <Text style={styles.subtitle}>Manage capture access, SMS imports and approved bank accounts.</Text>
+          <Button title={`Review drafts${pendingDrafts.length ? ` · ${pendingDrafts.length}` : ''}`} variant="outline" onPress={() => navigation.navigate('ReviewDrafts')} style={{ marginTop: Spacing.md }} />
         </View>
 
         <View style={styles.panel}>
@@ -261,7 +260,7 @@ export function AutoCaptureScreen() {
           <View style={styles.divider} />
 
           <View style={styles.row}>
-            <Text style={styles.muted}>Native module</Text>
+            <Text style={styles.muted}>Device capture</Text>
             <Text style={{ ...styles.value, color: nativeReady ? colors.success : colors.error }} numberOfLines={1} adjustsFontSizeToFit>
               {nativeReady ? 'Ready' : 'Unavailable'}
             </Text>
@@ -275,7 +274,7 @@ export function AutoCaptureScreen() {
               thumbColor={settings.autoCaptureEnabled ? colors.primary : colors.textTertiary}
             />
           </View>
-          <View style={[styles.row, { marginTop: Spacing.md }]}>
+          {isNotificationCaptureEnabled() && <View style={[styles.row, { marginTop: Spacing.md }]}>
             <Text style={styles.muted}>Notification capture</Text>
             <Switch
               value={settings.notificationCaptureEnabled}
@@ -283,16 +282,17 @@ export function AutoCaptureScreen() {
               trackColor={{ false: colors.border, true: colors.primaryBg }}
               thumbColor={settings.notificationCaptureEnabled ? colors.primary : colors.textTertiary}
             />
-          </View>
-          <View style={[styles.row, { marginTop: Spacing.md }]}>
-            <Text style={styles.muted}>SMS research capture</Text>
+          </View>}
+          {nativeSmsAvailable && <View style={[styles.row, { marginTop: Spacing.md }]}>
+            <Text style={styles.muted}>Automatic bank SMS</Text>
             <Switch
               value={settings.smsResearchModeEnabled}
+              disabled={isImportingSms}
               onValueChange={toggleSmsResearch}
               trackColor={{ false: colors.border, true: colors.primaryBg }}
               thumbColor={settings.smsResearchModeEnabled ? colors.primary : colors.textTertiary}
             />
-          </View>
+          </View>}
 
           <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.md }}>
             <Button title="Android access" onPress={() => void openNativeCaptureSettings()} size="sm" style={{ flex: 1 }} />
@@ -362,7 +362,7 @@ export function AutoCaptureScreen() {
 
         {smsResearchAvailable && (
           <View style={styles.panel}>
-            <Text style={styles.sectionTitle}>Paste SMS research</Text>
+            <Text style={styles.sectionTitle}>Paste a bank message</Text>
             <Input
               value={smsText}
               onChangeText={setSmsText}
@@ -386,7 +386,7 @@ export function AutoCaptureScreen() {
                 <Text style={styles.value} numberOfLines={1}>{formatMonitoredAccountLabel(account)}</Text>
                 <Text style={styles.muted}>{account.sampleCount} matching SMS found. Approve to import this account.</Text>
                 <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm }}>
-                  <Button title="Approve" onPress={() => void approveAndImportAccount(account.id)} size="sm" style={{ flex: 1 }} />
+                  <Button title="Approve" disabled={isImportingSms} onPress={() => void approveAndImportAccount(account.id)} size="sm" style={{ flex: 1 }} />
                   <Button title="Decline" onPress={() => void declineAndSyncAccount(account.id)} variant="outline" size="sm" style={{ flex: 1 }} />
                   <TouchableOpacity
                     accessibilityRole="button"
@@ -419,75 +419,6 @@ export function AutoCaptureScreen() {
           </View>
         )}
 
-        {pendingDrafts.length === 0 && (
-          <View style={[styles.panel, { alignItems: 'center', paddingVertical: Spacing['2xl'] }]}>
-            <MaterialCommunityIcons name="check-decagram-outline" size={48} color={colors.primary} />
-            <Text style={[styles.value, { marginTop: Spacing.md, textAlign: 'center' }]}>No drafts to review</Text>
-            <Text style={[styles.muted, { marginTop: Spacing.sm, textAlign: 'center' }]}>
-              Clean queue. Captured transactions will appear here when they need your eyes.
-            </Text>
-          </View>
-        )}
-
-        <View style={[styles.row, { marginBottom: Spacing.md }]}>
-          <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Drafts</Text>
-          <TouchableOpacity onPress={clearCaptureInbox}>
-            <Text style={{ ...styles.muted, color: colors.primary }}>Clear reviewed</Text>
-          </TouchableOpacity>
-        </View>
-
-        {pendingDrafts.length === 0 ? (
-          <View style={styles.panel}>
-            <Text style={styles.emptyText}>No pending captured drafts.</Text>
-          </View>
-        ) : (
-          pendingDrafts.map((draft) => (
-            <View key={draft.id} style={styles.panel}>
-              <View style={styles.row}>
-                <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.md }}>
-                  <Text style={styles.value} numberOfLines={1}>{draft.description}</Text>
-                  <Text style={styles.muted} numberOfLines={1}>
-                    {formatMoney(draft.amount)} - {draft.category ? titleCase(draft.category) : 'Category needed'} - {titleCase(draft.captureSource)}
-                  </Text>
-                </View>
-                <MaterialCommunityIcons name="file-document-edit-outline" size={24} color={colors.primary} />
-              </View>
-              <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.md }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.muted, { marginBottom: Spacing.sm }]}>Category</Text>
-                  <View style={styles.chipRow}>
-                    {getDraftCategoryOptions(draft).map((category) => {
-                      const active = (draftCategorySelections[draft.id] ?? draft.category) === category.id;
-                      return (
-                        <TouchableOpacity
-                          key={category.id}
-                          onPress={() => setDraftCategorySelections((current) => ({ ...current, [draft.id]: category.id }))}
-                          style={[styles.chip, active && styles.chipActive]}
-                        >
-                          <MaterialCommunityIcons
-                            name={category.icon}
-                            size={16}
-                            color={active ? colors.textInverse : colors.textSecondary}
-                          />
-                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{category.name}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.md }}>
-                <Button
-                  title="Confirm"
-                  onPress={() => confirmDraftWithSelectedCategory(draft.id)}
-                  size="sm"
-                  style={{ flex: 1 }}
-                />
-                <Button title="Ignore" onPress={() => ignoreDraft(draft.id)} variant="outline" size="sm" style={{ flex: 1 }} />
-              </View>
-            </View>
-          ))
-        )}
       </ScrollView>
       <SmsImportProgressSheet
         visible={showSmsImportProgress}

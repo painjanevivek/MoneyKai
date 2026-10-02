@@ -1,9 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { ScrollView, Switch, TextInput, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
+import { Disclosure } from '@/components/ui/Disclosure';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenState } from '@/components/ui/ScreenState';
@@ -48,7 +52,7 @@ function BudgetSpendingPieChart({
   return (
     <View style={{ marginBottom: Spacing.base }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md }}>
-        <MaterialCommunityIcons name="chart-donut" size={22} color={colors.primary} />
+        <MaterialCommunityIcons name="chart-donut" size={22} color={colors.primaryDark} />
         <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.lg }}>
           Spending split
         </Text>
@@ -156,7 +160,9 @@ export function BudgetScreen() {
   const spentTotals = useMemo(() => buildCategoryTotals(currentMonthTransactions), [currentMonthTransactions]);
   const normalizedLimits = useMemo(() => normalizeLimits(categoryLimitDrafts), [categoryLimitDrafts]);
   const totalCategoryLimits = Object.values(normalizedLimits).reduce((sum, value) => sum + value, 0);
-  const remaining = Math.max(settings.monthly_allowance - spent, 0);
+  const hasMonthlyPlan = settings.monthly_allowance > 0;
+  const remaining = settings.monthly_allowance - spent;
+  const usedPercent = hasMonthlyPlan ? Math.min(100, (spent / settings.monthly_allowance) * 100) : 0;
   const formatMoney = (value: number) => `${currencySymbol}${value.toLocaleString('en-IN')}`;
 
   const saveBudget = () => {
@@ -200,12 +206,9 @@ export function BudgetScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>Budget checks</Text>
-          <Text style={styles.subtitle}>Use reviewed SMS records to compare spending against monthly and category limits.</Text>
-        </View>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: Spacing.xl }]} keyboardShouldPersistTaps="handled">
+        <CenteredPageHeader title="Budget" leftAction={<ScreenBackButton compact />} />
 
         {budgetNotice && (
           <ScreenState
@@ -218,33 +221,103 @@ export function BudgetScreen() {
         )}
 
         <View style={styles.panel}>
-          <View style={styles.row}>
-            <View style={{ flex: 1, minWidth: 0, paddingRight: Spacing.sm }}>
-              <Text style={styles.muted}>Remaining</Text>
+          {hasMonthlyPlan ? (
+            <>
+              <Text style={styles.muted}>{remaining < 0 ? 'Over your plan' : 'Available to spend'}</Text>
               <Text
                 adjustsFontSizeToFit
                 numberOfLines={1}
-                style={[styles.value, { fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize['2xl'] }]}
+                style={[styles.value, { fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize['2xl'], marginTop: Spacing.xs }]}
               >
-                {formatMoney(remaining)}
+                {formatMoney(Math.abs(remaining))}
               </Text>
-            </View>
-            <View style={{ alignItems: 'flex-end', flexShrink: 0, maxWidth: 142 }}>
-              <Text style={styles.muted}>Spent this month</Text>
-              <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>{formatMoney(spent)}</Text>
-            </View>
-          </View>
-          <View style={styles.divider} />
-          <Text style={styles.muted}>
-            Allowance {formatMoney(settings.monthly_allowance)} - Category limits {formatMoney(totalCategoryLimits)}
-          </Text>
+              <View
+                accessibilityLabel={`${Math.round((spent / settings.monthly_allowance) * 100)} percent of monthly allowance spent`}
+                accessibilityRole="progressbar"
+                accessibilityValue={{ min: 0, max: 100, now: Math.round(usedPercent) }}
+                style={{ backgroundColor: colors.borderLight, borderRadius: BorderRadius.full, height: 6, marginTop: Spacing.lg, overflow: 'hidden' }}
+              >
+                <View style={{ backgroundColor: colors.textPrimary, borderRadius: BorderRadius.full, height: 6, width: `${usedPercent}%` }} />
+              </View>
+              <View style={[styles.row, { marginTop: Spacing.sm }]}>
+                <Text style={styles.muted}>Spent {formatMoney(spent)}</Text>
+                <Text style={styles.muted}>Plan {formatMoney(settings.monthly_allowance)}</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.value, { fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.lg }]}>Start with a monthly allowance</Text>
+              <Text style={[styles.muted, { lineHeight: 20, marginTop: Spacing.sm }]}>Set an amount below to see what is available to spend. Your recorded spending stays intact.</Text>
+              <View style={styles.divider} />
+              <View style={styles.row}>
+                <Text style={styles.muted}>Spent this month</Text>
+                <Text style={styles.value}>{formatMoney(spent)}</Text>
+              </View>
+            </>
+          )}
         </View>
 
+        <Disclosure
+          title="Monthly allowance"
+          summary={hasMonthlyPlan ? `${formatMoney(settings.monthly_allowance)} per month` : 'Set your plan to see what remains'}
+          defaultOpen={!hasMonthlyPlan}
+        >
         <View style={styles.panel}>
-          <BudgetSpendingPieChart spentTotals={spentTotals} formatMoney={formatMoney} />
-          <Text style={styles.sectionTitle}>Category limit settings</Text>
+          <Input
+            label="Monthly allowance"
+            value={allowance}
+            onChangeText={setAllowance}
+            placeholder="0"
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            icon="wallet-outline"
+          />
+          <Disclosure title="Reset & carry forward" summary="Monthly schedule and safeguards">
+          <Input
+            label="Reset day"
+            value={resetDay}
+            onChangeText={setResetDay}
+            placeholder="1"
+            keyboardType="number-pad"
+            icon="calendar-refresh"
+          />
+          <View style={[styles.row, { marginBottom: Spacing.md }]}>
+            <Text style={styles.muted}>Auto reset monthly</Text>
+            <Switch
+              value={settings.auto_reset}
+              onValueChange={(auto_reset) => updateSettings({ auto_reset })}
+              trackColor={{ false: colors.border, true: colors.primaryBg }}
+              thumbColor={settings.auto_reset ? colors.primary : colors.textTertiary}
+            />
+          </View>
+          <View style={[styles.row, { marginBottom: Spacing.md }]}>
+            <Text style={styles.muted}>Carry forward unused balance</Text>
+            <Switch
+              value={settings.carry_forward}
+              onValueChange={(carry_forward) => updateSettings({ carry_forward })}
+              trackColor={{ false: colors.border, true: colors.primaryBg }}
+              thumbColor={settings.carry_forward ? colors.primary : colors.textTertiary}
+            />
+          </View>
+          <View style={[styles.row, { marginBottom: Spacing.md }]}>
+            <Text style={styles.muted}>Emergency mode</Text>
+            <Switch
+              value={isEmergencyMode}
+              onValueChange={toggleEmergencyMode}
+              trackColor={{ false: colors.border, true: colors.primaryBg }}
+              thumbColor={isEmergencyMode ? colors.primary : colors.textTertiary}
+            />
+          </View>
+          </Disclosure>
+          <Button title="Save budget" onPress={saveBudget} />
+        </View>
+        </Disclosure>
+
+        <Disclosure title="Category limits" summary={Object.keys(normalizedLimits).length ? `${Object.keys(normalizedLimits).length} limits · ${formatMoney(totalCategoryLimits)} planned` : 'Optional limits for individual categories'}>
+        <View style={styles.panel}>
+          {spentTotals.length > 0 ? <BudgetSpendingPieChart spentTotals={spentTotals} formatMoney={formatMoney} /> : null}
           <Text style={[styles.muted, { marginBottom: Spacing.md }]}>
-            Give every noisy spending category a clear ceiling. Leave a field empty when you do not want a limit.
+            Set a ceiling for any category. Leave a field empty for no limit.
           </Text>
           <View style={{ gap: Spacing.sm }}>
             {EXPENSE_CATEGORIES.map((category, index) => {
@@ -275,7 +348,7 @@ export function BudgetScreen() {
                         width: 42,
                       }}
                     >
-                      <MaterialCommunityIcons name={category.icon} size={21} color={colors.primary} />
+                      <MaterialCommunityIcons name={category.icon} size={21} color={colors.primaryDark} />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text numberOfLines={1} style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.base }}>
@@ -320,64 +393,19 @@ export function BudgetScreen() {
               );
             })}
           </View>
+          <Button title="Save category limits" onPress={saveBudget} style={{ marginTop: Spacing.base }} />
         </View>
 
-        <View style={styles.panel}>
-          <Text style={styles.sectionTitle}>Budget settings</Text>
-          <Input
-            label="Monthly allowance"
-            value={allowance}
-            onChangeText={setAllowance}
-            placeholder="25000"
-            keyboardType="decimal-pad"
-            inputMode="decimal"
-            icon="wallet-outline"
-          />
-          <Input
-            label="Reset day"
-            value={resetDay}
-            onChangeText={setResetDay}
-            placeholder="1"
-            keyboardType="number-pad"
-            icon="calendar-refresh"
-          />
-          <View style={[styles.row, { marginBottom: Spacing.md }]}>
-            <Text style={styles.muted}>Auto reset monthly</Text>
-            <Switch
-              value={settings.auto_reset}
-              onValueChange={(auto_reset) => updateSettings({ auto_reset })}
-              trackColor={{ false: colors.border, true: colors.primaryBg }}
-              thumbColor={settings.auto_reset ? colors.primary : colors.textTertiary}
-            />
-          </View>
-          <View style={[styles.row, { marginBottom: Spacing.md }]}>
-            <Text style={styles.muted}>Carry forward unused balance</Text>
-            <Switch
-              value={settings.carry_forward}
-              onValueChange={(carry_forward) => updateSettings({ carry_forward })}
-              trackColor={{ false: colors.border, true: colors.primaryBg }}
-              thumbColor={settings.carry_forward ? colors.primary : colors.textTertiary}
-            />
-          </View>
-          <View style={[styles.row, { marginBottom: Spacing.md }]}>
-            <Text style={styles.muted}>Emergency mode</Text>
-            <Switch
-              value={isEmergencyMode}
-              onValueChange={toggleEmergencyMode}
-              trackColor={{ false: colors.border, true: colors.primaryBg }}
-              thumbColor={isEmergencyMode ? colors.primary : colors.textTertiary}
-            />
-          </View>
-          <Button title="Save budget" onPress={saveBudget} />
-        </View>
+        </Disclosure>
 
+        <Disclosure title="Adjust this month" summary="One-off changes and recent adjustments">
         <View style={styles.panel}>
           <Text style={styles.sectionTitle}>Manual adjustment</Text>
           <Input
             label="Amount"
             value={adjustmentAmount}
             onChangeText={setAdjustmentAmount}
-            placeholder="1000"
+            placeholder="0"
             keyboardType="decimal-pad"
             inputMode="decimal"
             icon="plus-minus"
@@ -386,7 +414,7 @@ export function BudgetScreen() {
             label="Reason"
             value={adjustmentReason}
             onChangeText={setAdjustmentReason}
-            placeholder="Bonus, refund, unexpected bill..."
+            placeholder="Reason for adjustment"
             icon="note-text-outline"
           />
           <View style={{ flexDirection: 'row', gap: Spacing.md }}>
@@ -416,6 +444,7 @@ export function BudgetScreen() {
             </View>
           ))
         )}
+        </Disclosure>
       </ScrollView>
     </SafeAreaView>
   );

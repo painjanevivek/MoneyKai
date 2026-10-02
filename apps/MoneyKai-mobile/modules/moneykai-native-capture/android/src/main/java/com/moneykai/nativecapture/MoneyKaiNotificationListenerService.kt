@@ -8,13 +8,17 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.security.MessageDigest
 
 class MoneyKaiNotificationListenerService : NotificationListenerService() {
   override fun onNotificationPosted(sbn: StatusBarNotification?) {
     val notification = sbn?.notification ?: return
     val sourcePackage = sbn.packageName ?: return
+    if (!MoneyKaiNativeCaptureModule.isPaymentNotificationAllowed(applicationContext, sourcePackage)) return
     if (sourcePackage == packageName) return
     if (!MoneyKaiNativeCaptureModule.isCaptureEnabled(applicationContext)) return
+    if (!MoneyKaiNativeCaptureModule.isNotificationCaptureEnabled(applicationContext)) return
+    if ((notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
 
     val title = notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
     val text = notification.extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
@@ -29,27 +33,13 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
       .joinToString(" ")
       .trim()
 
-    if (isNotificationContentHidden(body, notification) && looksLikeFinancialNotificationSource(title, sourcePackage)) {
-      MoneyKaiNativeCaptureModule.handleNotificationSignal(
-        applicationContext,
-        Bundle().apply {
-          putString("source", "notification")
-          putString("title", sanitizeNotificationText(title))
-          putString("body", "Notification content hidden by Android privacy settings")
-          putString("sourceApp", resolveAppLabel(sourcePackage))
-          putString("receivedAt", toIsoUtc(sbn.postTime))
-          putString("rawPackageName", sourcePackage)
-          putString("privacyStatus", "content_hidden")
-        }
-      )
-      return
-    }
+    if (isNotificationContentHidden(body, notification)) return
 
-    if (body.isBlank() || !looksLikeFinancialNotification("$title $body")) {
+    if (body.isBlank() || !MoneyKaiPaymentNotificationPolicy.eligible("$title $body")) {
       return
     }
-    val safeTitle = sanitizeNotificationText(title)
-    val safeBody = sanitizeNotificationText(body)
+    val safeTitle = sanitizeNotificationText(title).take(120)
+    val safeBody = sanitizeNotificationText(body).take(500)
 
     MoneyKaiNativeCaptureModule.handleNotificationSignal(
       applicationContext,
@@ -60,6 +50,9 @@ class MoneyKaiNotificationListenerService : NotificationListenerService() {
         putString("sourceApp", resolveAppLabel(sourcePackage))
         putString("receivedAt", toIsoUtc(sbn.postTime))
         putString("rawPackageName", sourcePackage)
+        // Notification keys may contain private app tags: persist only a digest.
+        putString("notificationId", MessageDigest.getInstance("SHA-256").digest("${sbn.key}|${sbn.postTime}|$title|$body".toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) })
+        MoneyKaiSmsAutoRecord.referenceHash("$title $body")?.let { putString("notificationReferenceHash", it) }
       }
     )
   }

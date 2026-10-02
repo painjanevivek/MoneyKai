@@ -34,7 +34,7 @@
     "typecheck": "npm run mobile:typecheck && npm run web:typecheck",
     "build": "npm run web:build",
     "bootstrap": "npm install --workspaces --include-workspace-root",
-    "brand:assets": "node ./scripts/generate-brand-assets.mjs",
+    "brand:assets": "node ./scripts/generate-brand-assets.mjs && npm run generate:icons --workspace=moneykai-mobile",
     "launch:check": "node ./scripts/launch-check.mjs",
     "release:handoff-baseline": "node ./scripts/verify-handoff-baseline.mjs",
     "release:deployment-preflight": "node ./scripts/deployment-preflight.mjs",

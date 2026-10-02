@@ -33,7 +33,7 @@ export const Card: React.FC<CardProps> = ({
         : {
             borderWidth: 1,
             borderColor: isGlass ? colors.glassBorder : colors.borderLight,
-            ...Shadows.md,
+            ...Shadows.sm,
             shadowColor: colors.shadowColor,
           }
     ),

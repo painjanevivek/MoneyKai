@@ -1,10 +1,12 @@
 import React from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { AiModelConsole } from '@/components/ai/AiModelConsole';
 import { Button } from '@/components/ui/Button';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
 import { useAiProviderStatus } from '@/features/ai/hooks';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -35,8 +37,7 @@ export function AiReviewScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <ScreenBackButton />
-          <Text style={styles.title}>AI review</Text>
+          <CenteredPageHeader title="AI review" leftAction={<ScreenBackButton compact />} />
           <Text style={styles.subtitle}>
             Ask MoneyKai AI for practical help, then review receipt and image analysis before using it.
           </Text>

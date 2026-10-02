@@ -171,5 +171,10 @@
         }
       ]
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "codex/sms-100k-free": false
+    }
+  }
 }

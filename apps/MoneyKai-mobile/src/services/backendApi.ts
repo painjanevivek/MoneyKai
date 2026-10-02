@@ -1,4 +1,5 @@
 import { financialFeatureEndpoints } from '@/contracts/financialFeatureContracts';
+import { assertCloudRouteAllowed } from './smsDeviceOnlyPolicy';
 import { getBackendBaseUrl } from '@/config/environment';
 import { getCurrentFirebaseIdToken, getCurrentFirebaseUser } from './authService';
 import { fetchWithRetry, NetworkRequestError, readDataCache, writeDataCache } from './networkClient';
@@ -89,6 +90,17 @@ const BACKEND_GET_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export const isBackendConfigured = (): boolean => backendBaseUrl.length > 0;
 
+export interface AccountDeletionResponse {
+  deleted: boolean;
+  operation: {
+    status: string;
+    recoveryAction?: string | null;
+  };
+  certificate: {
+    zeroResidue: boolean;
+  } | null;
+}
+
 class BackendApiError extends Error {
   constructor(
     message: string,
@@ -140,6 +152,8 @@ async function getAuthToken(): Promise<string> {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // Run before authentication, retries, telemetry or fetch: no SMS leaves the device.
+  assertCloudRouteAllowed(path, init.body);
   if (!isBackendConfigured()) {
     throw new Error('Backend API is not configured.');
   }
@@ -267,6 +281,11 @@ export const backendApi = {
     request<{ budget: Record<string, unknown> }>('/v1/settings/budget', {
       method: 'PUT',
       body: JSON.stringify(payload),
+    }),
+  deleteAccount: async (idempotencyKey: string) =>
+    request<AccountDeletionResponse>('/v1/settings/account', {
+      method: 'DELETE',
+      headers: { 'Idempotency-Key': idempotencyKey },
     }),
   listResource: async <T>(resource: 'transactions' | 'notes' | 'badges' | 'notifications') =>
     request<{ items: T[] }>(`/v1/resources/${resource}`),
@@ -480,9 +499,10 @@ export const backendApi = {
       method: 'DELETE',
     }),
   listGroups: async () => request<{ items: Group[] }>('/v1/groups'),
-  createGroup: async (payload: object) =>
+  createGroup: async (payload: object, idempotencyKey?: string) =>
     request<{ item: Group }>('/v1/groups', {
       method: 'POST',
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
       body: JSON.stringify(payload),
     }),
   updateGroup: async (groupId: string, payload: object) =>
@@ -503,9 +523,10 @@ export const backendApi = {
       method: 'POST',
     }),
   listGroupExpenses: async (groupId: string) => request<{ items: GroupExpense[] }>(`/v1/groups/${groupId}/expenses`),
-  createGroupExpense: async (groupId: string, payload: object) =>
+  createGroupExpense: async (groupId: string, payload: object, idempotencyKey?: string) =>
     request<{ item: GroupExpense }>(`/v1/groups/${groupId}/expenses`, {
       method: 'POST',
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
       body: JSON.stringify(payload),
     }),
   updateGroupExpense: async (groupId: string, expenseId: string, payload: object) =>
@@ -516,6 +537,17 @@ export const backendApi = {
   deleteGroupExpense: async (groupId: string, expenseId: string) =>
     request<{ deleted: boolean }>(`/v1/groups/${groupId}/expenses/${expenseId}`, {
       method: 'DELETE',
+    }),
+  recordGroupSettlement: async (groupId: string, expenseId: string, splitId: string, amountPaise: number, idempotencyKey: string) =>
+    request<{ item: GroupExpense; receipt: object }>(`/v1/groups/${groupId}/expenses/${expenseId}/settlements`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body: JSON.stringify({ split_id: splitId, amount_paise: amountPaise }),
+    }),
+  reverseGroupSettlement: async (groupId: string, expenseId: string, settlementId: string, idempotencyKey: string) =>
+    request<{ item: GroupExpense; receipt: object }>(`/v1/groups/${groupId}/expenses/${expenseId}/settlements/${settlementId}/reverse`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
     }),
   listChallenges: async () => request<{ items: Challenge[] }>('/v1/challenges'),
   createChallenge: async (payload: object) =>

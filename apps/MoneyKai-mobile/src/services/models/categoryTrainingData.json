@@ -1,0 +1,15 @@
+{
+  "version": "category-seed-v1",
+  "provenance": "Developer-authored synthetic counterparty labels, not customer SMS or verified merchant identities. Purpose classification only; unknown names must abstain.",
+  "categories": {
+    "food": ["Swiggy", "Zomato", "Dominos Pizza", "KFC", "McDonalds", "Starbucks Coffee", "Sunrise Restaurant", "Corner Cafe", "Fresh Bakery", "Pizza Hut", "Food Dining", "Lunch Canteen"],
+    "healthcare": ["Apollo Pharmacy", "Netmeds", "Medico Medical", "City Hospital", "Family Clinic", "Doctor Medicines", "Health Wellness", "Diagnostic Laboratory", "Dental Clinic", "Surgical Medical", "Pharmeasy", "Tata 1mg"],
+    "shopping": ["Amazon", "Flipkart", "Myntra", "Retail Shopping", "Clothing Apparel", "Fashion Boutique", "Supermarket Groceries", "Grocery Shop", "Dmart", "Reliance Retail", "Furniture Store", "Shoes Footwear"],
+    "electronics": ["Electronics Devices", "Laptop Computer", "Phone Accessories", "Croma Electronics", "Reliance Digital", "Vijay Sales Electronics", "Computer Hardware", "Electronic Appliances", "TV Television", "Mobile Handset", "Headphones Audio", "Camera Equipment"],
+    "transport": ["Uber", "Ola", "Taxi Cab", "Metro Rail", "Petrol Pump", "Diesel Fuel", "Bus Transport", "Railway Train", "Rapido", "Toll Parking", "Indian Oil", "Bharat Petroleum"],
+    "bills": ["Electricity Utility", "Broadband Recharge", "Mobile Recharge", "Water Bill", "Gas Bill", "Airtel Recharge", "Jio Recharge", "Bescom Electricity", "Internet Bill", "Utility Payment", "Vi Recharge", "BSNL Broadband"],
+    "education": ["School Tuition", "College Fees", "University Education", "Udemy Course", "Coaching Institute", "Academy Learning", "Training Course", "Textbook Education", "Kindergarten School", "Tuition Classes", "Coursera Course", "Exam Fees"],
+    "entertainment": ["Netflix", "Spotify", "Bookmyshow", "Cinema Movie", "Gaming Subscription", "Theatre Tickets", "Concert Tickets", "Entertainment Park", "Disney Hotstar", "Amusement Park", "Movie Theatre", "Music Subscription"],
+    "rent": ["House Rent", "Housing Rental", "Apartment Rent", "Landlord Rent", "Room Rental", "Monthly Rent", "Accommodation Rent", "Property Rental", "PG Rent", "Hostel Rent", "Flat Rent", "Lease Housing"]
+  }
+}

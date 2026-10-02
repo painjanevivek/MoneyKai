@@ -2,13 +2,13 @@ package com.moneykai.mobile
 
 import android.app.Application
 import com.facebook.react.PackageList
+import com.facebook.react.ReactPackage
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.common.ReleaseLevel
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
-import com.moneykai.nativecapture.MoneyKaiNativeCapturePackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -17,9 +17,11 @@ class MainApplication : Application(), ReactApplication {
       context = applicationContext,
       packageList =
         PackageList(this).packages.apply {
-          add(MoneyKaiNativeCapturePackage())
+          optionalPackage("com.moneykai.nativecapture.MoneyKaiNativeCapturePackage")?.let(::add)
           add(MoneyKaiProfileMediaPackage())
           add(MoneyKaiBuildConfigPackage())
+          add(MoneyKaiDeviceCredentialPackage())
+          add(MoneyKaiGoogleSignInPackage())
         },
     )
   }
@@ -33,4 +35,11 @@ class MainApplication : Application(), ReactApplication {
     }
     loadReactNative(this)
   }
+
+  private fun optionalPackage(className: String): ReactPackage? =
+    try {
+      Class.forName(className).getDeclaredConstructor().newInstance() as? ReactPackage
+    } catch (_: ReflectiveOperationException) {
+      null
+    }
 }

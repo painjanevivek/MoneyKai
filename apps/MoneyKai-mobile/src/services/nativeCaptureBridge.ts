@@ -1,4 +1,5 @@
 import { NativeEventEmitter, NativeModules, PermissionsAndroid, Platform } from 'react-native';
+import { runPermissionFlow } from './permissionFlow';
 import { getSmsImportRangeOption } from '@/constants/smsImportRanges';
 import { captureDiagnosticEvent, captureException } from '@/services/diagnosticsService';
 import type { CaptureSignalInput } from '@/types/capture';
@@ -12,6 +13,7 @@ export interface NativeCaptureStatus {
   smsAccess: NativeCapturePermissionStatus;
   smsInboxAccess?: NativeCapturePermissionStatus;
   nativeModuleAvailable: boolean;
+  notificationCaptureAvailable?: boolean;
 }
 
 export interface NativeSmsImportResult {
@@ -55,6 +57,12 @@ type NativeCaptureSignal = {
   smsSubscriptionId?: string;
   smsSlot?: string;
   smsPhoneId?: string;
+  smsOwnerId?: string;
+  notificationOwnerId?: string;
+  notificationId?: string;
+  notificationReferenceHash?: string;
+  smsReferenceHash?: string;
+  smsAutoRecordSafe?: boolean | string;
   smsAccountHint?: string;
   discoverySampleRedactedBody?: string;
   discoverySampleSender?: string;
@@ -100,6 +108,9 @@ type MoneyKaiNativeCaptureEvents = {
 };
 
 type MoneyKaiNativeCaptureModule = {
+  pickPaymentStatement?: () => Promise<{ name: string; text: string } | null>;
+  setPaymentNotificationPackages?: (packagesJson: string, ownerId: string) => boolean;
+  configureSmsSchedule?: (enabled: boolean, intervalMinutes: number, ownerId: string) => Promise<boolean>;
   startListening?: () => boolean;
   stopListening?: () => boolean;
   clearPendingSignals?: () => boolean;
@@ -107,8 +118,8 @@ type MoneyKaiNativeCaptureModule = {
   setCaptureSourcesEnabled?: (notificationEnabled: boolean, smsEnabled: boolean) => boolean;
   setApprovedSmsAccounts?: (approvedAccountIdsJson: string) => boolean;
   getStatus?: () => NativeCaptureStatus;
-  discoverRecentSmsAccounts?: (optionsJson: string) => string;
-  importRecentSmsTransactions?: (optionsJson: string, approvedAccountIdsJson: string) => string;
+  discoverRecentSmsAccounts?: (optionsJson: string) => Promise<string>;
+  importRecentSmsTransactions?: (optionsJson: string, approvedAccountIdsJson: string) => Promise<string>;
   openNotificationListenerSettings?: () => boolean;
   getDefaultWebClientId?: () => Promise<string>;
   addListener?: (eventName: keyof MoneyKaiNativeCaptureEvents) => void;
@@ -116,7 +127,34 @@ type MoneyKaiNativeCaptureModule = {
 };
 
 const nativeCaptureModule = NativeModules.MoneyKaiNativeCapture as MoneyKaiNativeCaptureModule | undefined;
+
+export async function pickPaymentStatement() {
+  if (Platform.OS !== 'android' || !nativeCaptureModule?.pickPaymentStatement) {
+    throw new Error('Statement import needs the updated MoneyKai Android app.');
+  }
+  return nativeCaptureModule.pickPaymentStatement();
+}
+
+export async function setPaymentNotificationPackages(packages: string[], ownerId = '') {
+  if (!nativeCaptureModule?.setPaymentNotificationPackages) return false;
+  try { return nativeCaptureModule.setPaymentNotificationPackages(JSON.stringify(packages), ownerId); }
+  catch { return false; }
+}
 const nativeCaptureEvents = nativeCaptureModule ? new NativeEventEmitter(nativeCaptureModule as never) : null;
+
+export async function configureNativeSmsSchedule(enabled: boolean, intervalMinutes: number, ownerId: string): Promise<boolean> {
+  if (Platform.OS !== 'android' || !nativeCaptureModule?.configureSmsSchedule) return false;
+  try {
+    // Await encrypted Zustand writes before a job can run (periodic jobs may
+    // execute immediately). Off must not wait for a possibly unreadable store.
+    if (enabled) {
+      const { privateDeviceStorage } = await import('./privateDeviceStorage');
+      await privateDeviceStorage.getItem('moneykai-auto-capture');
+    }
+    return await nativeCaptureModule.configureSmsSchedule(enabled, intervalMinutes, ownerId);
+  }
+  catch { return false; }
+}
 
 const fallbackStatus: NativeCaptureStatus = {
   platform: Platform.OS === 'android' || Platform.OS === 'ios' || Platform.OS === 'web' ? Platform.OS : 'unknown',
@@ -182,7 +220,12 @@ export const getNativeGoogleWebClientId = async (): Promise<string> => {
   }
 };
 
-export const requestNativeSmsPermission = async (): Promise<NativeCapturePermissionStatus> => {
+export const requestNativeSmsPermission = (disclosureAccepted = false): Promise<NativeCapturePermissionStatus> => {
+  if (!disclosureAccepted) return Promise.resolve('not_requested');
+  return runPermissionFlow('sms', requestSmsPermission);
+};
+
+const requestSmsPermission = async (): Promise<NativeCapturePermissionStatus> => {
   if (Platform.OS !== 'android' || !nativeCaptureModule?.getStatus) {
     return 'unsupported';
   }
@@ -194,9 +237,8 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
     captureNativeFailure('requestSmsPermission.status', error);
     return 'unsupported';
   }
-  const inboxStatus = currentStatus.smsInboxAccess ?? 'unsupported';
-  if (currentStatus.smsAccess === 'unsupported') {
-    return currentStatus.smsAccess;
+  if (currentStatus.smsAccess === 'unsupported' || currentStatus.smsInboxAccess === 'unsupported') {
+    return 'unsupported';
   }
 
   const receivePermission = PermissionsAndroid.PERMISSIONS.RECEIVE_SMS;
@@ -204,8 +246,8 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
   let receiveGranted = false;
   let readGranted = false;
   try {
-    receiveGranted = currentStatus.smsAccess === 'granted' || await PermissionsAndroid.check(receivePermission);
-    readGranted = inboxStatus === 'granted' || await PermissionsAndroid.check(readPermission);
+    receiveGranted = await PermissionsAndroid.check(receivePermission);
+    readGranted = await PermissionsAndroid.check(readPermission);
   } catch (error) {
     captureNativeFailure('requestSmsPermission.check', error);
     return 'denied';
@@ -227,12 +269,15 @@ export const requestNativeSmsPermission = async (): Promise<NativeCapturePermiss
           buttonPositive: 'Allow',
           buttonNegative: 'Not now',
         });
+    if (receiveResult !== PermissionsAndroid.RESULTS.GRANTED) return 'denied';
+    // Android may have granted both permissions together. Recheck before another prompt.
+    readGranted = await PermissionsAndroid.check(readPermission);
     readResult = readGranted
       ? PermissionsAndroid.RESULTS.GRANTED
       : await PermissionsAndroid.request(readPermission, {
           title: 'Import Recent Bank SMS',
           message:
-            'MoneyKai needs one-time SMS inbox access to import bank and payment transaction SMS for your selected range.',
+            'Allow MoneyKai to read bank and payment SMS for the range you choose. Access remains granted until you revoke it in Android Settings.',
           buttonPositive: 'Allow',
           buttonNegative: 'Not now',
         });
@@ -302,7 +347,7 @@ export const discoverRecentNativeSmsAccounts = async (params?: NativeSmsScanPara
   const options = buildNativeSmsScanOptions(params);
   let rawResult: string;
   try {
-    rawResult = nativeCaptureModule.discoverRecentSmsAccounts(JSON.stringify(options));
+    rawResult = await nativeCaptureModule.discoverRecentSmsAccounts(JSON.stringify(options));
   } catch (error) {
     captureNativeFailure('discoverRecentSmsAccounts', error, options);
     return emptySmsAccountDiscoveryResult('error', 'The Android SMS account discovery request failed.');
@@ -347,7 +392,7 @@ export const importRecentNativeSmsTransactions = async (params?: {
   const approvedAccountIdsJson = JSON.stringify(params?.approvedAccountIds ?? []);
   let rawResult: string;
   try {
-    rawResult = nativeCaptureModule.importRecentSmsTransactions(JSON.stringify(options), approvedAccountIdsJson);
+    rawResult = await nativeCaptureModule.importRecentSmsTransactions(JSON.stringify(options), approvedAccountIdsJson);
   } catch (error) {
     captureNativeFailure('importRecentSmsTransactions', error, {
       ...options,
@@ -544,6 +589,12 @@ const mapNativeSignalToCaptureSignal = (event: NativeCaptureSignal): CaptureSign
       smsSubscriptionId: event.smsSubscriptionId,
       smsSlot: event.smsSlot,
       smsPhoneId: event.smsPhoneId,
+      smsOwnerId: event.smsOwnerId,
+      notificationOwnerId: event.notificationOwnerId,
+      notificationId: event.notificationId,
+      notificationReferenceHash: event.notificationReferenceHash,
+      smsReferenceHash: event.smsReferenceHash,
+      smsAutoRecordSafe: event.smsAutoRecordSafe === true || event.smsAutoRecordSafe === 'true',
       smsAccountHint: event.smsAccountHint,
       discoverySampleRedactedBody: event.discoverySampleRedactedBody,
       discoverySampleSender: event.discoverySampleSender,

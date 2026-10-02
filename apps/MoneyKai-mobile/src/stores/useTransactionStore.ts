@@ -1,10 +1,12 @@
 import { create } from 'zustand';
+import { isDeviceOnlyCaptureSource } from '@/services/smsDeviceOnlyPolicy';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { privateDeviceStorage } from '@/services/privateDeviceStorage';
 import type { Transaction, TransactionFilter, CategoryTotal } from '../types/transaction';
 import { recordAppNotification } from '@/services/notificationService';
 import { useBudgetStore } from './useBudgetStore';
 import { useAuthStore } from './useAuthStore';
+import { useSettingsStore } from './useSettingsStore';
 import { deleteUserDoc, upsertUserDoc } from '@/services/firestoreData';
 import { requestAutomaticBackup } from '@/services/backupService';
 import { isFirebaseConfigured } from '@/services/firebase';
@@ -42,6 +44,7 @@ const DEFAULT_FILTER: TransactionFilter = {
 };
 
 const syncTransactionCreate = (transaction: Transaction) => {
+  if (isDeviceOnlyCaptureSource(transaction.captureSource)) return;
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
   void upsertUserDoc('transactions', userId, transaction).catch((error) => {
@@ -52,6 +55,7 @@ const syncTransactionCreate = (transaction: Transaction) => {
 };
 
 const syncTransactionUpdate = (id: string, updates: Partial<Transaction>) => {
+  if (isDeviceOnlyCaptureSource(useTransactionStore.getState().transactions.find(t => t.id === id)?.captureSource)) return;
   const userId = useAuthStore.getState().user?.id;
   if (!userId) return;
   void upsertUserDoc('transactions', userId, { id, ...updates } as Transaction).catch((error) => {
@@ -132,7 +136,8 @@ export const useTransactionStore = create<TransactionState>()(
             const query = filter.searchQuery.toLowerCase();
             filtered = filtered.filter(t =>
               t.description.toLowerCase().includes(query) ||
-              t.category.toLowerCase().includes(query)
+              t.category.toLowerCase().includes(query) ||
+              (t.contact_allocations?.some((person) => person.name.toLowerCase().includes(query)) ?? false)
             );
           }
           if (filter.paymentMethod) {
@@ -229,6 +234,15 @@ export const useTransactionStore = create<TransactionState>()(
           const nextTransactions = [newTransaction, ...get().transactions];
           set({ transactions: nextTransactions });
           syncTransactionCreate(newTransaction);
+          // Only successful ledger additions produce a success alert. No cloud
+          // notification record, raw SMS text, or replay of restored history.
+          const notificationName = (newTransaction.counterpartyName || newTransaction.description).replace(/[&<>]/g, value => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[value]!));
+          void recordAppNotification({
+            title: 'Transaction added',
+            body: `${notificationName} · ${newTransaction.type === 'expense' ? 'Debit' : 'Credit'} ${useSettingsStore.getState().currencySymbol}${newTransaction.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            type: 'transaction', actionRoute: 'Transactions', localOnly: true, systemOnly: true,
+            ownerId: newTransaction.user_id, notificationId: `moneykai-added-${newTransaction.id}`,
+          }).catch(() => undefined);
 
           if (newTransaction.type === 'expense') {
             const spent = nextTransactions
@@ -239,6 +253,7 @@ export const useTransactionStore = create<TransactionState>()(
             if (spendRate >= 100) {
               void recordAppNotification({
                 title: 'Budget exhausted',
+                localOnly: nextTransactions.some((item) => isDeviceOnlyCaptureSource(item.captureSource)),
                 body: 'You have used your full monthly budget.',
                 type: 'budget',
                 actionRoute: '/(tabs)/savings',
@@ -246,6 +261,7 @@ export const useTransactionStore = create<TransactionState>()(
             } else if (spendRate >= 80) {
               void recordAppNotification({
                 title: 'Spending alert',
+                localOnly: nextTransactions.some((item) => isDeviceOnlyCaptureSource(item.captureSource)),
                 body: `You have used ${Math.round(spendRate)}% of your monthly budget.`,
                 type: 'budget',
                 actionRoute: '/(tabs)/savings',
@@ -312,7 +328,7 @@ export const useTransactionStore = create<TransactionState>()(
         updateTransaction: (id, updates) => {
           set((state) => ({
             transactions: state.transactions.map(t =>
-              t.id === id ? { ...t, ...updates } : t
+              t.id === id ? { ...t, ...updates, ...(isDeviceOnlyCaptureSource(t.captureSource) ? { captureSource: t.captureSource } : {}) } : t
             ),
           }));
           syncTransactionUpdate(id, updates);
@@ -320,10 +336,11 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         deleteTransaction: (id) => {
+          const deviceOnly = isDeviceOnlyCaptureSource(get().transactions.find(t => t.id === id)?.captureSource);
           set((state) => ({
             transactions: state.transactions.filter(t => t.id !== id),
           }));
-          syncTransactionDelete(id);
+          if (!deviceOnly) syncTransactionDelete(id);
           void requestAutomaticBackup('transaction deleted');
         },
 
@@ -344,7 +361,7 @@ export const useTransactionStore = create<TransactionState>()(
     },
     {
       name: 'moneykai-transactions',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => privateDeviceStorage),
       partialize: (state) => ({
         transactions: state.transactions,
         isSeeded: state.isSeeded,

@@ -8,7 +8,13 @@ export interface Group {
   archived?: boolean;
   members?: GroupMember[];
   total_expenses?: number;
+  mutation_id?: string;
+  sync_status?: GroupSyncStatus;
+  sync_error?: string;
+  pending_action?: 'create' | 'archive' | 'restore' | 'members';
 }
+
+export type GroupSyncStatus = 'confirmed' | 'pending' | 'failed';
 
 export interface GroupMember {
   id: string;
@@ -25,11 +31,17 @@ export interface GroupExpense {
   group_id: string;
   paid_by: string;
   amount: number;
+  amount_paise?: number;
   description: string;
-  split_type: 'equal' | 'percentage' | 'custom';
+  split_type: 'equal';
   created_at: string;
   splits?: ExpenseSplit[];
   paid_by_name?: string;
+  occurred_on?: string;
+  mutation_id?: string;
+  sync_status?: GroupSyncStatus;
+  sync_error?: string;
+  settlements?: Settlement[];
 }
 
 export interface ExpenseSplit {
@@ -37,6 +49,7 @@ export interface ExpenseSplit {
   group_expense_id: string;
   user_id: string;
   amount: number;
+  amount_paise?: number;
   percentage?: number;
   is_settled: boolean;
   settled_at?: string;
@@ -53,9 +66,19 @@ export interface DebtEdge {
 
 export interface Settlement {
   id: string;
+  mutation_id: string;
+  expense_id: string;
+  split_id: string;
   from_user: string;
+  from_user_name?: string;
   to_user: string;
+  to_user_name?: string;
   amount: number;
+  amount_paise: number;
   settled_at: string;
   group_id: string;
+  kind: 'recorded' | 'reversal';
+  reverses_settlement_id?: string;
+  sync_status?: GroupSyncStatus;
+  sync_error?: string;
 }

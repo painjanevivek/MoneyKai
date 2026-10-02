@@ -1,14 +1,10 @@
 import React from 'react';
-import {
-  Text,
-  ActivityIndicator,
-  type ViewStyle,
-  type TextStyle,
-} from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ActivityIndicator, type ViewStyle, type TextStyle } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { useTheme } from '../../hooks/useTheme';
-import { BorderRadius, ComponentTokens, Shadows, Typography } from '../../constants/theme';
+import { BorderRadius, ComponentTokens, Typography } from '../../constants/theme';
 import { PressableScale } from './PressableScale';
+import { AppIcon } from './AppIcon';
 
 interface ButtonProps {
   title: string;
@@ -23,6 +19,8 @@ interface ButtonProps {
   fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -38,12 +36,14 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   style,
   textStyle,
+  accessibilityLabel,
+  accessibilityHint,
 }) => {
   const { colors } = useTheme();
 
   const sizeStyles = {
     sm: { minHeight: ComponentTokens.controlHeight.sm, paddingHorizontal: ComponentTokens.controlPaddingX.sm, fontSize: Typography.fontSize.sm, iconSize: 16 },
-    md: { minHeight: ComponentTokens.controlHeight.md, paddingHorizontal: ComponentTokens.controlPaddingX.md, fontSize: Typography.fontSize.base, iconSize: 18 },
+    md: { minHeight: ComponentTokens.controlHeight.md, paddingHorizontal: ComponentTokens.controlPaddingX.md, fontSize: Typography.fontSize.md, iconSize: 18 },
     lg: { minHeight: ComponentTokens.controlHeight.lg, paddingHorizontal: ComponentTokens.controlPaddingX.lg, fontSize: Typography.fontSize.md, iconSize: 20 },
   };
 
@@ -53,12 +53,12 @@ export const Button: React.FC<ButtonProps> = ({
         secondary: { bg: 'rgba(255, 255, 255, 0.16)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.28)' },
         outline: { bg: 'rgba(255, 255, 255, 0.14)', text: '#FFFFFF', border: 'rgba(255, 255, 255, 0.28)' },
         ghost: { bg: 'transparent', text: 'rgba(255, 255, 255, 0.84)', border: 'transparent' },
-        danger: { bg: 'rgba(255, 225, 229, 0.94)', text: '#7F1D1D', border: 'rgba(255, 255, 255, 0.38)' },
+        danger: { bg: 'rgba(255, 255, 255, 0.94)', text: colors.primaryDark, border: 'rgba(255, 255, 255, 0.38)' },
       }
     : {
         primary: { bg: colors.primary, text: colors.textInverse },
-        secondary: { bg: colors.primaryBg, text: colors.primary },
-        outline: { bg: colors.card, text: colors.primary, border: colors.borderLight },
+        secondary: { bg: colors.surfaceElevated, text: colors.textPrimary },
+        outline: { bg: colors.card, text: colors.textPrimary, border: colors.border },
         ghost: { bg: 'transparent', text: colors.textSecondary },
         danger: { bg: colors.emergency, text: colors.textInverse },
       };
@@ -71,6 +71,8 @@ export const Button: React.FC<ButtonProps> = ({
   return (
     <PressableScale
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ busy: loading, disabled: isUnavailable }}
       onPress={onPress}
       disabled={isUnavailable}
@@ -83,12 +85,12 @@ export const Button: React.FC<ButtonProps> = ({
           backgroundColor: isUnavailable ? colors.surfaceElevated : v.bg,
           minHeight: s.minHeight,
           paddingHorizontal: s.paddingHorizontal,
-          borderRadius: BorderRadius.sm,
+          borderRadius: BorderRadius.lg,
           opacity: isUnavailable ? ComponentTokens.disabledOpacity : 1,
           gap: 8,
           borderWidth: 1,
           borderColor: isUnavailable ? colors.borderLight : (v.border ?? 'transparent'),
-          ...(variant === 'primary' && !isUnavailable ? { ...Shadows.sm, shadowColor: colors.shadowColor } : {}),
+          overflow: 'hidden',
           ...(fullWidth ? { width: '100%' } : {}),
         },
         style,
@@ -99,7 +101,7 @@ export const Button: React.FC<ButtonProps> = ({
       ) : (
         <>
           {icon && iconPosition === 'left' && (
-            <MaterialCommunityIcons name={icon} size={s.iconSize} color={contentColor} />
+            <AppIcon name={icon} size={s.iconSize} color={contentColor} />
           )}
           <Text
             style={[
@@ -107,6 +109,8 @@ export const Button: React.FC<ButtonProps> = ({
                 fontSize: s.fontSize,
                 fontFamily: Typography.fontFamily.semiBold,
                 color: contentColor,
+                flexShrink: 1,
+                textAlign: 'center',
               },
               textStyle,
             ]}
@@ -114,7 +118,7 @@ export const Button: React.FC<ButtonProps> = ({
             {title}
           </Text>
           {icon && iconPosition === 'right' && (
-            <MaterialCommunityIcons name={icon} size={s.iconSize} color={contentColor} />
+            <AppIcon name={icon} size={s.iconSize} color={contentColor} />
           )}
         </>
       )}

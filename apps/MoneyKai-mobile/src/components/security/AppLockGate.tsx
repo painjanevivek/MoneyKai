@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Text, TouchableOpacity, View } from 'react-native';
-import ReactNativeBiometrics from 'react-native-biometrics';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ActivityIndicator, AppState, TouchableOpacity, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { authenticateDeviceOwner, canAuthenticateDeviceOwner, consumeSplashAppLockResult, isDeviceAuthenticationInProgress, syncSplashAppLockEnabled, wasDeviceOwnerJustVerified } from '@/services/deviceOwnerAuthentication';
 
 type Props = {
   children: React.ReactNode;
@@ -15,35 +16,46 @@ export function AppLockGate({ children }: Props) {
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const appLockEnabled = useSettingsStore((state) => state.appLockEnabled);
-  const [isUnlocked, setIsUnlocked] = useState(!appLockEnabled);
+  const [settingsHydrated, setSettingsHydrated] = useState(useSettingsStore.persist.hasHydrated());
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const [hasBiometrics, setHasBiometrics] = useState<boolean | null>(null);
+  const [hasAttempted, setHasAttempted] = useState(false);
+  const [hasDeviceAuthentication, setHasDeviceAuthentication] = useState<boolean | null>(null);
   const unlockRequestId = useRef(0);
+  const promptInFlight = useRef(false);
+  const startupCheckPending = useRef(true);
+  const lastAppState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const unsubscribe = useSettingsStore.persist.onFinishHydration(() => setSettingsHydrated(true));
+    if (useSettingsStore.persist.hasHydrated()) setSettingsHydrated(true);
+    return unsubscribe;
+  }, []);
 
   const promptUnlock = useCallback(async () => {
+    if (promptInFlight.current) return;
     if (!isAuthenticated || !appLockEnabled) {
       setIsUnlocked(true);
       return;
     }
 
+    promptInFlight.current = true;
     const requestId = ++unlockRequestId.current;
     setIsUnlocked(false);
     setIsChecking(true);
+    setHasAttempted(true);
 
     try {
-      const biometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true });
-      const sensorStatus = await biometrics.isSensorAvailable();
-
-      if (unlockRequestId.current === requestId) {
-        setHasBiometrics(sensorStatus.available);
+      const available = await canAuthenticateDeviceOwner();
+      if (unlockRequestId.current === requestId) setHasDeviceAuthentication(available);
+      if (available) {
+        const verified = await authenticateDeviceOwner('Unlock MoneyKai');
+        if (unlockRequestId.current === requestId) setIsUnlocked(verified);
       }
-
-      const result = await biometrics.simplePrompt({ promptMessage: 'Unlock MoneyKai' });
-
-      if (unlockRequestId.current === requestId) {
-        setIsUnlocked(result.success);
-      }
+    } catch {
+      if (unlockRequestId.current === requestId) setIsUnlocked(false);
     } finally {
+      promptInFlight.current = false;
       if (unlockRequestId.current === requestId) {
         setIsChecking(false);
       }
@@ -51,29 +63,52 @@ export function AppLockGate({ children }: Props) {
   }, [appLockEnabled, isAuthenticated]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      void promptUnlock();
-    }, 0);
+    if (!settingsHydrated) return;
+    void syncSplashAppLockEnabled(isAuthenticated && appLockEnabled).catch(() => undefined);
+  }, [appLockEnabled, isAuthenticated, settingsHydrated]);
 
+  useEffect(() => {
+    if (!settingsHydrated || !isAuthenticated || !appLockEnabled) return;
+    let cancelled = false;
+    void consumeSplashAppLockResult()
+      .catch(() => 'none' as const)
+      .then((result) => {
+        if (cancelled) return;
+        startupCheckPending.current = false;
+        if (result === 'verified' || wasDeviceOwnerJustVerified()) {
+          setHasAttempted(true);
+          setIsUnlocked(true);
+          return;
+        }
+        // The native splash has handed off; start the system prompt automatically.
+        setTimeout(() => {
+          if (!cancelled && AppState.currentState !== 'background' && !wasDeviceOwnerJustVerified()) void promptUnlock();
+        }, 150);
+      });
     return () => {
-      clearTimeout(timeout);
+      cancelled = true;
     };
-  }, [promptUnlock]);
+  }, [appLockEnabled, isAuthenticated, promptUnlock, settingsHydrated]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
+      const wasInactive = lastAppState.current !== 'active';
+      lastAppState.current = nextState;
       if (!isAuthenticated || !appLockEnabled) {
         return;
       }
 
       if (nextState !== 'active') {
+        if (promptInFlight.current || isDeviceAuthenticationInProgress()) return;
         unlockRequestId.current += 1;
         setIsUnlocked(false);
         setIsChecking(false);
         return;
       }
 
-      void promptUnlock();
+      if (wasInactive && !startupCheckPending.current && !promptInFlight.current && !wasDeviceOwnerJustVerified()) {
+        void promptUnlock();
+      }
     });
 
     return () => {
@@ -81,7 +116,7 @@ export function AppLockGate({ children }: Props) {
     };
   }, [appLockEnabled, isAuthenticated, promptUnlock]);
 
-  if (!isAuthenticated || !appLockEnabled || isUnlocked) {
+  if (settingsHydrated && (!isAuthenticated || !appLockEnabled || isUnlocked)) {
     return <>{children}</>;
   }
 
@@ -121,17 +156,17 @@ export function AppLockGate({ children }: Props) {
           Your app lock is enabled. Use your device biometrics or passcode to continue.
         </Text>
 
-        {hasBiometrics === false && (
+        {hasDeviceAuthentication === false && (
           <View style={{ marginTop: Spacing.md, padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: colors.primaryBg, width: '100%' }}>
             <Text style={{ fontSize: Typography.fontSize.xs, lineHeight: 18, color: colors.textSecondary, textAlign: 'center' }}>
-              No biometrics are enrolled on this device yet. Enable fingerprint or face unlock in system settings to use this feature.
+              Set up a screen lock or biometric authentication in your device settings to use App lock.
             </Text>
           </View>
         )}
 
         <TouchableOpacity
           onPress={() => void promptUnlock()}
-          disabled={isChecking}
+          disabled={isChecking || !hasAttempted}
           style={{
             marginTop: Spacing.xl,
             paddingVertical: 14,
@@ -140,10 +175,10 @@ export function AppLockGate({ children }: Props) {
             backgroundColor: colors.primary,
             minWidth: 180,
             alignItems: 'center',
-            opacity: isChecking ? 0.72 : 1,
+            opacity: isChecking || !hasAttempted ? 0.72 : 1,
           }}
         >
-          {isChecking ? (
+          {isChecking || !hasAttempted ? (
             <ActivityIndicator color={colors.textInverse} />
           ) : (
             <Text style={{ color: colors.textInverse, fontFamily: Typography.fontFamily.semiBold }}>

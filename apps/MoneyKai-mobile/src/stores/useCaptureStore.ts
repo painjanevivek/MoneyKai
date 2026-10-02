@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { privateDeviceStorage } from '@/services/privateDeviceStorage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { recordAppNotification } from '@/services/notificationService';
@@ -12,6 +12,8 @@ import {
 } from '@/services/captureAccountIdentifier';
 import { buildCaptureDedupeKeys } from '@/services/captureDedupe';
 import { normalizeMerchantKey, parseCapturedSignal } from '@/services/captureParser';
+import { MANUAL_SMS_CONSENT_VERSION, SMS_CONSENT_VERSION, SMS_AUTO_ADD_CONSENT_VERSION, hasCurrentSmsAutoAddConsent, hasCurrentSmsConsent } from '@/constants/smsConsent';
+import { bulkDraftCategory, draftConfirmationError } from '@/utils/draftReview';
 import { getCaptureReviewDecision } from '@/services/captureReviewPolicy';
 import { setNativeApprovedSmsAccounts } from '@/services/nativeCaptureBridge';
 import { useAuthStore } from './useAuthStore';
@@ -28,6 +30,9 @@ import type {
   MonitoredAccount,
 } from '@/types/capture';
 import type { SmsImportRangeId } from '@/types/smsImport';
+import { normalizeSmsInterval } from '@/constants/smsSchedule';
+import { useConnectStore } from './useConnectStore';
+import { PAYMENT_CONNECTIONS } from '@/constants/paymentConnections';
 
 const MAX_CAPTURED_SIGNALS = 100;
 const MAX_DRAFTS = 100;
@@ -37,9 +42,11 @@ const DEFAULT_CAPTURE_SETTINGS: CaptureSettings = {
   reviewNotificationsEnabled: true,
   smsResearchModeEnabled: false,
   aiSmsAssistEnabled: false,
+  autoAddRecognizedSms: false,
   notificationAccessStatus: 'unknown',
   smsAccessStatus: 'unknown',
   smsImportRangeId: DEFAULT_SMS_IMPORT_RANGE_ID,
+  smsParseIntervalMinutes: 60,
 };
 
 const buildId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -114,9 +121,12 @@ interface CaptureState {
   setReviewNotificationsEnabled: (enabled: boolean) => void;
   setSmsResearchModeEnabled: (enabled: boolean) => void;
   setAiSmsAssistEnabled: (enabled: boolean) => void;
+  setAutoAddRecognizedSms: (enabled: boolean) => void;
   setSmsImportRangeId: (rangeId: SmsImportRangeId) => void;
+  setSmsParseIntervalMinutes: (minutes: number) => void;
   acceptNotificationExplainer: () => void;
   acceptSmsResearchExplainer: () => void;
+  acceptManualSmsDisclosure: () => void;
   setNotificationAccessStatus: (status: CaptureSettings['notificationAccessStatus']) => void;
   setSmsAccessStatus: (status: CaptureSettings['smsAccessStatus']) => void;
   disableAutoCapture: () => void;
@@ -136,7 +146,9 @@ interface CaptureState {
   resumeMonitoredAccount: (accountId: string) => void;
   unselectMonitoredAccount: (accountId: string) => void;
   ingestSignal: (input: CaptureSignalInput) => CaptureIngestionResult;
-  confirmDraft: (draftId: string, category: string) => boolean;
+  confirmDraft: (draftId: string, category: string, automatically?: boolean, learnCategory?: boolean) => boolean;
+  confirmAllDrafts: (owner: string, draftIds: string[], categories?: Record<string, string>) => { added: number; pending: number; interrupted: boolean };
+  learnSmsCategoryFromTransaction: (transactionId: string) => void;
   ignoreDraft: (draftId: string) => void;
   clearCaptureInbox: () => void;
 }
@@ -147,9 +159,9 @@ const createOrStrengthenRule = (
   category: string
 ): MerchantCategoryRule[] => {
   const now = new Date().toISOString();
-  const merchantLabel = draft.description || draft.merchantKey || 'Unknown merchant';
+  const merchantLabel = draft.counterpartyName || draft.description || draft.merchantKey || 'Unknown merchant';
   const merchantKey = draft.merchantKey ?? normalizeMerchantKey(merchantLabel);
-  const existing = rules.find((rule) => rule.merchantKey === merchantKey);
+  const existing = rules.find((rule) => rule.merchantKey === merchantKey && rule.userId === draft.user_id && rule.transactionType === draft.type);
 
   if (existing) {
     return rules.map((rule) =>
@@ -170,6 +182,8 @@ const createOrStrengthenRule = (
   return [
     {
       id: buildId('rule'),
+      userId: draft.user_id,
+      transactionType: draft.type,
       merchantKey,
       merchantLabel,
       category,
@@ -223,8 +237,17 @@ export const useCaptureStore = create<CaptureState>()(
       setAiSmsAssistEnabled: (enabled) =>
         set((state) => ({ settings: { ...state.settings, aiSmsAssistEnabled: enabled } })),
 
+      setAutoAddRecognizedSms: (enabled) => {
+        const owner = useAuthStore.getState().user?.id;
+        if (enabled && (!owner || !hasCurrentSmsConsent(get().settings, owner))) return;
+        set((state) => ({ settings: { ...state.settings, autoAddRecognizedSms: enabled,
+          ...(enabled ? { smsAutoAddConsentVersion: SMS_AUTO_ADD_CONSENT_VERSION, smsAutoAddConsentUserId: owner, smsAutoAddConsentAcceptedAt: new Date().toISOString() } : {}) } }));
+      },
+
       setSmsImportRangeId: (rangeId) =>
         set((state) => ({ settings: { ...state.settings, smsImportRangeId: rangeId } })),
+      setSmsParseIntervalMinutes: (minutes) =>
+        set((state) => ({ settings: { ...state.settings, smsParseIntervalMinutes: normalizeSmsInterval(minutes) } })),
 
       acceptNotificationExplainer: () =>
         set((state) => ({
@@ -239,8 +262,21 @@ export const useCaptureStore = create<CaptureState>()(
           settings: {
             ...state.settings,
             smsResearchExplainerAcceptedAt: new Date().toISOString(),
+            smsConsentVersion: SMS_CONSENT_VERSION,
+            smsConsentUserId: useAuthStore.getState().user?.id,
           },
         })),
+
+      acceptManualSmsDisclosure: () => {
+        const owner = useAuthStore.getState().user?.id;
+        if (!owner) return;
+        set((state) => ({ settings: {
+          ...state.settings,
+          manualSmsConsentVersion: MANUAL_SMS_CONSENT_VERSION,
+          manualSmsConsentUserId: owner,
+          manualSmsConsentAcceptedAt: new Date().toISOString(),
+        } }));
+      },
 
       setNotificationAccessStatus: (status) =>
         set((state) => ({
@@ -326,6 +362,7 @@ export const useCaptureStore = create<CaptureState>()(
             body: `${formatMonitoredAccountLabel(account)} needs approval before MoneyKai fetches SMS transactions.`,
             type: 'transaction',
             actionRoute: '/(tabs)/notifications',
+            localOnly: true,
           });
         });
 
@@ -451,6 +488,24 @@ export const useCaptureStore = create<CaptureState>()(
           return { status: 'ignored', reason: 'sms capture is research-only' };
         }
 
+        if (useBudgetStore.getState().settings.monthly_allowance <= 0) {
+          return { status: 'ignored', reason: 'set a monthly budget before fetching transactions' };
+        }
+
+        const owner = useAuthStore.getState().user?.id;
+        if (input.source === 'notification') {
+          const packageName = input.rawPayload?.rawPackageName;
+          const app = PAYMENT_CONNECTIONS.find(item => item.packageName === packageName);
+          if (!owner || !isNotificationCaptureEnabled() || !settings.notificationExplainerAcceptedAt ||
+            input.rawPayload?.notificationOwnerId !== owner || !app || !useConnectStore.getState().notificationAppsByUser[owner]?.[app.id]) {
+            return { status: 'ignored', reason: 'payment notification consent or selected app is not current' };
+          }
+        }
+        const parsed = parseCapturedSignal(input, merchantRules.filter((rule) => !rule.userId || rule.userId === owner));
+        if ((input.source === 'sms' || input.source === 'notification') && (parsed.parseStatus === 'ignore' || !parsed.amount)) {
+          return { status: 'ignored', reason: parsed.ignoreReason ?? parsed.reason };
+        }
+
         if (input.source === 'sms') {
           const discovery = get().discoverSmsAccounts([input]);
           if (!get().isSignalAccountApproved(input)) {
@@ -464,16 +519,11 @@ export const useCaptureStore = create<CaptureState>()(
           }
         }
 
-        if (useBudgetStore.getState().settings.monthly_allowance <= 0) {
-          return { status: 'ignored', reason: 'set a monthly budget before fetching transactions' };
-        }
-
         const now = new Date().toISOString();
         const accountIdentity = input.source === 'sms' ? identifyCaptureAccount(input) : undefined;
         const monitoredAccount = accountIdentity
           ? findMatchingCaptureAccount(get().monitoredAccounts, accountIdentity, ['approved'])
           : undefined;
-        const parsed = parseCapturedSignal(input, merchantRules);
         const dedupeKeys = buildCaptureDedupeKeys(input, parsed, monitoredAccount?.id);
         const duplicateSignal = signals.find(
           (signal) =>
@@ -530,7 +580,8 @@ export const useCaptureStore = create<CaptureState>()(
         }
 
         const userId = useAuthStore.getState().user?.id ?? 'local';
-        const reviewDecision = getCaptureReviewDecision(parsed, input.source);
+        const autoAdd = hasCurrentSmsConsent(settings, owner) && hasCurrentSmsAutoAddConsent(settings, owner) && settings.smsAccessStatus === 'granted';
+        const reviewDecision = getCaptureReviewDecision(parsed, input.source, autoAdd);
         const draft: DraftTransaction = {
           id: buildId('draft'),
           signalId: signal.id,
@@ -540,6 +591,9 @@ export const useCaptureStore = create<CaptureState>()(
           category: reviewDecision.approvedCategory,
           suggestedCategory: reviewDecision.suggestedCategory,
           description: buildDraftDescription(parsed, input),
+          counterpartyName: parsed.merchantLabel,
+          counterpartyKind: parsed.counterpartyKind,
+          automaticallyRecorded: !reviewDecision.reviewRequired,
           merchantKey: parsed.merchantKey,
           canonicalTransactionKey: dedupeKeys.canonicalTransactionKey,
           sourceFingerprint: dedupeKeys.sourceFingerprint,
@@ -564,22 +618,32 @@ export const useCaptureStore = create<CaptureState>()(
           drafts: [draft, ...state.drafts].slice(0, MAX_DRAFTS),
         }));
 
+        if (!reviewDecision.reviewRequired && reviewDecision.approvedCategory && get().confirmDraft(draft.id, reviewDecision.approvedCategory, true)) {
+          return { signalId: signal.id, draftId: draft.id, status: 'confirmed', reason: 'recognized SMS transaction auto-added' };
+        }
+        // If the ledger write is rejected, never represent the pending record as saved.
+        if (!reviewDecision.reviewRequired) set((state) => ({ drafts: state.drafts.map((item) => item.id === draft.id ? { ...item, category: undefined, reviewRequired: true, automaticallyRecorded: false } : item) }));
+
         void recordAppNotification({
           title: draft.suggestedCategory ? 'Transaction draft ready' : 'Category needed',
+          schedule: false,
           body: draft.suggestedCategory
             ? `${draft.description} was captured and is ready to review.`
             : `${draft.description} needs a category before it is added.`,
           type: 'transaction',
           actionRoute: '/(tabs)/notifications',
+          localOnly: true,
         });
 
         return { signalId: signal.id, draftId: draft.id, status: 'drafted', reason: parsed.reason };
       },
 
-      confirmDraft: (draftId, category) => {
+      confirmDraft: (draftId, category, automatically = false, learnCategory = true) => {
         const draft = get().drafts.find((item) => item.id === draftId);
-        if (!draft || draft.status !== 'pending') return false;
-        if (useBudgetStore.getState().settings.monthly_allowance <= 0) return false;
+        if (!draft || draft.status !== 'pending' || automatically && draft.category !== category) return false;
+        const owner = useAuthStore.getState().user?.id;
+        if (draftConfirmationError(draft, owner, category, useBudgetStore.getState().settings.monthly_allowance)) return false;
+        if (automatically && (draft.captureSource !== 'sms' || draft.reviewRequired !== false || draft.automaticallyRecorded !== true || !get().settings.autoCaptureEnabled || !get().settings.smsResearchModeEnabled || get().settings.smsAccessStatus !== 'granted' || !hasCurrentSmsConsent(get().settings, owner) || !hasCurrentSmsAutoAddConsent(get().settings, owner) || !get().monitoredAccounts.some((account) => account.id === draft.captureAccountId && account.status === 'approved'))) return false;
 
         const confirmedAt = new Date().toISOString();
         const didAddTransaction = useTransactionStore.getState().addTransaction({
@@ -588,6 +652,9 @@ export const useCaptureStore = create<CaptureState>()(
           amount: draft.amount,
           category,
           description: draft.description,
+          counterpartyName: draft.counterpartyName,
+          counterpartyKind: category === 'personal_transfer' ? 'person' : draft.counterpartyKind,
+          automaticallyRecorded: automatically,
           payment_method: draft.payment_method,
           captureAccountId: draft.captureAccountId,
           captureAccountLabel: draft.captureAccountLabel,
@@ -603,15 +670,38 @@ export const useCaptureStore = create<CaptureState>()(
 
         set((state) => ({
           drafts: state.drafts.map((item) =>
-            item.id === draft.id ? { ...item, category, status: 'confirmed', confirmedAt } : item
+            item.id === draft.id ? { ...item, category, status: 'confirmed', confirmedAt, automaticallyRecorded: automatically } : item
           ),
           signals: state.signals.map((signal) =>
             signal.id === draft.signalId ? { ...signal, processingStatus: 'confirmed' } : signal
           ),
-          merchantRules: createOrStrengthenRule(state.merchantRules, draft, category),
+          merchantRules: automatically || !learnCategory ? state.merchantRules : createOrStrengthenRule(state.merchantRules, draft, category),
         }));
 
         return true;
+      },
+
+      confirmAllDrafts: (owner, draftIds, categories = {}) => {
+        let added = 0;
+        let interrupted = false;
+        // Freeze the approved batch: captures arriving after the dialog aren't approved.
+        const ids = new Set(draftIds);
+        for (const id of ids) {
+          if (!owner || useAuthStore.getState().user?.id !== owner) { interrupted = true; break; }
+          const draft = get().drafts.find((item) => item.id === id);
+          if (!draft || draft.user_id !== owner || draft.status !== 'pending') continue;
+          try {
+            // Share the normal validation/duplicate/privacy path, but never learn
+            // merchant rules from bulk-approved parser guesses or fallback labels.
+            if (get().confirmDraft(id, bulkDraftCategory(draft, categories[id]), false, false)) added++;
+          } catch {
+            // A write may have partially completed. Stop and ask the owner to check
+            // Transactions rather than blindly retrying the rest of the batch.
+            interrupted = true;
+            break;
+          }
+        }
+        return { added, pending: get().drafts.filter((draft) => ids.has(draft.id) && draft.user_id === owner && draft.status === 'pending').length, interrupted };
       },
 
       ignoreDraft: (draftId) =>
@@ -629,6 +719,17 @@ export const useCaptureStore = create<CaptureState>()(
           };
         }),
 
+      learnSmsCategoryFromTransaction: (transactionId) => {
+        const transaction = useTransactionStore.getState().transactions.find((item) => item.id === transactionId);
+        const owner = useAuthStore.getState().user?.id;
+        if (!transaction || !owner || transaction.user_id !== owner || transaction.captureSource !== 'sms' || !transaction.counterpartyName) return;
+        const draft: DraftTransaction = { id: transaction.id, signalId: '', user_id: owner, type: transaction.type, amount: transaction.amount, category: transaction.category,
+          description: transaction.description, counterpartyName: transaction.counterpartyName, merchantKey: normalizeMerchantKey(transaction.counterpartyName),
+          payment_method: transaction.payment_method, transaction_date: transaction.transaction_date, confidence: 1, captureSource: 'sms', status: 'pending', createdAt: transaction.created_at };
+        if (draftConfirmationError(draft, owner, transaction.category, useBudgetStore.getState().settings.monthly_allowance)) return;
+        set((state) => ({ merchantRules: createOrStrengthenRule(state.merchantRules, draft, transaction.category) }));
+      },
+
       clearCaptureInbox: () =>
         set((state) => ({
           signals: state.signals.filter((signal) => signal.processingStatus === 'confirmed'),
@@ -637,7 +738,7 @@ export const useCaptureStore = create<CaptureState>()(
     }),
     {
       name: 'moneykai-auto-capture',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => privateDeviceStorage),
       partialize: (state) => ({
         settings: state.settings,
         signals: state.signals,

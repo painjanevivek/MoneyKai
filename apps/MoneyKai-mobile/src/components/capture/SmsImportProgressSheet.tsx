@@ -1,11 +1,11 @@
 import React from 'react';
-import { Text, View } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ActivityIndicator, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { ModalSheet } from '@/components/ui/ModalSheet';
-import { ProgressFlowCard } from '@/components/ui/ProgressFlowCard';
+import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
-import { buildSmsImportProgressFlow } from '@/services/progressIllusion';
 import type { SmsImportProgress } from '@/types/smsImport';
 
 interface SmsImportProgressSheetProps {
@@ -18,28 +18,28 @@ interface SmsImportProgressSheetProps {
 
 export const SmsImportProgressSheet = ({ visible, progress, failureMessage, onClose, onRetry }: SmsImportProgressSheetProps) => {
   const { colors } = useTheme();
-  const flow = buildSmsImportProgressFlow(progress, failureMessage);
-  const isComplete = flow.status === 'success';
-  const isFailed = flow.status === 'failed';
+  const isComplete = progress?.phase === 'complete';
+  const isFailed = Boolean(failureMessage);
+  const isRunning = !isComplete && !isFailed;
 
   return (
     <ModalSheet
       visible={visible}
-      title={flow.title}
-      subtitle={isComplete ? 'Review drafts before they affect your budget.' : isFailed ? 'Nothing is added until the import succeeds.' : 'MoneyKai is working in safe review-only stages.'}
+      title={isFailed ? 'SMS check stopped' : isComplete ? 'SMS check finished' : 'Checking SMS inbox'}
+      subtitle="Messages stay on this device. Transactions require your review."
       onClose={onClose}
       maxHeight={620}
     >
       <View style={{ gap: Spacing.md }}>
-        <ProgressFlowCard
-          flow={flow}
-          onRetry={isFailed ? onRetry : undefined}
-          onBackground={!isComplete && !isFailed ? onClose : undefined}
-        />
+        {isRunning ? <ActivityIndicator accessibilityLabel="SMS check in progress" color={colors.primary} /> : null}
+        <Text accessibilityLiveRegion="polite" style={{ color: isFailed ? colors.error : colors.textSecondary }}>
+          {failureMessage ?? progress?.message ?? 'Waiting for consent and Android SMS permission. No inbox read has completed yet.'}
+        </Text>
+        {isFailed && onRetry ? <Button title="Try again" onPress={onRetry} /> : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
           {[
             ['Scanned', progress?.scannedCount ?? 0, 'message-search-outline'],
-            ['Eligible', progress?.eligibleCount ?? 0, 'bank-check'],
+            [progress?.phase === 'discovering_accounts' ? 'Accounts found' : 'Candidates', progress?.eligibleCount ?? 0, 'bank-check'],
             ['Drafts', progress?.draftedCount ?? 0, 'receipt-text-outline'],
             ['Duplicates', progress?.duplicateCount ?? 0, 'content-duplicate'],
           ].map(([label, value, icon]) => (

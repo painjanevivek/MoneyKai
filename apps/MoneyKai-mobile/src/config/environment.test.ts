@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+vi.mock('react-native', () => ({ NativeModules: {} }));
 
 type EnvironmentModule = typeof import('./environment');
 
 const trackedEnvKeys = [
+  'EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED',
   'EXPO_PUBLIC_BACKEND_BASE_URL',
   'EXPO_PUBLIC_FIREBASE_API_KEY',
   'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
@@ -46,6 +48,10 @@ const loadEnvironment = async (env: Partial<Record<(typeof trackedEnvKeys)[numbe
 };
 
 describe('app environment', () => {
+  it('honors notification capture disabled in distribution profiles', async () => {
+    const environment = await loadEnvironment({ EXPO_PUBLIC_NOTIFICATION_CAPTURE_ENABLED: 'false' });
+    expect(environment.isNotificationCaptureEnabled()).toBe(false);
+  });
   it('normalizes a bare deployed backend host to HTTPS', async () => {
     const environment = await loadEnvironment({
       EXPO_PUBLIC_BACKEND_BASE_URL: 'money-kai-backend.vercel.app',

@@ -1,8 +1,10 @@
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
 import { LEARN_CATEGORIES, getLatestLearnArticles } from '@/data/learnArticles';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
@@ -17,9 +19,8 @@ export function LearnScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <ScreenBackButton />
-          <Text style={styles.title}>Learn money calmly</Text>
-          <Text style={styles.subtitle}>Short guides for budgets, savings, tracking, and everyday decisions. Small reads, big clarity.</Text>
+          <CenteredPageHeader title="Learn money calmly" leftAction={<ScreenBackButton compact />} />
+          <Text style={styles.subtitle}>Short guides for everyday money decisions.</Text>
         </View>
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base }}>

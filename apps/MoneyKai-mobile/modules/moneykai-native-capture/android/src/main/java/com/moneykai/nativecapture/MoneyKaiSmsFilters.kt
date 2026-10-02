@@ -7,8 +7,13 @@ import java.util.TimeZone
 
 object MoneyKaiSmsFilters {
   private const val MAX_SMS_FIELD_LENGTH = 500
-  private val amountPattern = Regex("""(?:rs\.?|inr|\u20B9)\s*\d""")
-  private val bareActionAmountPattern = Regex("""\b(?:debited|credited|spent|paid|received|sent|withdrawn|transferred|deposited)\s+(?:by|of)?\s*\d""", RegexOption.IGNORE_CASE)
+  private val amountPattern = Regex("""(?:\b(?:rs\.?|inr|rupees)|\u20B9)\s*\d[\d,]*(?:\.\d{1,2})?""", RegexOption.IGNORE_CASE)
+  private val bareActionAmountPattern = Regex("""\b(?:debited|credited|spent|paid|received|sent|withdrawn|transferred|deposited)\s+(?:by|of)?\s*\d[\d,]*(?:\.\d{1,2})?\b""", RegexOption.IGNORE_CASE)
+  private val completedTransactionPattern = Regex("""\b(?:debited|credited|spent|paid|received|sent|withdrawn|withdrawal|transferred|deposited|refund(?:ed)?|cashback|purchased?)\b""", RegexOption.IGNORE_CASE)
+  private val sensitiveOrNonTransactionPattern = Regex(
+    """\b(?:otp|one[ -]?time password|verification code|security code|password|passcode|credential|pin|cvv|cvc|offer|coupon|failed|declined|unsuccessful|low balance|statement|mandate|autopay|scheduled|feedback|cheque|chq|gst|gstin|cgst|sgst|igst|tax invoice)\b|will be debited|share your experience|thank you for the transaction done today|tdr/stdr""",
+    RegexOption.IGNORE_CASE
+  )
   private val officialSenderPattern = Regex("""^[A-Z]{2}-[A-Z0-9]{3,12}$""")
   private val compactOfficialSenderPattern = Regex("""^[A-Z0-9]{4,12}$""")
   private val numericSenderPattern = Regex("""^\+?\d{8,}$""")
@@ -32,64 +37,14 @@ object MoneyKaiSmsFilters {
     "neft",
     "rtgs"
   )
-  private val moneyTerms = listOf("rs", "inr", "\u20B9", "upi", "card", "account", "a/c", "wallet", "bank")
-  private val transactionTerms = listOf(
-    "debited",
-    "credited",
-    "spent",
-    "paid",
-    "received",
-    "transaction",
-    "purchase",
-    "withdrawn",
-    "withdrawal",
-    "transferred",
-    "deposited",
-    "deposit by transfer",
-    "refund",
-    "cashback"
-  )
-  private val noiseTerms = listOf(
-    "otp",
-    "one-time password",
-    "verification code",
-    "offer",
-    "coupon",
-    "failed",
-    "declined",
-    "unsuccessful",
-    "low balance",
-    "statement",
-    "mandate",
-    "autopay",
-    "will be debited",
-    "scheduled",
-    "password",
-    "share your experience",
-    "feedback",
-    "thank you for the transaction done today",
-    "tdr/stdr",
-    "cheque",
-    "chq",
-    "gst",
-    "gstin",
-    "cgst",
-    "sgst",
-    "igst",
-    "tax invoice"
-  )
 
   fun shouldImportSms(sender: String, body: String): Boolean =
     looksLikeOfficialTransactionSender(sender) && looksLikeFinancialSms(body)
 
   fun looksLikeFinancialSms(value: String): Boolean {
-    val text = value.lowercase(Locale.US)
-    val hasMoneySignal = moneyTerms.any { text.contains(it) } ||
-      amountPattern.containsMatchIn(text) ||
-      bareActionAmountPattern.containsMatchIn(text)
-    val hasTransactionSignal = transactionTerms.any { text.contains(it) }
-    val hasNoiseSignal = noiseTerms.any { text.contains(it) }
-    return hasMoneySignal && hasTransactionSignal && !hasNoiseSignal
+    return (amountPattern.containsMatchIn(value) || bareActionAmountPattern.containsMatchIn(value)) &&
+      completedTransactionPattern.containsMatchIn(value) &&
+      !sensitiveOrNonTransactionPattern.containsMatchIn(value)
   }
 
   fun looksLikeOfficialTransactionSender(sender: String): Boolean {

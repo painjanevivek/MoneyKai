@@ -11,6 +11,8 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
     if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
     if (!MoneyKaiNativeCaptureModule.isCaptureEnabled(context)) return
     if (!MoneyKaiNativeCaptureModule.isSmsCaptureEnabled(context)) return
+    // Scheduled mode reads the inbox at the selected interval, not on every SMS.
+    if (MoneyKaiSmsSchedule.isScheduled(context)) return
 
     val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
     if (messages.isNullOrEmpty()) return
@@ -38,6 +40,8 @@ class MoneyKaiSmsReceiver : BroadcastReceiver() {
           if (accountApproved) "android_sms_receiver" else "android_sms_account_discovery"
         )
         putString("rawBodyStored", "false")
+        putString("smsAutoRecordSafe", (accountApproved && MoneyKaiSmsAutoRecord.safe(body)).toString())
+        if (accountApproved) MoneyKaiSmsAutoRecord.referenceHash(body)?.let { putString("smsReferenceHash", it) }
         putString("smsFingerprint", MoneyKaiNativeCaptureModule.buildSmsFingerprint(sender, body, receivedAt))
         MoneyKaiSmsFilters.extractAccountHint(body)?.let { putString("smsAccountHint", it) }
         putString("smsSubscriptionId", readIntentExtra(intent, "subscription"))

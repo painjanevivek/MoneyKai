@@ -25,11 +25,52 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.Executors
 
 class MoneyKaiNativeCaptureModule(
   private val reactContext: ReactApplicationContext
 ) : ReactContextBaseJavaModule(reactContext) {
+  private val smsExecutor = Executors.newSingleThreadExecutor()
+  private val statementReader = MoneyKaiStatementReader(reactContext)
+
+  @ReactMethod
+  fun pickPaymentStatement(promise: Promise) = statementReader.pick(promise)
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  fun setPaymentNotificationPackages(packagesJson: String, ownerId: String): Boolean {
+    val packages = JSONArray(packagesJson)
+    val selected = (0 until packages.length()).map { packages.getString(it) }
+      .filter { ownerId.isNotBlank() && it in PAYMENT_APP_PACKAGES }.toSet()
+    return reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+      .putStringSet("payment_notification_packages", selected)
+      .putString("payment_notification_owner", ownerId).commit()
+  }
+  @ReactMethod
+  fun configureSmsSchedule(enabled: Boolean, intervalMinutes: Double, ownerId: String, promise: Promise) {
+    smsExecutor.execute {
+      try { promise.resolve(MoneyKaiSmsSchedule.configure(reactContext, enabled, intervalMinutes.toInt(), ownerId)) }
+      catch (_: Exception) { promise.resolve(false) }
+    }
+  }
   override fun getName(): String = "MoneyKaiNativeCapture"
+
+  @ReactMethod
+  fun getPrivateItem(name: String, promise: Promise) {
+    try { promise.resolve(MoneyKaiPrivateStorage.get(reactContext, name)) }
+    catch (_: Exception) { promise.reject("PRIVATE_STORAGE_UNAVAILABLE", "Encrypted device storage could not be read.") }
+  }
+
+  @ReactMethod
+  fun setPrivateItem(name: String, value: String, promise: Promise) {
+    try { MoneyKaiPrivateStorage.set(reactContext, name, value); promise.resolve(null) }
+    catch (_: Exception) { promise.reject("PRIVATE_STORAGE_UNAVAILABLE", "Encrypted device storage could not be written.") }
+  }
+
+  @ReactMethod
+  fun removePrivateItem(name: String, promise: Promise) {
+    try { MoneyKaiPrivateStorage.remove(reactContext, name); promise.resolve(null) }
+    catch (_: Exception) { promise.reject("PRIVATE_STORAGE_UNAVAILABLE", "Encrypted device storage could not be removed.") }
+  }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun startListening(): Boolean {
@@ -78,10 +119,13 @@ class MoneyKaiNativeCaptureModule(
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun getStatus(): WritableMap {
-    activeModule = this
     return Arguments.createMap().apply {
       putString("platform", "android")
       putBoolean("nativeModuleAvailable", true)
+      putBoolean("notificationCaptureAvailable", runCatching {
+        reactContext.packageManager.getServiceInfo(ComponentName(reactContext, MoneyKaiNotificationListenerService::class.java), 0)
+        true
+      }.getOrDefault(false))
       putString(
         "notificationAccess",
         if (isNotificationListenerEnabled(reactContext)) "granted" else "not_requested"
@@ -91,13 +135,28 @@ class MoneyKaiNativeCaptureModule(
     }
   }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
-  fun discoverRecentSmsAccounts(optionsJson: String): String =
-    discoverRecentSmsAccounts(reactContext, optionsJson)
+  @ReactMethod
+  fun discoverRecentSmsAccounts(optionsJson: String, promise: Promise) {
+    smsExecutor.execute {
+      try { promise.resolve(discoverRecentSmsAccounts(reactContext, optionsJson)) }
+      catch (_: Exception) { promise.reject("SMS_DISCOVERY_FAILED", "Could not scan bank messages on this device.") }
+    }
+  }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
-  fun importRecentSmsTransactions(optionsJson: String, approvedAccountIdsJson: String): String =
-    importRecentSmsTransactions(reactContext, optionsJson, approvedAccountIdsJson)
+  @ReactMethod
+  fun importRecentSmsTransactions(optionsJson: String, approvedAccountIdsJson: String, promise: Promise) {
+    smsExecutor.execute {
+      try { promise.resolve(importRecentSmsTransactions(reactContext, optionsJson, approvedAccountIdsJson)) }
+      catch (_: Exception) { promise.reject("SMS_IMPORT_FAILED", "Could not import bank messages on this device.") }
+    }
+  }
+
+  override fun invalidate() {
+    statementReader.close()
+    smsExecutor.shutdownNow()
+    if (activeModule === this) activeModule = null
+    super.invalidate()
+  }
 
   @ReactMethod(isBlockingSynchronousMethod = true)
   fun openNotificationListenerSettings(): Boolean {
@@ -141,7 +200,16 @@ class MoneyKaiNativeCaptureModule(
   }
 
   companion object {
-    private const val MAX_PENDING_SIGNALS = 50
+    private val PAYMENT_APP_PACKAGES = setOf("com.google.android.apps.nbu.paisa.user", "com.phonepe.app", "net.one97.paytm")
+
+    fun isPaymentNotificationAllowed(context: Context, packageName: String): Boolean =
+      packageName in PAYMENT_APP_PACKAGES && context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .getStringSet("payment_notification_packages", emptySet())?.contains(packageName) == true
+        && paymentNotificationOwner(context).isNotBlank()
+
+    fun paymentNotificationOwner(context: Context): String =
+      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString("payment_notification_owner", "").orEmpty()
+    private const val MAX_PENDING_SIGNALS = 1000
     private const val PREFS_NAME = "moneykai_native_capture"
     private const val PREFS_PENDING_SIGNALS = "pending_notification_signals"
     private const val PREFS_CAPTURE_ENABLED = "capture_enabled"
@@ -162,6 +230,9 @@ class MoneyKaiNativeCaptureModule(
       if (!isCaptureEnabled(context) || !isNotificationCaptureEnabled(context)) {
         return
       }
+
+      if (!isPaymentNotificationAllowed(context, event.getString("rawPackageName").orEmpty())) return
+      event.putString("notificationOwnerId", paymentNotificationOwner(context))
 
       handleNativeSignal(context, event)
     }
@@ -188,17 +259,21 @@ class MoneyKaiNativeCaptureModule(
       }
     }
 
-    private fun flushPendingSignals(context: Context) {
+    @Synchronized private fun flushPendingSignals(context: Context) {
       val pendingSignals = readPendingSignals(context)
       if (pendingSignals.isEmpty()) {
         return
       }
 
       clearPendingSignals(context)
-      pendingSignals.forEach { emitNotificationSignal(it) }
+      pendingSignals.forEach {
+        if (it.getString("source") != "notification" ||
+          (isNotificationCaptureEnabled(context) && isPaymentNotificationAllowed(context, it.getString("rawPackageName").orEmpty()) &&
+            it.getString("notificationOwnerId") == paymentNotificationOwner(context))) emitNotificationSignal(it)
+      }
     }
 
-    private fun enqueuePendingSignal(context: Context, event: Bundle) {
+    @Synchronized private fun enqueuePendingSignal(context: Context, event: Bundle) {
       val pendingSignals = readPendingSignalJson(context)
       val trimmedSignals = JSONArray()
       val startIndex = maxOf(0, pendingSignals.length() - MAX_PENDING_SIGNALS + 1)
@@ -208,10 +283,7 @@ class MoneyKaiNativeCaptureModule(
       }
       trimmedSignals.put(bundleToJson(event))
 
-      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        .edit()
-        .putString(PREFS_PENDING_SIGNALS, trimmedSignals.toString())
-        .apply()
+      MoneyKaiPrivateStorage.set(context, "moneykai-pending-signals", trimmedSignals.toString())
     }
 
     private fun readPendingSignals(context: Context): List<Bundle> {
@@ -224,8 +296,15 @@ class MoneyKaiNativeCaptureModule(
     }
 
     private fun readPendingSignalJson(context: Context): JSONArray {
-      val rawValue = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        .getString(PREFS_PENDING_SIGNALS, null)
+      val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+      val rawValue = MoneyKaiPrivateStorage.get(context, "moneykai-pending-signals")
+        ?: preferences.getString(PREFS_PENDING_SIGNALS, null)?.also {
+          MoneyKaiPrivateStorage.set(context, "moneykai-pending-signals", it)
+          check(preferences.edit().remove(PREFS_PENDING_SIGNALS).commit())
+        }
+      if (preferences.contains(PREFS_PENDING_SIGNALS)) {
+        check(preferences.edit().remove(PREFS_PENDING_SIGNALS).commit())
+      }
 
       return if (rawValue.isNullOrBlank()) {
         JSONArray()
@@ -234,7 +313,8 @@ class MoneyKaiNativeCaptureModule(
       }
     }
 
-    private fun clearPendingSignals(context: Context) {
+    @Synchronized private fun clearPendingSignals(context: Context) {
+      MoneyKaiPrivateStorage.remove(context, "moneykai-pending-signals")
       context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .edit()
         .remove(PREFS_PENDING_SIGNALS)
@@ -248,6 +328,7 @@ class MoneyKaiNativeCaptureModule(
         .putBoolean(PREFS_NOTIFICATION_CAPTURE_ENABLED, enabled)
         .putBoolean(PREFS_SMS_CAPTURE_ENABLED, false)
         .apply()
+      MoneyKaiSmsSchedule.configure(context, false, 60, "")
     }
 
     private fun setCaptureSourcesEnabled(context: Context, notificationEnabled: Boolean, smsEnabled: Boolean) {
@@ -257,20 +338,34 @@ class MoneyKaiNativeCaptureModule(
         .putBoolean(PREFS_NOTIFICATION_CAPTURE_ENABLED, notificationEnabled)
         .putBoolean(PREFS_SMS_CAPTURE_ENABLED, smsEnabled)
         .apply()
+      if (!smsEnabled) MoneyKaiSmsSchedule.configure(context, false, 60, "")
+    }
+
+    @Synchronized fun queueScheduledSignal(context: Context, event: Bundle): Boolean {
+      if (!isCaptureEnabled(context) || !isSmsCaptureEnabled(context)) return false
+      val pending = readPendingSignalJson(context)
+      for (index in 0 until pending.length()) {
+        val item = pending.optJSONObject(index) ?: continue
+        if (item.optString("smsMessageId") == event.getString("smsMessageId") && item.optString("smsOwnerId") == event.getString("smsOwnerId")) return true
+      }
+      if (pending.length() >= MAX_PENDING_SIGNALS) return false
+      pending.put(bundleToJson(event))
+      MoneyKaiPrivateStorage.set(context, "moneykai-pending-signals", pending.toString())
+      if (activeModule != null) flushPendingSignals(context)
+      return true
     }
 
     private fun setApprovedSmsAccounts(context: Context, approvedAccountIdsJson: String) {
-      context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        .edit()
-        .putString(PREFS_APPROVED_SMS_ACCOUNT_IDS, approvedAccountIdsJson)
-        .apply()
+      MoneyKaiPrivateStorage.set(context, "moneykai-approved-sms-accounts", approvedAccountIdsJson)
+      check(context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit().remove(PREFS_APPROVED_SMS_ACCOUNT_IDS).commit())
     }
 
     fun isCaptureEnabled(context: Context): Boolean =
       context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .getBoolean(PREFS_CAPTURE_ENABLED, false)
 
-    private fun isNotificationCaptureEnabled(context: Context): Boolean =
+    fun isNotificationCaptureEnabled(context: Context): Boolean =
       context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         .getBoolean(PREFS_NOTIFICATION_CAPTURE_ENABLED, isCaptureEnabled(context))
 
@@ -281,9 +376,14 @@ class MoneyKaiNativeCaptureModule(
     fun isSmsAccountApproved(context: Context, accountId: String?): Boolean {
       if (accountId.isNullOrBlank()) return false
 
-      val rawValue = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        .getString(PREFS_APPROVED_SMS_ACCOUNT_IDS, "[]")
-        .orEmpty()
+      val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+      val rawValue = MoneyKaiPrivateStorage.get(context, "moneykai-approved-sms-accounts")
+        ?: preferences.getString(PREFS_APPROVED_SMS_ACCOUNT_IDS, null)?.also {
+          MoneyKaiPrivateStorage.set(context, "moneykai-approved-sms-accounts", it)
+        } ?: "[]"
+      if (preferences.contains(PREFS_APPROVED_SMS_ACCOUNT_IDS)) {
+        check(preferences.edit().remove(PREFS_APPROVED_SMS_ACCOUNT_IDS).commit())
+      }
 
       return parseApprovedAccountIds(rawValue).any { approvedId ->
         accountIdsCompatible(approvedId, accountId)
@@ -358,7 +458,7 @@ class MoneyKaiNativeCaptureModule(
     private data class SmsScanOptions(
       val rangeId: String,
       val sinceMillis: Long,
-      val cursorBeforeMillis: Long?,
+      val cursorPosition: MoneyKaiSmsPaging.Position?,
       val maxMessages: Int,
       val pageSize: Int
     )
@@ -377,7 +477,7 @@ class MoneyKaiNativeCaptureModule(
       val accountsById = linkedMapOf<String, JSONObject>()
       var scannedCount = 0
       var ignoredCount = 0
-      var lastScannedAt: Long? = null
+      var lastPosition: MoneyKaiSmsPaging.Position? = null
 
       return try {
         val cursor = context.contentResolver.query(
@@ -385,8 +485,8 @@ class MoneyKaiNativeCaptureModule(
           arrayOf("_id", "address", "body", "date"),
           query.selection,
           query.selectionArgs,
-          "date DESC"
-        )
+          "date DESC, _id DESC"
+        ) ?: return buildSmsAccountDiscoveryResult("error", "Android SMS inbox could not be opened. Try again.")
 
         cursor?.use {
           val idIndex = it.getColumnIndex("_id")
@@ -399,7 +499,7 @@ class MoneyKaiNativeCaptureModule(
             val sender = it.getStringOrBlank(addressIndex)
             val body = it.getStringOrBlank(bodyIndex)
             val receivedAt = it.getLongOrNull(dateIndex) ?: System.currentTimeMillis()
-            lastScannedAt = receivedAt
+            lastPosition = MoneyKaiSmsPaging.Position(receivedAt, it.getLongOrNull(idIndex) ?: error("Missing SMS row ID"))
 
             if (body.isBlank() || !MoneyKaiSmsFilters.shouldImportSms(sender, body)) {
               ignoredCount += 1
@@ -442,8 +542,8 @@ class MoneyKaiNativeCaptureModule(
           accounts = JSONArray(accountsById.values),
           scannedCount = scannedCount,
           ignoredCount = ignoredCount,
-          hasMore = lastScannedAt != null && scannedCount >= options.pageSize,
-          nextCursor = lastScannedAt?.minus(1)?.toString()
+          hasMore = lastPosition != null && scannedCount >= options.pageSize,
+          nextCursor = lastPosition?.encode()
         )
       } catch (error: SecurityException) {
         buildSmsAccountDiscoveryResult("permission_denied", error.message ?: "Android denied SMS inbox access.")
@@ -471,7 +571,8 @@ class MoneyKaiNativeCaptureModule(
       val signals = JSONArray()
       var scannedCount = 0
       var ignoredCount = 0
-      var lastScannedAt: Long? = null
+      var lastPosition: MoneyKaiSmsPaging.Position? = null
+      val signalLimit = minOf(MAX_SMS_IMPORT_SIGNAL_COUNT, options.pageSize)
 
       return try {
         val cursor = context.contentResolver.query(
@@ -479,8 +580,8 @@ class MoneyKaiNativeCaptureModule(
           arrayOf("_id", "address", "body", "date", "sub_id"),
           query.selection,
           query.selectionArgs,
-          "date DESC"
-        )
+          "date DESC, _id DESC"
+        ) ?: return buildSmsImportResult("error", "Android SMS inbox could not be opened. Try again.")
 
         cursor?.use {
           val idIndex = it.getColumnIndex("_id")
@@ -489,13 +590,12 @@ class MoneyKaiNativeCaptureModule(
           val dateIndex = it.getColumnIndex("date")
           val subscriptionIndex = it.getColumnIndex("sub_id")
 
-          val signalLimit = minOf(MAX_SMS_IMPORT_SIGNAL_COUNT, options.pageSize)
           while (it.moveToNext() && scannedCount < options.pageSize && signals.length() < signalLimit) {
             scannedCount += 1
             val sender = it.getStringOrBlank(addressIndex)
             val body = it.getStringOrBlank(bodyIndex)
             val receivedAt = it.getLongOrNull(dateIndex) ?: System.currentTimeMillis()
-            lastScannedAt = receivedAt
+            lastPosition = MoneyKaiSmsPaging.Position(receivedAt, it.getLongOrNull(idIndex) ?: error("Missing SMS row ID"))
 
             if (body.isBlank() || !MoneyKaiSmsFilters.shouldImportSms(sender, body)) {
               ignoredCount += 1
@@ -512,6 +612,8 @@ class MoneyKaiNativeCaptureModule(
               .put("source", "sms")
               .put("sender", MoneyKaiSmsFilters.sanitizeSmsText(sender))
               .put("body", MoneyKaiSmsFilters.sanitizeSmsText(body))
+               .put("smsAutoRecordSafe", MoneyKaiSmsAutoRecord.safe(body))
+               .put("smsReferenceHash", MoneyKaiSmsAutoRecord.referenceHash(body))
               .put("receivedAt", MoneyKaiSmsFilters.toIsoUtc(receivedAt))
               .put("captureOrigin", "android_sms_inbox_import")
               .put("rawBodyStored", "false")
@@ -536,8 +638,8 @@ class MoneyKaiNativeCaptureModule(
           signals = signals,
           scannedCount = scannedCount,
           ignoredCount = ignoredCount,
-          hasMore = lastScannedAt != null && scannedCount >= options.pageSize,
-          nextCursor = lastScannedAt?.minus(1)?.toString()
+          hasMore = lastPosition != null && MoneyKaiSmsPaging.reachedLimit(scannedCount, options.pageSize, signals.length(), signalLimit),
+          nextCursor = lastPosition?.encode()
         )
       } catch (error: SecurityException) {
         buildSmsImportResult("permission_denied", error.message ?: "Android denied SMS inbox access.")
@@ -577,13 +679,12 @@ class MoneyKaiNativeCaptureModule(
       }
       val cursor = options.optString("cursor", "")
         .takeIf { it.isNotBlank() }
-        ?.toLongOrNull()
-        ?.takeIf { it > 0L }
+        ?.let { MoneyKaiSmsPaging.decode(it) }
 
       return SmsScanOptions(
         rangeId = rangeId,
         sinceMillis = sinceMillis,
-        cursorBeforeMillis = cursor,
+        cursorPosition = cursor,
         maxMessages = maxMessages,
         pageSize = pageSize
       )
@@ -598,9 +699,9 @@ class MoneyKaiNativeCaptureModule(
         args.add(options.sinceMillis.toString())
       }
 
-      options.cursorBeforeMillis?.let { cursor ->
-        clauses.add("date <= ?")
-        args.add(cursor.toString())
+      options.cursorPosition?.let { cursor ->
+        clauses.add(cursor.selection())
+        args.addAll(cursor.args())
       }
 
       return SmsQuery(

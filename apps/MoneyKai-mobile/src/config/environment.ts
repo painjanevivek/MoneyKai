@@ -1,4 +1,14 @@
+import { NativeModules } from 'react-native';
+
 const PLACEHOLDER_PATTERNS = ['placeholder', 'REPLACE_ME', 'your-project', 'your-api-key'];
+
+type MoneyKaiBuildConfigConstants = {
+  demoBuild?: boolean;
+  smsPolicyBuild?: boolean;
+  notificationCaptureBuild?: boolean;
+};
+
+const nativeBuildConfig = NativeModules.MoneyKaiBuildConfig as MoneyKaiBuildConfigConstants | undefined;
 
 const publicEnv: Record<string, string | undefined> = {
   EXPO_PUBLIC_FIREBASE_API_KEY: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -135,7 +145,7 @@ export const appEnvironment = {
   demoMode: readPublicEnv('EXPO_PUBLIC_DEMO_MODE') === 'true',
   smsResearchBuild: smsResearchBuildValue === 'true',
   nativeSmsResearchBuild: nativeSmsResearchBuildValue === 'true',
-  notificationCaptureEnabled: notificationCaptureEnabledValue === 'true',
+  notificationCaptureEnabled: nativeBuildConfig?.notificationCaptureBuild ?? notificationCaptureEnabledValue !== 'false',
   gmailSyncEnabled: gmailSyncEnabledValue === 'true',
   pdfStatementParsingEnabled: pdfStatementParsingEnabledValue === 'true',
   wealthTabEnabled: wealthTabEnabledValue === '' ? true : wealthTabEnabledValue === 'true',
@@ -165,18 +175,18 @@ export const hasFirebaseWebAppIdOnly = (): boolean =>
   isRealValue(firebaseEnv.appId) && firebaseEnv.appId.includes(':web:') && !hasFirebaseEnvironment();
 
 export const isDemoModeEnabled = (): boolean =>
-  isDevRuntime() && (appEnvironment.demoMode || !hasFirebaseEnvironment());
+  nativeBuildConfig?.demoBuild === true ||
+  (isDevRuntime() && (appEnvironment.demoMode || !hasFirebaseEnvironment()));
 
 export const isSmsResearchBuildEnabled = (): boolean =>
-  appEnvironment.smsResearchBuild;
+  nativeBuildConfig?.smsPolicyBuild === true || appEnvironment.smsResearchBuild;
 
 export const isNativeSmsResearchBuildEnabled = (): boolean =>
-  appEnvironment.nativeSmsResearchBuild;
+  nativeBuildConfig?.smsPolicyBuild === true || (isDevRuntime() && appEnvironment.nativeSmsResearchBuild);
 
 /**
- * Notification listener capture is opt-in at build time. The public Play
- * profile keeps it off so the distributed artifact never asks for access to
- * other apps' notifications.
+ * Notification capture is a separate personal-use build capability.
+ * Play SMS review bundles keep this disabled and omit the native listener.
  */
 export const isNotificationCaptureEnabled = (): boolean =>
   appEnvironment.notificationCaptureEnabled;

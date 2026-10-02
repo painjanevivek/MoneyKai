@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, TouchableOpacity, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useNotesStore } from '@/stores/useNotesStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -90,14 +92,13 @@ export function NotesScreen() {
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <ScreenBackButton />
-              <Text style={styles.title}>Money notes</Text>
+              <CenteredPageHeader title="Money notes" leftAction={<ScreenBackButton compact />} />
               <Text style={styles.subtitle}>Keep plans, reminders, and decisions synced with your account.</Text>
             </View>
 
             <View style={styles.panel}>
               <Text style={styles.sectionTitle}>New note</Text>
-              <Input label="Title" value={title} onChangeText={setTitle} placeholder="Rent plan, grocery list..." icon="format-title" />
+              <Input label="Title" value={title} onChangeText={setTitle} placeholder="Note title" icon="format-title" />
               <Input
                 label="Content"
                 value={content}

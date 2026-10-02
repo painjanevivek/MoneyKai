@@ -1,47 +1,43 @@
 import React, { useCallback, useDeferredValue, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, SectionList, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
+import { Platform, SectionList, TextInput, View, useWindowDimensions, type SectionListRenderItemInfo } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { endOfDay, endOfWeek, isWithinInterval, startOfDay, startOfMonth, startOfWeek, subDays } from 'date-fns';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { ScreenState } from '@/components/ui/ScreenState';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
+import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { filterGraphTransactions, getGraphRangeLabel, GRAPH_METRIC_OPTIONS, type GraphTransactionContext } from '@/utils/dashboardGraph';
+import { EditTransactionSheet } from '@/components/ui/EditTransactionSheet';
+import { TransactionDetailSheet } from '@/components/ui/TransactionDetailSheet';
+import { SmsParserDialog } from '@/components/capture/SmsParserDialog';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
+import { useHomeModeStore } from '@/stores/useHomeModeStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useTheme } from '@/hooks/useTheme';
-import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { BorderRadius, Spacing, TransactionDirectionColor, Typography } from '@/constants/theme';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS, getCategoryById } from '@/constants/categories';
 import type { AppTabParamList } from '@/navigation/types';
 import type { TransactionType } from '@/types/transaction';
 import type { Transaction } from '@/types/transaction';
-import { getMonthKey, getMonthLabel } from '@/utils/dashboard';
 import { titleCase } from '@/utils/labels';
-import { parseTransactionDate, sortTransactionsForHistory, type TransactionHistorySortOption } from '@/utils/transactionHistory';
+import { useTransactionLabels } from '@/hooks/useTransactionLabels';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useTransactionPreferencesStore } from '@/stores/useTransactionPreferencesStore';
+import { ActivityControlsSheet, ACTIVITY_SORT_OPTIONS as SORT_OPTIONS } from '@/components/transactions/ActivityControlsSheet';
+import { TransactionDownloadSheet } from '@/components/transactions/TransactionDownloadSheet';
+import { ArchiveSwipeRow } from '@/components/transactions/ArchiveSwipeRow';
+import { activityDateLabel, initialActivityDates, matchesActivityDate } from '@/utils/activityDates';
+import { buildTransactionHistorySections, type TransactionHistorySortOption } from '@/utils/transactionHistory';
+import { getFloatingDockLayout } from '@/utils/floatingDockLayout';
 import { createAppScreenStyles, formatDate } from './screenStyles';
 
 type TransactionsNavigation = BottomTabNavigationProp<AppTabParamList, 'Transactions'>;
 type SortOption = TransactionHistorySortOption;
-
-const DATE_FILTER_OPTIONS = [
-  { id: 'all', label: 'All dates' },
-  { id: 'today', label: 'Today' },
-  { id: 'this_week', label: 'This week' },
-  { id: 'this_month', label: 'This month' },
-  { id: 'last_30_days', label: 'Last 30 days' },
-] as const;
-
-const SORT_OPTIONS: Array<{ id: SortOption; label: string; icon: string }> = [
-  { id: 'newest', label: 'Newest first', icon: 'sort-calendar-descending' },
-  { id: 'oldest', label: 'Oldest first', icon: 'sort-calendar-ascending' },
-  { id: 'amount_high', label: 'Amount high to low', icon: 'sort-numeric-descending' },
-  { id: 'amount_low', label: 'Amount low to high', icon: 'sort-numeric-ascending' },
-  { id: 'name_az', label: 'Name A to Z', icon: 'sort-alphabetical-ascending' },
-  { id: 'name_za', label: 'Name Z to A', icon: 'sort-alphabetical-descending' },
-];
 
 const CAPTURE_SOURCE_OPTIONS = [
   { id: 'sms', label: 'SMS', icon: 'message-processing-outline' },
@@ -53,28 +49,129 @@ const CAPTURE_SOURCE_OPTIONS = [
   { id: 'manual', label: 'Manual', icon: 'pencil-outline' },
 ] as const;
 
-type DateFilterOption = typeof DATE_FILTER_OPTIONS[number]['id'];
 type FilterValue = 'all' | string;
 
-export function TransactionsScreen() {
+interface TransactionRowProps {
+  transaction: Transaction;
+  amountLabel: string;
+  categoryLabel: string;
+  dateLabel: string;
+  paymentLabel: string;
+  onOpen: (transaction: Transaction) => void;
+}
+
+const TransactionRow = React.memo(function TransactionRow({
+  transaction,
+  amountLabel,
+  categoryLabel,
+  dateLabel,
+  paymentLabel,
+  onOpen,
+}: TransactionRowProps) {
+  const { colors } = useTheme();
+  const isIncome = transaction.type === 'income';
+  const displayName = useTransactionLabels();
+
+  return (
+    <View
+      style={{
+        backgroundColor: colors.card,
+        borderBottomColor: colors.borderLight,
+        borderBottomWidth: 1,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+      }}
+    >
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${transaction.description || categoryLabel} transaction, ${amountLabel}`}
+        accessibilityHint="Shows the full description and actions to edit or delete"
+        onPress={() => onOpen(transaction)}
+        pressedScale={0.99}
+        style={{ alignItems: 'center', flexDirection: 'row', minHeight: 56 }}
+      >
+        <View style={{ alignItems: 'center', flexDirection: 'row', flex: 1, minWidth: 0, paddingRight: Spacing.md }}>
+          <View
+            style={{
+              alignItems: 'center',
+              backgroundColor: colors.surfaceElevated,
+              borderRadius: BorderRadius.full,
+              height: 36,
+              justifyContent: 'center',
+              marginRight: Spacing.md,
+              width: 36,
+            }}
+          >
+            <AppIcon
+              name={isIncome ? 'arrow-down-left' : 'arrow-up-right'}
+              size={18}
+              color={isIncome ? TransactionDirectionColor.credit : TransactionDirectionColor.debit}
+            />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              accessibilityLabel={transaction.description || categoryLabel}
+              style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.sm + 2 }}
+            >
+              {displayName(transaction) || categoryLabel}
+            </Text>
+            <Text numberOfLines={1} style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, marginTop: 2 }}>
+              {categoryLabel} · {paymentLabel} · {dateLabel}
+            </Text>
+          </View>
+        </View>
+        <View style={{ alignItems: 'center', flexDirection: 'row', flexShrink: 0, gap: Spacing.xs, maxWidth: 142 }}>
+          <Text
+            adjustsFontSizeToFit
+            numberOfLines={1}
+            style={{
+              color: isIncome ? TransactionDirectionColor.credit : TransactionDirectionColor.debit,
+              fontFamily: Typography.fontFamily.semiBold,
+              fontSize: Typography.fontSize.sm + 2,
+              maxWidth: 112,
+            }}
+          >
+            {amountLabel}
+          </Text>
+          <AppIcon name="chevron-right" size={18} color={colors.textTertiary} />
+        </View>
+      </PressableScale>
+    </View>
+  );
+});
+
+export function TransactionsScreen({ graphContext, archivedOnly = false }: { graphContext?: GraphTransactionContext; archivedOnly?: boolean } = {}) {
+  const [showSmsParser, setShowSmsParser] = useState(false);
   const navigation = useNavigation<TransactionsNavigation>();
+  const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const basicMode = useHomeModeStore((state) => state.mode === 'basic');
+  const { fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const contentPaddingBottom = basicMode || graphContext ? Spacing.xl : getFloatingDockLayout(fontScale, insets.bottom, false).contentPaddingBottom;
   const { colors } = useTheme();
   const styles = createAppScreenStyles(colors);
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
-  const transactions = useTransactionStore((state) => state.transactions);
+  const allTransactions = useTransactionStore((state) => state.transactions);
+  const owner = useAuthStore(state => state.user?.id);
+  const transactions = useMemo(() => allTransactions.filter(item => item.user_id === owner), [allTransactions, owner]);
+  const archived = useTransactionPreferencesStore(state => owner ? state.archived[owner] : undefined);
+  const setArchived = useTransactionPreferencesStore(state => state.setArchived);
+  const displayName = useTransactionLabels();
+  const scopedTransactions = useMemo(() => graphContext ? filterGraphTransactions(transactions, graphContext) : transactions, [transactions, graphContext]);
   const isLoading = useTransactionStore((state) => state.isLoading);
-  const deleteTransaction = useTransactionStore((state) => state.deleteTransaction);
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [type, setType] = useState<TransactionType | 'all'>('all');
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [showSortModal, setShowSortModal] = useState(false);
+  const [showDownload, setShowDownload] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<FilterValue>('all');
   const [paymentFilter, setPaymentFilter] = useState<FilterValue>('all');
   const [accountFilter, setAccountFilter] = useState<FilterValue>('all');
   const [sourceFilter, setSourceFilter] = useState<FilterValue>('all');
-  const [dateFilter, setDateFilter] = useState<DateFilterOption>('all');
+  const [dates, setDates] = useState(initialActivityDates);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const formatCategory = useCallback((categoryId: string) => getCategoryById(categoryId)?.name ?? titleCase(categoryId), []);
   const formatPaymentMethod = useCallback((methodId: string) => PAYMENT_METHODS.find((item) => item.id === methodId)?.name ?? titleCase(methodId), []);
   const categoryOptions = type === 'expense' ? EXPENSE_CATEGORIES : type === 'income' ? INCOME_CATEGORIES : [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
@@ -97,96 +194,87 @@ export function TransactionsScreen() {
     Number(paymentFilter !== 'all') +
     Number(accountFilter !== 'all') +
     Number(sourceFilter !== 'all') +
-    Number(dateFilter !== 'all');
+    Number(dates.id !== 'all');
   const sortLabel = SORT_OPTIONS.find((option) => option.id === sortOption)?.label ?? 'Newest first';
+  const typeLabel = type === 'all' ? 'All' : type === 'expense' ? 'Debit' : 'Credit';
+  const activeFilterLabels = [
+    type !== 'all' ? typeLabel : null,
+    categoryFilter !== 'all' ? formatCategory(categoryFilter) : null,
+    paymentFilter !== 'all' ? formatPaymentMethod(paymentFilter) : null,
+    sourceFilter !== 'all' ? CAPTURE_SOURCE_OPTIONS.find((option) => option.id === sourceFilter)?.label : null,
+    accountFilter !== 'all' ? accountOptions.find((option) => option.id === accountFilter)?.name : null,
+    dates.id !== 'all' ? activityDateLabel(dates) : null,
+  ].filter(Boolean).join(' · ');
 
   const filtered = useMemo(() => {
-    const now = new Date();
     const normalizedQuery = deferredQuery.trim().toLowerCase();
-    const nextTransactions = transactions
+    const nextTransactions = scopedTransactions
+      .filter(item => Boolean(archived?.[item.id]) === archivedOnly)
       .filter((item) => (type === 'all' || item.type === type))
       .filter((item) => (categoryFilter === 'all' || item.category === categoryFilter))
       .filter((item) => (paymentFilter === 'all' || item.payment_method === paymentFilter))
       .filter((item) => (accountFilter === 'all' || item.captureAccountId === accountFilter))
       .filter((item) => (sourceFilter === 'all' || item.captureSource === sourceFilter))
-      .filter((item) => {
-        if (dateFilter === 'all') return true;
-        const transactionDate = parseTransactionDate(item.transaction_date);
-        switch (dateFilter) {
-          case 'today':
-            return isWithinInterval(transactionDate, { start: startOfDay(now), end: endOfDay(now) });
-          case 'this_week':
-            return isWithinInterval(transactionDate, {
-              start: startOfWeek(now, { weekStartsOn: 1 }),
-              end: endOfWeek(now, { weekStartsOn: 1 }),
-            });
-          case 'this_month':
-            return isWithinInterval(transactionDate, { start: startOfMonth(now), end: endOfDay(now) });
-          case 'last_30_days':
-            return isWithinInterval(transactionDate, { start: startOfDay(subDays(now, 29)), end: endOfDay(now) });
-          default:
-            return true;
-        }
-      })
+      .filter(item => matchesActivityDate(item.transaction_date, dates))
       .filter((item) => {
         if (!normalizedQuery) return true;
         return (
           item.description.toLowerCase().includes(normalizedQuery) ||
+          displayName(item).toLowerCase().includes(normalizedQuery) ||
           formatCategory(item.category).toLowerCase().includes(normalizedQuery) ||
           formatPaymentMethod(item.payment_method).toLowerCase().includes(normalizedQuery) ||
+          (item.contact_allocations?.some((person) => person.name.toLowerCase().includes(normalizedQuery)) ?? false) ||
           (item.captureAccountLabel?.toLowerCase().includes(normalizedQuery) ?? false) ||
           (item.captureBankLabel?.toLowerCase().includes(normalizedQuery) ?? false)
         );
       });
 
-    return sortTransactionsForHistory(nextTransactions, sortOption);
-  }, [accountFilter, categoryFilter, dateFilter, deferredQuery, formatCategory, formatPaymentMethod, paymentFilter, sortOption, sourceFilter, transactions, type]);
+    return nextTransactions;
+  }, [accountFilter, categoryFilter, dates, archived, archivedOnly, displayName, deferredQuery, formatCategory, formatPaymentMethod, paymentFilter, sourceFilter, scopedTransactions, type]);
 
-  const sections = useMemo(() => {
-    const grouped = new Map<string, Transaction[]>();
-    filtered.forEach((transaction) => {
-      const monthKey = getMonthKey(transaction.transaction_date);
-      const items = grouped.get(monthKey) ?? [];
-      items.push(transaction);
-      grouped.set(monthKey, items);
-    });
+  const sections = useMemo(() => buildTransactionHistorySections(filtered, sortOption, displayName), [filtered, sortOption, displayName]);
 
-    return [...grouped.entries()]
-      .sort(([monthA], [monthB]) => monthB.localeCompare(monthA))
-      .map(([monthKey, data]) => ({
-        title: getMonthLabel(monthKey),
-        data: data.sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()),
-      }));
-  }, [filtered]);
-
-  const currentMonthKey = getMonthKey(new Date());
-  const parsedSummary = useMemo(
-    () =>
-      filtered.reduce(
-        (summary, transaction) => {
-          if (transaction.type === 'income') {
-            summary.income += transaction.amount;
-          } else {
-            summary.expense += transaction.amount;
-          }
-          if (getMonthKey(transaction.transaction_date) === currentMonthKey) {
-            summary.currentMonth += 1;
-          }
-          return summary;
-        },
-        { currentMonth: 0, income: 0, expense: 0 }
-      ),
-    [currentMonthKey, filtered]
+  const selectedTransaction = useMemo(
+    () => transactions.find((transaction) => transaction.id === selectedTransactionId) ?? null,
+    [selectedTransactionId, transactions]
   );
-
-  const formatMoney = (value: number) => `${currencySymbol}${value.toLocaleString('en-IN')}`;
+  const formatMoney = useCallback(
+    (transaction: Transaction) => `${transaction.type === 'income' ? '+' : '-'}${currencySymbol}${transaction.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`,
+    [currencySymbol]
+  );
+  const openTransaction = useCallback((transaction: Transaction) => {
+    setSelectedTransactionId(transaction.id);
+  }, []);
+  const renderTransaction = useCallback(
+    ({ item }: SectionListRenderItemInfo<Transaction>) => {
+      const row = <TransactionRow
+        transaction={item}
+        amountLabel={formatMoney(item)}
+        categoryLabel={formatCategory(item.category)}
+        dateLabel={formatDate(item.transaction_date)}
+        paymentLabel={formatPaymentMethod(item.payment_method)}
+        onOpen={openTransaction}
+      />;
+      return graphContext ? row : <ArchiveSwipeRow restore={archivedOnly} onArchive={() => setArchived(item, !archivedOnly)}>{row}</ArchiveSwipeRow>;
+    },
+    [archivedOnly, graphContext, setArchived, formatCategory, formatMoney, formatPaymentMethod, openTransaction]
+  );
+  const selectType = (nextType: TransactionType | 'all') => {
+    setType(nextType);
+    if (nextType === 'expense' && categoryFilter !== 'all' && !EXPENSE_CATEGORIES.some((category) => category.id === categoryFilter)) {
+      setCategoryFilter('all');
+    }
+    if (nextType === 'income' && categoryFilter !== 'all' && !INCOME_CATEGORIES.some((category) => category.id === categoryFilter)) {
+      setCategoryFilter('all');
+    }
+  };
   const resetFilters = () => {
     setType('all');
     setCategoryFilter('all');
     setPaymentFilter('all');
     setAccountFilter('all');
     setSourceFilter('all');
-    setDateFilter('all');
+    setDates(initialActivityDates());
   };
   const resetAllControls = () => {
     setQuery('');
@@ -194,419 +282,144 @@ export function TransactionsScreen() {
     setSortOption('newest');
   };
 
-  const confirmDelete = (id: string) => {
-    Alert.alert('Delete transaction?', 'This removes the saved record from this account and Firestore sync.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteTransaction(id) },
-    ]);
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: contentPaddingBottom }]}
+        initialNumToRender={12}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        maxToRenderPerBatch={8}
+        removeClippedSubviews={Platform.OS === 'android'}
         stickySectionHeadersEnabled={false}
+        updateCellsBatchingPeriod={32}
+        windowSize={7}
         ListHeaderComponent={
           <>
-            <View style={styles.header}>
-              <Text style={styles.title}>Transactions</Text>
-              <Text style={styles.subtitle}>Search, filter, and review SMS-parsed records or manual corrections.</Text>
-            </View>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base }}>
-              {[
-                { label: 'SMS records', value: String(filtered.length), icon: 'database-check-outline' },
-                { label: 'This month', value: String(parsedSummary.currentMonth), icon: 'calendar-check-outline' },
-                { label: 'Income', value: formatMoney(parsedSummary.income), icon: 'arrow-down-left' },
-                { label: 'Expenses', value: formatMoney(parsedSummary.expense), icon: 'arrow-up-right' },
-              ].map((item) => (
-                <View
-                  key={item.label}
-                  style={{
-                    backgroundColor: colors.card,
-                    borderColor: colors.borderLight,
-                    borderRadius: BorderRadius.sm,
-                    borderWidth: 1,
-                    flexBasis: '47%',
-                    flexGrow: 1,
-                    minHeight: 76,
-                    minWidth: 140,
-                    padding: Spacing.md,
-                  }}
-                >
-                  <View style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.sm }}>
-                    <MaterialCommunityIcons name={item.icon as any} size={17} color={colors.primary} />
-                    <Text numberOfLines={1} style={{ color: colors.textSecondary, flex: 1, fontSize: Typography.fontSize.xs }}>
-                      {item.label}
-                    </Text>
+            <CenteredPageHeader title={archivedOnly ? "Archive Transactions" : "Activity"} leftAction={graphContext || archivedOnly ? <ScreenBackButton compact /> : basicMode ? (
+              <PressableScale accessibilityRole="button" accessibilityLabel="Back to Home" onPress={() => navigation.navigate('Home')} style={{ alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 44 }}>
+                <AppIcon name="arrow-left" size={23} color={colors.textPrimary} />
+              </PressableScale>
+            ) : undefined} rightAction={graphContext ? undefined : <PressableScale accessibilityRole="button" accessibilityLabel="Open SMS parser controls" onPress={() => setShowSmsParser(true)} style={{ alignItems: 'center', justifyContent: 'center', minHeight: 48, minWidth: 48 }}><AppIcon name="message-text-outline" size={26} color={colors.textPrimary} /></PressableScale>} />
+            {graphContext ? <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, marginBottom: Spacing.md }}>{getGraphRangeLabel(graphContext.range)} · {GRAPH_METRIC_OPTIONS.find((option) => option.id === graphContext.metric)?.label} · {scopedTransactions.length} recorded {scopedTransactions.length === 1 ? 'transaction' : 'transactions'}</Text> : null}
+            <View style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.md }}>
+              <View style={{ alignItems: 'center', backgroundColor: colors.card, borderColor: colors.border, borderRadius: BorderRadius.md, borderWidth: 1, flex: 1, flexDirection: 'row', minHeight: 44, minWidth: 0, paddingHorizontal: Spacing.sm }}>
+                <AppIcon name="magnify" size={19} color={colors.textSecondary} />
+                <TextInput
+                  accessibilityLabel="Search transactions"
+                  accessibilityHint="Search descriptions, categories, payment methods, or accounts"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onChangeText={setQuery}
+                  placeholder="Search"
+                  placeholderTextColor={colors.textTertiary}
+                  returnKeyType="search"
+                  style={{ color: colors.textPrimary, flex: 1, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm, minWidth: 0, paddingHorizontal: Spacing.sm, paddingVertical: 0 }}
+                  value={query}
+                />
+                {query ? <PressableScale accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={8} onPress={() => setQuery('')}><AppIcon name="close" size={18} color={colors.textSecondary} /></PressableScale> : null}
+              </View>
+              <View style={{ alignItems: 'center', flexDirection: 'row', gap: Spacing.xs }}>
+                <PressableScale accessibilityRole="button" accessibilityLabel={`Filter and sort transactions, ${activeFilterCount} active filters, ${sortLabel}`} onPress={() => setShowFilterModal(true)} style={{ alignItems: 'center', height: 44, justifyContent: 'center', width: 44 }}>
+                  <View style={{ alignItems: 'center', backgroundColor: activeFilterCount > 0 ? colors.primaryBg : colors.card, borderColor: activeFilterCount > 0 ? colors.primary : colors.border, borderRadius: BorderRadius.full, borderWidth: 1, height: 36, justifyContent: 'center', width: 36 }}>
+                    <AppIcon name="tune-variant" size={18} color={colors.textSecondary} />
                   </View>
-                  <Text
-                    adjustsFontSizeToFit
-                    numberOfLines={1}
-                    style={{
-                      color: colors.textPrimary,
-                      fontFamily: Typography.fontFamily.bold,
-                      fontSize: Typography.fontSize.lg,
-                      marginTop: Spacing.sm,
-                    }}
-                  >
-                    {item.value}
-                  </Text>
-                </View>
-              ))}
+                </PressableScale>
+                <PressableScale accessibilityRole="button" accessibilityLabel="Download transaction history" onPress={() => setShowDownload(true)} style={{ alignItems: 'center', height: 44, justifyContent: 'center', width: 44 }}>
+                  <View style={{ alignItems: 'center', backgroundColor: colors.card, borderColor: colors.border, borderRadius: BorderRadius.full, borderWidth: 1, height: 36, justifyContent: 'center', width: 36 }}>
+                    <AppIcon name="download" size={18} color={colors.textSecondary} />
+                  </View>
+                </PressableScale>
+              </View>
             </View>
-
-            <Input
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search SMS records"
-              icon="magnify"
-              autoCapitalize="none"
-            />
-
-            <View style={styles.chipRow}>
-              {(['all', 'expense', 'income'] as const).map((item) => {
-                const active = type === item;
-                return (
-                  <PressableScale
-                    key={item}
-                    onPress={() => {
-                      setType(item);
-                      if (item === 'expense' && categoryFilter !== 'all' && !EXPENSE_CATEGORIES.some((category) => category.id === categoryFilter)) {
-                        setCategoryFilter('all');
-                      }
-                      if (item === 'income' && categoryFilter !== 'all' && !INCOME_CATEGORIES.some((category) => category.id === categoryFilter)) {
-                        setCategoryFilter('all');
-                      }
-                    }}
-                    style={[styles.chip, active && styles.chipActive]}
-                  >
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                      {item === 'all' ? 'All' : item[0].toUpperCase() + item.slice(1)}
-                    </Text>
-                  </PressableScale>
-                );
-              })}
+            <View style={{ marginBottom: Spacing.md }}>
+              <Text accessibilityLiveRegion="polite" style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm }}>
+                {filtered.length} {filtered.length === 1 ? 'transaction' : 'transactions'} · {sortLabel}
+              </Text>
+              {activeFilterLabels ? <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, marginTop: Spacing.xs }}>Filtered by {activeFilterLabels}</Text> : null}
+              {query || activeFilterCount > 0 ? <PressableScale accessibilityRole="button" accessibilityLabel="Clear search and filters" onPress={() => { setQuery(''); resetFilters(); }} style={{ alignSelf: 'flex-start', justifyContent: 'center', minHeight: 44 }}>
+                <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm }}>Clear search & filters</Text>
+              </PressableScale> : null}
             </View>
-
-            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base }}>
-              <PressableScale
-                accessibilityRole="button"
-                accessibilityLabel="Open transaction filters"
-                onPress={() => setShowFilterModal(true)}
-                style={{
-                  alignItems: 'center',
-                  backgroundColor: activeFilterCount > 0 ? colors.primaryBg : colors.card,
-                  borderColor: activeFilterCount > 0 ? colors.primary : colors.border,
-                  borderRadius: BorderRadius.full,
-                  borderWidth: 1,
-                  flex: 1,
-                  flexDirection: 'row',
-                  gap: Spacing.sm,
-                  minHeight: 42,
-                  justifyContent: 'center',
-                  paddingHorizontal: Spacing.md,
-                }}
-              >
-                <MaterialCommunityIcons name="filter-variant" size={17} color={activeFilterCount > 0 ? colors.primary : colors.textSecondary} />
-                <Text style={{ color: activeFilterCount > 0 ? colors.primary : colors.textSecondary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm }}>
-                  {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
-                </Text>
-              </PressableScale>
-              <PressableScale
-                accessibilityRole="button"
-                accessibilityLabel="Open transaction sorting"
-                onPress={() => setShowSortModal(true)}
-                style={{
-                  alignItems: 'center',
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  borderRadius: BorderRadius.full,
-                  borderWidth: 1,
-                  flex: 1,
-                  flexDirection: 'row',
-                  gap: Spacing.sm,
-                  minHeight: 42,
-                  justifyContent: 'center',
-                  paddingHorizontal: Spacing.md,
-                }}
-              >
-                <MaterialCommunityIcons name="sort" size={17} color={colors.textSecondary} />
-                <Text
-                  adjustsFontSizeToFit
-                  numberOfLines={1}
-                  style={{ color: colors.textSecondary, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm, maxWidth: 132 }}
-                >
-                  {sortLabel}
-                </Text>
-              </PressableScale>
-            </View>
-
-            <Button title="Add transaction" onPress={() => navigation.navigate('Add')} icon="plus" style={{ marginBottom: Spacing.base }} />
           </>
         }
         ListEmptyComponent={
           isLoading ? (
-            <ScreenState loading title="Loading transactions" body="Pulling your latest income and expense history." tone="primary" />
+            <ScreenState loading title="Loading transactions" body="Opening your debit and credit history." tone="primary" />
           ) : (
             <ScreenState
-              actionLabel={query || activeFilterCount > 0 ? 'Clear filters' : 'Add transaction'}
-              body={query || activeFilterCount > 0 ? 'Try a different search or remove the current filter.' : 'SMS captures and manual corrections will appear here after review.'}
-              icon={query || activeFilterCount > 0 ? 'filter-off-outline' : 'receipt-text-plus-outline'}
+              actionLabel={query || activeFilterCount > 0 ? 'Clear filters' : archivedOnly ? 'Open Activity' : 'Add transaction'}
+              body={query || activeFilterCount > 0 ? 'Try a different search or remove the current filter.' : archivedOnly ? 'Swipe left in Activity to archive. Swipe left here to restore.' : 'Add your first debit or credit to get started.'}
+              icon={query || activeFilterCount > 0 ? 'filter-off-outline' : 'receipt'}
               onAction={() => {
                 if (query || activeFilterCount > 0) {
                   resetAllControls();
                 } else {
-                  navigation.navigate('Add');
+                  if (archivedOnly) rootNavigation.navigate('App', { screen: 'Transactions' });
+                  else if (graphContext) rootNavigation.navigate('App', { screen: 'Add' });
+                  else navigation.navigate('Add');
                 }
               }}
-              title={query || activeFilterCount > 0 ? 'No matches found' : 'No SMS records yet'}
+              title={query || activeFilterCount > 0 ? 'No matches found' : archivedOnly ? 'No archived transactions' : 'A fresh start'}
               tone="primary"
             />
           )
         }
-        renderSectionHeader={({ section }) => (
-          <View style={{ paddingTop: Spacing.sm }}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-          </View>
-        )}
-        renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(index * 24).duration(220)} layout={Layout.springify()} style={styles.panel}>
-            <View style={styles.row}>
-              <View style={{ flexDirection: 'row', flex: 1, minWidth: 0, alignItems: 'center', paddingRight: Spacing.md }}>
-                <View
-                  style={{
-                    alignItems: 'center',
-                    backgroundColor: colors.primaryBg,
-                    borderRadius: 18,
-                    height: 36,
-                    justifyContent: 'center',
-                    marginRight: Spacing.md,
-                    width: 36,
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name={item.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'}
-                    size={18}
-                    color={colors.primary}
-                  />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.value} numberOfLines={1}>{item.description || formatCategory(item.category)}</Text>
-                  <Text style={styles.muted} numberOfLines={1}>
-                    {formatCategory(item.category)} - {formatPaymentMethod(item.payment_method)} - {formatDate(item.transaction_date)}
-                  </Text>
-                </View>
-              </View>
-              <View style={{ alignItems: 'flex-end', flexShrink: 0, maxWidth: 126 }}>
-                <Text
-                  adjustsFontSizeToFit
-                  numberOfLines={1}
-                  style={{ ...styles.value, color: item.type === 'income' ? colors.success : colors.textPrimary }}
-                >
-                  {item.type === 'income' ? '+' : '-'}
-                  {formatMoney(item.amount)}
-                </Text>
-                <PressableScale accessibilityRole="button" onPress={() => confirmDelete(item.id)} style={{ marginTop: Spacing.sm }}>
-                  <Text style={{ ...styles.muted, color: colors.error }}>Delete</Text>
-                </PressableScale>
-              </View>
+        renderSectionHeader={({ section }) => {
+          const spendingLabel = `${currencySymbol}${(section.totalSpendingPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          const largeText = fontScale > 1.5;
+          return (
+            <View
+              accessible
+              accessibilityRole="header"
+              accessibilityLabel={`${section.title}, total spending ${spendingLabel}${query || activeFilterCount > 0 ? ', matching current search and filters' : ''}`}
+              style={{ alignItems: largeText ? 'stretch' : 'center', flexDirection: largeText ? 'column' : 'row', gap: Spacing.sm, paddingBottom: Spacing.sm, paddingTop: Spacing.md }}
+            >
+              <Text style={{ color: colors.accent, flexShrink: 1, fontFamily: Typography.fontFamily.medium, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>{section.title}</Text>
+              {largeText ? null : <View style={{ backgroundColor: colors.borderLight, flex: 1, height: 1 }} />}
+              <Text testID="history-section-spending" style={{ color: colors.textPrimary, flexShrink: 1, fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.fontSize.md, fontVariant: ['tabular-nums'], textAlign: 'right' }}>{spendingLabel}</Text>
             </View>
-          </Animated.View>
-        )}
+          );
+        }}
+        renderItem={renderTransaction}
       />
 
-      <Modal visible={showFilterModal} animationType="fade" transparent>
-        <Pressable style={{ backgroundColor: colors.overlay, flex: 1, justifyContent: 'flex-end' }} onPress={() => setShowFilterModal(false)}>
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            style={{
-              backgroundColor: colors.card,
-              borderTopLeftRadius: BorderRadius.xl,
-              borderTopRightRadius: BorderRadius.xl,
-              maxHeight: '82%',
-              padding: Spacing.lg,
-            }}
-          >
-            <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.base }}>
-              <View style={{ flex: 1, paddingRight: Spacing.md }}>
-                <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.xl }}>
-                  Filters
-                </Text>
-                <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: Typography.lineHeight.sm, marginTop: 2 }}>
-                  Narrow SMS records by category, method, source, account, or date.
-                </Text>
-              </View>
-              <PressableScale accessibilityRole="button" accessibilityLabel="Close filters" onPress={() => setShowFilterModal(false)} style={{ padding: Spacing.xs }}>
-                <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
-              </PressableScale>
-            </View>
+      <SmsParserDialog visible={showSmsParser} onClose={() => setShowSmsParser(false)} onOpenParser={() => rootNavigation.navigate('SmsParser')} />
+      {showFilterModal ? <ActivityControlsSheet onClose={() => setShowFilterModal(false)} onReset={() => { resetFilters(); setSortOption('newest'); }} dates={dates} onDates={setDates} type={type} onType={selectType} sort={sortOption} onSort={setSortOption} fields={[
+        { title: 'Category', value: categoryFilter, onChange: setCategoryFilter, options: [{ id: 'all', name: 'All categories' }, ...categoryOptions] },
+        { title: 'Payment method', value: paymentFilter, onChange: setPaymentFilter, options: [{ id: 'all', name: 'All methods' }, ...PAYMENT_METHODS] },
+        { title: 'Source', value: sourceFilter, onChange: setSourceFilter, options: [{ id: 'all', name: 'All sources' }, ...sourceOptions.map(option => ({ id: option.id, name: option.label }))] },
+        { title: 'Account', value: accountFilter, onChange: setAccountFilter, options: [{ id: 'all', name: 'All accounts' }, ...accountOptions] },
+      ]} /> : null}
+      {showDownload ? <TransactionDownloadSheet onClose={() => setShowDownload(false)} /> : null}
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Spacing.md }}>
-              <Text style={[styles.sectionTitle, { fontSize: Typography.fontSize.md }]}>Category</Text>
-              <View style={styles.chipRow}>
-                {[{ id: 'all', name: 'All categories' }, ...categoryOptions].map((option) => {
-                  const active = categoryFilter === option.id;
-                  return (
-                    <PressableScale key={option.id} onPress={() => setCategoryFilter(option.id)} style={[styles.chip, active && styles.chipActive]}>
-                      {'icon' in option && (
-                        <MaterialCommunityIcons
-                          name={option.icon}
-                          size={16}
-                          color={active ? colors.textInverse : colors.textSecondary}
-                          style={{ marginRight: Spacing.xs }}
-                        />
-                      )}
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.name}</Text>
-                    </PressableScale>
-                  );
-                })}
-              </View>
+      {editingTransaction ? (
+        <EditTransactionSheet
+          key={editingTransaction.id}
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+        />
+      ) : null}
 
-              <Text style={[styles.sectionTitle, { fontSize: Typography.fontSize.md }]}>Payment Method</Text>
-              <View style={styles.chipRow}>
-                {[{ id: 'all', name: 'All methods', icon: 'swap-horizontal' }, ...PAYMENT_METHODS].map((option) => {
-                  const active = paymentFilter === option.id;
-                  return (
-                    <PressableScale key={option.id} onPress={() => setPaymentFilter(option.id)} style={[styles.chip, active && styles.chipActive]}>
-                      <MaterialCommunityIcons
-                        name={option.icon}
-                        size={16}
-                        color={active ? colors.textInverse : colors.textSecondary}
-                        style={{ marginRight: Spacing.xs }}
-                      />
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.name}</Text>
-                    </PressableScale>
-                  );
-                })}
-              </View>
-
-              {sourceOptions.length > 0 && (
-                <>
-                  <Text style={[styles.sectionTitle, { fontSize: Typography.fontSize.md }]}>Capture Source</Text>
-                  <View style={styles.chipRow}>
-                    {[{ id: 'all', label: 'All sources', icon: 'source-branch' }, ...sourceOptions].map((option) => {
-                      const active = sourceFilter === option.id;
-                      return (
-                        <PressableScale key={option.id} onPress={() => setSourceFilter(option.id)} style={[styles.chip, active && styles.chipActive]}>
-                          <MaterialCommunityIcons
-                            name={option.icon}
-                            size={16}
-                            color={active ? colors.textInverse : colors.textSecondary}
-                            style={{ marginRight: Spacing.xs }}
-                          />
-                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.label}</Text>
-                        </PressableScale>
-                      );
-                    })}
-                  </View>
-                </>
-              )}
-
-              {accountOptions.length > 0 && (
-                <>
-                  <Text style={[styles.sectionTitle, { fontSize: Typography.fontSize.md }]}>Bank Account</Text>
-                  <View style={styles.chipRow}>
-                    {[{ id: 'all', name: 'All accounts' }, ...accountOptions].map((option) => {
-                      const active = accountFilter === option.id;
-                      return (
-                        <PressableScale key={option.id} onPress={() => setAccountFilter(option.id)} style={[styles.chip, active && styles.chipActive]}>
-                          <MaterialCommunityIcons
-                            name={option.id === 'all' ? 'bank-outline' : 'credit-card-check-outline'}
-                            size={16}
-                            color={active ? colors.textInverse : colors.textSecondary}
-                            style={{ marginRight: Spacing.xs }}
-                          />
-                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.name}</Text>
-                        </PressableScale>
-                      );
-                    })}
-                  </View>
-                </>
-              )}
-
-              <Text style={[styles.sectionTitle, { fontSize: Typography.fontSize.md }]}>Date Range</Text>
-              <View style={styles.chipRow}>
-                {DATE_FILTER_OPTIONS.map((option) => {
-                  const active = dateFilter === option.id;
-                  return (
-                    <PressableScale key={option.id} onPress={() => setDateFilter(option.id)} style={[styles.chip, active && styles.chipActive]}>
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.label}</Text>
-                    </PressableScale>
-                  );
-                })}
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm }}>
-                <Button title="Reset" onPress={resetFilters} variant="outline" icon="refresh" style={{ flex: 1 }} />
-                <Button title="Done" onPress={() => setShowFilterModal(false)} icon="check" style={{ flex: 1 }} />
-              </View>
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal visible={showSortModal} animationType="fade" transparent>
-        <Pressable style={{ backgroundColor: colors.overlay, flex: 1, justifyContent: 'flex-end' }} onPress={() => setShowSortModal(false)}>
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            style={{
-              backgroundColor: colors.card,
-              borderTopLeftRadius: BorderRadius.xl,
-              borderTopRightRadius: BorderRadius.xl,
-              padding: Spacing.lg,
-            }}
-          >
-            <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.base }}>
-              <View>
-                <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize.xl }}>
-                  Sort
-                </Text>
-                <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, marginTop: 2 }}>
-                  Choose how records are ordered.
-                </Text>
-              </View>
-              <PressableScale accessibilityRole="button" accessibilityLabel="Close sort" onPress={() => setShowSortModal(false)} style={{ padding: Spacing.xs }}>
-                <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
-              </PressableScale>
-            </View>
-
-            <View style={{ gap: Spacing.sm }}>
-              {SORT_OPTIONS.map((option) => {
-                const active = sortOption === option.id;
-                return (
-                  <PressableScale
-                    key={option.id}
-                    onPress={() => {
-                      setSortOption(option.id);
-                      setShowSortModal(false);
-                    }}
-                    style={{
-                      alignItems: 'center',
-                      backgroundColor: active ? colors.primaryBg : colors.surface,
-                      borderColor: active ? colors.primary : colors.border,
-                      borderRadius: BorderRadius.md,
-                      borderWidth: 1,
-                      flexDirection: 'row',
-                      gap: Spacing.sm,
-                      minHeight: 48,
-                      paddingHorizontal: Spacing.md,
-                    }}
-                  >
-                    <MaterialCommunityIcons name={option.icon} size={18} color={active ? colors.primary : colors.textSecondary} />
-                    <Text style={{ color: active ? colors.primary : colors.textPrimary, flex: 1, fontFamily: Typography.fontFamily.medium, fontSize: Typography.fontSize.sm }}>
-                      {option.label}
-                    </Text>
-                    {active && <MaterialCommunityIcons name="check-circle" size={18} color={colors.primary} />}
-                  </PressableScale>
-                );
-              })}
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {selectedTransaction ? (
+        <TransactionDetailSheet
+          key={selectedTransaction.id}
+          transaction={selectedTransaction}
+          onClose={() => setSelectedTransactionId(null)}
+          onEdit={() => {
+            setSelectedTransactionId(null);
+            setEditingTransaction(selectedTransaction);
+          }}
+          onSplit={() => {
+            setSelectedTransactionId(null);
+            if (graphContext) rootNavigation.navigate('App', { screen: 'Groups', params: { transactionId: selectedTransaction.id } });
+            else navigation.navigate('Groups', { transactionId: selectedTransaction.id });
+          }}
+          onDeleted={() => setSelectedTransactionId(null)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

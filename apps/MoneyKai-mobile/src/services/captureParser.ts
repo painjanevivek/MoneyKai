@@ -1,6 +1,8 @@
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { hasKnownIndianBankSignal } from '@/constants/indiaBankAliases';
 import { getAutomaticExpenseCategory } from '@/services/captureCategoryRules';
+import { classifyCounterpartyCategory } from './offlineCategoryModel';
+import { isSafeSmsToAutoRecord } from './smsAutoRecordPolicy';
 import { buildCaptureDedupeKeys } from '@/services/captureDedupe';
 import { format } from 'date-fns/format';
 import { isValid } from 'date-fns/isValid';
@@ -68,7 +70,7 @@ const EXPENSE_KEYWORDS: KeywordRule[] = [
 const INCOME_KEYWORDS: KeywordRule[] = [
   { category: 'refund', terms: ['refund', 'cashback', 'reversal'] },
   { category: 'freelance', terms: ['freelance', 'invoice', 'client'] },
-  { category: 'allowance', terms: ['salary', 'allowance', 'payroll', 'credited'] },
+  { category: 'allowance', terms: ['salary', 'allowance', 'payroll'] },
   { category: 'bonus', terms: ['bonus', 'reward'] },
 ];
 
@@ -85,7 +87,7 @@ const IGNORE_RULES: IgnoreRule[] = [
   { reason: 'bill due reminder', patterns: [/\bbill\b.+\bdue\b/i, /\bdue on\b/i, /\bpay now to avoid\b/i] },
   { reason: 'mandate or scheduled autopay message', patterns: [/\bmandate\b/i, /\bautopay\b/i, /\bwill be debited\b/i, /\bscheduled\b/i] },
   { reason: 'bank feedback or survey message', patterns: [/\bshare your experience\b/i, /\bfeedback\b/i, /\bthank you for the transaction done today\b/i] },
-  { reason: 'credential or password reminder', patterns: [/\bpassword\b/i, /\bcredential\b/i] },
+  { reason: 'credential or password reminder', patterns: [/\bpassword\b/i, /\bcredential\b/i, /\bpasscode\b/i, /\bpin\b/i, /\bcvv\b/i, /\bcvc\b/i, /\bsecurity code\b/i] },
   { reason: 'deposit instrument setup message', patterns: [/\btdr\/stdr\b/i] },
   { reason: 'pending cheque clearing message', patterns: [/\b(?:cheque|chq)\b.+\bsent for clearing\b/i, /\bdeposit will be confirmed after successful cheque clearing\b/i] },
   { reason: 'GST or tax message', patterns: [/\bgst(?:in)?\b/i, /\bcgst\b/i, /\bsgst\b/i, /\bigst\b/i, /\btax invoice\b/i] },
@@ -121,26 +123,28 @@ const AMOUNT_PATTERNS: { name: string; regex: RegExp }[] = [
 ];
 
 const MERCHANT_PATTERNS: { name: string; regex: RegExp }[] = [
+  // Larger name field, but only with an explicit end delimiter. Never capture a partial word.
+  { name: 'delimited full counterparty', regex: /\b(?:payment\s+(?:to|at)|paid(?:\s+(?:inr|rs\.?|₹)?\s*[0-9,.]+)?\s+to|sent(?:\s+(?:inr|rs\.?|₹)?\s*[0-9,.]+)?\s+to|transfer(?:red)?\s+to|received(?:\s+(?:inr|rs\.?|₹)?\s*[0-9,.]+)?\s+from|credited\s+from)\s+([\p{L}\p{M}0-9][\p{L}\p{M}0-9 &.'/-]{1,249}?)(?=\s+(?:(?:via|through|using)\s+(?:upi|imps|neft|rtgs|card|wallet)\b|on\s+\d|(?:upi\s+)?ref(?:erence)?\b|refno\b|rrn\b|utr\b)|[.;]\s*(?:(?:upi\s+)?ref\b|rrn\b|utr\b|avl\b|bal\b|$)|$)/iu },
   { name: 'cash withdrawal label', regex: /\b((?:atm\s+)?cash withdrawal)\b/i },
   { name: 'cheque withdrawal label', regex: /\b(withdrawal by cheque)\b/i },
   { name: 'cheque deposit label', regex: /\b((?:cheque|chq)\s+(?:cleared|deposit|deposited))\b/i },
   {
     name: 'trx approved merchant',
     regex:
-      /\btrx\.\s+of\s+(?:(?:\b[a-z]{3}\b|rs\.?|\u20b9|â‚¹)\s*)?[0-9][0-9,]*(?:\.[0-9]{1,2})?\s+on\s+your\s+(?:card\b[^.]*?|a\/c\b[^.]*?|account\b[^.]*?)\s+at\s+([a-z0-9][a-z0-9 &.'/-]{2,80}?)(?=(?:\s+in\b|,\s*(?:uae|united [a-z ]+|abu dhabi|dubai|shj|auh|united states)\b|\s+is\s+approved\b|\.?\s*avl\b|\.?\s*trx date\b|$))/i,
+      /\btrx\.\s+of\s+(?:(?:\b[a-z]{3}\b|rs\.?|\u20b9|â‚¹)\s*)?[0-9][0-9,]*(?:\.[0-9]{1,2})?\s+on\s+your\s+(?:card\b[^.]*?|a\/c\b[^.]*?|account\b[^.]*?)\s+at\s+([a-z0-9][a-z0-9 &.'/-]{2,90}?)(?=(?:\s+in\b|,\s*(?:uae|united [a-z ]+|abu dhabi|dubai|shj|auh|united states)\b|\s+is\s+approved\b|\.?\s*avl\b|\.?\s*trx date\b|$))/i,
   },
-  { name: 'to merchant via method', regex: /\bto\s+([a-z0-9][a-z0-9 &.'/-]{2,80}?)\s+(?:via|through|using)\s+(?:upi|imps|neft|rtgs|card|wallet)\b/i },
-  { name: 'transfer to', regex: /\b(?:trf|transfer|transferred)\s+to\s+([a-z0-9][a-z0-9 &.'/-]{2,80}?)(?=\s+(?:ref|refno|rrn|utr|if not|on date)|$)/i },
-  { name: 'upi slash merchant', regex: /\bupi\/p2[am]\/(?:[a-z0-9/-]{6,}|\[(?:number|ref)\])\/([a-z0-9][a-z0-9 &.'-]{2,80}?)(?=\s+(?:not you\?|sms blockupi\b|axis bank\b)|$)/i },
-  { name: 'upi payment to', regex: /\b(?:upi\s+)?payment(?:\s+of\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+(?:to|at)\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
-  { name: 'paid to', regex: /\bpaid(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+(?:from\s+[a-z ]+\s+)?to\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
-  { name: 'sent to', regex: /\b(?:sent|transferred)(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+to\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
-  { name: 'received from', regex: /\b(?:received|credited)(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?(?:\s+to\s+(?:your\s+)?(?:a\/c|account)[a-z0-9\s]*)?\s+from\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
-  { name: 'from sender', regex: /\bfrom\s+([a-z0-9][a-z0-9 &.'/-]{2,80})\s+(?:as|for|via|ref|utr|imps|neft|rtgs|upi|order)/i },
-  { name: 'merchant field', regex: /\b(?:merchant|m\/s|info)\s*[:.-]?\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
-  { name: 'at merchant', regex: /\bat\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
-  { name: 'towards merchant', regex: /\btowards\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
-  { name: 'for merchant purpose', regex: /\bfor\s+([a-z0-9][a-z0-9 &.'/-]{2,80})/i },
+  { name: 'to merchant via method', regex: /\bto\s+([a-z0-9][a-z0-9 &.'/-]{2,90}?)\s+(?:via|through|using)\s+(?:upi|imps|neft|rtgs|card|wallet)\b/i },
+  { name: 'transfer to', regex: /\b(?:trf|transfer|transferred)\s+to\s+([a-z0-9][a-z0-9 &.'/-]{2,90}?)(?=\s+(?:ref|refno|rrn|utr|if not|on date)|$)/i },
+  { name: 'upi slash merchant', regex: /\bupi\/p2[am]\/(?:[a-z0-9/-]{6,}|\[(?:number|ref)\])\/([a-z0-9][a-z0-9 &.'-]{2,90}?)(?=\s+(?:not you\?|sms blockupi\b|axis bank\b)|$)/i },
+  { name: 'upi payment to', regex: /\b(?:upi\s+)?payment(?:\s+of\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+(?:to|at)\s+([a-z0-9][a-z0-9 &.'/-]{2,90})/i },
+  { name: 'paid to', regex: /\bpaid(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+(?:from\s+[a-z ]+\s+)?to\s+([a-z0-9][a-z0-9 &.'/-]{2,90})/i },
+  { name: 'sent to', regex: /\b(?:sent|transferred)(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?\s+to\s+([a-z0-9][a-z0-9 &.'/-]{2,90})/i },
+  { name: 'received from', regex: /\b(?:received|credited)(?:\s+(?:\b(?:inr|rupees?)\b|rs\.?|\u20b9|â‚¹)?\s*[0-9][0-9,.]*)?(?:\s+to\s+(?:your\s+)?(?:a\/c|account)[a-z0-9\s]*)?\s+from\s+([a-z0-9][a-z0-9 &.'/-]{2,90})/i },
+  { name: 'from sender', regex: /\bfrom\s+([a-z0-9][a-z0-9 &.'/-]{2,90})\s+(?:as|for|via|ref|utr|imps|neft|rtgs|upi|order)/i },
+  { name: 'merchant field', regex: /\b(?:merchant|m\/s|info)\s*[:.-]?\s+([a-z0-9][a-z0-9 &.'/-]{2,90})/i },
+  { name: 'at merchant', regex: /\bat\s+([a-z0-9][a-z0-9 &.'/-]{2,90})/i },
+  { name: 'towards merchant', regex: /\btowards\s+([a-z0-9][a-z0-9 &.'/-]{2,90})/i },
+  { name: 'for merchant purpose', regex: /\bfor\s+([a-z0-9][a-z0-9 &.'/-]{2,90})/i },
 ];
 
 type PaymentMethodId = (typeof PAYMENT_METHODS)[number]['id'];
@@ -186,14 +190,14 @@ export const normalizeMerchantKey = (value: string) =>
     .replace(/(?:upi|txn|transaction|ref|rrn|utr|id|no)\s*[:#-]?\s*[a-z0-9/-]+.*$/i, '')
     .replace(/\b[a-z0-9._%+-]+@[a-z0-9.-]+\b/gi, '')
     .replace(/\b(?:pvt|private|ltd|limited|india|upi|pay)\b/g, '')
-    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/[^\p{L}\p{M}0-9 ]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
 const scoreKeywordCategory = (text: string, merchantKey: string | undefined, type: TransactionType) => {
   const searchable = `${text} ${merchantKey ?? ''}`;
   const rules = type === 'income' ? INCOME_KEYWORDS : EXPENSE_KEYWORDS;
-  const match = rules.find((rule) => rule.terms.some((term) => searchable.includes(term)));
+  const match = rules.find((rule) => rule.terms.some((term) => new RegExp(`\\b${term}\\b`, 'i').test(searchable)));
   return match?.category;
 };
 
@@ -256,6 +260,9 @@ const extractAmount = (text: string): AmountMatch => {
   for (const pattern of AMOUNT_PATTERNS) {
     const matches = [...text.matchAll(pattern.regex)];
     const match = matches.find((item) => {
+      // A balance/limit is not the payment amount, even when it appears first.
+      const preceding = text.slice(Math.max(0, (item.index ?? 0) - 70), item.index);
+      if (/\b(?:bal(?:ance)?|limit)\.?\s*(?:(?:is|of)\s*)?[:=-]?\s*$/i.test(preceding)) return false;
       const value = Number(item[1].replace(/,/g, ''));
       return Number.isFinite(value) && value > 0;
     });
@@ -337,6 +344,7 @@ const cleanMerchantLabel = (value: string) => {
     .replace(/\btrx\s+date\b.*$/i, '')
     .replace(/\s+from\s+(?:kotak|hdfc|icici|axis|sbi|bank)\b.*$/i, '')
     .replace(/\b(?:a\/c|acct|account|card|ending|xx|x{2,})\b.*$/i, '')
+    .replace(/\b(?:avl|available|bal(?:ance)?|not you|if not|sms blockupi)\b.*$/i, '')
     .trim()
     .replace(/[.:-]+$/g, '')
     .trim();
@@ -347,6 +355,8 @@ const cleanMerchantLabel = (value: string) => {
 const extractMerchant = (text: string, input: CaptureSignalInput): MerchantMatch => {
   for (const pattern of MERCHANT_PATTERNS) {
     const match = text.match(pattern.regex);
+    // Legacy 90-character patterns must not silently shorten an over-limit name.
+    if (pattern.name !== 'delimited full counterparty' && (match?.[1]?.length ?? 0) >= 90) continue;
     const label = match?.[1] ? cleanMerchantLabel(match[1]) : undefined;
 
     if (label && normalizeMerchantKey(label) && !/^(your|merchant|payment|merchant payment)$/i.test(label)) {
@@ -520,11 +530,20 @@ export const parseCapturedSignal = (
   const merchantKey = merchant.label ? normalizeMerchantKey(merchant.label) : undefined;
   const paymentMethod = detectPaymentMethod(text, input);
   const learnedRule = merchantKey
-    ? merchantRules.find((rule) => rule.merchantKey === merchantKey || merchantKey.includes(rule.merchantKey))
+    ? merchantRules.find((rule) => rule.merchantKey === merchantKey && (!rule.transactionType || rule.transactionType === direction.type))
     : undefined;
   const keywordCategory = direction.type ? scoreKeywordCategory(lowered, merchantKey, direction.type) : undefined;
   const automaticExpenseCategory = direction.type === 'expense' ? getAutomaticExpenseCategory(input, merchantKey) : undefined;
-  const category = automaticExpenseCategory ?? learnedRule?.category ?? keywordCategory;
+  const trainedCategory = direction.type === 'expense' && merchant.pattern !== 'source fallback'
+    ? classifyCounterpartyCategory(merchant.label ?? '') : undefined;
+  const personal = /\b(?:p2p|person to person)\b/i.test(text) || learnedRule?.category === 'personal_transfer';
+  const explicitMerchant = /\b(?:p2m|merchant)\b/i.test(text);
+  const category = learnedRule?.category ?? (direction.type === 'expense' && personal ? 'personal_transfer' : undefined) ??
+    trainedCategory?.category ?? automaticExpenseCategory ??
+    keywordCategory ?? (direction.type === 'expense' && explicitMerchant ? 'merchant' : undefined);
+  const reliableCategory = learnedRule
+    ? Boolean(learnedRule.userId && learnedRule.source === 'manual' && learnedRule.transactionType === direction.type && normalizeWhitespace(learnedRule.merchantLabel).toLowerCase() === merchant.label?.toLowerCase())
+    : Boolean(!personal && trainedCategory?.reliable);
   const isValidCategory = category
     ? direction.type === 'income'
       ? validIncomeCategory.has(category)
@@ -576,11 +595,13 @@ export const parseCapturedSignal = (
     reference,
   });
 
-  return {
+  const result: CaptureParseResult = {
     amount: amount.value,
     type: direction.type,
     merchantLabel: merchant.label,
     merchantKey,
+    counterpartyKind: personal ? 'person' : trainedCategory?.category || explicitMerchant || learnedRule?.category === 'merchant' ? 'merchant' : 'unknown',
+    reliableCategory: isValidCategory && reliableCategory,
     category: isValidCategory ? category : undefined,
     paymentMethod: normalizedPaymentMethod,
     transactionDate: transactionDate.value,
@@ -591,6 +612,8 @@ export const parseCapturedSignal = (
     confidence,
     reason:
       finalIgnoreReason ??
-      (learnedRule ? 'matched learned merchant rule' : isValidCategory ? 'matched category keyword' : 'needs category review'),
+      (learnedRule ? 'matched owner-confirmed category' : trainedCategory?.category ? 'matched offline category model' : isValidCategory ? 'category suggestion needs review' : 'needs category review'),
   };
+  result.safeToAutoRecord = isSafeSmsToAutoRecord(input, result);
+  return result;
 };

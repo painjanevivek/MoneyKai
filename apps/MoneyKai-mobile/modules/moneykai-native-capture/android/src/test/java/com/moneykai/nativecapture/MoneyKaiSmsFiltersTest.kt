@@ -35,6 +35,30 @@ class MoneyKaiSmsFiltersTest {
   }
 
   @Test
+  fun ignoresNonTransactionsEvenWhenTheyMentionMoneyAndACompletedAction() {
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Rs 500 cashback offer when you pay this week."))
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Your bank account has Rs 500 available. No payment was made."))
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Your payment of Rs 500 failed. Please retry."))
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Rs 500 will be debited tomorrow for your subscription."))
+  }
+
+  @Test
+  fun ignoresMessagesContainingCredentialsEvenAlongsideTransactionWords() {
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Rs 500 debited. Your OTP is 123456."))
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Rs 500 paid. Your PIN is 1234."))
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Rs 500 spent. CVV 123 must not be shared."))
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Rs 500 received. Your password is secret."))
+  }
+
+  @Test
+  fun requiresAnAmountAndCompletedTransactionVerb() {
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Your card transaction was successful."))
+    assertFalse(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "Rs 500 is available in your account."))
+    assertTrue(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "INR 500.00 credited to your account."))
+    assertTrue(MoneyKaiSmsFilters.shouldImportSms("AX-HDFCBK", "INR500 credited to your account."))
+  }
+
+  @Test
   fun sanitizesSmsTextBeforeReturningNativeSamples() {
     val sanitized = MoneyKaiSmsFilters.sanitizeSmsText(
       "OTP 123456 for A/c XX4321 paid to user@upi. UPI Ref 412345678901 and Refno 512345678901."

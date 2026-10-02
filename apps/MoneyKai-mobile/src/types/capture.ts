@@ -106,6 +106,9 @@ export interface DraftTransaction {
   amount: number;
   category?: string;
   description: string;
+  counterpartyName?: string;
+  counterpartyKind?: 'merchant' | 'person' | 'unknown';
+  automaticallyRecorded?: boolean;
   merchantKey?: string;
   canonicalTransactionKey?: string;
   sourceFingerprint?: string;
@@ -129,6 +132,8 @@ export interface DraftTransaction {
 
 export interface MerchantCategoryRule {
   id: string;
+  userId?: string;
+  transactionType?: TransactionType;
   merchantKey: string;
   merchantLabel: string;
   category: string;
@@ -148,6 +153,9 @@ export interface CaptureParseResult {
   merchantKey?: string;
   category?: string;
   paymentMethod?: string;
+  counterpartyKind?: 'merchant' | 'person' | 'unknown';
+  reliableCategory?: boolean;
+  safeToAutoRecord?: boolean;
   transactionDate?: string;
   parseStatus: CaptureParseStatus;
   ignoreReason?: string;
@@ -163,13 +171,23 @@ export interface CaptureSettings {
   reviewNotificationsEnabled: boolean;
   smsResearchModeEnabled: boolean;
   aiSmsAssistEnabled: boolean;
+  autoAddRecognizedSms?: boolean;
+  smsAutoAddConsentVersion?: string;
+  smsAutoAddConsentUserId?: string;
+  smsAutoAddConsentAcceptedAt?: string;
   notificationExplainerAcceptedAt?: string;
   smsResearchExplainerAcceptedAt?: string;
+  smsConsentVersion?: string;
+  smsConsentUserId?: string;
+  manualSmsConsentVersion?: string;
+  manualSmsConsentUserId?: string;
+  manualSmsConsentAcceptedAt?: string;
   notificationAccessStatus: CapturePermissionState;
   notificationAccessLastCheckedAt?: string;
   smsAccessStatus: CapturePermissionState;
   smsAccessLastCheckedAt?: string;
   smsImportRangeId?: SmsImportRangeId;
+  smsParseIntervalMinutes?: number;
 }
 
 export interface CaptureIngestionResult {

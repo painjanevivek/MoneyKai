@@ -1,4 +1,5 @@
 import auth, { type FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { clearNativeGoogleSession } from '@/services/nativeGoogleSignIn';
 import { ensureFirebaseApp, isFirebaseConfigured, requireFirebaseConfigured } from '@/firebase/firebaseConfig';
 import {
   assertAuthAttemptAllowed,
@@ -103,6 +104,9 @@ export const signInWithGoogleOAuthCode = async (code: string, transactionVerifie
   return (await getAuth()).signInWithCustomToken(gatewayResponse.customToken);
 };
 
+export const signInWithGoogleIdToken = async (idToken: string) =>
+  (await getAuth()).signInWithCredential(auth.GoogleAuthProvider.credential(idToken));
+
 export const signOutFromFirebase = async () => {
   if (!isFirebaseConfigured()) {
     return;
@@ -110,4 +114,5 @@ export const signOutFromFirebase = async () => {
 
   await ensureFirebaseApp();
   await auth().signOut();
+  await clearNativeGoogleSession();
 };

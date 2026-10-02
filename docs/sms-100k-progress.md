@@ -1,0 +1,24 @@
+# SMS 100k implementation
+
+## Spending boundary
+
+Cloud ingestion starts disabled. No billing upgrades, provider AI calls, paid TTL, cloud builds or new services are authorized. Feature-branch Vercel deployments are disabled. Large workloads run locally or against emulators.
+
+## Phases
+
+- Phase 0: baseline copied; acceptance pending.
+- Phases 1–8: pending.
+
+The baseline preserves the source dependencies of the current capture and bare React Native runtime. Original working directories and their indexes remain unchanged.
+
+## Phase 0 checkpoint
+
+Baseline: 177 mobile capture tests and 25 backend auth/finance tests passed. Mobile typecheck has four pre-existing navigation typing errors (Budget/More). Dependency links use existing local installations; original working directories remain intact; feature-branch preview deployment is disabled.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Phase 0 checkpoint
+
+Baseline: 177 mobile capture tests and 25 backend auth/finance tests passed. Four pre-existing mobile navigation typing errors recorded. Existing local dependencies reused; preview deployments disabled; original working directories preserved.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.

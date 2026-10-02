@@ -1,17 +1,11 @@
 import React from 'react';
-import {
-  Alert,
-  Modal,
-  Pressable,
-  Text,
-  View,
-  type AlertButton,
-  type AlertOptions,
-} from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Alert, Modal, Pressable, View, type AlertButton, type AlertOptions } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { vibrateForImportantEvent } from '@/services/hapticsService';
 
 type AlertState = {
   title: string;
@@ -31,6 +25,7 @@ export function ThemedAlertProvider({ children }: { children: React.ReactNode })
   React.useEffect(() => {
     const originalAlert = Alert.alert;
     Alert.alert = (title, message, buttons, options) => {
+      vibrateForImportantEvent();
       setAlertState({
         title: String(title ?? ''),
         message: typeof message === 'string' ? message : undefined,
@@ -169,7 +164,7 @@ export function ThemedAlertProvider({ children }: { children: React.ReactNode })
                     >
                       <Text
                         style={{
-                          color: destructive ? colors.emergency : colors.primary,
+                          color: destructive ? colors.emergency : colors.textPrimary,
                           fontFamily: Typography.fontFamily.semiBold,
                           fontSize: Typography.fontSize.sm,
                         }}

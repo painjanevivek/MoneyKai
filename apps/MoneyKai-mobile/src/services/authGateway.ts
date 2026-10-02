@@ -162,8 +162,22 @@ export const startGoogleOAuthGateway = async (
     returnTo,
   });
 
-  if (!response.authorizationUrl || !response.transactionVerifier) {
+  if (!response.authorizationUrl) {
     throw new AuthGatewayError('Google sign-in did not return a usable authorization URL.', 502);
+  }
+
+  if (typeof response.transactionVerifier !== 'string' || !/^[A-Za-z0-9_-]{32,256}$/.test(response.transactionVerifier)) {
+    throw new AuthGatewayError('Google sign-in could not create a secure transaction. Please try again.', 502);
+  }
+
+  let authorizationUrl: URL;
+  try {
+    authorizationUrl = new URL(response.authorizationUrl);
+  } catch {
+    throw new AuthGatewayError('Google sign-in returned an invalid authorization URL.', 502);
+  }
+  if (authorizationUrl.origin !== 'https://accounts.google.com' || authorizationUrl.pathname !== '/o/oauth2/v2/auth') {
+    throw new AuthGatewayError('Google sign-in returned an untrusted authorization URL.', 502);
   }
 
   return {
@@ -172,10 +186,7 @@ export const startGoogleOAuthGateway = async (
   };
 };
 
-export const exchangeGoogleOAuthCodeGateway = async (
-  code: string,
-  transactionVerifier: string,
-): Promise<AuthGatewayResponse> =>
+export const exchangeGoogleOAuthCodeGateway = async (code: string, transactionVerifier: string): Promise<AuthGatewayResponse> =>
   requestAuthGateway<AuthGatewayResponse>('/v1/auth/google/exchange', {
     code,
     transactionVerifier,

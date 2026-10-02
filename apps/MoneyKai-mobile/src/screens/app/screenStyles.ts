@@ -9,6 +9,7 @@ export const createAppScreenStyles = (colors: {
   borderLight: string;
   primary: string;
   primaryBg: string;
+  accent: string;
   textPrimary: string;
   textSecondary: string;
   textTertiary: string;
@@ -23,8 +24,8 @@ export const createAppScreenStyles = (colors: {
     },
     scrollContent: {
       paddingHorizontal: Spacing.lg,
-      paddingTop: Spacing.sm,
-      paddingBottom: Spacing['2xl'],
+      paddingTop: 0,
+      paddingBottom: 100,
     },
     header: {
       marginBottom: Spacing.base,
@@ -32,23 +33,25 @@ export const createAppScreenStyles = (colors: {
     title: {
       color: colors.textPrimary,
       flexShrink: 1,
-      fontFamily: Typography.fontFamily.bold,
-      fontSize: Typography.fontSize['2xl'],
-      lineHeight: 34,
+      fontFamily: Typography.fontFamily.display,
+      fontSize: 28,
+      letterSpacing: -0.7,
+      lineHeight: 32,
     },
     subtitle: {
       color: colors.textSecondary,
       fontFamily: Typography.fontFamily.regular,
-      fontSize: Typography.fontSize.base,
-      lineHeight: Typography.lineHeight.base,
-      marginTop: 4,
+      fontSize: Typography.fontSize.md,
+      lineHeight: 18,
+      marginTop: Spacing.sm,
     },
     sectionTitle: {
       color: colors.textPrimary,
       flexShrink: 1,
-      fontFamily: Typography.fontFamily.bold,
-      fontSize: Typography.fontSize.lg,
-      lineHeight: 24,
+      fontFamily: Typography.fontFamily.display,
+      fontSize: Typography.fontSize['2xl'],
+      letterSpacing: -0.35,
+      lineHeight: 25,
       marginBottom: Spacing.md,
     },
     panel: {
@@ -57,7 +60,7 @@ export const createAppScreenStyles = (colors: {
       borderRadius: BorderRadius.md,
       borderWidth: 1,
       marginBottom: Spacing.base,
-      padding: Spacing.base,
+      padding: Spacing.lg,
     },
     row: {
       alignItems: 'center',
@@ -68,14 +71,14 @@ export const createAppScreenStyles = (colors: {
     muted: {
       color: colors.textSecondary,
       fontFamily: Typography.fontFamily.regular,
-      fontSize: Typography.fontSize.sm,
+      fontSize: Typography.fontSize.md,
     },
     value: {
       color: colors.textPrimary,
       flexShrink: 1,
       fontFamily: Typography.fontFamily.semiBold,
       fontSize: Typography.fontSize.lg,
-      lineHeight: 24,
+      lineHeight: 21,
     },
     chipRow: {
       flexDirection: 'row',
@@ -89,12 +92,12 @@ export const createAppScreenStyles = (colors: {
       borderRadius: BorderRadius.full,
       borderWidth: 1,
       flexDirection: 'row',
-      minHeight: 36,
+      minHeight: 44,
       paddingHorizontal: Spacing.md,
     },
     chipActive: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
     },
     chipText: {
       color: colors.textSecondary,

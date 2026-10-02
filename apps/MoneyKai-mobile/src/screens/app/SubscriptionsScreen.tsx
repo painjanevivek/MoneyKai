@@ -1,10 +1,12 @@
 import React from 'react';
-import { Linking, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Linking, ScrollView, View, useWindowDimensions } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { billingApi, type BillingPlanKey, type BillingStatus } from '@/services/billingApi';
 import { useTheme } from '@/hooks/useTheme';
@@ -158,12 +160,8 @@ export function SubscriptionsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: Spacing['2xl'] }} showsVerticalScrollIndicator={false}>
-        <ScreenBackButton />
-
+        <CenteredPageHeader title="Subscriptions" leftAction={<ScreenBackButton compact />} />
         <View style={{ gap: Spacing.sm, marginBottom: Spacing.lg }}>
-          <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: Typography.fontSize['2xl'] }}>
-            Subscriptions
-          </Text>
           <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, lineHeight: 21 }}>
             Choose a plan, start Stripe-hosted checkout, or manage billing from your account.
           </Text>
@@ -222,7 +220,7 @@ export function SubscriptionsScreen() {
               plan.key === 'free'
                 ? !billingStatus || billingStatus.status === 'none' || billingStatus.status === 'canceled'
                 : isPremiumActive;
-            const accentColor = isGold ? '#F5C55A' : colors.primary;
+            const accentColor = colors.textPrimary;
 
             return (
               <Card
@@ -230,8 +228,8 @@ export function SubscriptionsScreen() {
                 borderRadius="lg"
                 padding="lg"
                 style={{
-                  backgroundColor: isGold ? 'rgba(60, 52, 28, 0.74)' : colors.card,
-                  borderColor: isGold ? 'rgba(245, 197, 90, 0.44)' : colors.borderLight,
+                  backgroundColor: isGold ? colors.surfaceElevated : colors.card,
+                  borderColor: isGold ? colors.border : colors.borderLight,
                   flex: isWide ? 1 : undefined,
                   gap: Spacing.lg,
                 }}
@@ -240,8 +238,8 @@ export function SubscriptionsScreen() {
                   <View
                     style={{
                       alignItems: 'center',
-                      backgroundColor: isGold ? 'rgba(245, 197, 90, 0.18)' : colors.primaryBg,
-                      borderColor: isGold ? 'rgba(245, 197, 90, 0.36)' : colors.borderLight,
+                      backgroundColor: colors.primaryBg,
+                      borderColor: colors.borderLight,
                       borderRadius: BorderRadius.md,
                       borderWidth: 1,
                       height: 48,
@@ -255,8 +253,8 @@ export function SubscriptionsScreen() {
                     <Text
                       numberOfLines={1}
                       style={{
-                        backgroundColor: isGold ? 'rgba(245, 197, 90, 0.14)' : colors.primaryBg,
-                        borderColor: isGold ? 'rgba(245, 197, 90, 0.34)' : colors.borderLight,
+                        backgroundColor: colors.primaryBg,
+                        borderColor: colors.borderLight,
                         borderRadius: BorderRadius.full,
                         borderWidth: 1,
                         color: accentColor,
@@ -277,7 +275,7 @@ export function SubscriptionsScreen() {
                     {plan.name}
                   </Text>
                   <View style={{ alignItems: 'flex-end', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: 34, lineHeight: 40 }}>
+                    <Text style={{ color: colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: 24, lineHeight: 30 }}>
                       {plan.price}
                     </Text>
                     <Text style={{ color: colors.textSecondary, fontSize: Typography.fontSize.sm, paddingBottom: 5 }}>
@@ -292,7 +290,7 @@ export function SubscriptionsScreen() {
                 <View style={{ gap: Spacing.sm }}>
                   {plan.inclusions.map((item) => (
                     <View key={item} style={{ alignItems: 'flex-start', flexDirection: 'row', gap: 10 }}>
-                      <MaterialCommunityIcons name="check-circle-outline" size={18} color={isGold ? '#F5C55A' : colors.success} />
+                      <MaterialCommunityIcons name="check-circle-outline" size={18} color={colors.textPrimary} />
                       <Text style={{ color: colors.textSecondary, flex: 1, fontSize: Typography.fontSize.sm, lineHeight: 20 }}>
                         {item}
                       </Text>

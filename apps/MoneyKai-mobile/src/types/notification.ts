@@ -11,4 +11,5 @@ export interface AppNotification {
   createdAt: string;
   read: boolean;
   actionRoute?: string;
+  localOnly?: boolean;
 }

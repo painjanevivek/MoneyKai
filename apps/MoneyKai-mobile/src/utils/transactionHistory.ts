@@ -13,7 +13,14 @@ export type TransactionMonthSection = {
   key: string;
   title: string;
   data: Transaction[];
+  totalSpendingPaise: number;
 };
+
+/** Credit/refund entries are not spending. Sum minor units to avoid decimal drift. */
+const transactionSpendingPaise = (transaction: Transaction): number =>
+  transaction.type === 'expense' && Number.isFinite(transaction.amount) && transaction.amount > 0
+    ? Math.round(transaction.amount * 100)
+    : 0;
 
 export const parseTransactionDate = (value: string) => new Date(`${value}T12:00:00`);
 
@@ -32,7 +39,8 @@ export const compareTransactionsOldestFirst = (a: Transaction, b: Transaction) =
 
 export const sortTransactionsForHistory = (
   transactions: Transaction[],
-  sortOption: TransactionHistorySortOption
+  sortOption: TransactionHistorySortOption,
+  displayName: (transaction: Transaction) => string = transaction => transaction.description,
 ): Transaction[] => {
   const nextTransactions = [...transactions];
 
@@ -44,9 +52,9 @@ export const sortTransactionsForHistory = (
     case 'amount_low':
       return nextTransactions.sort((a, b) => a.amount - b.amount || compareTransactionsNewestFirst(a, b));
     case 'name_az':
-      return nextTransactions.sort((a, b) => a.description.localeCompare(b.description) || compareTransactionsNewestFirst(a, b));
+      return nextTransactions.sort((a, b) => displayName(a).localeCompare(displayName(b)) || compareTransactionsNewestFirst(a, b));
     case 'name_za':
-      return nextTransactions.sort((a, b) => b.description.localeCompare(a.description) || compareTransactionsNewestFirst(a, b));
+      return nextTransactions.sort((a, b) => displayName(b).localeCompare(displayName(a)) || compareTransactionsNewestFirst(a, b));
     case 'newest':
     default:
       return nextTransactions.sort(compareTransactionsNewestFirst);
@@ -64,6 +72,7 @@ export const groupTransactionsByMonth = (transactions: Transaction[]): Transacti
 
     if (existingSection) {
       existingSection.data.push(transaction);
+      existingSection.totalSpendingPaise += transactionSpendingPaise(transaction);
       return;
     }
 
@@ -71,8 +80,25 @@ export const groupTransactionsByMonth = (transactions: Transaction[]): Transacti
       key: sectionKey,
       title: sectionTitle,
       data: [transaction],
+      totalSpendingPaise: transactionSpendingPaise(transaction),
     });
   });
 
   return Array.from(sections.values()).sort((a, b) => b.key.localeCompare(a.key));
+};
+
+/** Match the list's grouping to its advertised order, including across months. */
+export const buildTransactionHistorySections = (
+  transactions: Transaction[],
+  sortOption: TransactionHistorySortOption,
+  displayName?: (transaction: Transaction) => string,
+): TransactionMonthSection[] => {
+  const ordered = sortTransactionsForHistory(transactions, sortOption, displayName);
+  if (!ordered.length) return [];
+  if (sortOption !== 'newest' && sortOption !== 'oldest') {
+    return [{ key: 'ordered-records', title: 'Matching transactions', data: ordered,
+      totalSpendingPaise: ordered.reduce((total, transaction) => total + transactionSpendingPaise(transaction), 0) }];
+  }
+  const sections = groupTransactionsByMonth(ordered);
+  return sortOption === 'oldest' ? sections.reverse() : sections;
 };

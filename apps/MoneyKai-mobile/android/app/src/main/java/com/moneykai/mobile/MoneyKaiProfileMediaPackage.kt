@@ -7,7 +7,7 @@ import com.facebook.react.uimanager.ViewManager
 
 class MoneyKaiProfileMediaPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =
-    listOf(MoneyKaiProfileMediaModule(reactContext))
+    listOf(MoneyKaiProfileMediaModule(reactContext), MoneyKaiTransactionExportModule(reactContext), MoneyKaiHapticsModule(reactContext))
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
     emptyList()

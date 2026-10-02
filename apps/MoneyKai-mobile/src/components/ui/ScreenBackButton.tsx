@@ -1,13 +1,13 @@
 import React from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
 import { CommonActions, NavigationProp, useNavigation } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { AppIcon } from './AppIcon';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import type { RootStackParamList } from '@/navigation/types';
 import { PressableScale } from './PressableScale';
 
-export function ScreenBackButton({ style }: { style?: StyleProp<ViewStyle> }) {
+export function ScreenBackButton({ compact = false, style }: { compact?: boolean; style?: StyleProp<ViewStyle> }) {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
 
@@ -24,6 +24,7 @@ export function ScreenBackButton({ style }: { style?: StyleProp<ViewStyle> }) {
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel="Go back"
+      hitSlop={compact ? 6 : undefined}
       onPress={goBack}
       style={[
         {
@@ -33,15 +34,15 @@ export function ScreenBackButton({ style }: { style?: StyleProp<ViewStyle> }) {
           borderColor: colors.borderLight,
           borderRadius: BorderRadius.full,
           borderWidth: 1,
-          height: 48,
+          height: compact ? 36 : 48,
           justifyContent: 'center',
-          marginBottom: Spacing.md,
-          width: 48,
+          marginBottom: compact ? 0 : Spacing.md,
+          width: compact ? 36 : 48,
         },
         style,
       ]}
     >
-      <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
+      <AppIcon name="arrow-left" size={compact ? 19 : 24} color={colors.textPrimary} />
     </PressableScale>
   );
 }

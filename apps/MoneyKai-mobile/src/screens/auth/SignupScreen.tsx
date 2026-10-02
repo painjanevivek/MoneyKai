@@ -1,12 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { AuthHeader } from '@/components/auth/AuthHeader';
 import { BorderRadius, Shadows, Spacing, Typography } from '@/constants/theme';
 import type { AuthStackParamList } from '@/navigation/types';
 
@@ -68,32 +69,34 @@ export function SignupScreen({ navigation }: SignupScreenProps) {
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            justifyContent: 'center',
-            paddingHorizontal: Spacing.xl,
-            paddingVertical: Spacing['2xl'],
+            paddingHorizontal: Spacing.lg,
+            paddingTop: Spacing.md,
+            paddingBottom: Spacing.xl,
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginBottom: Spacing.lg }}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-
-          <View style={{ marginBottom: Spacing['2xl'] }}>
+          <AuthHeader onBack={() => navigation.goBack()} />
+          <View style={{ alignSelf: 'center', flexGrow: 1, justifyContent: 'center', maxWidth: 440, paddingVertical: Spacing.xl, width: '100%' }}>
+          <View style={{ marginBottom: Spacing.xl }}>
             <Text
               style={{
-                fontSize: Typography.fontSize['2xl'],
+                fontSize: Typography.fontSize['5xl'],
                 fontFamily: Typography.fontFamily.display,
                 color: colors.textPrimary,
+                lineHeight: Typography.lineHeight['5xl'],
+                textAlign: 'center',
               }}
             >
               Create account
             </Text>
             <Text
               style={{
-                fontSize: Typography.fontSize.base,
+                fontSize: Typography.fontSize.sm,
                 fontFamily: Typography.fontFamily.regular,
                 color: colors.textSecondary,
-                marginTop: 4,
+                lineHeight: Typography.lineHeight.md,
+                marginTop: Spacing.xs,
+                textAlign: 'center',
               }}
             >
               Turn bank and payment SMS alerts into reviewable money records.
@@ -129,7 +132,7 @@ export function SignupScreen({ navigation }: SignupScreenProps) {
                     {index + 1}
                   </Text>
                 </View>
-                <Text style={{ color: colors.textPrimary, flex: 1, fontSize: Typography.fontSize.sm }}>
+                <Text style={{ color: colors.textPrimary, flex: 1, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm }}>
                   {promise}
                 </Text>
               </View>
@@ -210,7 +213,7 @@ export function SignupScreen({ navigation }: SignupScreenProps) {
             >
               Already have an account?{' '}
             </Text>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity accessibilityLabel="Sign in" accessibilityRole="button" onPress={() => navigation.goBack()}>
               <Text
                 style={{
                   fontSize: Typography.fontSize.base,
@@ -221,6 +224,7 @@ export function SignupScreen({ navigation }: SignupScreenProps) {
                 Sign In
               </Text>
             </TouchableOpacity>
+          </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

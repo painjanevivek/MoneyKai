@@ -4,13 +4,25 @@ apply plugin: "com.facebook.react"
 
 def vectorIconsPackageDir = new File(["node", "--print", "require.resolve('react-native-vector-icons/package.json')"].execute(null, rootDir).text.trim()).getParentFile().getAbsoluteFile()
 project.ext.vectoricons = [
-    iconFontNames: ["MaterialCommunityIcons.ttf"],
+    iconFontNames: ["MaterialCommunityIcons.ttf", "Feather.ttf"],
     iconFontsDir: new File(vectorIconsPackageDir, "Fonts").getAbsolutePath(),
 ]
 def vectorIconsFontsGradle = new File(["node", "--print", "require.resolve('react-native-vector-icons/fonts.gradle')"].execute(null, rootDir).text.trim())
 apply from: vectorIconsFontsGradle
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+
+// The native entry point does not run Expo's useFonts. Bundle the exact font
+// filenames referenced by the shared typography tokens into Android assets.
+def moneyKaiFontAssets = layout.buildDirectory.dir('generated/moneyKaiFonts')
+def copyMoneyKaiFonts = tasks.register('copyMoneyKaiFonts', Copy) {
+    into moneyKaiFontAssets.map { it.dir('fonts') }
+    ['outfit': ['400Regular', '500Medium', '600SemiBold', '700Bold'],
+     'neuton': ['400Regular', '700Bold']].each { family, weights ->
+        def packageDir = new File(['node', '--print', "require.resolve('@expo-google-fonts/${family}/package.json')"].execute(null, rootDir).text.trim()).parentFile
+        weights.each { weight -> from(new File(packageDir, weight)) { include '*.ttf' } }
+    }
+}
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -72,6 +84,12 @@ react {
  */
 def enableMinifyInReleaseBuilds = (findProperty('android.enableMinifyInReleaseBuilds') ?: false).toBoolean()
 
+tasks.configureEach { task ->
+    if ((task.name.startsWith('merge') && task.name.endsWith('Assets')) || task.name.toLowerCase(java.util.Locale.ROOT).contains('lint')) {
+        task.dependsOn(copyMoneyKaiFonts)
+    }
+}
+
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
  *
@@ -91,13 +109,34 @@ def moneyKaiUploadKeyPassword = findProperty('MONEYKAI_UPLOAD_KEY_PASSWORD') ?: 
 def hasMoneyKaiUploadSigning = moneyKaiUploadStoreFile && moneyKaiUploadStorePassword && moneyKaiUploadKeyAlias && moneyKaiUploadKeyPassword
 def moneyKaiSmsResearchBuild = ((findProperty('MONEYKAI_SMS_RESEARCH_BUILD') ?: System.getenv('MONEYKAI_SMS_RESEARCH_BUILD')) ?: 'false').toBoolean()
 def moneyKaiNativeSmsResearchBuild = ((findProperty('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD') ?: System.getenv('MONEYKAI_NATIVE_SMS_RESEARCH_BUILD')) ?: 'false').toBoolean()
-def moneyKaiPlayRelease = ((findProperty('MONEYKAI_PLAY_RELEASE') ?: System.getenv('MONEYKAI_PLAY_RELEASE')) ?: 'false').toBoolean()
+// These are distribution gates, not proof of Play approval. Review candidates
+// must not be published before the SMS money-management exception is approved.
+def moneyKaiSmsPolicyMode = (findProperty('MONEYKAI_SMS_POLICY_MODE') ?: 'disabled').toString()
+def moneyKaiPreviewSmsReview = (findProperty('MONEYKAI_PREVIEW_SMS_REVIEW') ?: 'false').toString().toBoolean()
+if (moneyKaiPreviewSmsReview && moneyKaiSmsPolicyMode != 'review') {
+    throw new GradleException('SMS-enabled preview is internal testing only; use MONEYKAI_SMS_POLICY_MODE=review')
+}
+if (!(moneyKaiSmsPolicyMode in ['disabled', 'review', 'approved'])) {
+    throw new GradleException('MONEYKAI_SMS_POLICY_MODE must be disabled, review, or approved')
+}
+def moneyKaiSmsReviewRequested = gradle.startParameter.taskNames.any { it.toLowerCase(java.util.Locale.ROOT).contains('smsreview') }
+def moneyKaiSmsPolicyBuild = moneyKaiSmsReviewRequested || moneyKaiSmsPolicyMode != 'disabled'
+def moneyKaiPreviewRequested = gradle.startParameter.taskNames.any { requestedTask ->
+    requestedTask.toLowerCase(java.util.Locale.ROOT).tokenize(':').last().endsWith('preview')
+}
+def moneyKaiPlayRelease =
+    ((findProperty('MONEYKAI_PLAY_RELEASE') ?: System.getenv('MONEYKAI_PLAY_RELEASE')) ?: 'false').toBoolean() ||
+    moneyKaiPreviewRequested
+def moneyKaiNotificationCapture = ((findProperty('MONEYKAI_NOTIFICATION_CAPTURE') ?: 'false').toString()).toBoolean()
+if (moneyKaiNotificationCapture && moneyKaiPlayRelease) {
+    throw new GradleException('Payment notification capture is a personal-use distribution opt-in; do not publish with the default Play profile.')
+}
 def moneyKaiUploadSigningError = "MoneyKai release/original builds require MONEYKAI_UPLOAD_STORE_FILE, MONEYKAI_UPLOAD_STORE_PASSWORD, MONEYKAI_UPLOAD_KEY_ALIAS, and MONEYKAI_UPLOAD_KEY_PASSWORD."
 
 gradle.taskGraph.whenReady { taskGraph ->
-    def needsUploadSigning = taskGraph.allTasks.any { task ->
-        def taskName = task.path.toLowerCase(java.util.Locale.ROOT)
-        taskName.contains("release") || taskName.contains("original")
+    def needsUploadSigning = gradle.startParameter.taskNames.any { requestedTask ->
+        def taskName = requestedTask.toLowerCase(java.util.Locale.ROOT).tokenize(':').last()
+        taskName ==~ /(?:assemble|bundle|install|package)?(?:release|original)/
     }
     if (needsUploadSigning && !hasMoneyKaiUploadSigning) {
         throw new GradleException(moneyKaiUploadSigningError)
@@ -105,6 +144,7 @@ gradle.taskGraph.whenReady { taskGraph ->
 }
 
 android {
+    sourceSets.main.assets.srcDir(files(moneyKaiFontAssets).builtBy(copyMoneyKaiFonts))
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -115,12 +155,15 @@ android {
         applicationId 'com.moneykai.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 18
+        versionName "1.0.17"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        buildConfigField "boolean", "MONEYKAI_DEMO_BUILD", "false"
+        buildConfigField "boolean", "MONEYKAI_NOTIFICATION_CAPTURE", moneyKaiNotificationCapture.toString()
         buildConfigField "boolean", "MONEYKAI_SMS_RESEARCH_BUILD", moneyKaiSmsResearchBuild.toString()
         buildConfigField "boolean", "MONEYKAI_NATIVE_SMS_RESEARCH_BUILD", moneyKaiNativeSmsResearchBuild.toString()
+        buildConfigField "boolean", "MONEYKAI_SMS_POLICY_BUILD", moneyKaiSmsPolicyBuild.toString()
     }
     signingConfigs {
         debug {
@@ -140,7 +183,26 @@ android {
     }
     buildTypes {
         debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
             signingConfig signingConfigs.debug
+        }
+        preview {
+            initWith release
+            applicationIdSuffix '.preview'
+            versionNameSuffix moneyKaiPreviewSmsReview ? '-preview-sms-review-only' : '-preview'
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            buildConfigField "boolean", "MONEYKAI_DEMO_BUILD", "true"
+            buildConfigField "boolean", "MONEYKAI_SMS_POLICY_BUILD", moneyKaiPreviewSmsReview.toString()
+        }
+        smsReview {
+            initWith release
+            applicationIdSuffix '.smsreview'
+            versionNameSuffix '-sms-review-only'
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+            buildConfigField "boolean", "MONEYKAI_SMS_POLICY_BUILD", "true"
         }
         release {
             if (hasMoneyKaiUploadSigning) {
@@ -149,7 +211,7 @@ android {
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'
             crunchPngs enablePngCrunchInRelease.toBoolean()
         }
@@ -161,6 +223,18 @@ android {
             }
         }
     }
+    sourceSets.smsReview.manifest.srcFile('src/smsReview/AndroidManifest.xml')
+    if (moneyKaiPreviewSmsReview) {
+        sourceSets.preview.manifest.srcFile('src/main/sms-permission-manifest.xml')
+    }
+    sourceSets.smsReview.assets.srcDir(layout.buildDirectory.dir('generated/smsLab'))
+    if (moneyKaiSmsPolicyMode != 'disabled') {
+        sourceSets.release.manifest.srcFile(moneyKaiNotificationCapture ? 'src/main/sms-notification-permission-manifest.xml' : 'src/main/sms-permission-manifest.xml')
+        sourceSets.original.manifest.srcFile(moneyKaiNotificationCapture ? 'src/main/sms-notification-permission-manifest.xml' : 'src/main/sms-permission-manifest.xml')
+    } else if (moneyKaiNotificationCapture) {
+        sourceSets.release.manifest.srcFile('src/main/notification-permission-manifest.xml')
+        sourceSets.original.manifest.srcFile('src/main/notification-permission-manifest.xml')
+    }
     packagingOptions {
         jniLibs {
             def enableLegacyPackaging = findProperty('android.useLegacyPackaging') ?: 'false'
@@ -171,6 +245,19 @@ android {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
 }
+
+// Only the research variant contains the offline inbox review and local trainer.
+def buildSmsLab = tasks.register('buildSmsLab', Exec) {
+    workingDir projectRoot
+    commandLine 'node', 'scripts/build-sms-lab.mjs', layout.buildDirectory.dir('generated/smsLab').get().asFile.absolutePath
+    inputs.files(fileTree("$projectRoot/scripts/sms-lab"), file("$projectRoot/scripts/build-sms-lab.mjs"),
+        file("$projectRoot/src/services/offlineSmsEngine.ts"), file("$projectRoot/src/services/offlineSmsLearning.ts"),
+        file("$projectRoot/src/services/models/offlineSmsModel.json"),
+        file("$projectRoot/../../datasets/sms-parser-v1/offline-model/parity_fixtures.json"))
+    outputs.dir(layout.buildDirectory.dir('generated/smsLab'))
+}
+tasks.matching { it.name == 'mergeSmsReviewAssets' ||
+    (it.name.contains('SmsReview') && it.name.toLowerCase().contains('lint')) }.configureEach { dependsOn buildSmsLab }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
 // Accepts values in comma delimited lists, example:
@@ -196,12 +283,13 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation("androidx.core:core-splashscreen:1.0.1")
-    // The Play profile excludes the native capture package. This keeps
-    // notification-listener services out of the public AAB instead of only
-    // hiding controls in JavaScript.
-    if (!moneyKaiPlayRelease) {
-        implementation project(":moneykai-native-capture")
-    }
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    // Private encrypted storage is shared by every build. Default manifests
+    // remove the listener and SMS permissions; only the SMS review overlay
+    // enables READ_SMS/RECEIVE_SMS. Never disable storage with capture flags.
+    implementation project(":moneykai-native-capture")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
@@ -210,8 +298,12 @@ dependencies {
     }
 }
 
-if (file("google-services.json").exists()) {
+def moneyKaiFirebaseReleaseRequested = gradle.startParameter.taskNames.any {
+    it.toLowerCase(java.util.Locale.ROOT).contains('release')
+}
+if (file("google-services.json").exists() ||
+    (moneyKaiFirebaseReleaseRequested && file("src/release/google-services.json").exists())) {
     apply plugin: "com.google.gms.google-services"
 } else {
-    logger.lifecycle("[MoneyKai] google-services.json not found. Firebase will use EXPO_PUBLIC_FIREBASE_* runtime config when available.")
+    logger.lifecycle("[MoneyKai] google-services.json not found. Firebase will use the configured runtime project for auth and sync.")
 }

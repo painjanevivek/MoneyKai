@@ -3,6 +3,18 @@ import { buildCaptureDedupeKeys } from '@/services/captureDedupe';
 import { parseCapturedSignal } from '@/services/captureParser';
 
 describe('capture dedupe keys', () => {
+  it('matches redacted SMS and app alerts by their native reference digest', () => {
+    const body = 'You paid Rs 150 to Corner Cafe via UPI. Ref [ref].';
+    const sms = { source: 'sms' as const, body, rawPayload: { smsReferenceHash: 'a'.repeat(64) } };
+    const notification = { source: 'notification' as const, body: 'You paid Rs 150 via UPI. Ref [ref].', sourceApp: 'Google Pay', rawPayload: { notificationReferenceHash: 'a'.repeat(64) } };
+    expect(buildCaptureDedupeKeys(sms, parseCapturedSignal(sms)).canonicalTransactionKey).toBe(buildCaptureDedupeKeys(notification, parseCapturedSignal(notification)).canonicalTransactionKey);
+  });
+  it('does not drop two different native alerts without a reference in the same time bucket', () => {
+    const first = { source: 'notification' as const, body: 'You paid Rs 150 to Corner Cafe via UPI.', receivedAt: '2026-09-30T10:01:00Z', rawPayload: { notificationId: 'a'.repeat(64) } };
+    const next = { ...first, rawPayload: { notificationId: 'b'.repeat(64) } };
+    expect(buildCaptureDedupeKeys(first, parseCapturedSignal(first)).canonicalTransactionKey).not.toBe(buildCaptureDedupeKeys(next, parseCapturedSignal(next)).canonicalTransactionKey);
+    expect(buildCaptureDedupeKeys(first, parseCapturedSignal(first))).toEqual(buildCaptureDedupeKeys({ ...first }, parseCapturedSignal(first)));
+  });
   it('uses Android SMS message id as a stable source fingerprint', () => {
     const input = {
       source: 'sms',

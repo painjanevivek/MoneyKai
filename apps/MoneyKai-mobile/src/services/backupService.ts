@@ -17,13 +17,14 @@ import type { Group, GroupExpense } from '@/types/group';
 import type { Challenge } from '@/types/challenge';
 import type { Badge } from '@/types/badge';
 import type { AppNotification } from '@/types/notification';
-import { getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark, type ThemeMode, type ThemePaletteId } from '@/constants/theme';
+import { getPaletteForThemeMode, getThemeModeForPalette, type ThemeMode, type ThemePaletteId } from '@/constants/theme';
 import type { LinkedAccount } from '@moneykai/domain';
 import { getLatestUserBackup, isFirebaseConfigured, saveUserBackup } from './firestoreService';
 import { backendApi, isBackendConfigured } from './backendApi';
 import { getNetworkStatus } from './networkClient';
 import { useSyncStore } from '@/stores/useSyncStore';
 import { getCurrentFirebaseUser } from './authService';
+import type { DashboardGraphMetric, DashboardGraphRange, DashboardGraphType } from '@/utils/dashboardGraph';
 
 const AUTO_BACKUP_STATE_KEY = 'moneykai-auto-backup-state';
 const AUTO_BACKUP_DEBOUNCE_MS = 10_000;
@@ -37,6 +38,9 @@ interface BackupAppSettings {
   currencySymbol: string;
   notificationsEnabled: boolean;
   hapticEnabled: boolean;
+  dashboardTrendRange?: DashboardGraphRange;
+  dashboardTrendMetric?: DashboardGraphMetric;
+  dashboardTrendChartType?: DashboardGraphType;
 }
 
 interface AutomaticBackupState {
@@ -321,14 +325,15 @@ export const flushAutomaticBackup = async ({ force = false }: { force?: boolean 
 export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
   const user = normalizeUser();
   const budget = useBudgetStore.getState();
-  const transactions = useTransactionStore.getState().transactions;
+  const transactions = useTransactionStore.getState().transactions.filter(t => t.captureSource !== 'sms' && t.captureSource !== 'notification');
   const notes = useNotesStore.getState().notes;
   const groups = useGroupStore.getState().groups;
   const groupExpenses = useGroupStore.getState().expenses;
   const challenges = useChallengeStore.getState().challenges;
   const totalXP = useChallengeStore.getState().totalXP;
   const badges = useBadgeStore.getState().badges;
-  const notifications = useNotificationStore.getState().notifications;
+  // Legacy transaction notifications lacked provenance. Exclude those too.
+  const notifications = useNotificationStore.getState().notifications.filter(n => !n.localOnly && n.type !== 'transaction');
   const linkedAccounts = useLinkedAccountStore.getState().accounts;
 
   return {
@@ -352,6 +357,9 @@ export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
         currencySymbol: useSettingsStore.getState().currencySymbol,
         notificationsEnabled: useSettingsStore.getState().notificationsEnabled,
         hapticEnabled: useSettingsStore.getState().hapticEnabled,
+        dashboardTrendRange: useSettingsStore.getState().dashboardTrendRange,
+        dashboardTrendMetric: useSettingsStore.getState().dashboardTrendMetric,
+        dashboardTrendChartType: useSettingsStore.getState().dashboardTrendChartType,
       },
       budget: {
         settings: budget.settings,
@@ -521,7 +529,7 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
   }));
 
   const restoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
-  const restoredDarkMode = snapshot.settings.app.darkModeEnabled ?? isThemeModeDark(snapshot.settings.app.theme);
+  const restoredDarkMode = false;
 
   useSettingsStore.setState({
     theme: getThemeModeForPalette(restoredPalette, restoredDarkMode),
@@ -531,6 +539,9 @@ export const restoreBackupSnapshot = (snapshot: MoneyKaiBackupSnapshot) => {
     currencySymbol: snapshot.settings.app.currencySymbol,
     notificationsEnabled: snapshot.settings.app.notificationsEnabled,
     hapticEnabled: snapshot.settings.app.hapticEnabled,
+    dashboardTrendRange: snapshot.settings.app.dashboardTrendRange ?? '1m',
+    dashboardTrendMetric: snapshot.settings.app.dashboardTrendMetric ?? 'spending',
+    dashboardTrendChartType: snapshot.settings.app.dashboardTrendChartType ?? 'line',
   });
 
   useBudgetStore.setState({

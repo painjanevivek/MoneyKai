@@ -1,4 +1,5 @@
 import firestore, { type FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { assertCloudPayloadAllowed } from './smsDeviceOnlyPolicy';
 import { isFirebaseConfigured, requireFirebaseConfigured } from '@/firebase/firebaseConfig';
 import type { Transaction } from '@/types/transaction';
 import type { Note } from '@/types/note';
@@ -9,6 +10,7 @@ import { DEFAULT_THEME_PALETTE, getThemeModeForPalette, type ThemeMode, type The
 import type { LinkedAccount } from '@moneykai/domain';
 import { retryAsync } from './networkClient';
 import { useSyncStore } from '@/stores/useSyncStore';
+import type { DashboardGraphMetric, DashboardGraphRange, DashboardGraphType } from '@/utils/dashboardGraph';
 
 type FirestoreDocumentData = FirebaseFirestoreTypes.DocumentData;
 
@@ -22,6 +24,9 @@ type AppSettingsDoc = {
   hapticEnabled: boolean;
   tourCompleted: boolean;
   appLockEnabled: boolean;
+  dashboardTrendRange: DashboardGraphRange;
+  dashboardTrendMetric: DashboardGraphMetric;
+  dashboardTrendChartType: DashboardGraphType;
 };
 
 type BudgetSettingsDoc = {
@@ -81,6 +86,9 @@ const DEFAULT_APP_SETTINGS: AppSettingsDoc = {
   hapticEnabled: true,
   tourCompleted: false,
   appLockEnabled: false,
+  dashboardTrendRange: '1m',
+  dashboardTrendMetric: 'spending',
+  dashboardTrendChartType: 'line',
 };
 
 const DEFAULT_BUDGET_SETTINGS: BudgetSettingsDoc = {
@@ -199,6 +207,7 @@ export const saveUserBudgetSettings = async (uid: string, data: Partial<BudgetSe
 };
 
 export const upsertUserDoc = async <T extends { id: string }>(collectionName: string, uid: string, value: T) => {
+  assertCloudPayloadAllowed(value);
   await runFirestoreMutation(() =>
     userCollection(uid, collectionName).doc(value.id).set(value, { merge: true })
   );
@@ -234,6 +243,7 @@ export const deleteUserGroupExpense = async (uid: string, groupId: string, expen
 };
 
 export const saveUserBackup = async <TSnapshot>(uid: string, snapshot: TSnapshot) => {
+  assertCloudPayloadAllowed(snapshot);
   await runFirestoreMutation(() =>
     userCollection(uid, 'backups').add({
       backup_name: `Backup ${new Date().toLocaleString()}`,

@@ -4,6 +4,7 @@ import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
 import { useNotesStore } from '@/stores/useNotesStore';
 import { useGroupStore } from '@/stores/useGroupStore';
+import { reconcileGroupSnapshot } from '@/utils/groupExpense';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useBadgeStore } from '@/stores/useBadgeStore';
 import { useNotificationStore } from '@/stores/useNotificationStore';
@@ -13,7 +14,7 @@ import { clearSyncQueue } from './syncQueue';
 import { clearAutomaticBackupQueue } from './backupService';
 import { loadUserFirestoreSnapshot, type FirestoreUserSnapshot } from './firestoreData';
 import { getNetworkStatus, readDataCache, retryAsync, writeDataCache } from './networkClient';
-import { DEFAULT_THEME_PALETTE, getPaletteForThemeMode, getThemeModeForPalette, isThemeModeDark } from '@/constants/theme';
+import { DEFAULT_THEME_PALETTE, getPaletteForThemeMode, getThemeModeForPalette } from '@/constants/theme';
 import {
   captureRemoteSyncSession,
   isRemoteSyncSessionCurrent,
@@ -38,6 +39,9 @@ type RemoteSyncResult = {
   error?: string;
 };
 
+type SyncOptions = { force?: boolean; keepLocalData?: boolean };
+let activeSync: { userId: string; force: boolean; promise: Promise<RemoteSyncResult> } | null = null;
+
 const remoteSnapshotCacheKey = (userId: string) => `remote-snapshot:${userId}`;
 
 const getUserProfile = () => {
@@ -57,7 +61,7 @@ const getUserProfile = () => {
   };
 };
 
-export const resetLocalAppState = () => {
+export const resetLocalAppState = ({ preserveGroupStore = false }: { preserveGroupStore?: boolean } = {}) => {
   const theme = getThemeModeForPalette(DEFAULT_THEME_PALETTE, false);
   useSettingsStore.setState({
     theme,
@@ -68,6 +72,7 @@ export const resetLocalAppState = () => {
     notificationsEnabled: true,
     hapticEnabled: true,
     tourCompleted: false,
+    appLockEnabled: false,
   });
 
   useBudgetStore.setState({
@@ -89,10 +94,9 @@ export const resetLocalAppState = () => {
     isSeeded: false,
   });
 
-  useGroupStore.setState({
-    groups: [],
-    expenses: [],
-  });
+  if (!preserveGroupStore) {
+    useGroupStore.setState({ groups: [], expenses: [] });
+  }
 
   useChallengeStore.setState({
     challenges: [],
@@ -110,11 +114,18 @@ export const resetLocalAppState = () => {
   void clearAutomaticBackupQueue();
 };
 
-const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot) => {
-  resetLocalAppState();
+const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot, source: 'cache' | 'network') => {
+  const deviceOnlyTransactions = useTransactionStore.getState().transactions.filter(t => t.captureSource === 'sms' || t.captureSource === 'notification');
+  const userId = useAuthStore.getState().user?.id;
+  const { groups: mergedGroups, expenses: mergedExpenses } = reconcileGroupSnapshot(
+    snapshot.data.groups, snapshot.data.groupExpenses,
+    useGroupStore.getState().groups, useGroupStore.getState().expenses,
+    userId ?? '', source,
+  );
+  resetLocalAppState({ preserveGroupStore: true });
 
   const restoredPalette = snapshot.settings.app.themePalette ?? getPaletteForThemeMode(snapshot.settings.app.theme);
-  const restoredDarkMode = snapshot.settings.app.darkModeEnabled ?? isThemeModeDark(snapshot.settings.app.theme);
+  const restoredDarkMode = false;
 
   useSettingsStore.setState({
     theme: getThemeModeForPalette(restoredPalette, restoredDarkMode),
@@ -126,6 +137,9 @@ const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot) => {
     hapticEnabled: snapshot.settings.app.hapticEnabled,
     tourCompleted: snapshot.settings.app.tourCompleted ?? false,
     appLockEnabled: snapshot.settings.app.appLockEnabled ?? false,
+    dashboardTrendRange: snapshot.settings.app.dashboardTrendRange ?? '1m',
+    dashboardTrendMetric: snapshot.settings.app.dashboardTrendMetric ?? 'spending',
+    dashboardTrendChartType: snapshot.settings.app.dashboardTrendChartType ?? 'line',
   });
 
   useBudgetStore.setState({
@@ -138,7 +152,8 @@ const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot) => {
 
   useTransactionStore.setState({
     ...useTransactionStore.getState(),
-    transactions: snapshot.data.transactions,
+    transactions: [...deviceOnlyTransactions, ...snapshot.data.transactions.filter(t =>
+      t.captureSource !== 'sms' && t.captureSource !== 'notification' && !deviceOnlyTransactions.some(local => local.id === t.id))],
     isSeeded: true,
   });
 
@@ -150,8 +165,8 @@ const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot) => {
 
   useGroupStore.setState({
     ...useGroupStore.getState(),
-    groups: snapshot.data.groups,
-    expenses: snapshot.data.groupExpenses,
+    groups: mergedGroups,
+    expenses: mergedExpenses,
   });
 
   const savings = snapshot.data.savings ?? snapshot.data.challenges;
@@ -173,28 +188,58 @@ const applyRemoteSnapshot = (snapshot: FirestoreUserSnapshot) => {
 const isCurrentSession = (session: RemoteSyncSession) =>
   isRemoteSyncSessionCurrent(session, useAuthStore.getState().user?.id);
 
-const hydrateCachedSnapshot = async (userId: string, session: RemoteSyncSession) => {
+const localDataState = (): unknown[] => [
+  useSettingsStore.getState(),
+  useBudgetStore.getState(),
+  useTransactionStore.getState(),
+  useNotesStore.getState(),
+  useGroupStore.getState(),
+  useChallengeStore.getState(),
+  useBadgeStore.getState(),
+  useNotificationStore.getState(),
+  useLinkedAccountStore.getState(),
+];
+
+const hydrateCachedSnapshot = async (userId: string, session: RemoteSyncSession, applyToStores: boolean) => {
   const cached = await readDataCache<FirestoreUserSnapshot>(remoteSnapshotCacheKey(userId));
   if (!cached || !isCurrentSession(session)) {
     return null;
   }
 
-  applyRemoteSnapshot(cached.value);
+  if (applyToStores) applyRemoteSnapshot(cached.value, 'cache');
   useSyncStore.getState().markCacheHydrated(cached.cachedAt);
   return cached;
 };
 
-export const syncRemoteState = async ({
-  force = false,
-}: { force?: boolean } = {}): Promise<RemoteSyncResult> => {
+export const syncRemoteState = (options: SyncOptions = {}): Promise<RemoteSyncResult> => {
   const profile = getUserProfile();
   if (!profile) {
-    return { source: 'none', synced: false };
+    return Promise.resolve({ source: 'none', synced: false });
   }
+
+  if (activeSync?.userId === profile.id) {
+    if (options.force && !activeSync.force) {
+      return activeSync.promise.then(() => syncRemoteState(options));
+    }
+    return activeSync.promise;
+  }
+
+  const promise = performRemoteSync(profile, options).finally(() => {
+    if (activeSync?.promise === promise) activeSync = null;
+  });
+  activeSync = { userId: profile.id, force: options.force ?? false, promise };
+  return promise;
+};
+
+const performRemoteSync = async (
+  profile: NonNullable<ReturnType<typeof getUserProfile>>,
+  { force = false, keepLocalData = false }: SyncOptions,
+): Promise<RemoteSyncResult> => {
   const session = captureRemoteSyncSession(profile.id);
 
   useSyncStore.getState().startSync();
-  const cached = await hydrateCachedSnapshot(profile.id, session);
+  const cached = await hydrateCachedSnapshot(profile.id, session, !keepLocalData);
+  const initialLocalState = keepLocalData ? localDataState() : null;
   if (!isCurrentSession(session)) {
     return { source: 'none', synced: false };
   }
@@ -225,7 +270,12 @@ export const syncRemoteState = async ({
     if (!isCurrentSession(session)) {
       return { source: 'none', synced: false };
     }
-    applyRemoteSnapshot(snapshot);
+    if (initialLocalState && localDataState().some((state, index) => state !== initialLocalState[index])) {
+      const message = 'Local data changed during refresh. Your changes were kept; refresh again to check the cloud.';
+      useSyncStore.getState().failSync(message);
+      return { source: cached ? 'cache' : 'none', synced: false, cachedAt: cached?.cachedAt, error: message };
+    }
+    applyRemoteSnapshot(snapshot, 'network');
     if (!isCurrentSession(session)) {
       return { source: 'none', synced: false };
     }
@@ -256,6 +306,13 @@ export const syncRemoteState = async ({
 };
 
 export const clearTransientSessionState = async () => {
+  const { useCaptureStore } = await import('@/stores/useCaptureStore');
+  const { setNativeCaptureSourcesEnabled, clearNativeCaptureQueue, setNativeApprovedSmsAccounts, setPaymentNotificationPackages } = await import('@/services/nativeCaptureBridge');
+  await setNativeCaptureSourcesEnabled({ notificationEnabled: false, smsEnabled: false });
+  await setPaymentNotificationPackages([]);
+  await clearNativeCaptureQueue();
+  await setNativeApprovedSmsAccounts([]);
+  useCaptureStore.setState({ signals: [], drafts: [], merchantRules: [], monitoredAccounts: [], settings: { ...useCaptureStore.getState().settings, autoCaptureEnabled: false, smsResearchModeEnabled: false, smsResearchExplainerAcceptedAt: undefined, smsConsentVersion: undefined, smsConsentUserId: undefined } });
   await clearSyncQueue();
   useSyncStore.getState().setPendingCount(0);
   await clearAutomaticBackupQueue();

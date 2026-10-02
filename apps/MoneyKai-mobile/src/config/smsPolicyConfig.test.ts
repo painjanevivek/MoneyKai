@@ -6,6 +6,17 @@ const readText = (path: string) => readFileSync(join(process.cwd(), path), 'utf8
 const readJson = <T>(path: string): T => JSON.parse(readText(path)) as T;
 
 describe('SMS research build policy config', () => {
+  it('puts only read/receive access behind an explicit SMS review overlay', () => {
+    const overlay = readText('android/app/src/main/sms-permission-manifest.xml');
+    expect(overlay).toContain('android.permission.READ_SMS');
+    expect(overlay).toContain('android.permission.RECEIVE_SMS');
+    expect(overlay).toContain('android.permission.BROADCAST_SMS');
+    for (const permission of ['SEND_SMS', 'WRITE_SMS', 'READ_CONTACTS', 'RECEIVE_MMS', 'RECEIVE_WAP_PUSH', 'READ_EXTERNAL_STORAGE']) expect(overlay).not.toContain(`android.permission.${permission}`);
+    const gradle = readText('android/app/build.gradle');
+    expect(gradle).toContain("findProperty('MONEYKAI_SMS_POLICY_MODE') ?: 'disabled'");
+    expect(gradle).toContain("if (moneyKaiSmsPolicyMode != 'disabled')");
+    expect(readText('android/app/src/original/AndroidManifest.xml')).not.toContain('SMS_RECEIVED');
+  });
   it('blocks restricted SMS permissions in the native Android app manifest', () => {
     const manifest = readText('android/app/src/main/AndroidManifest.xml');
 

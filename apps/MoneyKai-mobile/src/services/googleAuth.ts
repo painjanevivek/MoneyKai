@@ -1,10 +1,10 @@
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { consumeAuthAttempt } from '@/services/authRateLimit';
 import { startGoogleOAuthGateway } from '@/services/authGateway';
-import { signInWithGoogleOAuthCode, type NativeFirebaseUser } from '@/services/authService';
+import { signInWithGoogleIdToken, signInWithGoogleOAuthCode, type NativeFirebaseUser } from '@/services/authService';
+import { requestNativeGoogleIdToken } from '@/services/nativeGoogleSignIn';
 
 const GOOGLE_OAUTH_TIMEOUT_MS = 2 * 60 * 1000;
-const GOOGLE_CALLBACK_PREFIX = 'moneykai-mobile://auth/google';
 
 let pendingGoogleSignIn: Promise<NativeFirebaseUser> | null = null;
 
@@ -24,12 +24,13 @@ const getQueryParam = (url: string, key: string): string => {
   return '';
 };
 
-const extractGoogleOAuthCode = (url: string): string => {
-  if (!url.startsWith(GOOGLE_CALLBACK_PREFIX)) {
-    return '';
+const isGoogleOAuthCallback = (url: string): boolean => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'moneykai-mobile:' && parsed.hostname === 'auth' && parsed.pathname === '/google';
+  } catch {
+    return false;
   }
-
-  return getQueryParam(url, 'code');
 };
 
 const waitForGoogleOAuthCode = async (authorizationUrl: string): Promise<string> =>
@@ -57,7 +58,14 @@ const waitForGoogleOAuthCode = async (authorizationUrl: string): Promise<string>
         return;
       }
 
-      const code = extractGoogleOAuthCode(url);
+      if (!isGoogleOAuthCallback(url)) {
+        return;
+      }
+      if (getQueryParam(url, 'error')) {
+        settle(() => reject(new Error('Google sign-in was cancelled or rejected. Please try again.')));
+        return;
+      }
+      const code = getQueryParam(url, 'code');
       if (code) {
         settle(() => resolve(code));
       }
@@ -70,7 +78,6 @@ const waitForGoogleOAuthCode = async (authorizationUrl: string): Promise<string>
     subscription = Linking.addEventListener('url', (event) => consumeUrl(event.url));
 
     void Linking.openURL(authorizationUrl)
-      .then(() => Linking.getInitialURL().then(consumeUrl).catch(() => undefined))
       .catch(() => {
         settle(() => reject(new Error('Could not open Google sign-in. Please check your browser settings and try again.')));
       });
@@ -83,8 +90,15 @@ export const signInWithGoogleAsync = async (): Promise<NativeFirebaseUser> => {
 
   pendingGoogleSignIn = (async () => {
     await consumeAuthAttempt('google-sign-in', 'google');
+    if (Platform.OS === 'android') {
+      const token = await requestNativeGoogleIdToken();
+      const credentials = await signInWithGoogleIdToken(token);
+      return credentials.user;
+    }
     const { authorizationUrl, transactionVerifier } = await startGoogleOAuthGateway('/dashboard');
     const code = await waitForGoogleOAuthCode(authorizationUrl);
+    // Keep proof in this attempt's memory only. Never persist it or accept a
+    // stale launch URL left over from a previous sign-in.
     const credentials = await signInWithGoogleOAuthCode(code, transactionVerifier);
     return credentials.user;
   })();

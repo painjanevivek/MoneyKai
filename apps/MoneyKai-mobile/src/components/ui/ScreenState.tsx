@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActivityIndicator, Text, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, View, type ViewStyle } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import Animated, { FadeIn, Layout } from 'react-native-reanimated';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { AppIcon } from './AppIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { Button } from './Button';
@@ -28,7 +29,7 @@ export function ScreenState({
   title,
 }: ScreenStateProps) {
   const { colors } = useTheme();
-  const toneColor = tone === 'danger' ? colors.error : tone === 'primary' ? colors.primary : colors.textSecondary;
+  const toneColor = tone === 'danger' ? colors.error : tone === 'primary' ? colors.primaryDark : colors.textSecondary;
   const resolvedIcon = icon ?? (loading ? 'sync' : tone === 'danger' ? 'alert-circle-outline' : 'tray');
 
   return (
@@ -61,9 +62,9 @@ export function ScreenState({
         }}
       >
         {loading ? (
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={colors.primaryDark} />
         ) : (
-          <MaterialCommunityIcons name={resolvedIcon} size={24} color={toneColor} />
+          <AppIcon name={resolvedIcon} size={24} color={toneColor} />
         )}
       </View>
       <Text

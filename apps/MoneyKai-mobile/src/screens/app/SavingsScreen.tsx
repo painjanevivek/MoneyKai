@@ -1,9 +1,11 @@
 import React from 'react';
-import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, TouchableOpacity, View } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { AppIcon as MaterialCommunityIcons } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
 import { ScreenBackButton } from '@/components/ui/ScreenBackButton';
+import { CenteredPageHeader } from '@/components/ui/CenteredPageHeader';
 import { useChallengeStore } from '@/stores/useChallengeStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTheme } from '@/hooks/useTheme';
@@ -55,8 +57,7 @@ export function SavingsScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <ScreenBackButton />
-          <Text style={styles.title}>Challenges</Text>
+          <CenteredPageHeader title="Challenges" leftAction={<ScreenBackButton compact />} />
           <Text style={styles.subtitle}>Build streaks from reviewed spending patterns and track saved amounts.</Text>
         </View>
 

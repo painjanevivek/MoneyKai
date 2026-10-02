@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
+import { View, Image, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
+import { AppText as Text } from '@/components/ui/AppText';
 import { useTheme } from '@/hooks/useTheme';
 import { Typography } from '@/constants/theme';
 

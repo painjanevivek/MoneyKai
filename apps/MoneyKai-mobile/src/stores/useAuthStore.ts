@@ -28,6 +28,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isOnboarded: boolean;
+  onboardedUserId: string | null;
   isHydratingSession: boolean;
   setUser: (user: User | null) => void;
   signIn: (email: string, password: string) => Promise<void>;
@@ -54,46 +55,86 @@ const toAppUser = (user: NativeFirebaseUser): User => {
   };
 };
 
+const discardSplashUnlock = async () => {
+  const { clearDeviceOwnerVerification, consumeSplashAppLockResult } = await import('@/services/deviceOwnerAuthentication');
+  clearDeviceOwnerVerification();
+  await consumeSplashAppLockResult().catch(() => undefined);
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
       isOnboarded: false,
+      onboardedUserId: null,
       isHydratingSession: true,
 
       setUser: (user) => {
         invalidateRemoteSyncSession();
-        set({ user, isAuthenticated: !!user });
+        set((state) => ({
+          user,
+          isAuthenticated: !!user,
+          isOnboarded: user?.id === state.onboardedUserId && state.isOnboarded,
+        }));
       },
 
       hydrateSession: async () => {
         invalidateRemoteSyncSession();
         set({ isHydratingSession: true });
-
-        if (isDemoModeEnabled()) {
-          set((state) => ({
-            isAuthenticated: !!state.user,
-            isHydratingSession: false,
-          }));
-          return;
-        }
-
-        if (!isFirebaseConfigured()) {
-          set({ isHydratingSession: false });
-          return;
-        }
-
         try {
-          const sessionUser = await waitForAuthState();
+          const { waitForHomeStateHydration, waitForLocalStateHydration, waitForPersistedStore } = await import('@/services/localStateHydration');
+          const homeStateReady = Promise.all([
+            waitForPersistedStore(useAuthStore),
+            waitForHomeStateHydration(),
+          ]);
+          const localStateReady = Promise.all([
+            waitForPersistedStore(useAuthStore),
+            waitForLocalStateHydration(),
+          ]);
+
+          if (isDemoModeEnabled()) {
+            await homeStateReady;
+            if (!get().user) await discardSplashUnlock();
+            set((state) => ({ isAuthenticated: !!state.user }));
+            return;
+          }
+
+          if (!isFirebaseConfigured()) {
+            await homeStateReady;
+            await discardSplashUnlock();
+            set({ user: null, isAuthenticated: false });
+            return;
+          }
+
+          const sessionUserPromise = waitForAuthState();
+          await homeStateReady;
+          const sessionUser = await sessionUserPromise;
           if (sessionUser) {
+            const sameAccount = get().user?.id === sessionUser.uid;
+            if (!sameAccount) {
+              await localStateReady;
+              const { resetLocalAppState } = await import('@/services/remoteSync');
+              resetLocalAppState();
+              await discardSplashUnlock();
+            }
             set({ user: toAppUser(sessionUser), isAuthenticated: true });
-            const { syncRemoteState } = await import('@/services/remoteSync');
-            await syncRemoteState();
+            // Local stores are ready; a cloud refresh must not hold the opening screen.
+            void localStateReady.then(() => import('@/services/remoteSync'))
+              .then(({ syncRemoteState }) => syncRemoteState({ force: true, keepLocalData: sameAccount }))
+              .catch(() => undefined);
           } else {
+            await localStateReady;
+            await discardSplashUnlock();
+            const { resetLocalAppState } = await import('@/services/remoteSync');
+            resetLocalAppState();
             set({ user: null, isAuthenticated: false });
           }
+        } catch {
+          // Never expose a persisted account that Firebase could not verify.
+          await discardSplashUnlock();
+          set({ user: null, isAuthenticated: false });
         } finally {
           set({ isHydratingSession: false });
         }
@@ -105,6 +146,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           if (isDemoModeEnabled()) {
             await new Promise<void>((resolve) => setTimeout(() => resolve(), 600));
+            await discardSplashUnlock();
             set({
               user: {
                 id: 'sample-user-001',
@@ -115,6 +157,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
               isOnboarded: false,
+              onboardedUserId: null,
             });
             return;
           }
@@ -124,10 +167,13 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const credentials = await signInWithEmail(email, password);
+          await discardSplashUnlock();
           set({
             user: toAppUser(credentials.user),
             isAuthenticated: true,
             isLoading: false,
+            isOnboarded: false,
+            onboardedUserId: null,
           });
 
           const { syncRemoteState } = await import('@/services/remoteSync');
@@ -144,6 +190,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           if (isDemoModeEnabled()) {
             await new Promise<void>((resolve) => setTimeout(() => resolve(), 800));
+            await discardSplashUnlock();
             set({
               user: {
                 id: 'sample-user-001',
@@ -154,6 +201,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
               isOnboarded: false,
+              onboardedUserId: null,
             });
             return;
           }
@@ -167,6 +215,7 @@ export const useAuthStore = create<AuthState>()(
             displayName: fullName.trim(),
           });
 
+          await discardSplashUnlock();
           set({
             user: {
               ...toAppUser(credentials.user),
@@ -174,7 +223,8 @@ export const useAuthStore = create<AuthState>()(
             },
             isAuthenticated: true,
             isLoading: false,
-            isOnboarded: true,
+            isOnboarded: false,
+            onboardedUserId: null,
           });
 
           const { syncRemoteState } = await import('@/services/remoteSync');
@@ -191,6 +241,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           if (isDemoModeEnabled()) {
             await new Promise<void>((resolve) => setTimeout(() => resolve(), 800));
+            await discardSplashUnlock();
             set({
               user: {
                 id: 'sample-google-001',
@@ -201,6 +252,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
               isOnboarded: false,
+              onboardedUserId: null,
             });
             return;
           }
@@ -212,10 +264,13 @@ export const useAuthStore = create<AuthState>()(
           const { signInWithGoogleAsync } = await import('@/services/googleAuth');
           const user = await signInWithGoogleAsync();
 
+          await discardSplashUnlock();
           set({
             user: toAppUser(user),
             isAuthenticated: true,
             isLoading: false,
+            isOnboarded: false,
+            onboardedUserId: null,
           });
 
           const { syncRemoteState } = await import('@/services/remoteSync');
@@ -238,16 +293,22 @@ export const useAuthStore = create<AuthState>()(
           const { clearTransientSessionState, resetLocalAppState } = await import('@/services/remoteSync');
           await clearTransientSessionState();
           resetLocalAppState();
+          const { syncSplashAppLockEnabled } = await import('@/services/deviceOwnerAuthentication');
+          await syncSplashAppLockEnabled(false);
         };
 
         await cleanup().catch(() => {
           // Best effort cleanup only.
         });
-        set({ user: null, isAuthenticated: false, isLoading: false, isOnboarded: false });
+        set({ user: null, isAuthenticated: false, isLoading: false, isOnboarded: false, onboardedUserId: null });
       },
 
       setLoading: (loading) => set({ isLoading: loading }),
-      setOnboarded: (onboarded) => set({ isOnboarded: onboarded }),
+      setOnboarded: (onboarded) =>
+        set((state) => ({
+          isOnboarded: onboarded,
+          onboardedUserId: onboarded ? state.user?.id ?? null : null,
+        })),
 
       updateProfile: (updates) =>
         set((state) => {
@@ -267,6 +328,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
         isOnboarded: state.isOnboarded,
+        onboardedUserId: state.onboardedUserId,
       }),
     }
   )
