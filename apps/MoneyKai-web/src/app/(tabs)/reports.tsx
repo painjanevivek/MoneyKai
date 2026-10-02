@@ -3,6 +3,9 @@ import { Alert, Platform, Pressable, ScrollView, Text, View, useWindowDimensions
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {useMonthlyLedgerTotals} from '@/hooks/useMonthlyLedgerTotals';
+import {useLedgerPage} from '@/features/ledger/useLedgerPage';
+import {SyncedLedgerSummary} from '@/components/dashboard/SyncedLedgerSummary';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
@@ -40,7 +43,11 @@ export default function ReportsScreen() {
   const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? 'local');
   const { selectedMonthDate } = useReportingMonth();
-  const transactions = useTransactionStore((state) => state.transactions);
+  const month=`${selectedMonthDate.getFullYear()}-${String(selectedMonthDate.getMonth()+1).padStart(2,'0')}`;
+  const synced=useMonthlyLedgerTotals(month);
+  const lastDay=new Date(selectedMonthDate.getFullYear(),selectedMonthDate.getMonth()+1,0).getDate();
+  const ledger=useLedgerPage({from_date:month+'-01',to_date:month+'-'+lastDay});
+  const transactions=ledger.items;
   const addTransaction = useTransactionStore((state) => state.addTransaction);
   const fileInputRef = useRef<any>(null);
   const dragDepthRef = useRef(0);
@@ -71,13 +78,13 @@ export default function ReportsScreen() {
   const importedSummary = useMemo(() => {
     const summary = summarizeTransactions(transactions, { period: monthFinancePeriod(selectedMonthDate) });
     return {
-      income: summary.income,
-      expense: summary.expense,
-      count: summary.count,
+      income: synced.ready?synced.income:0,
+      expense: synced.ready?synced.expense:0,
+      count: synced.ready?synced.count:0,
       transactions: summary.transactions,
-      categoryTotals: Object.fromEntries(summary.categories.map((category) => [category.category, category.total])),
+      categoryTotals: Object.fromEntries(synced.categories.map((category) => [category.category, category.total])),
     };
-  }, [selectedMonthDate, transactions]);
+  }, [selectedMonthDate, transactions,synced.ready,synced.income,synced.expense,synced.count,synced.categories]);
   const hasFinishedReportData = importedSummary.count > 0 || allDrafts.length > 0;
 
   const topCategories = useMemo(() => {
@@ -433,7 +440,7 @@ export default function ReportsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.base, paddingBottom: 160 }} showsVerticalScrollIndicator={true}>
-        <View
+        <SyncedLedgerSummary month={month}/><View
           style={{
             backgroundColor: 'transparent',
             borderBottomWidth: 1,
@@ -561,7 +568,7 @@ export default function ReportsScreen() {
         ) : null}
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: Spacing.md }}>
-          {renderMetric('Synced mobile/web history', String(transactions.length), 'database-sync-outline', 'primary')}
+          {renderMetric('Synced monthly records', synced.ready?String(synced.count):'Unavailable', 'database-sync-outline', 'primary')}
           {renderMetric('Rows awaiting import', String(allDrafts.length), 'file-search-outline', 'warning')}
           {renderMetric('Statement expenses', formatCurrency(pendingSummary.expense), 'arrow-up-circle-outline', 'neutral')}
           {renderMetric('Statement income', formatCurrency(pendingSummary.income), 'arrow-down-circle-outline', 'accent')}

@@ -59,6 +59,7 @@ export interface CashflowPlanInput {
   cycleEnd: Date;
   now: Date;
   recurringObligations?: RecurringObligation[];
+  monthlyTotals?: {income:number;expense:number;categories:CategoryTotal[]};
 }
 
 export interface CommitmentInferenceInput {
@@ -224,6 +225,7 @@ export const buildCashflowPlan = ({
   cycleEnd,
   now,
   recurringObligations = [],
+  monthlyTotals,
 }: CashflowPlanInput): CashflowPlan => {
   const cycleStartOrdinal = toUtcDayOrdinal(cycleStart);
   const cycleEndOrdinal = toUtcDayOrdinal(cycleEnd);
@@ -237,8 +239,8 @@ export const buildCashflowPlan = ({
       compareText(a.transaction.id, b.transaction.id));
   const cycleTransactions = cycleEntries.map(({ transaction }) => transaction);
   const financeSummary = summarizeTransactions(cycleTransactions);
-  const actualIncome = financeSummary.income;
-  const actualExpense = financeSummary.expense;
+  const actualIncome = monthlyTotals?.income ?? financeSummary.income;
+  const actualExpense = monthlyTotals?.expense ?? financeSummary.expense;
   const nowOrdinal = toUtcDayOrdinal(now);
   const isForecastAvailable = isOrdinalInside(nowOrdinal, cycleStartOrdinal, cycleEndOrdinal);
   const inferredCommitments = inferMonthlyCommitments({ transactions, cycleStart, cycleEnd, now });
@@ -277,7 +279,7 @@ export const buildCashflowPlan = ({
   const safeToSpend = allowance > 0 ? Math.max(0, budgetAvailable - upcomingCommitments) : 0;
   const forecastNetFlow = actualIncome - actualExpense + upcomingIncome - upcomingCommitments;
 
-  const categories: CategoryTotal[] = financeSummary.categories;
+  const categories: CategoryTotal[] = monthlyTotals?.categories ?? financeSummary.categories;
 
   const goals: GoalSnapshot[] = challenges
     .filter((challenge) => challenge.status === 'active')

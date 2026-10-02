@@ -8,6 +8,7 @@ module.exports = {
         root: ['./src'],
         alias: {
           '@': './src',
+          '@moneykai/domain': '../../packages/domain/src',
           '@/assets': './assets',
           'react-native-vector-icons/MaterialCommunityIcons': './src/components/ui/AppIcon',
         },

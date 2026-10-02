@@ -15,6 +15,16 @@ export function SmsSyncStatus(){
   const {colors}=useTheme(),owner=useAuthStore(s=>s.user?.id),ready=useLocalLedgerStore(s=>s.ready);
   const [enabled,setEnabled]=useState(false),[busy,setBusy]=useState(false),[status,setStatus]=useState<Status>(),[job,setJob]=useState<Job>(),[notice,setNotice]=useState('');
   const pending=useLocalLedgerStore(s=>s.counts.pending);
+  const reconcile=async()=>{
+    if(!owner || busy)return;setBusy(true);
+    try {let progress=await ledgerRequest<{state:string;scanned:number}>(owner,{op:'reconcile',restart:true});
+      while(progress.state!=='completed' && useAuthStore.getState().user?.id===owner) {
+        setNotice(`Rebuilding phone totals: ${progress.scanned} records checked.`);
+        progress=await ledgerRequest(owner,{op:'reconcile'});
+      }
+      if(useAuthStore.getState().user?.id===owner){await useLocalLedgerStore.getState().refreshOverview();setNotice('Phone totals rebuilt from saved records.');}
+    }catch{setNotice('Rebuild paused. Saved records are preserved; reopen this screen and retry.');}finally{setBusy(false);}
+  };
   useEffect(()=>{
     setEnabled(false);setStatus(undefined);setJob(undefined);setNotice('');
     if(!owner || !ready || !(LARGE_SMS_LOCAL_ENABLED || APPROVED_SMS_CLOUD_ENABLED))return;let active=true;
@@ -51,6 +61,7 @@ export function SmsSyncStatus(){
     {!APPROVED_SMS_CLOUD_ENABLED?<Text style={{color:colors.textSecondary}}>Cloud synchronization is currently unavailable. Local parsing and review continue.</Text>:null}
     {enabled?<Button title="Check synchronization" variant="outline" disabled={busy} onPress={()=>{if(owner)void syncApprovedSmsOnce(owner).then(setStatus);}}/>:null}
     {status?.paused?<Text style={{color:colors.textSecondary}}>Synchronization paused: {status.paused.replaceAll('_',' ')}{status.retryAt?`. Retry after ${new Date(status.retryAt).toLocaleString()}`:''}.</Text>:null}
+    <Button title="Rebuild phone totals" variant="ghost" disabled={busy} onPress={()=>void reconcile()}/>
     {notice?<Text accessibilityLiveRegion="polite" style={{color:colors.textSecondary}}>{notice}</Text>:null}
   </View>;
 }

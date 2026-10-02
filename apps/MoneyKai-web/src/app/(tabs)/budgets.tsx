@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Switch, TextInput, View, Text, ScrollView, useWi
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useMonthlyLedgerTotals} from '@/hooks/useMonthlyLedgerTotals';
+import {SyncedLedgerSummary} from '@/components/dashboard/SyncedLedgerSummary';
 import { useTheme } from '@/hooks/useTheme';
 import { useBudgetStore } from '@/stores/useBudgetStore';
 import { useTransactionStore } from '@/stores/useTransactionStore';
@@ -181,6 +183,8 @@ export default function BudgetsScreen() {
   const insets = useSafeAreaInsets();
   const { selectedMonthDate } = useReportingMonth();
   const userId = useAuthStore((state) => state.user?.id);
+  const month=`${selectedMonthDate.getFullYear()}-${String(selectedMonthDate.getMonth()+1).padStart(2,'0')}`;
+  const synced=useMonthlyLedgerTotals(month);
   const recurringPlanning = useRecurringPlanning(userId);
   const transactions = useTransactionStore((state) => state.transactions);
   const challenges = useChallengeStore((state) => state.challenges);
@@ -207,6 +211,7 @@ export default function BudgetsScreen() {
     cycleEnd: new Date(cycleEndMs),
     now: new Date(reportingNowMs),
     recurringObligations: recurringPlanning.recurringObligations,
+    monthlyTotals:synced.ready?{income:synced.income,expense:synced.expense,categories:synced.categories}:undefined,
   });
 
   const allowance = settings.monthly_allowance;
@@ -245,9 +250,11 @@ export default function BudgetsScreen() {
     setAdjustmentAmount('');
   };
 
+  if(!synced.ready)return <SafeAreaView style={{flex:1,backgroundColor:colors.background}}><ScrollView contentContainerStyle={{padding:Spacing.lg,gap:Spacing.md}}><SyncedLedgerSummary month={month}/><Text style={{color:colors.textSecondary}}>Budget estimates wait for complete synced monthly totals. Your budget settings remain saved.</Text></ScrollView></SafeAreaView>;
+
   const metrics = [
     { label: 'Monthly budget', value: allowance > 0 ? formatCurrency(allowance) : 'Not set', detail: 'Total planned for the month', color: allowance > 0 ? colors.success : colors.textTertiary },
-    { label: 'Spent', value: formatCurrency(spent), detail: allowance > 0 ? `${Math.round(usage)}% of budget used` : 'From reviewed expenses', color: colors.warning },
+    { label: 'Spent', value: synced.ready?formatCurrency(spent,'INR',true):'Unavailable', detail: allowance > 0 ? `${Math.round(usage)}% of budget used` : 'From reviewed expenses', color: colors.warning },
     { label: 'Available', value: allowance > 0 ? formatCurrency(available) : 'Not set', detail: 'Left to spend this month', color: available < 0 ? colors.error : colors.success },
     { label: 'Daily safe-to-spend', value: allowance > 0 ? formatCurrency(dailySafeToSpend) : 'Not set', detail: `For the remaining ${remainingDays} days`, color: colors.info },
   ];
@@ -297,6 +304,7 @@ export default function BudgetsScreen() {
         </View>
       </View>
 
+      <Text style={{color:colors.textSecondary}}>Spending includes transactions synchronized so far. Phone totals may include additional local records.{settings.carry_forward?' Automatic carry-forward is paused while history is loaded in pages.':''}</Text>
       <View style={[budgetStyles.metricStrip, { borderColor: colors.borderLight, backgroundColor: colors.card }]}>
         {metrics.map((metric, index) => (
           <View

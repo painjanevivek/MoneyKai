@@ -7,6 +7,7 @@ import {
   configureNativeSmsSchedule,
   setNativeCaptureSourcesEnabled,
   subscribeToNativeCaptureSignals,
+  mapNativeSignalToCaptureSignal,
   setPaymentNotificationPackages,
 } from '@/services/nativeCaptureBridge';
 import { useCaptureStore } from '@/stores/useCaptureStore';
@@ -60,6 +61,25 @@ export function AutoCaptureCoordinator() {
       .sort()
       .join('|')
   );
+
+  useEffect(()=>{
+    if(!LARGE_SMS_LOCAL_ENABLED || !userId || !autoCaptureEnabled || !notificationCaptureEnabled || budget<=0)return;
+    let stopped=false,running=false;
+    const drain=async()=>{
+      if(stopped || running || !useLocalLedgerStore.getState().ready)return;running=true;
+      try {
+        const {events}=await ledgerRequest<{events:Parameters<typeof mapNativeSignalToCaptureSignal>[0][]}>(userId,{op:'captureEvents'});
+        for(const event of events) {
+          if(stopped || useAuthStore.getState().user?.id!==userId)return;
+          const signal=mapNativeSignalToCaptureSignal(event);
+          if(signal)await ingestLedgerNotification(signal);
+        }
+      } catch {useLocalLedgerStore.setState({error:'Notification processing is paused. Saved events will retry.'});}
+      finally{running=false;}
+    };
+    void drain();const timer=setInterval(()=>void drain(),5000);
+    return()=>{stopped=true;clearInterval(timer);};
+  },[userId,autoCaptureEnabled,notificationCaptureEnabled,budget,selectedPackages]);
 
   useEffect(() => {
     void setPaymentNotificationPackages(selectedPackages ? selectedPackages.split('|') : [], userId ?? '');

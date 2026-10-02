@@ -56,7 +56,7 @@ internal object MoneyKaiLocalImport {
   fun readRows(context: Context, job: JSONObject): JSONArray {
     val clauses = mutableListOf("date>=?","date<=?","_id<=?","(date<? OR (date=? AND _id<?))")
     val values = mutableListOf(job.getLong("fromDate").toString(),job.getLong("boundaryDate").toString(),job.getLong("boundaryId").toString(),job.getLong("cursorDate").toString(),job.getLong("cursorDate").toString(),job.getLong("cursorId").toString())
-    job.optJSONObject("after")?.let { clauses.add("(date>? OR (date=? AND _id>?))"); values.add(it.getLong("date").toString()); values.add(it.getLong("date").toString()); values.add(it.getLong("id").toString()) }
+    job.optJSONObject("after")?.let { clauses.add("_id>?"); values.add(it.getLong("id").toString()) }
     val args = Bundle().apply { putString(android.content.ContentResolver.QUERY_ARG_SQL_SELECTION,clauses.joinToString(" AND ")); putStringArray(android.content.ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS,values.toTypedArray()); putString(android.content.ContentResolver.QUERY_ARG_SQL_SORT_ORDER,"date DESC,_id DESC"); putInt(android.content.ContentResolver.QUERY_ARG_LIMIT,BATCH_SIZE) }
     val rows = JSONArray()
     context.contentResolver.query(Uri.parse("content://sms/inbox"),arrayOf("_id","address","body","date"),args,null)?.use {
@@ -148,8 +148,9 @@ internal object MoneyKaiLocalImport {
     if(job.getString("state") !in listOf("discovering","importing")) return job
     val accounts = job.getJSONArray("selectedAccounts")
     val accountChanged = job.getString("state") == "importing" && (0 until accounts.length()).any { !MoneyKaiNativeCaptureModule.isSmsAccountApproved(context,accounts.getString(it)) }
-    if(!allowed(context,owner) || accountChanged || context.noBackupFilesDir.usableSpace < 64L*1024*1024) {
-      job.put("resumeState",job.getString("state")).put("state","paused").put("pauseReason",if(accountChanged) "account_selection_changed" else if(!allowed(context,owner)) "permission_or_consent_changed" else "low_storage")
+    val rebuilding=MoneyKaiSummaryReconcile.active(db,owner)
+      if(rebuilding || !allowed(context,owner) || accountChanged || context.noBackupFilesDir.usableSpace < 64L*1024*1024) {
+      job.put("resumeState",job.getString("state")).put("state","paused").put("pauseReason",if(rebuilding) "summaries_rebuilding" else if(accountChanged) "account_selection_changed" else if(!allowed(context,owner)) "permission_or_consent_changed" else "low_storage")
       save(db,owner,job); return job
     }
     return try { processRows(context,db,owner,job,readRows(context,job)) { allowed(context,owner) } }
@@ -215,7 +216,7 @@ internal object MoneyKaiLocalImport {
       val accounts = JSONArray()
       for(index in 0 until monitored.length()) if(monitored.getJSONObject(index).optString("status") == "approved") accounts.put(monitored.getJSONObject(index).getString("id"))
       if(accounts.length() == 0) return false
-      job = newJob(owner,after.getLong("date"),date,id,true).put("after",after).put("selectedAccounts",accounts)
+      job = newJob(owner,0,date,id,true).put("after",after).put("selectedAccounts",accounts)
       save(db,owner,job)
     }
     if(job.getString("state") !in listOf("discovering","importing")) return false

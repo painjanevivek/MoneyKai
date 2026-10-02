@@ -11,7 +11,7 @@ export const BudgetResetCoordinator: React.FC = () => {
   const processMonthlyReset = useBudgetStore((s) => s.processMonthlyReset);
 
   useEffect(() => {
-    if (!isAuthenticated || !settings.auto_reset || settings.monthly_allowance <= 0) {
+    if (!isAuthenticated || !settings.auto_reset || settings.carry_forward || settings.monthly_allowance <= 0) {
       return;
     }
 

@@ -28,7 +28,7 @@ export function AddTransactionScreen() {
   const styles = createAppScreenStyles(colors);
   const user = useAuthStore((state) => state.user);
   const currencySymbol = useSettingsStore((state) => state.currencySymbol);
-  const addTransaction = useTransactionStore((state) => state.addTransaction);
+  const addTransaction = useTransactionStore((state) => state.addTransactionDurable);
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -55,7 +55,7 @@ export function AddTransactionScreen() {
     }
   };
 
-  const submit = () => {
+  const submit = async () => {
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       setFormError('Enter a valid amount greater than zero.');
@@ -72,7 +72,8 @@ export function AddTransactionScreen() {
 
     setFormError(null);
     setIsSaving(true);
-    const saved = addTransaction({
+    try {
+    const saved = await addTransaction({
       user_id: user?.id ?? 'local',
       type,
       amount: numericAmount,
@@ -91,6 +92,7 @@ export function AddTransactionScreen() {
     setAmount('');
     setDescription('');
     navigation.navigate('Transactions');
+    } catch { setFormError('Could not save. Your input is preserved. Try again.'); } finally {setIsSaving(false);}
   };
 
   const selectedDate = new Date(`${date}T00:00:00`);

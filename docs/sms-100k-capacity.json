@@ -1,0 +1,21 @@
+{
+  "recordedAt": "2026-10-03T00:21:08+05:30",
+  "scenario": "synthetic SQLCipher Android instrumentation; repeated final run",
+  "validMessages": 100000,
+  "mixedInboxMessages": 110000,
+  "mixedValidMessages": 100000,
+  "parsedImportMs": 1262329,
+  "replayAndMixedMs": 231754,
+  "databaseGrowthBytes": 388345856,
+  "pageP95Ms": 7.945104,
+  "summaryP95Ms": 25.128281,
+  "nativeHeapDeltaBytes": -1003520,
+  "maxTemporaryRows": 250,
+  "device": "AIN065",
+  "android": "16",
+  "deviceMemTotalKiB": 11530736,
+  "fourGiBDeviceVerified": false,
+  "javascriptHeapGateVerified": false,
+  "batteryImpactMeasured": false,
+  "productionCloudActivated": false
+}

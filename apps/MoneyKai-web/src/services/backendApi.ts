@@ -335,7 +335,7 @@ function parseSseFrame(frame: string): AiChatStreamEvent | null {
   return payload;
 }
 
-export type MonthlyLedgerSummary={month:string;status:string;scope:'synced_cloud';partialSynchronization:boolean;items:{month:string;category:string;direction:string;amountMinor:number;count:number}[]};
+export type MonthlyLedgerSummary={month:string;status:string;scope:'synced_cloud';partialSynchronization:boolean;categoryRowsPartial?:boolean;items:{month:string;category:string;direction:string;amountMinor:number;count:number}[]};
 export const backendApi = {
   getLedgerTransactions: async (filters:import('./ledgerPages').LedgerFilters={},cursor?:string) => {
     const params=new URLSearchParams({limit:'50'});

@@ -370,7 +370,7 @@ export default function TransactionsScreen() {
                 textAlign: 'right',
               }}
             >
-              {isExpense ? '-' : '+'}{formatCurrency(txn.amount)}
+              {isExpense ? '-' : '+'}{formatCurrency(txn.amount,'INR',true)}
             </Text>
           </View>
 
@@ -537,7 +537,7 @@ export default function TransactionsScreen() {
             textAlign: 'right',
           }}
         >
-          {isExpense ? '-' : '+'}{formatCurrency(txn.amount)}
+          {isExpense ? '-' : '+'}{formatCurrency(txn.amount,'INR',true)}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginLeft: Spacing.md }}>
           <TouchableOpacity
@@ -592,9 +592,9 @@ export default function TransactionsScreen() {
             description="Search, filter, edit, and approve the records shaping MoneyKai reports and budget decisions."
             metrics={[
               { label: 'Visible records', value: String(displayTransactions.length) },
-              { label: 'Page spending', value: formatCurrency(totalSpent), tone: 'danger' },
-              { label: 'Page income', value: formatCurrency(totalIncome), tone: 'positive' },
-              { label: 'Page net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow))}`, tone: netFlow < 0 ? 'danger' : 'positive' },
+              { label: 'Page spending', value: formatCurrency(totalSpent,'INR',true), tone: 'danger' },
+              { label: 'Page income', value: formatCurrency(totalIncome,'INR',true), tone: 'positive' },
+              { label: 'Page net flow', value: `${netFlow < 0 ? '-' : '+'}${formatCurrency(Math.abs(netFlow),'INR',true)}`, tone: netFlow < 0 ? 'danger' : 'positive' },
             ]}
             actions={<Button title="Add Transaction" icon="plus" onPress={handleOpenAddModal} variant="outline" />}
           />

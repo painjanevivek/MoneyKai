@@ -41,9 +41,9 @@ export function TransactionComposerSheet({
   const monthlyAllowance = useBudgetStore((s) => s.settings.monthly_allowance);
   const updateBudgetSettings = useBudgetStore((s) => s.updateSettings);
   const currencySymbol = useSettingsStore((s) => s.currencySymbol);
-  const addTransaction = useTransactionStore((s) => s.addTransaction);
-  const updateTransaction = useTransactionStore((s) => s.updateTransaction);
-  const deleteTransaction = useTransactionStore((s) => s.deleteTransaction);
+  const addTransaction = useTransactionStore((s) => s.addTransactionDurable);
+  const updateTransaction = useTransactionStore((s) => s.updateTransactionDurable);
+  const deleteTransaction = useTransactionStore((s) => s.deleteTransactionDurable);
   const isEditing = editingTransaction !== null;
 
   const [txnType, setTxnType] = useState<'expense' | 'income'>(editingTransaction?.type ?? 'expense');
@@ -115,7 +115,7 @@ export function TransactionComposerSheet({
     setShowBudgetDialog(false);
   };
 
-  const handleSubmitTransaction = () => {
+  const handleSubmitTransaction = async () => {
     if (!isEditing && monthlyAllowance <= 0) {
       showBudgetRequiredAlert();
       return;
@@ -144,10 +144,11 @@ export function TransactionComposerSheet({
       transaction_date: txnDate,
     };
 
+    try {
     if (editingTransaction) {
-      updateTransaction(editingTransaction.id, transactionPayload);
+      await updateTransaction(editingTransaction.id, transactionPayload);
     } else {
-      const didAddTransaction = addTransaction(transactionPayload);
+      const didAddTransaction = await addTransaction(transactionPayload);
       if (!didAddTransaction) {
         if (useBudgetStore.getState().settings.monthly_allowance <= 0) {
           showBudgetRequiredAlert();
@@ -159,6 +160,7 @@ export function TransactionComposerSheet({
     }
 
     handleClose();
+    } catch { Alert.alert('Could not save transaction','Your input is preserved. Try again.'); }
   };
 
   const handleDelete = () => {
@@ -169,9 +171,9 @@ export function TransactionComposerSheet({
     confirmDestructive({
       title: 'Delete Transaction',
       message: 'Remove this transaction from your history? This cannot be undone.',
-      onConfirm: () => {
-        deleteTransaction(editingTransaction.id);
-        handleClose();
+      onConfirm: async () => {
+        try { await deleteTransaction(editingTransaction.id); handleClose(); }
+        catch { Alert.alert('Could not delete transaction','The saved record is preserved. Try again.'); }
       },
     });
   };

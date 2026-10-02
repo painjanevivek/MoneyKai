@@ -19,7 +19,14 @@ internal object MoneyKaiOfflineSmsParser {
       for(name in listOf("amount","bareAmount","debit","credit","ignore","merchant","currencies","refund","reversal","transfer")) patterns[name] = Regex(it.getString(name),RegexOption.IGNORE_CASE)
     }
   }
-  fun digest(value: String) = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+  private val hash = ThreadLocal.withInitial { MessageDigest.getInstance("SHA-256") }
+  private val hex = "0123456789abcdef".toCharArray()
+  fun digest(value: String):String {
+    val bytes=hash.get()!!.digest(value.toByteArray(Charsets.UTF_8))
+    return CharArray(bytes.size*2).also { chars -> bytes.forEachIndexed { index,byte ->
+      val value=byte.toInt() and 255;chars[index*2]=hex[value ushr 4];chars[index*2+1]=hex[value and 15]
+    }}.concatToString()
+  }
   fun messageIdentity(sender: String, body: String, date: Long, id: String) = digest("message|${sender.lowercase(Locale.US)}|$date|$id|${digest(body)}")
   fun parse(context: Context, sender: String, body: String, date: Long, id: String): JSONObject? {
     val config = load(context)

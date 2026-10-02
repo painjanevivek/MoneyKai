@@ -21,7 +21,10 @@ export async function ingestLedgerNotification(input:CaptureSignalInput) {
   const receivedAt=input.receivedAt || new Date().toISOString();
   const parsed=parseCapturedSignal(input,merchantRules.filter(r=>!r.userId || r.userId===owner));
   const {digest}=await ledgerRequest<{digest:string}>(owner,{op:'digest',value:JSON.stringify([app.packageName,receivedAt,input.title,input.body])});
-  if(owner!==useAuthStore.getState().user?.id) return;
+  const current=useCaptureStore.getState().settings;
+  if(owner!==useAuthStore.getState().user?.id || !current.autoCaptureEnabled || !current.notificationCaptureEnabled ||
+    !current.notificationExplainerAcceptedAt || !useConnectStore.getState().notificationAppsByUser[owner]?.[app.id] ||
+    useBudgetStore.getState().settings.monthly_allowance<=0) return;
   const row=parsed.amount && parsed.type && parsed.parseStatus!=='ignore'?{
     id:'notification_'+digest,signalId:digest,user_id:owner,amount:parsed.amount,type:parsed.type,
     category:parsed.category || 'other',suggestedCategory:parsed.category,description:parsed.merchantLabel || 'Payment notification',
@@ -30,7 +33,7 @@ export async function ingestLedgerNotification(input:CaptureSignalInput) {
     semantics:parsed.semantics,parserVersion:parsed.parserVersion,reviewRequired:true,reviewStatus:'pending',status:'pending',
     confidence:parsed.confidence,createdAt:new Date().toISOString(),syncStatus:'local_only',
   }:undefined;
-  await ledgerRequest(owner,{op:'captureOutcome',identity:digest,row});
+  await ledgerRequest(owner,{op:'captureOutcome',identity:digest,row,eventId:input.rawPayload?.nativeCaptureEventId});
   if(owner===useAuthStore.getState().user?.id) await Promise.all([
     useLocalLedgerStore.getState().queryDrafts(),useLocalLedgerStore.getState().refreshOverview(),
   ]);

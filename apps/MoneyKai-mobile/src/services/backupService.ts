@@ -1,3 +1,4 @@
+import {captureRemoteSyncSession,isRemoteSyncSessionCurrent} from '@moneykai/domain/syncSession';
 import { LARGE_SMS_LOCAL_ENABLED } from '@/config/largeSmsFeatures';
 import { mergeLedgerSnapshot } from './mergeLedgerSnapshot';
 import { useLocalLedgerStore } from '@/stores/useLocalLedgerStore';
@@ -328,6 +329,7 @@ export const flushAutomaticBackup = async ({ force = false }: { force?: boolean 
 };
 
 export const buildBackupSnapshot = (): MoneyKaiBackupSnapshot => {
+  if(LARGE_SMS_LOCAL_ENABLED) throw new Error('Full-history snapshot backup is unavailable for the encrypted ledger. Your saved history is preserved; approved SMS synchronization is managed separately.');
   const user = normalizeUser();
   const budget = useBudgetStore.getState();
   const transactions = useTransactionStore.getState().transactions.filter(t => t.captureSource !== 'sms' && t.captureSource !== 'notification');
@@ -516,11 +518,13 @@ export const getLatestCloudBackupMetadata = async () => summarizeBackupSnapshot(
 
 export const restoreBackupSnapshot = async (snapshot: MoneyKaiBackupSnapshot) => {
   const user = normalizeUser();
+  const session=captureRemoteSyncSession(user.id);
   if (snapshot.profile.id !== user.id) {
     throw new Error('This backup belongs to a different account.');
   }
 
   if(LARGE_SMS_LOCAL_ENABLED) await mergeLedgerSnapshot(snapshot.data.transactions);
+  if(!isRemoteSyncSessionCurrent(session,useAuthStore.getState().user?.id)) throw new Error('Restore stopped because the account changed.');
   void clearAutomaticBackupQueue().catch(() => undefined);
   useAuthStore.setState((state) => ({
     user: state.user

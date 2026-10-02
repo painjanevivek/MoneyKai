@@ -6,16 +6,24 @@ Cloud ingestion starts disabled. No billing upgrades, provider AI calls, paid TT
 
 ## Phases
 
-- Phase 0: baseline copied; acceptance pending.
-- Phases 1–8: pending.
+- Phases 0–7: acceptance checks completed and feature commits pushed.
+- Phase 8: software/synthetic checks recorded; final checkpoint below. Production activation and target-hardware acceptance remain pending.
+
+| Phase | Client commit | Backend commit |
+| --- | --- | --- |
+| 0 | fbb41293 | e8f4b507 |
+| 1 | 2d35366a | f0ca96f4 |
+| 2 | b1f3afe6 | No backend change |
+| 3 | de1582e4 | No backend change |
+| 4 | 0a515b79 | No backend change |
+| 5 | d07124cf | 1654dda1 |
+| 6 | 4af82fa2 | 2ee3d7e7 |
+| 7 | 17079626 | d07c14c1 |
+| 8 | This checkpoint commit | Paired final checkpoint commit |
+
+See [validation and unresolved gates](sms-100k-validation.md). Both local and cloud activation switches remain off. The broad mobile suite retains documented baseline fixture/mock failures; focused capture checks and client type checks pass.
 
 The baseline preserves the source dependencies of the current capture and bare React Native runtime. Original working directories and their indexes remain unchanged.
-
-## Phase 0 checkpoint
-
-Baseline: 177 mobile capture tests and 25 backend auth/finance tests passed. Mobile typecheck has four pre-existing navigation typing errors (Budget/More). Dependency links use existing local installations; original working directories remain intact; feature-branch preview deployment is disabled.
-
-Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
 
 ## Phase 0 checkpoint
 
@@ -62,5 +70,11 @@ Reviewed scoped diff; commit and normal push recorded in Git. Production activat
 ## Phase 7 checkpoint
 
 Passed 179 mobile capture tests, 5 web paging/sync tests, 38 focused backend tests, 9 Android library instrumentation tests on AIN065, mobile/web type checks and OpenAPI/generated client checks. Reviewed the intended bounded views, durable restore, encrypted migration snapshot and summary command diff. Production activation remains disabled.
+
+Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Phase 8 checkpoint
+
+362 backend tests passed; explicit Firestore emulator SDK integration passed; 179 mobile capture and 139 web tests passed; 13 native recovery tests and the repeated 100000-record device benchmark passed; local debug APK, client types, API-client, API boundary and OpenAPI checks passed. Target 4 GB, JavaScript heap, battery and production free-cloud activation gates remain unverified; broad mobile baseline fixture/mock failures are documented.
 
 Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.

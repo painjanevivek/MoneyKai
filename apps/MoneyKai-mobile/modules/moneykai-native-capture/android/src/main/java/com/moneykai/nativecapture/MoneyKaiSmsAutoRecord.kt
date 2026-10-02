@@ -13,7 +13,7 @@ object MoneyKaiSmsAutoRecord {
   fun referenceHash(body: String): String? {
     val value = (reference.find(body) ?: slashReference.find(body))?.groupValues?.get(1)?.lowercase(Locale.US) ?: return null
     if (!value.any { it.isDigit() }) return null // "reference unavailable" is not a payment reference.
-    return MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+    return MoneyKaiOfflineSmsParser.digest(value)
   }
   fun safe(body: String): Boolean {
     if (body.length > 500 || referenceHash(body) == null || !MoneyKaiSmsFilters.looksLikeFinancialSms(body)) return false

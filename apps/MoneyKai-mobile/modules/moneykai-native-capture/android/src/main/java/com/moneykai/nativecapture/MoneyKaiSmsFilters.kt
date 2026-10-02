@@ -108,8 +108,7 @@ object MoneyKaiSmsFilters {
   }
 
   fun toIsoUtc(timestamp: Long): String {
-    val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-    formatter.timeZone = TimeZone.getTimeZone("UTC")
-    return formatter.format(Date(timestamp))
+    return utcFormatter.get()!!.format(Date(timestamp))
   }
+  private val utcFormatter=ThreadLocal.withInitial {SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",Locale.US).apply {timeZone=TimeZone.getTimeZone("UTC")}}
 }

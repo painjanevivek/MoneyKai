@@ -258,6 +258,16 @@ class MoneyKaiNativeCaptureModule(
       if (!isPaymentNotificationAllowed(context, event.getString("rawPackageName").orEmpty())) return
       event.putString("notificationOwnerId", paymentNotificationOwner(context))
 
+      if(MoneyKaiLocalImport.enabled(context)) {
+        MoneyKaiLedger.executor.execute {
+          try {
+            event.putString("nativeCaptureEventId",MoneyKaiNotificationQueue.enqueue(context,event))
+            if(activeModule!=null) emitNotificationSignal(event)
+          } catch(_:Exception) { /* No acknowledgement: active Android notifications can be retried on reconnect. */ }
+        }
+        return
+      }
+
       handleNativeSignal(context, event)
     }
 
@@ -284,6 +294,22 @@ class MoneyKaiNativeCaptureModule(
     }
 
     @Synchronized private fun flushPendingSignals(context: Context) {
+      if(MoneyKaiLocalImport.enabled(context)) {
+        MoneyKaiLedger.executor.execute {
+          try {
+            val pending=readPendingSignals(context)
+            val remaining=JSONArray()
+            for(event in pending) {
+              if(event.getString("source")=="notification" && event.getString("notificationOwnerId")==MoneyKaiLedger.activeOwner(context)) MoneyKaiNotificationQueue.enqueue(context,event)
+              else remaining.put(bundleToJson(event))
+            }
+            // Preserve other owners and legacy SMS signals; only migrated events leave this ciphertext.
+            if(remaining.length()==0) clearPendingSignals(context)
+            else MoneyKaiPrivateStorage.set(context,"moneykai-pending-signals",remaining.toString())
+          } catch(_:Exception) { /* Preserve original ciphertext for a retry. */ }
+        }
+        return
+      }
       val pendingSignals = readPendingSignals(context)
       if (pendingSignals.isEmpty()) {
         return

@@ -15,6 +15,7 @@ import { titleCase } from '@/utils/labels';
 import { summarizePeople } from '@/utils/contactAllocations';
 import { CounterpartyNickname } from '@/components/transactions/CounterpartyNickname';
 import { useTransactionLabels } from '@/hooks/useTransactionLabels';
+import {LedgerConflictReview} from '@/components/capture/LedgerConflictReview';
 
 const SOURCE_LABELS: Record<TransactionCaptureSource, string> = {
   notification: 'Notification',
@@ -154,6 +155,7 @@ export function TransactionDetailSheet({ transaction, onClose, onEdit, onSplit, 
         </View>
       }
     >
+      <LedgerConflictReview transaction={transaction} onResolved={onClose}/>
       <View
         style={{
           backgroundColor: colors.primaryBg,

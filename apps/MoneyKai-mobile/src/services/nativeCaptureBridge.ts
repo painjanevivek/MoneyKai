@@ -43,6 +43,7 @@ type NativeCaptureSubscription = {
 };
 
 type NativeCaptureSignal = {
+  nativeCaptureEventId?:string;
   source?: 'notification' | 'sms';
   title?: string;
   body?: string;
@@ -563,7 +564,7 @@ export const subscribeToNativeCaptureSignals = (
   };
 };
 
-const mapNativeSignalToCaptureSignal = (event: NativeCaptureSignal): CaptureSignalInput | undefined => {
+export const mapNativeSignalToCaptureSignal = (event: NativeCaptureSignal): CaptureSignalInput | undefined => {
   const source = event.source === 'sms' ? 'sms' : 'notification';
   const body =
     event.body?.trim() ||
@@ -582,6 +583,7 @@ const mapNativeSignalToCaptureSignal = (event: NativeCaptureSignal): CaptureSign
     receivedAt: event.receivedAt,
     rawPayload: {
       rawPackageName: event.rawPackageName,
+      nativeCaptureEventId: event.nativeCaptureEventId,
       privacyStatus: event.privacyStatus,
       captureOrigin: event.captureOrigin,
       rawBodyStored: event.rawBodyStored,

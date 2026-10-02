@@ -158,6 +158,11 @@ android {
         versionCode 18
         versionName "1.0.17"
 
+        // Hash long generated C++ object paths inside Windows worktrees.
+        externalNativeBuild {
+            cmake { arguments "-DCMAKE_OBJECT_PATH_MAX=240" }
+        }
+
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
         buildConfigField "boolean", "MONEYKAI_DEMO_BUILD", "false"
         buildConfigField "boolean", "MONEYKAI_NOTIFICATION_CAPTURE", moneyKaiNotificationCapture.toString()
@@ -234,6 +239,9 @@ android {
     } else if (moneyKaiNotificationCapture) {
         sourceSets.release.manifest.srcFile('src/main/notification-permission-manifest.xml')
         sourceSets.original.manifest.srcFile('src/main/notification-permission-manifest.xml')
+    }
+    if (findProperty('MONEYKAI_CXX_STAGING_DIR')) {
+        externalNativeBuild.cmake.buildStagingDirectory = file(findProperty('MONEYKAI_CXX_STAGING_DIR'))
     }
     packagingOptions {
         jniLibs {

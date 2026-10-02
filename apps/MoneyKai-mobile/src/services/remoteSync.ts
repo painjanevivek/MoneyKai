@@ -119,7 +119,9 @@ export const resetLocalAppState = ({ preserveGroupStore = false }: { preserveGro
 };
 
 const applyRemoteSnapshot = async (snapshot: FirestoreUserSnapshot, source: 'cache' | 'network') => {
+  const session=captureRemoteSyncSession(useAuthStore.getState().user?.id ?? '');
   if(LARGE_SMS_LOCAL_ENABLED) await mergeLedgerSnapshot(snapshot.data.transactions);
+  if(!isCurrentSession(session)) return;
   const deviceOnlyTransactions = useTransactionStore.getState().transactions.filter(t => t.captureSource === 'sms' || t.captureSource === 'notification');
   const userId = useAuthStore.getState().user?.id;
   const { groups: mergedGroups, expenses: mergedExpenses } = reconcileGroupSnapshot(

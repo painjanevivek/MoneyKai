@@ -127,7 +127,7 @@ internal object MoneyKaiCloudOutbox {
       MoneyKaiLedger.put(db,owner,"transactions",local,false)
       return
     }
-    if(local != null && remote.optLong("revision") < local.optLong("revision")) return
+    if(local != null && (remote.optLong("revision") < local.optLong("revision") || local.optString("syncStatus") in listOf("pending","conflict") && remote.optLong("revision") == local.optLong("revision"))) return
     val row = JSONObject(remote.toString()).put("syncStatus","synced")
     if(local != null) row.put("id",local.getString("id")).put("localRevision",local.optLong("localRevision"))
     MoneyKaiLedger.put(db,owner,"transactions",row,false)
@@ -167,14 +167,39 @@ internal object MoneyKaiCloudOutbox {
         }
         "downloadState" -> db.rawQuery("SELECT payload FROM migrations WHERE owner=? AND name='cloud-download-state'",arrayOf(owner)).use { if(it.moveToFirst()) JSONObject(it.getString(0)) else JSONObject() }
         "setDownloadState" -> { db.execSQL("INSERT OR REPLACE INTO migrations VALUES(?,'cloud-download-state',0,1,?)",arrayOf(owner,request.getJSONObject("state").toString())); JSONObject().put("committed",true) }
-        "stats" -> JSONObject().put("awaitingSync",MoneyKaiLedger.scalar(db,"SELECT count(*) FROM transactions WHERE owner=? AND sync IN ('pending','local_only') AND identity IS NOT NULL",arrayOf(owner)))
-          .put("synced",MoneyKaiLedger.scalar(db,"SELECT count(*) FROM transactions WHERE owner=? AND sync='synced'",arrayOf(owner)))
-          .put("conflicts",MoneyKaiLedger.scalar(db,"SELECT count(*) FROM transactions WHERE owner=? AND sync='conflict'",arrayOf(owner)))
-          .put("pendingDeletions",MoneyKaiLedger.scalar(db,"SELECT count(*) FROM outbox WHERE owner=? AND kind IN ('delete','delete_batch')",arrayOf(owner)))
+        "stats" -> stats(db,owner)
+        "resolveConflict" -> {
+          val row=MoneyKaiLedger.existing(db,owner,"transactions",request.getString("id")) ?: error("Record unavailable")
+          require(row.optString("syncStatus")=="conflict")
+          if(request.getString("choice")=="website") {
+            if(row.optBoolean("remoteConflictDeleted")) MoneyKaiLedger.delete(db,owner,"transactions",row.getString("id"),false)
+            else {
+              val remote=row.getJSONObject("remoteConflict").put("id",row.getString("id")).put("syncStatus","synced")
+              MoneyKaiLedger.put(db,owner,"transactions",remote,false)
+              db.execSQL("DELETE FROM outbox WHERE owner=? AND id=?",arrayOf(owner,"upload_"+row.getString("id")))
+            }
+          } else {
+            require(request.getString("choice")=="phone" && !row.optBoolean("remoteConflictDeleted")) {"Deleted cloud identity cannot be recreated"}
+            row.put("revision",row.getJSONObject("remoteConflict").getLong("revision")).put("syncStatus","pending")
+            row.remove("remoteConflict")
+            MoneyKaiLedger.put(db,owner,"transactions",row,false)
+          }
+          JSONObject().put("committed",true)
+        }
         else -> error("Unsupported cloud queue action")
       }
       db.setTransactionSuccessful(); return result
     } finally { db.endTransaction() }
+  }
+  private fun stats(db:SQLiteDatabase,owner:String):JSONObject {
+    val result=JSONObject().put("awaitingSync",MoneyKaiLedger.scalar(db,"SELECT count(*) FROM transactions WHERE owner=? AND sync IN ('pending','local_only') AND identity IS NOT NULL",arrayOf(owner)))
+          .put("synced",MoneyKaiLedger.scalar(db,"SELECT count(*) FROM transactions WHERE owner=? AND sync='synced'",arrayOf(owner)))
+          .put("conflicts",MoneyKaiLedger.scalar(db,"SELECT count(*) FROM transactions WHERE owner=? AND sync='conflict'",arrayOf(owner)))
+          .put("pendingDeletions",MoneyKaiLedger.scalar(db,"SELECT count(*) FROM outbox WHERE owner=? AND kind IN ('delete','delete_batch')",arrayOf(owner)))
+    db.rawQuery("SELECT payload,available_at FROM outbox WHERE owner=? AND kind IN ('batch','delete_batch') LIMIT 1",arrayOf(owner)).use {
+      if(it.moveToFirst() && it.getLong(1)>System.currentTimeMillis()) result.put("paused",JSONObject(it.getString(0)).optString("pauseReason","retry_wait")).put("retryAt",it.getLong(1))
+    }
+    return result
   }
   private fun remoteDelete(db: SQLiteDatabase, owner: String, id: String) {
     val identity = id.removePrefix("sms_")

@@ -28,7 +28,7 @@ internal object MoneyKaiLedger {
       MoneyKaiPrivateStorage.set(context, KEY, key)
     }
     val db = SQLiteDatabase.openOrCreateDatabase(file, key, null, null, null)
-    check(db.version <= 2) { "Ledger schema is newer than this application" }
+    check(db.version <= 3) { "Ledger schema is newer than this application" }
     db.enableWriteAheadLogging()
     db.execSQL("PRAGMA synchronous=FULL")
     db.execSQL("PRAGMA cipher_memory_security=ON")
@@ -54,6 +54,7 @@ internal object MoneyKaiLedger {
       db.execSQL("CREATE TABLE IF NOT EXISTS summaries(owner TEXT NOT NULL,month TEXT NOT NULL,category TEXT NOT NULL,direction TEXT NOT NULL,amount_minor INTEGER NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(owner,month,category,direction))")
       db.execSQL("CREATE TABLE IF NOT EXISTS migrations(owner TEXT NOT NULL,name TEXT NOT NULL,cursor INTEGER NOT NULL,verified INTEGER NOT NULL DEFAULT 0,payload TEXT NOT NULL,PRIMARY KEY(owner,name))")
       db.execSQL("CREATE TABLE IF NOT EXISTS consent(owner TEXT PRIMARY KEY,payload TEXT NOT NULL)")
+      db.execSQL("CREATE TABLE IF NOT EXISTS capture_events(owner TEXT NOT NULL,id TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(owner,id))")
       if(db.version < 2) for(table in listOf("transactions","drafts")) {
         db.execSQL("ALTER TABLE $table ADD COLUMN source TEXT NOT NULL DEFAULT ''")
         db.execSQL("ALTER TABLE $table ADD COLUMN payment TEXT NOT NULL DEFAULT ''")
@@ -61,7 +62,7 @@ internal object MoneyKaiLedger {
         db.execSQL("UPDATE $table SET source=COALESCE(json_extract(payload,'$.captureSource'),''),payment=COALESCE(json_extract(payload,'$.payment_method'),'')")
       }
       for(table in listOf("transactions","drafts")) for(field in listOf("source","payment","archived")) db.execSQL("CREATE INDEX IF NOT EXISTS ${table}_$field ON $table(owner,$field,day DESC,id DESC)")
-      db.execSQL("PRAGMA user_version=2")
+      db.execSQL("PRAGMA user_version=3")
       db.setTransactionSuccessful()
     } finally { db.endTransaction() }
     database = db
@@ -95,6 +96,7 @@ internal object MoneyKaiLedger {
   }
   fun put(db: SQLiteDatabase, owner: String, table: String, input: JSONObject, localEdit: Boolean = true) {
     require(table in listOf("transactions", "drafts"))
+    if(table == "transactions") check(!MoneyKaiSummaryReconcile.active(db,owner)) { "Local summaries are rebuilding" }
     val row = JSONObject(input.toString())
     require(row.optString("user_id",owner) == owner)
     val id = row.getString("id")
@@ -102,12 +104,15 @@ internal object MoneyKaiLedger {
     val amount = minor(row)
     require(row.optString("currency","INR") == "INR" && row.getString("type") in listOf("income","expense"))
     require(row.getString("transaction_date").matches(Regex("[0-9]{4}-[0-9]{2}-[0-9]{2}")))
-    val now=java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",java.util.Locale.US).apply { timeZone=java.util.TimeZone.getTimeZone("UTC") }.format(java.util.Date())
+    java.time.LocalDate.parse(row.getString("transaction_date"))
+    val now=if(!row.has("created_at") && !row.has("createdAt")) MoneyKaiSmsFilters.toIsoUtc(System.currentTimeMillis()) else ""
     if(!row.has("created_at")) row.put("created_at",row.optString("createdAt",now))
     if(!row.has("createdAt")) row.put("createdAt",row.getString("created_at"))
     row.put("amountMinor",amount).put("currency","INR").put("user_id",owner)
     val previous = existing(db,owner,table,id)
-    if(table == "transactions" && localEdit) {
+    if(previous?.optString("captureSource") in listOf("sms","notification")) require(row.optString("captureSource") == previous!!.getString("captureSource")) { "Capture provenance cannot change" }
+    val financialChanged = previous == null || listOf("amount","type","category","description","payment_method","transaction_date","semantics").any { previous.opt(it)?.toString() != row.opt(it)?.toString() }
+    if(table == "transactions" && localEdit && financialChanged) {
       row.put("localRevision",(previous?.optLong("localRevision") ?: 0)+1)
       if(row.optString("captureSource") == "sms" && row.optString("reviewStatus") == "approved")
         row.put("syncStatus",if(row.optLong("revision") > 0 || MoneyKaiCloudOutbox.consent(db,owner).optBoolean("enabled")) "pending" else "local_only")
@@ -123,10 +128,11 @@ internal object MoneyKaiLedger {
     }
     if (table == "transactions") {
       contribution(db,owner,row,1)
-      MoneyKaiCloudOutbox.enqueue(db,owner,row)
+      if(!localEdit || financialChanged) MoneyKaiCloudOutbox.enqueue(db,owner,row)
     }
   }
   fun delete(db: SQLiteDatabase, owner: String, table: String, id: String, queueCloud: Boolean = true) {
+    if(table == "transactions") check(!MoneyKaiSummaryReconcile.active(db,owner)) { "Local summaries are rebuilding" }
     val previous = existing(db,owner,table,id) ?: return
     if (table == "transactions") {
       contribution(db,owner,previous,-1)
@@ -178,7 +184,15 @@ internal object MoneyKaiLedger {
           val end = minOf(offset+250,rows.length())
           for(index in offset until end) {
             val row = rows.getJSONObject(index)
-            if(row.optString("user_id") == owner) put(db,owner,table,row)
+            if(row.optString("user_id") == owner) {
+              val migrated=MoneyKaiLegacyIdentity.normalize(row,table)
+              val identity=migrated.optString("importIdentity")
+              if(identity.isNotBlank()) {
+                val collision=db.rawQuery("SELECT id FROM $table WHERE owner=? AND identity=? AND id<>? LIMIT 1",arrayOf(owner,identity,migrated.getString("id"))).use {it.moveToFirst()}
+                if(collision) {migrated.remove("importIdentity");migrated.put("migrationIdentityConflict",true)}
+              }
+              put(db,owner,table,migrated)
+            }
           }
           db.execSQL("INSERT OR REPLACE INTO migrations VALUES(?,?,?,0,?)", arrayOf<Any>(owner,name,end,"{}"))
           db.setTransactionSuccessful(); offset = end
@@ -206,8 +220,11 @@ internal object MoneyKaiLedger {
       "features" -> { MoneyKaiLocalImport.configure(context,request.getBoolean("enabled")); JSONObject().put("configured",true) }
       "import" -> MoneyKaiLocalImport.request(context,owner,request)
       "cloud" -> MoneyKaiCloudOutbox.request(context,owner,request)
+      "captureEvents" -> MoneyKaiNotificationQueue.page(context,owner)
+      "reconcile" -> MoneyKaiSummaryReconcile.step(db,owner,request.optBoolean("restart"))
+      "reconcileStatus" -> MoneyKaiSummaryReconcile.status(db,owner)
       "get" -> JSONObject().put("row",existing(db,owner,request.getString("table"),request.getString("id")) ?: JSONObject.NULL)
-      "digest" -> JSONObject().put("digest",java.security.MessageDigest.getInstance("SHA-256").digest(request.getString("value").toByteArray()).joinToString("") { "%02x".format(it) })
+      "digest" -> JSONObject().put("digest",MoneyKaiOfflineSmsParser.digest(request.getString("value")))
       "counts" -> JSONObject().put("transactions",scalar(db,"SELECT count(*) FROM transactions WHERE owner=?",arrayOf(owner)))
         .put("pending",scalar(db,"SELECT count(*) FROM drafts WHERE owner=? AND review='pending'",arrayOf(owner)))
         .put("reviewed",scalar(db,"SELECT count(*) FROM drafts WHERE owner=? AND review<>'pending'",arrayOf(owner)))
@@ -233,6 +250,7 @@ internal object MoneyKaiLedger {
             if(row!=null) put(db,owner,"drafts",row)
             db.execSQL("INSERT INTO processed_messages VALUES(?,?,?,?)",arrayOf(owner,identity,if(row==null) "ignored" else "drafted",row?.getString("id")))
           }
+          if(request.has("eventId")) db.execSQL("DELETE FROM capture_events WHERE owner=? AND id=?",arrayOf(owner,request.getString("eventId")))
           db.setTransactionSuccessful()
           JSONObject().put("duplicate",duplicate)
         } finally { db.endTransaction() }

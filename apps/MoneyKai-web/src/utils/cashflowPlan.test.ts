@@ -207,6 +207,15 @@ describe('inferMonthlyCommitments', () => {
 });
 
 describe('buildCashflowPlan', () => {
+  it('uses complete monthly summaries when the visible transaction page is incomplete', () => {
+    const categories=[{category:'food',total:1542.5,count:125,percentage:100}];
+    const plan=buildCashflowPlan({transactions:[makeTransaction('visible','expense',12.34,'2026-05-01','Visible payment','food')],
+      monthlyAllowance:2000,challenges:[],cycleStart:new Date('2026-05-01T00:00:00Z'),cycleEnd:new Date('2026-06-01T00:00:00Z'),
+      now:new Date('2026-05-15T12:00:00Z'),monthlyTotals:{income:3000,expense:1542.5,categories}});
+    expect(plan.metrics.actualExpense).toBe(1542.5);
+    expect(plan.metrics.actualIncome).toBe(3000);
+    expect(plan.categories).toEqual(categories);
+  });
   it('uses UTC May boundaries regardless of the host timezone', () => {
     const originalTimezone = process.env.TZ;
 

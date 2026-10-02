@@ -125,7 +125,7 @@ export const useLinkedAccountStore = create<LinkedAccountState>()(
 
       getInsights: () => getLinkedAccountInsights(get().accounts),
 
-      connectSandboxAccounts: (userId) => {
+      connectSandboxAccounts: async (userId) => {
         const ownerId = getOwnerId(userId);
         const sandboxAccounts = buildSandboxLinkedAccounts(ownerId);
         const transactions = buildLinkedAccountTransactions(ownerId, sandboxAccounts);
@@ -141,7 +141,7 @@ export const useLinkedAccountStore = create<LinkedAccountState>()(
         });
 
         sandboxAccounts.forEach(syncAccountUpsert);
-        useTransactionStore.getState().upsertImportedTransactions(transactions);
+        await useTransactionStore.getState().upsertImportedTransactions(transactions);
         queueBackup('linked accounts connected');
       },
 
@@ -159,7 +159,7 @@ export const useLinkedAccountStore = create<LinkedAccountState>()(
         queueBackup('manual linked account added');
       },
 
-      syncAccount: (id) => {
+      syncAccount: async (id) => {
         const ownerId = getOwnerId();
         const nowIso = new Date().toISOString();
         let syncedAccount: LinkedAccount | undefined;
@@ -185,14 +185,14 @@ export const useLinkedAccountStore = create<LinkedAccountState>()(
 
         if (syncedAccount) {
           syncAccountUpsert(syncedAccount);
-          useTransactionStore
+          await useTransactionStore
             .getState()
             .upsertImportedTransactions(buildLinkedAccountTransactions(ownerId, [syncedAccount]));
           queueBackup('linked account synced');
         }
       },
 
-      syncAllAccounts: () => {
+      syncAllAccounts: async () => {
         const ownerId = getOwnerId();
         const nowIso = new Date().toISOString();
         let nextAccounts: LinkedAccount[] = [];
@@ -214,7 +214,7 @@ export const useLinkedAccountStore = create<LinkedAccountState>()(
         });
 
         nextAccounts.forEach(syncAccountUpsert);
-        useTransactionStore
+        await useTransactionStore
           .getState()
           .upsertImportedTransactions(
             buildLinkedAccountTransactions(

@@ -35,7 +35,7 @@ interface TransactionState {
   updateTransactionDurable: (id:string,updates:Partial<Transaction>) => Promise<void>;
   deleteTransactionDurable: (id:string) => Promise<void>;
   upsertBackendTransaction: (transaction: Transaction) => void;
-  upsertImportedTransactions: (transactions: Transaction[]) => void;
+  upsertImportedTransactions: (transactions: Transaction[]) => Promise<void>;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   deleteTransaction: (id: string) => void;
   setFilter: (filter: Partial<TransactionFilter>) => void;
@@ -134,7 +134,7 @@ export const useTransactionStore = create<TransactionState>()(
           if(!LARGE_SMS_LOCAL_ENABLED) return get().updateTransaction(id,updates);
           const owner=useAuthStore.getState().user?.id; if(!owner) throw new Error('Owner unavailable');
           const {row}=await localLedger.get<Transaction>(owner,'transactions',id); if(!row) throw new Error('Transaction unavailable');
-          const updated={...row,...updates,...(updates.amount !== undefined ? {amountMinor:undefined} : {})};
+          const updated={...row,...updates,captureSource:row.captureSource,importIdentity:row.importIdentity,accountIdentity:row.accountIdentity,parserVersion:row.parserVersion,reviewStatus:row.reviewStatus,...(updates.amount !== undefined ? {amountMinor:undefined} : {})};
           await localLedger.putTransaction(owner,updated);
           await Promise.all([useLocalLedgerStore.getState().queryTransactions(),useLocalLedgerStore.getState().refreshOverview()]);
           if(useAuthStore.getState().user?.id === owner) set({transactions:useLocalLedgerStore.getState().transactions});
@@ -253,6 +253,7 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         addTransaction: (transaction) => {
+          if(LARGE_SMS_LOCAL_ENABLED) throw new Error('Use the durable transaction action');
           const allowance = useBudgetStore.getState().settings.monthly_allowance;
           if (allowance <= 0) {
             return false;
@@ -318,7 +319,18 @@ export const useTransactionStore = create<TransactionState>()(
           }));
         },
 
-        upsertImportedTransactions: (incomingTransactions) => {
+        upsertImportedTransactions: async (incomingTransactions) => {
+          if(LARGE_SMS_LOCAL_ENABLED) {
+            const owner=useAuthStore.getState().user?.id; if(!owner) throw new Error('Owner unavailable');
+            for(const row of incomingTransactions) {
+              if(row.user_id!==owner) throw new Error('Import owner changed');
+              await localLedger.putTransaction(owner,row);
+              if(useAuthStore.getState().user?.id!==owner) return;
+              syncTransactionCreate(row);
+            }
+            await Promise.all([useLocalLedgerStore.getState().queryTransactions(),useLocalLedgerStore.getState().refreshOverview()]);
+            return;
+          }
           if (incomingTransactions.length === 0) return;
 
           const transactionsToSync = incomingTransactions.map((transaction) => ({
@@ -362,6 +374,7 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         updateTransaction: (id, updates) => {
+          if(LARGE_SMS_LOCAL_ENABLED) throw new Error('Use the durable transaction action');
           set((state) => ({
             transactions: state.transactions.map(t =>
               t.id === id ? { ...t, ...updates, ...(isDeviceOnlyCaptureSource(t.captureSource) ? { captureSource: t.captureSource } : {}) } : t
@@ -372,6 +385,7 @@ export const useTransactionStore = create<TransactionState>()(
         },
 
         deleteTransaction: (id) => {
+          if(LARGE_SMS_LOCAL_ENABLED) throw new Error('Use the durable transaction action');
           const deviceOnly = isDeviceOnlyCaptureSource(get().transactions.find(t => t.id === id)?.captureSource);
           set((state) => ({
             transactions: state.transactions.filter(t => t.id !== id),

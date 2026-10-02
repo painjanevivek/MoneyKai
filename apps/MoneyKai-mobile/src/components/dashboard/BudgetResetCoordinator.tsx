@@ -1,3 +1,4 @@
+import {LARGE_SMS_LOCAL_ENABLED} from '@/config/largeSmsFeatures';
 import React, { useEffect } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useBudgetStore } from '@/stores/useBudgetStore';
@@ -11,7 +12,7 @@ export const BudgetResetCoordinator: React.FC = () => {
   const processMonthlyReset = useBudgetStore((s) => s.processMonthlyReset);
 
   useEffect(() => {
-    if (!isAuthenticated || !settings.auto_reset || settings.monthly_allowance <= 0) {
+    if (!isAuthenticated || !settings.auto_reset || LARGE_SMS_LOCAL_ENABLED && settings.carry_forward || settings.monthly_allowance <= 0) {
       return;
     }
 

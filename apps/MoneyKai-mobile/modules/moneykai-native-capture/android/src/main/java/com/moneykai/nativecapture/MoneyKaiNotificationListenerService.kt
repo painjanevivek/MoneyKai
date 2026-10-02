@@ -11,6 +11,10 @@ import java.util.TimeZone
 import java.security.MessageDigest
 
 class MoneyKaiNotificationListenerService : NotificationListenerService() {
+  override fun onListenerConnected() {
+    super.onListenerConnected()
+    if(MoneyKaiLocalImport.enabled(applicationContext)) runCatching {activeNotifications?.forEach {onNotificationPosted(it)}}
+  }
   override fun onNotificationPosted(sbn: StatusBarNotification?) {
     val notification = sbn?.notification ?: return
     val sourcePackage = sbn.packageName ?: return
