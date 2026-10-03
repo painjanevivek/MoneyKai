@@ -10,7 +10,8 @@ export function compactPersonName(name: string): string {
   return [parts[0], ...parts.slice(1, surnameStart).map((part) => `${Array.from(part)[0]}.`), ...parts.slice(surnameStart)].join(' ');
 }
 
-export function transactionDisplayName(transaction: Pick<Transaction, 'description' | 'counterpartyKind' | 'counterpartyName'>) {
+export function transactionDisplayName(transaction: Pick<Transaction, 'description' | 'counterpartyKind' | 'counterpartyName' | 'nickname'>) {
+  if(transaction.nickname?.trim())return transaction.nickname.trim();
   if (transaction.counterpartyKind !== 'person') return transaction.description;
   const name = transaction.counterpartyName ?? transaction.description;
   // Let ordinary multi-word names wrap intact. Only compact unusually long names;

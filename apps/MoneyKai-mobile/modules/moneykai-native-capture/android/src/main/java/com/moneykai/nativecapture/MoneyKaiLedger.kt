@@ -111,7 +111,7 @@ internal object MoneyKaiLedger {
     row.put("amountMinor",amount).put("currency","INR").put("user_id",owner)
     val previous = existing(db,owner,table,id)
     if(previous?.optString("captureSource") in listOf("sms","notification")) require(row.optString("captureSource") == previous!!.getString("captureSource")) { "Capture provenance cannot change" }
-    val financialChanged = previous == null || listOf("amount","type","category","description","payment_method","transaction_date","semantics").any { previous.opt(it)?.toString() != row.opt(it)?.toString() }
+    val financialChanged = previous == null || listOf("amount","type","category","description","nickname","payment_method","transaction_date","semantics").any { previous.opt(it)?.toString() != row.opt(it)?.toString() }
     if(table == "transactions" && localEdit && financialChanged) {
       row.put("localRevision",(previous?.optLong("localRevision") ?: 0)+1)
       if(row.optString("captureSource") == "sms" && row.optString("reviewStatus") == "approved")

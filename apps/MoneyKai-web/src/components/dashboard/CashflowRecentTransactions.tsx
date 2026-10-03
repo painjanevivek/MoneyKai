@@ -1,3 +1,4 @@
+import {savedTransactionLabel} from '@moneykai/domain/transactionImports';
 import React from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -77,7 +78,7 @@ export function CashflowRecentTransactions({ transactions, onViewAll }: Cashflow
                 <View
                   key={transaction.id}
                   accessibilityRole="summary"
-                  accessibilityLabel={`${transaction.description}, ${categoryName}, ${account}, ${date}, ${amount.label}.`}
+                  accessibilityLabel={`${savedTransactionLabel(transaction)}, ${categoryName}, ${account}, ${date}, ${amount.label}.`}
                   style={[
                     styles.tableRow,
                     index > 0 ? { borderTopWidth: 1, borderTopColor: colors.borderLight } : null,
@@ -91,7 +92,7 @@ export function CashflowRecentTransactions({ transactions, onViewAll }: Cashflow
                         color={colors.primary}
                       />
                     </View>
-                    <Text style={[styles.cellPrimary, { color: colors.textPrimary }]} numberOfLines={1}>{transaction.description}</Text>
+                    <Text style={[styles.cellPrimary, { color: colors.textPrimary }]} numberOfLines={1}>{savedTransactionLabel(transaction)}</Text>
                   </View>
                   <Text style={[styles.cellSecondary, styles.categoryColumn, { color: colors.textSecondary }]} numberOfLines={1}>{categoryName}</Text>
                   <Text style={[styles.cellSecondary, styles.accountColumn, { color: colors.textSecondary }]} numberOfLines={1}>{account}</Text>
@@ -114,7 +115,7 @@ export function CashflowRecentTransactions({ transactions, onViewAll }: Cashflow
                 <View
                   key={transaction.id}
                   accessibilityRole="summary"
-                  accessibilityLabel={`${transaction.description}, ${categoryName}, ${account}, ${date}, ${amount.label}.`}
+                  accessibilityLabel={`${savedTransactionLabel(transaction)}, ${categoryName}, ${account}, ${date}, ${amount.label}.`}
                   style={[
                     styles.mobileRow,
                     index > 0 ? { borderTopWidth: 1, borderTopColor: colors.borderLight } : null,
@@ -129,7 +130,7 @@ export function CashflowRecentTransactions({ transactions, onViewAll }: Cashflow
                   </View>
                   <View style={styles.mobileBody}>
                     <View style={styles.mobileTopline}>
-                      <Text style={[styles.mobilePayee, { color: colors.textPrimary }]} numberOfLines={1}>{transaction.description}</Text>
+                      <Text style={[styles.mobilePayee, { color: colors.textPrimary }]} numberOfLines={1}>{savedTransactionLabel(transaction)}</Text>
                       <Text style={[styles.cellAmount, { color: amount.color }]} numberOfLines={1}>{amount.label}</Text>
                     </View>
                     <Text style={[styles.mobileMeta, { color: colors.textSecondary }]} numberOfLines={1}>

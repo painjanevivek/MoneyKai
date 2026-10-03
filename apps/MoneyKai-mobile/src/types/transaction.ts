@@ -25,6 +25,7 @@ export interface Transaction {
   archived?:boolean;
   category: string;
   description: string;
+  nickname?: string | null;
   counterpartyName?: string;
   counterpartyKind?: 'merchant' | 'person' | 'unknown';
   automaticallyRecorded?: boolean;

@@ -1874,6 +1874,18 @@
             "title": "Importidentity",
             "type": "string"
           },
+          "nickname": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nickname"
+          },
           "parserVersion": {
             "const": "sms-offline-v1",
             "default": "sms-offline-v1",

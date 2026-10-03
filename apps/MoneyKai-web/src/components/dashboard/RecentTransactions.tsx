@@ -1,3 +1,4 @@
+import {savedTransactionLabel} from '@moneykai/domain/transactionImports';
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -84,7 +85,7 @@ export const RecentTransactions: React.FC<RecentTransactionsProps> = ({ onAddTra
                 fontSize: Typography.fontSize.base,
                 fontFamily: Typography.fontFamily.medium,
                 color: colors.textPrimary,
-              }}>{txn.description}</Text>
+              }}>{savedTransactionLabel(txn)}</Text>
               <Text style={{
                 fontSize: Typography.fontSize.xs,
                 fontFamily: Typography.fontFamily.regular,

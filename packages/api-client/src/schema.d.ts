@@ -2684,6 +2684,8 @@ export type components = {
             readonly id: string;
             /** Importidentity */
             readonly importIdentity: string;
+            /** Nickname */
+            readonly nickname?: string | null;
             /**
              * Parserversion
              * @default sms-offline-v1

@@ -12,6 +12,7 @@ import { PeopleAllocationField } from './PeopleAllocationField';
 import { BorderRadius, Spacing, TransactionDirectionColor, Typography } from '@/constants/theme';
 import { useTransactionPreferencesStore } from '@/stores/useTransactionPreferencesStore';
 import { counterpartyAliasKey } from '@/utils/transactionPreferences';
+import {normalizeTransactionNickname} from '@moneykai/domain/transactionImports';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from '@/constants/categories';
 import { useTheme } from '@/hooks/useTheme';
@@ -36,7 +37,7 @@ export function EditTransactionSheet({ transaction, onClose }: { transaction: Tr
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [amount, setAmount] = useState(String(transaction.amount));
   const [description, setDescription] = useState(transaction.description);
-  const [nickname, setNickname] = useState(() => useTransactionPreferencesStore.getState().aliases[transaction.user_id]?.[counterpartyAliasKey(transaction)] ?? '');
+  const [nickname, setNickname] = useState(() => transaction.nickname ?? useTransactionPreferencesStore.getState().aliases[transaction.user_id]?.[counterpartyAliasKey(transaction)] ?? '');
   const [category, setCategory] = useState(transaction.category);
   const [paymentMethod, setPaymentMethod] = useState(transaction.payment_method);
   const [date, setDate] = useState(transaction.transaction_date);
@@ -70,8 +71,8 @@ export function EditTransactionSheet({ transaction, onClose }: { transaction: Tr
       return;
     }
     setError(null);
-    if (!useTransactionPreferencesStore.getState().setAlias(transaction, nickname)) { setError('Could not save the nickname. Try again.'); return; }
     try { await updateTransaction(transaction.id, {
+      nickname:normalizeTransactionNickname(nickname),
       type,
       amount: numericAmount,
       description: description.trim(),
@@ -83,6 +84,7 @@ export function EditTransactionSheet({ transaction, onClose }: { transaction: Tr
       contact_allocations: allocation.allocations,
       contact_split_mode: people.length > 1 ? splitMode : 'equal',
     });
+    if(!useTransactionPreferencesStore.getState().setAlias(transaction,nickname))throw new Error('Nickname owner changed');
     if (transaction.captureSource === 'sms' && (category !== transaction.category || type !== transaction.type)) useCaptureStore.getState().learnSmsCategoryFromTransaction(transaction.id);
     } catch { setError('Could not save changes. Your previous transaction is preserved.'); return; }
     onClose();

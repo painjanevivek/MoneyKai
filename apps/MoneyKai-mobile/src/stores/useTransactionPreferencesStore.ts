@@ -15,7 +15,7 @@ type Preferences = {
   clearOwner: (owner: string) => void;
 };
 
-// Never synced, backed up to cloud or included in automatic export.
+// Private preference map stays on-device. A saved transaction carries only its own nickname.
 export const useTransactionPreferencesStore = create<Preferences>()(persist((set) => ({
   aliases: {}, archived: {}, phones: {},
   setAlias: (transaction, nickname) => {

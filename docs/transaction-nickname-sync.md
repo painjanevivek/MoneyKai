@@ -1,0 +1,15 @@
+# Transaction nickname synchronization
+
+Nicknames are now an optional `nickname` value on saved transactions, rather than only a device preference. The original `description`, financial amount, identity and provenance remain intact. Empty text explicitly removes a nickname. Text is bounded to 100 Unicode characters and normalized whitespace.
+
+Mobile nickname editors save through the existing durable transaction action before updating the owner-scoped local alias preference. Failed writes retain the input. Deleted transactions and changed sessions cannot be recreated by a stale nickname editor. Transaction rows downloaded or restored from cloud display their saved nickname ahead of an older local alias.
+
+Approved SMS batches allow this field while continuing to reject raw SMS and private capture fields. Native frozen batches carry the nickname and include it in idempotency fingerprints. Edits made while an older batch is in flight increment the local revision and remain queued after the old receipt arrives. Legacy local aliases are sampled for the matching transaction when a new batch is frozen; the whole alias map and private phone preferences are never uploaded. No per-nickname cloud service, separate collection or financial-record fan-out was introduced.
+
+The website transaction list, recent transaction views and analytics rows display the nickname returned by the transaction API, falling back to the original description when empty. Existing transactions without nicknames remain compatible. The backend regular create/patch commands and approved-SMS import accept and persist the optional field; transaction revision conflicts protect newer website edits.
+
+Validation on 3 October 2026: 367 backend tests passed (optional emulator test skipped), 141 web tests passed, 10 focused mobile preference/nickname tests passed, 179 capture regressions passed, both client type checks and generated API/OpenAPI/boundary checks passed. Browser verification against a localhost synthetic transaction response displayed `Breakfast cafe` after loading and reloading the page, with no console errors. Native unit checks, Android instrumentation compilation and the complete local debug APK build passed.
+
+No Android device was connected during this follow-up. The new native nickname freeze/edit/restore instrumentation case was compiled but **not executed**. The earlier 100,000-record and native recovery evidence remains recorded separately; those capacity runs were not repeated for this metadata change.
+
+Cloud synchronization and large-import production switches remain disabled pending the previously documented activation gates. SMS nicknames upload only alongside approved transactions after cloud consent; notification drafts and raw messages remain local. No production deployment, billing upgrade or new paid service was enabled. The local alias is a default for future matching imports; changing one transaction's nickname does not rewrite every already-synced historical transaction.

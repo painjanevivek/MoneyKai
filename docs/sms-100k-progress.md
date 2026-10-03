@@ -78,3 +78,7 @@ Reviewed scoped diff; commit and normal push recorded in Git. Production activat
 362 backend tests passed; explicit Firestore emulator SDK integration passed; 179 mobile capture and 139 web tests passed; 13 native recovery tests and the repeated 100000-record device benchmark passed; local debug APK, client types, API-client, API boundary and OpenAPI checks passed. Target 4 GB, JavaScript heap, battery and production free-cloud activation gates remain unverified; broad mobile baseline fixture/mock failures are documented.
 
 Reviewed scoped diff; commit and normal push recorded in Git. Production activation remains disabled.
+
+## Nickname synchronization follow-up
+
+Save nickname metadata with transactions and retain it through approved SMS batches, cloud restore and website display. See `transaction-nickname-sync.md` for verified checks and the unexecuted native instrumentation case. Production switches remain disabled.

@@ -29,7 +29,7 @@ internal object MoneyKaiCloudOutbox {
     // Called only by explicit local removal, independent of cloud consent.
     db.execSQL("INSERT OR REPLACE INTO outbox VALUES(?,?,'delete',20,0,0,?)",arrayOf(owner,"delete_"+row.getString("importIdentity"),JSONObject().put("identity",row.getString("importIdentity")).toString()))
   }
-  private fun dto(row: JSONObject): JSONObject {
+  private fun dto(row: JSONObject, aliases:JSONObject): JSONObject {
     require(approved(row))
     val result = JSONObject()
     for(key in listOf("id","importIdentity","accountIdentity","amountMinor","currency","type","category","payment_method","transaction_date","parserVersion"))
@@ -38,6 +38,10 @@ internal object MoneyKaiCloudOutbox {
       .put("payment_method",row.optString("payment_method","Other").take(80))
       .put("description",row.optString("counterpartyName","SMS transaction").take(120))
       .put("reviewStatus","approved").put("captureSource","sms").put("expectedRevision",row.optLong("revision"))
+    val name=row.optString("counterpartyName").trim().ifBlank{row.optString("description").trim()}
+    val aliasKey=java.text.Normalizer.normalize(name,java.text.Normalizer.Form.NFKC).lowercase(java.util.Locale.forLanguageTag("en-IN")).replace(Regex("[\\s\\p{Z}\\uFEFF]+")," ")
+    val nickname=if(row.has("nickname") && !row.isNull("nickname"))row.getString("nickname") else if(aliases.has(aliasKey))aliases.getString(aliasKey) else null
+    if(nickname!=null){require(nickname.codePointCount(0,nickname.length)<=100);result.put("nickname",nickname)}
     return result
   }
   private fun backfill(db: SQLiteDatabase, owner: String, state: JSONObject) {
@@ -53,7 +57,7 @@ internal object MoneyKaiCloudOutbox {
     state.put("backfillComplete",rows.size < 250)
     saveConsent(db,owner,state)
   }
-  fun claim(db: SQLiteDatabase, owner: String): JSONObject {
+  fun claim(db: SQLiteDatabase, owner: String, aliases:JSONObject=JSONObject()): JSONObject {
     val state = consent(db,owner)
     val now = System.currentTimeMillis()
     // A frozen batch precedes fresh edits, guaranteeing replay after a lost reply.
@@ -83,7 +87,7 @@ internal object MoneyKaiCloudOutbox {
         val row = MoneyKaiLedger.existing(db,owner,"transactions",JSONObject(it.getString(1)).getString("transactionId"))
         queued.add(it.getString(0))
         if(row != null && approved(row) && row.optString("syncStatus") !in listOf("synced","conflict")) {
-          transactions.put(dto(row)); versions.put(row.getString("id"),row.optLong("localRevision"))
+          transactions.put(dto(row,aliases)); versions.put(row.getString("id"),row.optLong("localRevision"))
         }
       }
     }
@@ -110,6 +114,7 @@ internal object MoneyKaiCloudOutbox {
       for(index in 0 until original.length()) {
         val rowId = original.getJSONObject(index).getString("id")
         val row = MoneyKaiLedger.existing(db,owner,"transactions",rowId) ?: continue
+        if(row.optLong("localRevision")==batch.getJSONObject("localVersions").getLong(rowId) && rowId !in conflicts && original.getJSONObject(index).has("nickname"))row.put("nickname",original.getJSONObject(index).get("nickname"))
         row.put("revision",receipt.getJSONObject("revisions").getLong(rowId))
         row.put("syncStatus",if(rowId in conflicts) "conflict" else if(row.optLong("localRevision") == batch.getJSONObject("localVersions").getLong(rowId)) "synced" else "pending")
         MoneyKaiLedger.put(db,owner,"transactions",row,false)
@@ -139,7 +144,11 @@ internal object MoneyKaiCloudOutbox {
       val result = when(request.getString("action")) {
         "consent" -> consent(db,owner)
         "setConsent" -> { saveConsent(db,owner,request.getJSONObject("consent")); consent(db,owner) }
-        "claim" -> claim(db,owner)
+        "claim" -> {
+          val raw=MoneyKaiPrivateStorage.get(context,"moneykai-private-transaction-preferences")
+          val aliases=raw?.let{JSONObject(it).optJSONObject("state")?.optJSONObject("aliases")?.optJSONObject(owner)} ?: JSONObject()
+          claim(db,owner,aliases)
+        }
         "ack" -> { acknowledge(db,owner,request.getString("id"),request.getJSONObject("receipt")); JSONObject().put("committed",true) }
         "defer" -> {
           val id = request.getString("id")

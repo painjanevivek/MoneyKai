@@ -14,6 +14,30 @@ class MoneyKaiRecoveryTest {
   private fun owner(prefix:String)="$prefix-${System.nanoTime()}".also {MoneyKaiLedger.setOwner(context,it)}
   private fun row(owner:String,id:String)=JSONObject().put("id",id).put("user_id",owner).put("amount",12.34)
     .put("type","expense").put("category","food").put("description","Synthetic cafe").put("transaction_date","2026-10-02")
+  @Test fun nicknameTravelsInFrozenBatchAndNewerLocalEditSurvivesAcknowledgement() {
+    val owner=owner("nickname");val db=MoneyKaiLedger.open(context)
+    MoneyKaiCloudOutbox.saveConsent(db,owner,JSONObject().put("enabled",true).put("revision",1).put("backfillComplete",true))
+    val local=row(owner,"nick").put("counterpartyName","Synthetic cafe").put("captureSource","sms").put("reviewStatus","approved")
+      .put("importIdentity","a".repeat(64)).put("accountIdentity","b".repeat(64)).put("nickname","My cafe")
+    MoneyKaiLedger.put(db,owner,"transactions",local)
+    val batch=MoneyKaiCloudOutbox.claim(db,owner,JSONObject().put("synthetic cafe","Older alias"))
+    val dto=batch.getJSONObject("payload").getJSONArray("transactions").getJSONObject(0)
+    assertEquals("My cafe",dto.getString("nickname"));assertEquals("Synthetic cafe",dto.getString("description"))
+    assertFalse(dto.has("aliases"));assertFalse(dto.has("body"))
+    MoneyKaiLedger.put(db,owner,"transactions",local.put("nickname","New cafe"))
+    assertEquals("My cafe",MoneyKaiCloudOutbox.claim(db,owner).getJSONObject("payload").getJSONArray("transactions").getJSONObject(0).getString("nickname"))
+    val receipt=JSONObject().put("id",batch.getString("id")).put("jobId",batch.getString("jobId"))
+      .put("accepted",org.json.JSONArray().put("nick")).put("duplicates",org.json.JSONArray()).put("conflicts",org.json.JSONArray()).put("revisions",JSONObject().put("nick",1))
+    MoneyKaiCloudOutbox.acknowledge(db,owner,batch.getString("id"),receipt)
+    assertEquals("New cafe",MoneyKaiLedger.existing(db,owner,"transactions","nick")!!.getString("nickname"))
+    val next=MoneyKaiCloudOutbox.claim(db,owner)
+    assertEquals("New cafe",next.getJSONObject("payload").getJSONArray("transactions").getJSONObject(0).getString("nickname"))
+    val restoredOwner=owner("nickname-restored")
+    val remote=JSONObject(local.toString()).put("user_id",restoredOwner).put("revision",2).put("nickname","Cloud cafe")
+    MoneyKaiCloudOutbox.merge(db,restoredOwner,remote)
+    MoneyKaiLedger.close()
+    assertEquals("Cloud cafe",MoneyKaiLedger.existing(MoneyKaiLedger.open(context),restoredOwner,"transactions","nick")!!.getString("nickname"))
+  }
   @Test fun legacyReferenceIdentityMatchesOfflineParserWithoutWeakMerging() {
     val owner=owner("legacy-identity")
     val text="A/c XX4321 debited INR 12.34 for payment to Synthetic Cafe. UPI Ref 100000000001."

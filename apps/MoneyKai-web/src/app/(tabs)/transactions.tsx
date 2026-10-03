@@ -1,3 +1,4 @@
+import {savedTransactionLabel} from '@moneykai/domain/transactionImports';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, TextInput, Platform, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -356,7 +357,7 @@ export default function TransactionsScreen() {
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }} numberOfLines={1}>
-                {txn.description}
+                {savedTransactionLabel(txn)}
               </Text>
               <Text style={{ marginTop: 2, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary }} numberOfLines={2}>
                 {category?.name} | {formatRelativeDate(txn.transaction_date)} | {PAYMENT_METHODS.find((p) => p.id === txn.payment_method)?.name || txn.payment_method}
@@ -474,7 +475,7 @@ export default function TransactionsScreen() {
           <MaterialCommunityIcons name={(category?.icon || 'help-circle-outline') as any} size={22} color={category?.color || '#6B7280'} />
         </View>
         <View style={{ flex: isLedgerWide ? 1.6 : 1, minWidth: 0 }}>
-          <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>{txn.description}</Text>
+          <Text style={{ fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily.medium, color: colors.textPrimary }}>{savedTransactionLabel(txn)}</Text>
           <Text style={{ fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.regular, color: colors.textTertiary }}>
             {category?.name} • {formatRelativeDate(txn.transaction_date)} • {PAYMENT_METHODS.find((p) => p.id === txn.payment_method)?.name || txn.payment_method}
           </Text>

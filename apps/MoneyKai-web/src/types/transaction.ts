@@ -8,6 +8,7 @@ export interface Transaction {
   amount: number;
   category: string;
   description: string;
+  nickname?: string | null;
   payment_method: string;
   captureAccountId?: string;
   captureAccountLabel?: string;
