@@ -1,35 +1,4 @@
 {
   "version": 1,
-  "exceptions": [
-    {
-      "id": "PR1-EXPO56-IMAGE-SIZE",
-      "packages": ["image-size", "metro", "metro-config", "metro-transform-worker"],
-      "scope": "web-build-tooling",
-      "owner": "MoneyKai founder/account holder",
-      "review_by": "2026-09-24",
-      "maximum_severity": "high",
-      "removal_condition": "Upgrade when Expo publishes an Expo 56-compatible Metro chain containing the patched image-size release.",
-      "compensating_controls": [
-        "The dependency processes repository-controlled assets only during CI export.",
-        "The vulnerable library is absent from the emitted web application bundle.",
-        "Every pull request runs clean-install, audit-policy, test, and production-export gates."
-      ]
-    },
-    {
-      "id": "PR1-EXPO56-TRANSITIVE-JSON-TOOLS",
-      "packages": ["@redocly/openapi-core", "@xmldom/xmldom", "js-yaml"],
-      "conditionally_reported_packages": ["@expo/xcpretty"],
-      "conditional_reason": "A clean Linux CI install reports this transitive Expo build-tool advisory while the current Windows dependency graph omits it; the named coverage remains active across both environments until review.",
-      "scope": "web-build-tooling",
-      "owner": "MoneyKai founder/account holder",
-      "review_by": "2026-09-24",
-      "maximum_severity": "high",
-      "removal_condition": "Remove once the Expo 56 and OpenAPI toolchain upgrades to patched transitive versions that no longer require the vulnerable JSON/XML parsing dependencies.",
-      "compensating_controls": [
-        "The vulnerable packages are only pulled in through the web build and OpenAPI tooling chain, not through runtime app code.",
-        "The repository does not accept unreviewed version bumps to these transitive dependencies without a full dependency audit pass.",
-        "Every PR still runs lockfile drift, dependency audit, and production export verification gates before merge."
-      ]
-    }
-  ]
+  "exceptions": []
 }
