@@ -2,7 +2,7 @@
   "schema_version": 1,
   "source": "package-lock.json",
   "lockfile_version": 3,
-  "lockfile_sha256": "45d3d42c92aa6862e910bd01d157f357428bb08781749b2d6c5b61bf2844ed51",
+  "lockfile_sha256": "b708642f2c4e2c17a4ac99be572be5161a0b857a838824c563d43243e5e19e49",
   "package_count": 1458,
   "license_summary": [
     {
@@ -5633,9 +5633,9 @@
     {
       "path": "node_modules/compression",
       "name": "compression",
-      "version": "1.8.1",
+      "version": "1.8.2",
       "license": "MIT",
-      "integrity": "sha512-9mAqGPHLakhCLeNyxPkK4xVo746zQ/czLH1Ky+vkitMnWfWZps8r0qXuwhwizagCRttsL4lfG4pIOvaWLpAP0w==",
+      "integrity": "sha512-o8vI5RE5A6EVVOd9o41jKp41aJom+QTEO/Bx8MYNjexMo/Bv2WOjUfZr+aL0WnYSgymUy6zeguqLTsIhV0gMvQ==",
       "development_only": false,
       "optional": false
     },
