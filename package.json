@@ -45,6 +45,7 @@
     "security:check": "node ./scripts/owasp-security-check.mjs",
     "security:audit-dependencies": "node ./scripts/audit-npm-dependencies.mjs",
     "security:audit-dependencies:test": "node --test ./scripts/audit-npm-dependencies.test.mjs",
+    "security:dependency-regressions": "node --test ./scripts/dependency-security.test.mjs",
     "security:lockfile-drift": "node ./scripts/verify-lockfile-sync.mjs",
     "security:dependency-manifest:write": "node ./scripts/generate-npm-dependency-manifest.mjs --write",
     "security:dependency-manifest:check": "node ./scripts/generate-npm-dependency-manifest.mjs --check",
@@ -73,11 +74,13 @@
   },
   "overrides": {
     "@expo/xcpretty": {
-      "js-yaml": "4.3.1"
+      "js-yaml": "4.3.2"
     },
+    "@grpc/grpc-js": "1.13.6",
     "@grpc/proto-loader": {
       "protobufjs": "7.6.5"
     },
-    "browserslist": "4.28.8"
+    "browserslist": "4.28.8",
+    "image-size": "2.0.3"
   }
 }
